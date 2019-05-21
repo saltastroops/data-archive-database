@@ -46,7 +46,7 @@ CREATE TABLE `DataFile` (
   `size` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `observationId_idx` (`observationId`)
-) ENGINE=InnoDB AUTO_INCREMENT=4669 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -62,7 +62,7 @@ CREATE TABLE `DataPreview` (
   `dataFieldId` varchar(45) DEFAULT NULL,
   `orders` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=980 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -135,7 +135,7 @@ CREATE TABLE `HIPPO` (
   `Observation_id` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_SHOC_Observation1_idx` (`Observation_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=129613 DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -165,7 +165,7 @@ CREATE TABLE `HRS` (
   `targetInfo_target_ID` int(11) NOT NULL,
   PRIMARY KEY (`id`,`targetInfo_target_ID`),
   KEY `fk_GIRAFFE_header_targetInfo1_idx` (`targetInfo_target_ID`)
-) ENGINE=MyISAM AUTO_INCREMENT=17637 DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -298,7 +298,7 @@ CREATE TABLE `Instruments` (
   PRIMARY KEY (`instrument_id`),
   KEY `instrument_idx` (`instrumentName`),
   KEY `fk_Instruments_Telescopes1_idx` (`Telescopes_telescope_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=71634 DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -315,7 +315,7 @@ CREATE TABLE `Observation` (
   `startTime` varchar(45) DEFAULT NULL,
   `statusId` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=10222 DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -346,7 +346,7 @@ CREATE TABLE `Observatories` (
   `longitude` varchar(45) DEFAULT NULL,
   `altitude` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`observatory_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -365,7 +365,7 @@ CREATE TABLE `Proposal` (
   `title` varchar(255) DEFAULT NULL,
   `lastUpdated` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1862 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -435,7 +435,7 @@ CREATE TABLE `SHOC` (
   `Observation_id` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_SHOC_Observation1_idx` (`Observation_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=129613 DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -476,7 +476,7 @@ CREATE TABLE `SIRIUS` (
   `Observation_id` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_SHOC_Observation1_idx` (`Observation_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=129613 DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -504,7 +504,7 @@ CREATE TABLE `SPUPNIC` (
   `Observation_id` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_SPUPNIC_Observation1_idx` (`Observation_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=18834 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -544,7 +544,7 @@ CREATE TABLE `STE` (
   `Observation_id` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_SHOC_Observation1_idx` (`Observation_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=129613 DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -593,7 +593,7 @@ CREATE TABLE `Salticam` (
   `Observation_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_SHOC_Observation1_idx` (`Observation_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=139759 DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -664,7 +664,7 @@ CREATE TABLE `SalticamTech` (
   `telescope` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_SHOC_Observation1_idx` (`Observation_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=129613 DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1035,7 +1035,7 @@ CREATE TABLE `Target` (
   `position` varchar(255) DEFAULT NULL,
   `targetTypeId` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=366937 DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1050,7 +1050,7 @@ CREATE TABLE `TargetType` (
   `numericValue` varchar(45) DEFAULT NULL,
   `explanation` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=495 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1065,7 +1065,7 @@ CREATE TABLE `Telescope` (
   `telescopeName` varchar(45) NOT NULL,
   `ownerId` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=34 DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1123,7 +1123,7 @@ CREATE TABLE `WINCAM` (
   `Observation_id` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_SHOC_Observation1_idx` (`Observation_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=129613 DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1243,7 +1243,7 @@ CREATE TABLE testdata (
   `startTime` varchar(45) DEFAULT NULL,
   `filesize` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --

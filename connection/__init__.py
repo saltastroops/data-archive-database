@@ -1,10 +1,10 @@
 from pymysql import connect
 import os
 
-db_config = {
+ssda_config = {
     'user': os.environ["SSDA_USER"],
     'host': os.environ["SSDA_HOST"],
-    'passwd': os.getenv("SSDA_PASSWORD"),
+    'password': os.getenv("SSDA_PASSWORD"),
     'db': os.getenv("SSDA_DATABASE"),
     'charset': 'utf8'
 }
@@ -12,7 +12,7 @@ db_config = {
 sdb_config = {
         'user': os.environ["SDB_USER"],
         'host': os.environ["SDB_HOST"],
-        'passwd': os.getenv("SDB_PASSWORD"),
+        'password': os.getenv("SDB_PASSWORD"),
         'db': os.getenv("SDB_DATABASE"),
         'charset': 'utf8'
     }
@@ -23,5 +23,4 @@ def sdb_connect():
 
 
 def ssda_connect():
-    return connect(**db_config)
-
+    return connect(**ssda_config)
