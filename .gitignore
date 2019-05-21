@@ -1,24 +1,15 @@
-# See https://help.github.com/ignore-files/ for more about ignoring files.
+# virtual environment
+venv/
+env/
 
-# dependencies
-/node_modules
-.idea/
 
-# testing
-/coverage
+# pycache
 
-# production
-/build
+__pycache__/
 
-# misc
-.DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-package-lock.json
 
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# idea
+.idea
 
+#vscod
+.vscode
