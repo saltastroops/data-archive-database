@@ -19,7 +19,6 @@ def update_bvit(date):
     return date
 
 
-
 def update_salt(date):
     """
         This is the method that will update all the the instruments of salt but giving it only the date you want to
