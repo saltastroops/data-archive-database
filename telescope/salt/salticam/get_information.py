@@ -1,12 +1,13 @@
 from datetime import datetime
-from connection import sdb_connect, db_connect
+from connection import sdb_connect, ssda_connect
 
 
 # Get the telescopeName, given a telescopeID
-def get_telescope_name(telescope_id):
-    mydb = sdb_connect()
 
-    cursor = mydb.cursor()
+
+def get_telescope_name(telescope_id):
+
+    cursor = ssda_connect().cursor()
 
     cursor.execute("select telescopeName from Telescope where id =%s", (telescope_id,))
     record = cursor.fetchone()
@@ -15,15 +16,14 @@ def get_telescope_name(telescope_id):
 
     "this prints a passed string into this function"
     print(value)
-    mydb.close()
+    ssda_connect().close()
     return
 
 
 # Get the telescope Id given the telescope name
 def get_telescope_id(telescope_name):
-    mydb = db_connect()
 
-    cursor = mydb.cursor()
+    cursor = ssda_connect().cursor()
 
     cursor.execute("select telescopeName from Telescope where telescopeName =%s", (telescope_name,))
     record = cursor.fetchone()
@@ -32,7 +32,7 @@ def get_telescope_id(telescope_name):
 
     "this prints a passed string into this function"
     print(value)
-    mydb.close()
+    ssda_connect().close()
     return
 
 
@@ -43,12 +43,10 @@ def proposal_details():
     now = datetime.now()
 
     # MySQL Connection to sdb
-    sdb_connection = sdb_connect()
-    sdb_cursor = sdb_connection.cursor()
+    sdb_cursor = sdb_connect().cursor()
 
     # MySQL Connection to ssda
-    ssda_connect = db_connect()
-    ssda_cursor = ssda_connect.cursor()
+    ssda_cursor = ssda_connect().cursor()
 
     # Get the result set with the needed parameters for populating the Proposal Table on the ssda database.
     sbdsql_select = "select distinctrow  ProposalCode.Proposal_Code, Investigator.FirstName, Investigator.Surname, \
@@ -75,18 +73,17 @@ def proposal_details():
         ssda_cursor.execute(ssda_insert_sql, val)
 
     # Write the entries to the database.
-    ssda_connect.commit()
+    ssda_connect().commit()
 
     # Close database connections
-    ssda_connect.close()
-    sdb_connection.close()
+    ssda_connect().close()
+    sdb_connect().close()
     return
 
 
 def get_observation_status(status_id):
-    mydb = db_connect()
 
-    cursor = mydb.cursor()
+    cursor = ssda_connect().cursor()
 
     cursor.execute("select status from ObservationStatus where id =%s", (status_id,))
     record = cursor.fetchone()
@@ -94,15 +91,14 @@ def get_observation_status(status_id):
     value = record[0]
 
     print(value)
-    mydb.close()
+    ssda_connect().close()
 
     return
 
 
 def get_category_id(category):
-    mydb = db_connect()
 
-    cursor = mydb.cursor()
+    cursor = ssda_connect().cursor()
 
     cursor.execute("select id from DataCategory where dataCategory =%s", (category,))
     record = cursor.fetchone()
@@ -110,14 +106,13 @@ def get_category_id(category):
     value = record[0]
 
     print(value)
-    mydb.close()
+    ssda_connect().close()
     return
 
 
 def data_files(start_time):
-    mydb = db_connect()
 
-    cursor = mydb.cursor()
+    cursor = ssda_connect().cursor()
 
     cursor.execute("select name from DataFile where startTime =%s", (start_time,))
     record = cursor.fetchone()
@@ -125,15 +120,14 @@ def data_files(start_time):
     value = record[0]
 
     print(value)
-    mydb.close()
+    ssda_connect().close()
     return
 
 
 # Define what is meant by fits_headers
 def observation_details(fits_headers):
-    mydb = db_connect()
 
-    cursor = mydb.cursor()
+    cursor = ssda_connect().cursor()
 
     cursor.execute("select telescopeObservationId, name, status  from Observation where startTime =%s", (fits_headers,))
     record = cursor.fetchone()
@@ -141,6 +135,6 @@ def observation_details(fits_headers):
     value = record[0]
 
     print(value)
-    mydb.close()
+    ssda_connect().close()
 
     return

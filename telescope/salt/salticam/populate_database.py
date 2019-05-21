@@ -8,7 +8,7 @@ from astropy.coordinates import SkyCoord
 ############################################################################################
 # Specify the directory to the FITS files on disk                                          #
 ############################################################################################
-from connection import db_connect
+from connection import ssda_connect
 
 path_to_data = input("Enter the path to the raw fits data:")
 data_directory = path_to_data
@@ -17,7 +17,7 @@ data_directory = path_to_data
 ############################################################################################
 # Connecting to the database server and database                                           #
 ############################################################################################
-mydb = db_connect()
+mydb = ssda_connect()
 
 ############################################################################################
 # Recursively traverse through the data_directory search for fits file to import           #
@@ -31,11 +31,11 @@ mydb = db_connect()
 #
 #    value = record[0]
 #
-#    print (value)
+#    print (connect(**sdb_config)value)
 #    mydb.close()
 #    return  ;
 
-for filename in glob.iglob(data_directory + '**/raw/*.fits', recursive=True):
+for filename in glob.iglob(data_directory + '*.fits', recursive=True):
     print(filename)
     filesize = os.path.getsize(filename)
 
@@ -53,7 +53,8 @@ for filename in glob.iglob(data_directory + '**/raw/*.fits', recursive=True):
         print(positionCoords)
 
         c.execute("SELECT * FROM Telescope where telescopeName= 'SALT'")
-        myresult = c.fetchall()
+        myresult = [(0, "SALT", "1")]
+        print("results: \n", myresult)
         for x in myresult:
             telescopeId = x[0]
             startTime = prihdr['DATE-OBS']
@@ -164,6 +165,7 @@ INSERT INTO Target(name,rightAscension,declination,position,targetTypeId)
             c.execute(*target)
             c.execute(*dataPreview)
             mydb.commit()
+            print("DOne with all...")
     else:
         print("Not importing any other and OBJECT at this moment")
         exit(1)
