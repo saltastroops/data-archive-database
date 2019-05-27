@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 5.7.17, for macos10.12 (x86_64)
+-- MySQL dump 10.13  Distrib 5.7.26, for Linux (x86_64)
 --
 -- Host: 127.0.0.1    Database: ssda
 -- ------------------------------------------------------
--- Server version	5.7.17
+-- Server version	5.7.26-0ubuntu0.18.04.1
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -23,10 +23,10 @@ DROP TABLE IF EXISTS `DataCategory`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `DataCategory` (
-  `id` int(11) NOT NULL,
+  `dataCategoryId` int(11) NOT NULL AUTO_INCREMENT,
   `dataCategory` varchar(45) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+  PRIMARY KEY (`dataCategoryId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -37,16 +37,21 @@ DROP TABLE IF EXISTS `DataFile`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `DataFile` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) DEFAULT NULL,
-  `dataCategoryId` varchar(45) DEFAULT NULL,
-  `observationId` int(11) DEFAULT NULL,
-  `targetID` varchar(45) DEFAULT NULL,
+  `dataCategoryId` int(11) DEFAULT NULL,
   `startTime` varchar(45) DEFAULT NULL,
-  `size` int(11) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `observationId_idx` (`observationId`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+  `dataFileId` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(45) DEFAULT NULL,
+  `targetId` int(11) DEFAULT NULL,
+  `size` tinyint(4) DEFAULT NULL,
+  `observationId` int(11) DEFAULT NULL,
+  PRIMARY KEY (`dataFileId`),
+  KEY `fk_DataFileCategory_idx` (`dataCategoryId`),
+  KEY `fk_DataFileTarget_idx` (`targetId`),
+  KEY `fk_DataFileObservation_idx` (`observationId`),
+  CONSTRAINT `fk_DataFileCategory` FOREIGN KEY (`dataCategoryId`) REFERENCES `DataCategory` (`dataCategoryId`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_DataFileObservation` FOREIGN KEY (`observationId`) REFERENCES `Observation` (`observationId`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_DataFileTarget` FOREIGN KEY (`targetId`) REFERENCES `Target` (`targetId`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -57,85 +62,14 @@ DROP TABLE IF EXISTS `DataPreview`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `DataPreview` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `dataPreviewId` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) DEFAULT NULL,
-  `dataFieldId` varchar(45) DEFAULT NULL,
-  `orders` varchar(45) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `FileData`
---
-
-DROP TABLE IF EXISTS `FileData`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `FileData` (
-  `dataCategoryId` varchar(45) DEFAULT NULL,
-  `startTime` varchar(45) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `FitsHeaderImage`
---
-
-DROP TABLE IF EXISTS `FitsHeaderImage`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `FitsHeaderImage` (
-  `fileID` int(11) NOT NULL,
-  `object` varchar(45) DEFAULT NULL,
-  `detectormode` varchar(45) DEFAULT NULL,
-  `ra` varchar(45) DEFAULT NULL,
-  `dec` varchar(45) DEFAULT NULL,
-  `date` varchar(45) DEFAULT NULL,
-  `exptime` varchar(45) DEFAULT NULL,
-  PRIMARY KEY (`fileID`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `HIPPO`
---
-
-DROP TABLE IF EXISTS `HIPPO`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `HIPPO` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `telescopeName` varchar(45) DEFAULT NULL,
-  `date` varchar(45) DEFAULT NULL,
-  `observer` varchar(45) DEFAULT NULL,
-  `objectName` varchar(45) DEFAULT NULL,
-  `exposureMode` varchar(45) DEFAULT NULL,
-  `filter` varchar(45) DEFAULT NULL,
-  `humidity` varchar(45) DEFAULT NULL,
-  `rotater` varchar(45) DEFAULT NULL,
-  `telFocus` varchar(45) DEFAULT NULL,
-  `wheelA` varchar(45) DEFAULT NULL,
-  `wheelB` varchar(45) DEFAULT NULL,
-  `zenith` varchar(45) DEFAULT NULL,
-  `headModel` varchar(45) DEFAULT NULL,
-  `acquisitionMode` varchar(45) DEFAULT NULL,
-  `readMode` varchar(45) DEFAULT NULL,
-  `imageRect` varchar(45) DEFAULT NULL,
-  `hbin` varchar(45) DEFAULT NULL,
-  `vbin` varchar(45) DEFAULT NULL,
-  `exposure` varchar(45) DEFAULT NULL,
-  `serialNumber` varchar(45) DEFAULT NULL,
-  `filterA` varchar(45) DEFAULT NULL,
-  `filterB` varchar(45) DEFAULT NULL,
-  `hourAngle` varchar(45) DEFAULT NULL,
-  `instrumentAngle` varchar(45) DEFAULT NULL,
-  `triggers` varchar(45) DEFAULT NULL,
-  `instrumentName` varchar(45) DEFAULT NULL,
-  `Observation_id` int(11) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `fk_SHOC_Observation1_idx` (`Observation_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+  `dataFileId` int(11) DEFAULT NULL,
+  `order` varchar(45) DEFAULT NULL,
+  PRIMARY KEY (`dataPreviewId`),
+  KEY `fk_DataPreviewDataFile_idx` (`dataFileId`),
+  CONSTRAINT `fk_DataPreviewDataFile` FOREIGN KEY (`dataFileId`) REFERENCES `DataFile` (`dataFileId`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -146,128 +80,308 @@ DROP TABLE IF EXISTS `HRS`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `HRS` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `objectName` varchar(45) DEFAULT NULL,
-  `date` varchar(45) DEFAULT NULL,
-  `ra` varchar(45) DEFAULT NULL,
-  `declination` varchar(45) DEFAULT NULL,
-  `telescope` varchar(45) DEFAULT NULL,
-  `imageType` varchar(45) DEFAULT NULL,
-  `filter` varchar(45) DEFAULT NULL,
-  `exposure` varchar(45) DEFAULT NULL,
-  `instrument` varchar(45) DEFAULT NULL,
-  `mode` varchar(45) DEFAULT NULL,
-  `prismpos` varchar(45) DEFAULT NULL,
-  `trimsec` varchar(45) DEFAULT NULL,
-  `biassec` varchar(45) DEFAULT NULL,
-  `bscale` varchar(45) DEFAULT NULL,
-  `bzero` varchar(45) DEFAULT NULL,
-  `targetInfo_target_ID` int(11) NOT NULL,
-  PRIMARY KEY (`id`,`targetInfo_target_ID`),
-  KEY `fk_GIRAFFE_header_targetInfo1_idx` (`targetInfo_target_ID`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+  `hrsId` int(11) NOT NULL AUTO_INCREMENT,
+  `telescopeId` int(11) NOT NULL,
+  `amplifierSection` VARCHAR(45) DEFAULT NULL,
+  `amplifierTemperature` FLOAT DEFAULT NULL,
+  `biasSection` VARCHAR(45) DEFAULT NULL,
+  `numberOfAmplifiers` TINYINT DEFAULT NULL,
+  `ccdSection` VARCHAR(45) DEFAULT NULL,
+  `ccdSummation` VARCHAR(45) DEFAULT NULL,
+  `ccdTemperature` FLOAT DEFAULT NULL,
+  `ccdType` VARCHAR(45) DEFAULT NULL,
+  `dataSection` VARCHAR(45) DEFAULT NULL,
+  `dateOfObservation` VARCHAR(45) DEFAULT NULL,
+  `detectorMode` VARCHAR(45) DEFAULT NULL,
+  `detectorName` VARCHAR(45) DEFAULT NULL,
+  `detectorSection` VARCHAR(45) DEFAULT NULL,
+  `detectorSerialNumber` VARCHAR(45) DEFAULT NULL,
+  `detectorSize` VARCHAR(45) DEFAULT NULL,
+  `detectorSoftwareVersion` VARCHAR(45) DEFAULT NULL,
+  `exposureMean` FLOAT DEFAULT NULL,
+  `exposureMidPoint` FLOAT DEFAULT NULL,
+  `exposureTotal` FLOAT DEFAULT NULL,
+  `exposureTime` FLOAT DEFAULT NULL,
+  `fifCentering` VARCHAR(45) DEFAULT NULL,
+  `fifCenteringOffset` FLOAT DEFAULT NULL,
+  `fifPortOffset` FLOAT DEFAULT NULL,
+  `fifPort` VARCHAR(45) DEFAULT NULL,
+  `fifSeparation` FLOAT DEFAULT NULL,
+  `focusBlueArm` FLOAT DEFAULT NULL,
+  `focusRedArm` FLOAT DEFAULT NULL,
+  `gain` FLOAT DEFAULT NULL,
+  `gainSet` VARCHAR(45) DEFAULT NULL,
+  `iodenStagePosition` VARCHAR(45) DEFAULT NULL,
+  `instrumentName` VARCHAR(45) DEFAULT NULL,
+  `lstObservation` VARCHAR(45) DEFAULT NULL,
+  `numberOfAmplifiersUsed` TINYINT DEFAULT NULL,
+  `numberOfCcds` TINYINT DEFAULT NULL,
+  `numberOfCcdsInDetector` TINYINT DEFAULT NULL,
+  `nodCount` TINYINT DEFAULT NULL,
+  `nodPeriod` FLOAT DEFAULT NULL,
+  `nodShuffle` TINYINT DEFAULT NULL,
+  `observationMode` VARCHAR(45) DEFAULT NULL,
+  `observationType` VARCHAR(45) DEFAULT NULL,
+  `pressureDewar` FLOAT DEFAULT NULL,
+  `pressureVacuum` FLOAT DEFAULT NULL,
+  `prescan` TINYINT DEFAULT NULL,
+  `ccdReadoutSpeed` VARCHAR(45) DEFAULT NULL,
+  `airTemperature` FLOAT DEFAULT NULL,
+  `blueCameraTemperature` FLOAT DEFAULT NULL,
+  `collimatorTemperature` FLOAT DEFAULT NULL,
+  `echelle` FLOAT DEFAULT NULL,
+  `iodineTemperature` FLOAT DEFAULT NULL,
+  `opticalBenchTemperature` FLOAT DEFAULT NULL,
+  `redCameraTemperature` FLOAT DEFAULT NULL,
+  `redMirrorTemperature` FLOAT DEFAULT NULL,
+  `vacuumTemperature` FLOAT DEFAULT NULL,
+  `startOfObservationTime` VARCHAR(45) DEFAULT NULL,
+  `systemTyme` VARCHAR(45) DEFAULT NULL,
+  `fitsHeaderVersion` VARCHAR(45) DEFAULT NULL,
+  PRIMARY KEY (`hrsId`),
+  KEY `fk_HRSTelescope_idx` (`telescopeId`),
+  CONSTRAINT `fk_HRSTelescope` FOREIGN KEY (`telescopeId`) REFERENCES `Telescope` (`telescopeId`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `HippoTech`
+-- Table structure for table `RSS`
 --
 
-DROP TABLE IF EXISTS `HippoTech`;
+DROP TABLE IF EXISTS `RSS`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `HippoTech` (
-  `id` int(11) NOT NULL,
-  `BZERO` varchar(45) DEFAULT NULL,
-  `BSCALE` varchar(45) DEFAULT NULL,
-  `HEAD` varchar(45) DEFAULT NULL,
-  `IMGRECT` varchar(45) DEFAULT NULL,
-  `HBIN` varchar(45) DEFAULT NULL,
-  `VBIN` varchar(45) DEFAULT NULL,
-  `SUBRECT` varchar(45) DEFAULT NULL,
-  `DATATYPE` varchar(45) DEFAULT NULL,
-  `XTYPE` varchar(45) DEFAULT NULL,
-  `XUNIT` varchar(45) DEFAULT NULL,
-  `RAYWAVE` varchar(45) DEFAULT NULL,
-  `CALBWVNM` varchar(45) DEFAULT NULL,
-  `TRIGGER` varchar(45) DEFAULT NULL,
-  `CALIB` varchar(45) DEFAULT NULL,
-  `DLLVER` varchar(45) DEFAULT NULL,
-  `EXPOSURE` varchar(45) DEFAULT NULL,
-  `TEMP` varchar(45) DEFAULT NULL,
-  `READTIME` varchar(45) DEFAULT NULL,
-  `OPERATN` varchar(45) DEFAULT NULL,
-  `GAIN` varchar(45) DEFAULT NULL,
-  `EMREALGN` varchar(45) DEFAULT NULL,
-  `VCLKAMP` varchar(45) DEFAULT NULL,
-  `VSHIFT` varchar(45) DEFAULT NULL,
-  `OUTPTAMP` varchar(45) DEFAULT NULL,
-  `PREAMP` varchar(45) DEFAULT NULL,
-  `SERNO` varchar(45) DEFAULT NULL,
-  `UNSTTEMP` varchar(45) DEFAULT NULL,
-  `BLCLAMP` varchar(45) DEFAULT NULL,
-  `PRECAN` varchar(45) DEFAULT NULL,
-  `FLIPX` varchar(45) DEFAULT NULL,
-  `FLIPY` varchar(45) DEFAULT NULL,
-  `CNTCVTMD` varchar(45) DEFAULT NULL,
-  `CNTCVT` varchar(45) DEFAULT NULL,
-  `DTNWLGTH` varchar(45) DEFAULT NULL,
-  `SNTVTY` varchar(45) DEFAULT NULL,
-  `SPSNFLTR` varchar(45) DEFAULT NULL,
-  `THRSHLD` varchar(45) DEFAULT NULL,
-  `PCNTENLD` varchar(45) DEFAULT NULL,
-  `NSETHSLD` varchar(45) DEFAULT NULL,
-  `AVGFTRMD` varchar(45) DEFAULT NULL,
-  `AVGFCTR` varchar(45) DEFAULT NULL,
-  `FRMCNT` varchar(45) DEFAULT NULL,
-  `PORTMODE` varchar(45) DEFAULT NULL,
-  `LSHEIGHT` varchar(45) DEFAULT NULL,
-  `LSSPEED` varchar(45) DEFAULT NULL,
-  `LSALTDIR` varchar(45) DEFAULT NULL,
-  `LSCTRL` varchar(45) DEFAULT NULL,
-  `LSDIR` varchar(45) DEFAULT NULL,
-  `FKSMODE` varchar(45) DEFAULT NULL,
-  `FKTMODE` varchar(45) DEFAULT NULL,
-  `DATE` varchar(45) DEFAULT NULL,
-  `FRAME` varchar(45) DEFAULT NULL,
-  `ESHTMODE` varchar(45) DEFAULT NULL,
-  `IRIGDATA` varchar(45) DEFAULT NULL,
-  `AIRMASS` varchar(45) DEFAULT NULL,
-  `DATE-OBS` varchar(45) DEFAULT NULL,
-  `DOMEPOS` varchar(45) DEFAULT NULL,
-  `FILTERA` varchar(45) DEFAULT NULL,
-  `FILTERB` varchar(45) DEFAULT NULL,
-  `GPS-INT` varchar(45) DEFAULT NULL,
-  `GPSSTART` varchar(45) DEFAULT NULL,
-  `HA` varchar(45) DEFAULT NULL,
-  `HUMIDIT` varchar(45) DEFAULT NULL,
-  `INSTANGL` varchar(45) DEFAULT NULL,
-  `INSTRUME` varchar(45) DEFAULT NULL,
-  `INSTSWV` varchar(45) DEFAULT NULL,
-  `OBJDEC` varchar(45) DEFAULT NULL,
-  `OBJECT` varchar(45) DEFAULT NULL,
-  `OBJEPOCH` varchar(45) DEFAULT NULL,
-  `OBJEQUIN` varchar(45) DEFAULT NULL,
-  `OBJRA` varchar(45) DEFAULT NULL,
-  `OBSERVER` varchar(45) DEFAULT NULL,
-  `OBSTYPE` varchar(45) DEFAULT NULL,
-  `POSA` varchar(45) DEFAULT NULL,
-  `POSB` varchar(45) DEFAULT NULL,
-  `RELSKYT` varchar(45) DEFAULT NULL,
-  `SEEING` varchar(45) DEFAULT NULL,
-  `TELDEC` varchar(45) DEFAULT NULL,
-  `TELESCOP` varchar(45) DEFAULT NULL,
-  `TELFOCUS` varchar(45) DEFAULT NULL,
-  `TELRA` varchar(45) DEFAULT NULL,
-  `TMTDEW` varchar(45) DEFAULT NULL,
-  `WHEELA` varchar(45) DEFAULT NULL,
-  `WHEELB` varchar(45) DEFAULT NULL,
-  `WIND` varchar(45) DEFAULT NULL,
-  `ZD` varchar(45) DEFAULT NULL,
-  `SHOC_id` int(11) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `fk_SHOC_TECH_SHOC1_idx` (`SHOC_id`),
-  CONSTRAINT `fk_SHOC_TECH_SHOC12` FOREIGN KEY (`SHOC_id`) REFERENCES `SHOC` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+CREATE TABLE `RSS` (
+  `rssId` int(11) NOT NULL AUTO_INCREMENT,
+  `telescopeId` int(11) NOT NULL,
+  `amplifierSection` VARCHAR(45) DEFAULT NULL,
+  `amplifierTemperature` FLOAT DEFAULT NULL,
+  `articulationAngle` FLOAT DEFAULT NULL,
+  `articulationPitch` FLOAT DEFAULT NULL,
+  `articulationRoll` FLOAT DEFAULT NULL,
+  `articulationStation` VARCHAR(45) DEFAULT NULL,
+  `articulationStationEncoder` FLOAT DEFAULT NULL,
+  `articulationMachineState` VARCHAR(45) DEFAULT NULL,
+  `amplifierReadoutX` TINYINT DEFAULT NULL,
+  `amplifierReadoutY` TINYINT DEFAULT NULL,
+  `biasSection` VARCHAR(45) DEFAULT NULL,
+  `beamSplitterMachineState` VARCHAR(45) DEFAULT NULL,
+  `beamSplitterScale` FLOAT DEFAULT NULL,
+  `beamSplitterZero` FLOAT DEFAULT NULL,
+  `commandedArticulationStation` FLOAT DEFAULT NULL,
+  `detectorFocusPosition` TINYINT DEFAULT NULL,
+  `cameraTemperature` FLOAT DEFAULT NULL,
+  `numberOfAmplifiers` TINYINT DEFAULT NULL,
+  `ccdSection` VARCHAR(45) DEFAULT NULL,
+  `ccdSummation` VARCHAR(45) DEFAULT NULL,
+  `ccdTemperature` FLOAT DEFAULT NULL,
+  `ccdType` VARCHAR(45) DEFAULT NULL,
+  `transformationMatrix11` FLOAT DEFAULT NULL,
+  `transformationMatrix11A` FLOAT DEFAULT NULL,
+  `transformationMatrix12` FLOAT DEFAULT NULL,
+  `transformationMatrix12A` FLOAT DEFAULT NULL,
+  `transformationMatrix21` FLOAT DEFAULT NULL,
+  `transformationMatrix21A` FLOAT DEFAULT NULL,
+  `transformationMatrix22` FLOAT DEFAULT NULL,
+  `transformationMatrix22A` FLOAT DEFAULT NULL,
+  `coldEndTemperature` FLOAT DEFAULT NULL,
+  `configMachineState` VARCHAR(45) DEFAULT NULL,
+  `collimatorTemperature` FLOAT DEFAULT NULL,
+  `pixelCoordinatePointX1` FLOAT DEFAULT NULL,
+  `pixelCoordinatePointX1A` FLOAT DEFAULT NULL,
+  `pixelCoordinatePointX2` FLOAT DEFAULT NULL,
+  `pixelCoordinatePointX2A` FLOAT DEFAULT NULL,
+  `rightAsertionPoint1` FLOAT DEFAULT NULL,
+  `spatialCoordinatePoint1A` FLOAT DEFAULT NULL,
+  `declanationPoint2` FLOAT DEFAULT NULL,
+  `spacialCoordinatePoint2A` FLOAT DEFAULT NULL,
+  `gnomicProjection1` VARCHAR(45) DEFAULT NULL,
+  `cartesianProjection1A` VARCHAR(45) DEFAULT NULL,
+  `gnomicProjection2` VARCHAR(45) DEFAULT NULL,
+  `cartesianProjection2A` VARCHAR(45) DEFAULT NULL,
+  `dataSection` VARCHAR(45) DEFAULT NULL,
+  `dateOfObservation` VARCHAR(45) DEFAULT NULL,
+  `detectorMode` VARCHAR(45) DEFAULT NULL,
+  `detectorSection` VARCHAR(45) DEFAULT NULL,
+  `detectorSize` VARCHAR(45) DEFAULT NULL,
+  `detectorSoftwareVersion` VARCHAR(45) DEFAULT NULL,
+  `coolerBoxTemperature` FLOAT DEFAULT NULL,
+  `dispersionAxis` TINYINT DEFAULT NULL,
+  `etalonMachineState` VARCHAR(45) DEFAULT NULL,
+  `etalon1A` FLOAT DEFAULT NULL,
+  `etalon1B` FLOAT DEFAULT NULL,
+  `etalon1F` FLOAT DEFAULT NULL,
+  `etalon1Mode` VARCHAR(45) DEFAULT NULL,
+  `etalon1Wavelength` FLOAT DEFAULT NULL,
+  `etalon1X` FLOAT DEFAULT NULL,
+  `etalon1Y` FLOAT DEFAULT NULL,
+  `etalon1Z` FLOAT DEFAULT NULL,
+  `etalon2A` FLOAT DEFAULT NULL,
+  `etalon2B` FLOAT DEFAULT NULL,
+  `etalon2F` FLOAT DEFAULT NULL,
+  `etalon2Mode` VARCHAR(45) DEFAULT NULL,
+  `etalon2Wavelength` FLOAT DEFAULT NULL,
+  `etalon2X` FLOAT DEFAULT NULL,
+  `etalon2Y` FLOAT DEFAULT NULL,
+  `etalon2Z` FLOAT DEFAULT NULL,
+  `exposureTime` FLOAT DEFAULT NULL,
+  `filterStation` TINYINT DEFAULT NULL,
+  `filterMachineState` VARCHAR(45) DEFAULT NULL,
+  `filterPosition` TINYINT DEFAULT NULL,
+  `filterBarcode` VARCHAR(45) DEFAULT NULL,
+  `filterStationSteps` FLOAT DEFAULT NULL,
+  `filterStationVolts` FLOAT DEFAULT NULL,
+  `filterMagazineSteps` TINYINT DEFAULT NULL,
+  `filterMagazineVolts` FLOAT DEFAULT NULL,
+  `focusPosition` FLOAT DEFAULT NULL,
+  `focusPositionSteps` FLOAT DEFAULT NULL,
+  `focusPositionVolts` FLOAT DEFAULT NULL,
+  `focusMachineState` VARCHAR(45) DEFAULT NULL,
+  `focusVolts` FLOAT DEFAULT NULL,
+  `focusSteps` TINYINT DEFAULT NULL,
+  `gain` FLOAT DEFAULT NULL,
+  `gain1` FLOAT DEFAULT NULL,
+  `gainSet` VARCHAR(45) DEFAULT NULL,
+  `gratingMagazineSteps` TINYINT DEFAULT NULL,
+  `gratingMagazineVolts` FLOAT DEFAULT NULL,
+  `gratingRotationAngle` FLOAT DEFAULT NULL,
+  `gratingStation` VARCHAR(45) DEFAULT NULL,
+  `gratingStationSteps` FLOAT DEFAULT NULL,
+  `gratingStationVolts` FLOAT DEFAULT NULL,
+  `gratingMachineState` VARCHAR(45) DEFAULT NULL,
+  `gratingRotationAngleSteps` TINYINT DEFAULT NULL,
+  `grating` VARCHAR(45) DEFAULT NULL,
+  `gratingAngle` FLOAT DEFAULT NULL,
+  `halfWaveSteps` TINYINT DEFAULT NULL,
+  `halfWaveAngle` FLOAT DEFAULT NULL,
+  `halfWaveStation` VARCHAR(45) DEFAULT NULL,
+  `halfWaveStationEncoder` FLOAT DEFAULT NULL,
+  `imageId` VARCHAR(45) DEFAULT NULL,
+  `instrumentName` VARCHAR(45) DEFAULT NULL,
+  `julianDate` FLOAT DEFAULT NULL,
+  `lstObservation` VARCHAR(45) DEFAULT NULL,
+  `slitmaskBarcode` VARCHAR(45) DEFAULT NULL,
+  `slitmaskType` VARCHAR(45) DEFAULT NULL,
+  `numberOfCcds` TINYINT DEFAULT NULL,
+  `numberOfExtensions` TINYINT DEFAULT NULL,
+  `numberOfWindows` INT DEFAULT NULL,
+  `objectName` VARCHAR(45) DEFAULT NULL,
+  `observationMode` VARCHAR(45) DEFAULT NULL,
+  `observationType` VARCHAR(45) DEFAULT NULL,
+  `pfsiControlSystemVersion` VARCHAR(45) DEFAULT NULL,
+  `pixelScale` FLOAT DEFAULT NULL,
+  `polarizationConfig` VARCHAR(45) DEFAULT NULL,
+  `pfsiProcedure` VARCHAR(45) DEFAULT NULL,
+  `pupilEnd` FLOAT DEFAULT NULL,
+  `quaterWaveSteps` TINYINT DEFAULT NULL,
+  `quaterWaveAngle` FLOAT DEFAULT NULL,
+  `quaterWaveStation` VARCHAR(45) DEFAULT NULL,
+  `quaterWaveStationEncoder` VARCHAR(45) DEFAULT NULL,
+  `noiseReadout` FLOAT DEFAULT NULL,
+  `ccdReadoutSpeed` VARCHAR(45) DEFAULT NULL,
+  `pixelSaturation` TINYINT DEFAULT NULL,
+  `shutterMachineState` VARCHAR(45) DEFAULT NULL,
+  `slitmaskStation` FLOAT DEFAULT NULL,
+  `slitmaskStationSteps` FLOAT DEFAULT NULL,
+  `slitmaskStationVolts` FLOAT DEFAULT NULL,
+  `slitmasMachineState` VARCHAR(45) DEFAULT NULL,
+  `slitmaskMagazineSteps` TINYINT DEFAULT NULL,
+  `slitmaskVolts` FLOAT DEFAULT NULL,
+  `startOfObservationTime` VARCHAR(45) DEFAULT NULL,
+  `systemTyme` VARCHAR(45) DEFAULT NULL,
+  `fitsHeaderVersion` VARCHAR(45) DEFAULT NULL,
+  `spatialCoordinate` VARCHAR(45) DEFAULT NULL,
+  `waveplateMachineState` VARCHAR(45) DEFAULT NULL,
+  `polarimetryProcedurePattern` VARCHAR(45) DEFAULT NULL,
+  `crossTalk` FLOAT DEFAULT NULL,
+  PRIMARY KEY (`rssId`),
+  KEY `fk_RSSTelescope_idx` (`telescopeId`),
+  CONSTRAINT `fk_RSSTelescope` FOREIGN KEY (`telescopeId`) REFERENCES `Telescope` (`telescopeId`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `RSS`
+--
+
+DROP TABLE IF EXISTS `Salticam`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `Salticam` (
+  `salticamId` int(11) NOT NULL AUTO_INCREMENT,
+  `telescopeId` int(11) NOT NULL,
+  `amplifierSection` VARCHAR(45) DEFAULT NULL,
+  `amplifierTemperature` FLOAT DEFAULT NULL,
+  `amplifierReadoutX` TINYINT DEFAULT NULL,
+  `amplifierReadoutY` TINYINT DEFAULT NULL,
+  `biasSection` VARCHAR(45) DEFAULT NULL,
+  `beamSplitterScale` FLOAT DEFAULT NULL,
+  `beamSplitterZero` FLOAT DEFAULT NULL,
+  `detectorFocusPosition` TINYINT DEFAULT NULL,
+  `numberOfAmplifiers` TINYINT DEFAULT NULL,
+  `ccdSection` VARCHAR(45) DEFAULT NULL,
+  `ccdSummation` VARCHAR(45) DEFAULT NULL,
+  `ccdTemperature` FLOAT DEFAULT NULL,
+  `ccdType` VARCHAR(45) DEFAULT NULL,
+  `transformationMatrix11` FLOAT DEFAULT NULL,
+  `transformationMatrix11A` FLOAT DEFAULT NULL,
+  `transformationMatrix12` FLOAT DEFAULT NULL,
+  `transformationMatrix12A` FLOAT DEFAULT NULL,
+  `transformationMatrix21` FLOAT DEFAULT NULL,
+  `transformationMatrix21A` FLOAT DEFAULT NULL,
+  `transformationMatrix22` FLOAT DEFAULT NULL,
+  `transformationMatrix22A` FLOAT DEFAULT NULL,
+  `coldEndTemperature` FLOAT DEFAULT NULL,
+  `pixelCoordinatePointX1` FLOAT DEFAULT NULL,
+  `pixelCoordinatePointX1A` FLOAT DEFAULT NULL,
+  `pixelCoordinatePointX2` FLOAT DEFAULT NULL,
+  `pixelCoordinatePointX2A` FLOAT DEFAULT NULL,
+  `rightAsertionPoint1` FLOAT DEFAULT NULL,
+  `spatialCoordinatePoint1A` FLOAT DEFAULT NULL,
+  `declanationPoint2` FLOAT DEFAULT NULL,
+  `spacialCoordinatePoint2A` FLOAT DEFAULT NULL,
+  `gnomicProjection1` VARCHAR(45) DEFAULT NULL,
+  `cartesianProjection1A` VARCHAR(45) DEFAULT NULL,
+  `gnomicProjection2` VARCHAR(45) DEFAULT NULL,
+  `cartesianProjection2A` VARCHAR(45) DEFAULT NULL,
+  `anglesDegreesAlways1` VARCHAR(45) DEFAULT NULL,
+  `anglesDegreesAlways2` VARCHAR(45) DEFAULT NULL,
+  `dataSection` VARCHAR(45) DEFAULT NULL,
+  `dateOfObservation` VARCHAR(45) DEFAULT NULL,
+  `detectorSection` VARCHAR(45) DEFAULT NULL,
+  `detectorSize` VARCHAR(45) DEFAULT NULL,
+  `detectorSoftwareVersion` VARCHAR(45) DEFAULT NULL,
+  `coolerBoxTemperature` FLOAT DEFAULT NULL,
+  `exposureTime` FLOAT DEFAULT NULL,
+  `filterPosition` TINYINT DEFAULT NULL,
+  `filterName` VARCHAR(45) DEFAULT NULL,
+  `gain` FLOAT DEFAULT NULL,
+  `gain1` FLOAT DEFAULT NULL,
+  `gainSet` VARCHAR(45) DEFAULT NULL,
+  `imageId` VARCHAR(45) DEFAULT NULL,
+  `instrumentName` VARCHAR(45) DEFAULT NULL,
+  `julianDate` FLOAT DEFAULT NULL,
+  `lstObservation` VARCHAR(45) DEFAULT NULL,
+  `numberOfCcds` TINYINT DEFAULT NULL,
+  `numberOfExtensions` TINYINT DEFAULT NULL,
+  `numberOfWindows` INT DEFAULT NULL,
+  `objectName` VARCHAR(45) DEFAULT NULL,
+  `observationMode` VARCHAR(45) DEFAULT NULL,
+  `observationType` VARCHAR(45) DEFAULT NULL,
+  `pixelScale` FLOAT DEFAULT NULL,
+  `pupilEnd` FLOAT DEFAULT NULL,
+  `noiseReadout` FLOAT DEFAULT NULL,
+  `ccdReadoutSpeed` VARCHAR(45) DEFAULT NULL,
+  `pixelSaturation` TINYINT DEFAULT NULL,
+  `startOfObservationTime` VARCHAR(45) DEFAULT NULL,
+  `systemTyme` VARCHAR(45) DEFAULT NULL,
+  `fitsHeaderVersion` VARCHAR(45) DEFAULT NULL,
+  `spatialCoordinate` VARCHAR(45) DEFAULT NULL,
+  `crossTalk` FLOAT DEFAULT NULL,
+  PRIMARY KEY (`salticamId`),
+  KEY `fk_SalticamTelescope_idx` (`telescopeId`),
+  CONSTRAINT `fk_SalticamTelescope` FOREIGN KEY (`telescopeId`) REFERENCES `Telescope` (`telescopeId`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -278,27 +392,10 @@ DROP TABLE IF EXISTS `Institution`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Institution` (
-  `id` int(11) NOT NULL,
+  `institutionId` int(11) NOT NULL AUTO_INCREMENT,
   `institutionName` varchar(45) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `Instruments`
---
-
-DROP TABLE IF EXISTS `Instruments`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `Instruments` (
-  `instrument_id` int(11) NOT NULL AUTO_INCREMENT,
-  `instrumentName` varchar(45) DEFAULT NULL,
-  `Telescopes_telescope_id` int(11) NOT NULL,
-  PRIMARY KEY (`instrument_id`),
-  KEY `instrument_idx` (`instrumentName`),
-  KEY `fk_Instruments_Telescopes1_idx` (`Telescopes_telescope_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+  PRIMARY KEY (`institutionId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -309,13 +406,17 @@ DROP TABLE IF EXISTS `Observation`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Observation` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `telescopeId` varchar(45) DEFAULT NULL,
+  `observationId` int(11) NOT NULL AUTO_INCREMENT,
+  `telescopeId` int(11) DEFAULT NULL,
   `telescopeObservationId` varchar(45) DEFAULT NULL,
   `startTime` varchar(45) DEFAULT NULL,
-  `statusId` varchar(45) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+  `observationStatusId` int(11) DEFAULT NULL,
+  PRIMARY KEY (`observationId`),
+  KEY `fk_observationStatus_idx` (`observationStatusId`),
+  KEY `fk_ObservationTelescope_idx` (`telescopeId`),
+  CONSTRAINT `fk_ObservationTelescope` FOREIGN KEY (`telescopeId`) REFERENCES `Telescope` (`telescopeId`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_observationStatus` FOREIGN KEY (`observationStatusId`) REFERENCES `ObservationStatus` (`observationStatusId`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -326,27 +427,10 @@ DROP TABLE IF EXISTS `ObservationStatus`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ObservationStatus` (
-  `id` int(11) NOT NULL,
+  `observationStatusId` int(11) NOT NULL,
   `status` varchar(45) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `Observatories`
---
-
-DROP TABLE IF EXISTS `Observatories`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `Observatories` (
-  `observatory_id` int(11) NOT NULL AUTO_INCREMENT,
-  `observatoryName` varchar(45) DEFAULT NULL,
-  `latitude` varchar(45) DEFAULT NULL,
-  `longitude` varchar(45) DEFAULT NULL,
-  `altitude` varchar(45) DEFAULT NULL,
-  PRIMARY KEY (`observatory_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+  PRIMARY KEY (`observationStatusId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -357,15 +441,15 @@ DROP TABLE IF EXISTS `Proposal`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Proposal` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `proposalId` int(11) NOT NULL AUTO_INCREMENT,
   `proposalCode` varchar(45) DEFAULT NULL,
   `date` varchar(45) DEFAULT NULL,
   `principalInvestigatorGivenName` varchar(45) DEFAULT NULL,
   `principalInvestigatorFamilyName` varchar(45) DEFAULT NULL,
   `title` varchar(255) DEFAULT NULL,
-  `lastUpdated` varchar(45) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+  `lastUpdated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`proposalId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -377,647 +461,12 @@ DROP TABLE IF EXISTS `ProposalInvestigator`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ProposalInvestigator` (
   `proposalId` int(11) NOT NULL,
-  `userId` varchar(45) DEFAULT NULL,
-  PRIMARY KEY (`proposalId`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `Proposal_Status`
---
-
-DROP TABLE IF EXISTS `Proposal_Status`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `Proposal_Status` (
-  `id` int(11) NOT NULL,
-  `status` varchar(45) DEFAULT NULL,
-  `Proposal_Statuscol` varchar(45) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `SHOC`
---
-
-DROP TABLE IF EXISTS `SHOC`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `SHOC` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `telescopeName` varchar(45) DEFAULT NULL,
-  `date` varchar(45) DEFAULT NULL,
-  `observer` varchar(45) DEFAULT NULL,
-  `objectName` varchar(45) DEFAULT NULL,
-  `exposureMode` varchar(45) DEFAULT NULL,
-  `filter` varchar(45) DEFAULT NULL,
-  `humidity` varchar(45) DEFAULT NULL,
-  `rotater` varchar(45) DEFAULT NULL,
-  `telFocus` varchar(45) DEFAULT NULL,
-  `wheelA` varchar(45) DEFAULT NULL,
-  `wheelB` varchar(45) DEFAULT NULL,
-  `zenith` varchar(45) DEFAULT NULL,
-  `headModel` varchar(45) DEFAULT NULL,
-  `acquisitionMode` varchar(45) DEFAULT NULL,
-  `readMode` varchar(45) DEFAULT NULL,
-  `imageRect` varchar(45) DEFAULT NULL,
-  `hbin` varchar(45) DEFAULT NULL,
-  `vbin` varchar(45) DEFAULT NULL,
-  `exposure` varchar(45) DEFAULT NULL,
-  `serialNumber` varchar(45) DEFAULT NULL,
-  `filterA` varchar(45) DEFAULT NULL,
-  `filterB` varchar(45) DEFAULT NULL,
-  `hourAngle` varchar(45) DEFAULT NULL,
-  `instrumentAngle` varchar(45) DEFAULT NULL,
-  `triggers` varchar(45) DEFAULT NULL,
-  `instrumentName` varchar(45) DEFAULT NULL,
-  `Observation_id` int(11) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `fk_SHOC_Observation1_idx` (`Observation_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `SIRIUS`
---
-
-DROP TABLE IF EXISTS `SIRIUS`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `SIRIUS` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `telescopeName` varchar(45) DEFAULT NULL,
-  `date` varchar(45) DEFAULT NULL,
-  `observer` varchar(45) DEFAULT NULL,
-  `objectName` varchar(45) DEFAULT NULL,
-  `exposureMode` varchar(45) DEFAULT NULL,
-  `filter` varchar(45) DEFAULT NULL,
-  `humidity` varchar(45) DEFAULT NULL,
-  `rotater` varchar(45) DEFAULT NULL,
-  `telFocus` varchar(45) DEFAULT NULL,
-  `wheelA` varchar(45) DEFAULT NULL,
-  `wheelB` varchar(45) DEFAULT NULL,
-  `zenith` varchar(45) DEFAULT NULL,
-  `headModel` varchar(45) DEFAULT NULL,
-  `acquisitionMode` varchar(45) DEFAULT NULL,
-  `readMode` varchar(45) DEFAULT NULL,
-  `imageRect` varchar(45) DEFAULT NULL,
-  `hbin` varchar(45) DEFAULT NULL,
-  `vbin` varchar(45) DEFAULT NULL,
-  `exposure` varchar(45) DEFAULT NULL,
-  `serialNumber` varchar(45) DEFAULT NULL,
-  `filterA` varchar(45) DEFAULT NULL,
-  `filterB` varchar(45) DEFAULT NULL,
-  `hourAngle` varchar(45) DEFAULT NULL,
-  `instrumentAngle` varchar(45) DEFAULT NULL,
-  `triggers` varchar(45) DEFAULT NULL,
-  `instrumentName` varchar(45) DEFAULT NULL,
-  `Observation_id` int(11) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `fk_SHOC_Observation1_idx` (`Observation_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `SPUPNIC`
---
-
-DROP TABLE IF EXISTS `SPUPNIC`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `SPUPNIC` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `object` varchar(45) DEFAULT NULL,
-  `observer` varchar(45) DEFAULT NULL,
-  `telescope` varchar(45) DEFAULT NULL,
-  `instrument` varchar(45) DEFAULT NULL,
-  `date_obs` varchar(45) DEFAULT NULL,
-  `grating` varchar(45) DEFAULT NULL,
-  `grating_angle` varchar(45) DEFAULT NULL,
-  `filter` varchar(45) DEFAULT NULL,
-  `exposure` varchar(45) DEFAULT NULL,
-  `exposure_type` varchar(45) DEFAULT NULL,
-  `arc_lamp` varchar(45) DEFAULT NULL,
-  `ra` varchar(45) DEFAULT NULL,
-  `declination` varchar(45) DEFAULT NULL,
-  `Observation_id` int(11) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `fk_SPUPNIC_Observation1_idx` (`Observation_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `STE`
---
-
-DROP TABLE IF EXISTS `STE`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `STE` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `telescopeName` varchar(45) DEFAULT NULL,
-  `date` varchar(45) DEFAULT NULL,
-  `observer` varchar(45) DEFAULT NULL,
-  `objectName` varchar(45) DEFAULT NULL,
-  `exposureTime` varchar(45) DEFAULT NULL,
-  `filter` varchar(45) DEFAULT NULL,
-  `rotater` varchar(45) DEFAULT NULL,
-  `telFocus` varchar(45) DEFAULT NULL,
-  `wheelA` varchar(45) DEFAULT NULL,
-  `wheelB` varchar(45) DEFAULT NULL,
-  `zenith` varchar(45) DEFAULT NULL,
-  `headModel` varchar(45) DEFAULT NULL,
-  `acquisitionMode` varchar(45) DEFAULT NULL,
-  `readMode` varchar(45) DEFAULT NULL,
-  `imageRect` varchar(45) DEFAULT NULL,
-  `hbin` varchar(45) DEFAULT NULL,
-  `vbin` varchar(45) DEFAULT NULL,
-  `exposure` varchar(45) DEFAULT NULL,
-  `serialNumber` varchar(45) DEFAULT NULL,
-  `filterA` varchar(45) DEFAULT NULL,
-  `filterB` varchar(45) DEFAULT NULL,
-  `hourAngle` varchar(45) DEFAULT NULL,
-  `instrumentAngle` varchar(45) DEFAULT NULL,
-  `triggers` varchar(45) DEFAULT NULL,
-  `instrumentName` varchar(45) DEFAULT NULL,
-  `Observation_id` int(11) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `fk_SHOC_Observation1_idx` (`Observation_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `Salticam`
---
-
-DROP TABLE IF EXISTS `Salticam`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `Salticam` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `telescopeName` varchar(45) DEFAULT NULL,
-  `dateObserved` varchar(45) DEFAULT NULL,
-  `observer` varchar(45) DEFAULT NULL,
-  `objectName` varchar(45) DEFAULT NULL,
-  `obsMode` varchar(45) DEFAULT NULL,
-  `instrumentName` varchar(45) DEFAULT NULL,
-  `rightAscension` varchar(45) DEFAULT NULL,
-  `declination` varchar(45) DEFAULT NULL,
-  `exposureTime` varchar(45) DEFAULT NULL,
-  `airMass` varchar(45) DEFAULT NULL,
-  `detectorMode` varchar(45) DEFAULT NULL,
-  `observationType` varchar(45) DEFAULT NULL,
-  `ccdType` varchar(45) DEFAULT NULL,
-  `projectID` varchar(45) DEFAULT NULL,
-  `siteLatitude` varchar(45) DEFAULT NULL,
-  `siteLongitude` varchar(45) DEFAULT NULL,
-  `detectorSoftwareVersion` varchar(45) DEFAULT NULL,
-  `julianDay` varchar(45) DEFAULT NULL,
-  `moonAngle` varchar(45) DEFAULT NULL,
-  `gainSet` varchar(45) DEFAULT NULL,
-  `readOutSpeed` varchar(45) DEFAULT NULL,
-  `filter` varchar(45) DEFAULT NULL,
-  `filterPosition` varchar(45) DEFAULT NULL,
-  `cameraFocus` varchar(45) DEFAULT NULL,
-  `telescopeFocus` varchar(45) DEFAULT NULL,
-  `photometry` varchar(45) DEFAULT NULL,
-  `seeing` varchar(45) DEFAULT NULL,
-  `transparency` varchar(45) DEFAULT NULL,
-  `blockID` varchar(45) DEFAULT NULL,
-  `telescopeRightAscension` varchar(45) DEFAULT NULL,
-  `telescopeDeclination` varchar(45) DEFAULT NULL,
-  `equinox` varchar(45) DEFAULT NULL,
-  `epoch` varchar(45) DEFAULT NULL,
-  `timeObserved` varchar(45) DEFAULT NULL,
-  `Observation_id` int(11) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `fk_SHOC_Observation1_idx` (`Observation_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `SalticamTech`
---
-
-DROP TABLE IF EXISTS `SalticamTech`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `SalticamTech` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `properMotionRA` varchar(45) DEFAULT NULL,
-  `properMotionDEC` varchar(45) DEFAULT NULL,
-  `observer` varchar(45) DEFAULT NULL,
-  `objectName` varchar(45) DEFAULT NULL,
-  `obsMode` varchar(45) DEFAULT NULL,
-  `instrumentName` varchar(45) DEFAULT NULL,
-  `rightAscension` varchar(45) DEFAULT NULL,
-  `declination` varchar(45) DEFAULT NULL,
-  `exposureTime` varchar(45) DEFAULT NULL,
-  `airMass` varchar(45) DEFAULT NULL,
-  `detectorMode` varchar(45) DEFAULT NULL,
-  `observationType` varchar(45) DEFAULT NULL,
-  `ccdType` varchar(45) DEFAULT NULL,
-  `imageRect` varchar(45) DEFAULT NULL,
-  `hbin` varchar(45) DEFAULT NULL,
-  `vbin` varchar(45) DEFAULT NULL,
-  `exposure` varchar(45) DEFAULT NULL,
-  `serialNumber` varchar(45) DEFAULT NULL,
-  `filterA` varchar(45) DEFAULT NULL,
-  `filterB` varchar(45) DEFAULT NULL,
-  `hourAngle` varchar(45) DEFAULT NULL,
-  `instrumentAngle` varchar(45) DEFAULT NULL,
-  `triggers` varchar(45) DEFAULT NULL,
-  `projectID` varchar(45) DEFAULT NULL,
-  `Observation_id` int(11) NOT NULL,
-  `siteLatitude` varchar(45) DEFAULT NULL,
-  `siteLongitude` varchar(45) DEFAULT NULL,
-  `detectorSoftwareVersion` varchar(45) DEFAULT NULL,
-  `julianDay` varchar(45) DEFAULT NULL,
-  `moonAngle` varchar(45) DEFAULT NULL,
-  `gainSet` varchar(45) DEFAULT NULL,
-  `readOutSpeed` varchar(45) DEFAULT NULL,
-  `filter` varchar(45) DEFAULT NULL,
-  `filterPosition` varchar(45) DEFAULT NULL,
-  `cameraFocus` varchar(45) DEFAULT NULL,
-  `telescopeFocus` varchar(45) DEFAULT NULL,
-  `photometry` varchar(45) DEFAULT NULL,
-  `seeing` varchar(45) DEFAULT NULL,
-  `transparancy` varchar(45) DEFAULT NULL,
-  `blockID` varchar(45) DEFAULT NULL,
-  `imageID` varchar(45) DEFAULT NULL,
-  `telescopeRightAscension` varchar(45) DEFAULT NULL,
-  `telescopeDeclination` varchar(45) DEFAULT NULL,
-  `pupilStart` varchar(45) DEFAULT NULL,
-  `pupilEnd` varchar(45) DEFAULT NULL,
-  `pixelScale` varchar(45) DEFAULT NULL,
-  `numberOfAmplifiers` varchar(45) DEFAULT NULL,
-  `numberOfCCD` varchar(45) DEFAULT NULL,
-  `ccdSum` varchar(45) DEFAULT NULL,
-  `telescopePositionAngle` varchar(45) DEFAULT NULL,
-  `pelliclePosition` varchar(45) DEFAULT NULL,
-  `instrumentPort` varchar(45) DEFAULT NULL,
-  `telescopeEquinox` varchar(45) DEFAULT NULL,
-  `telescopeEpoch` varchar(45) DEFAULT NULL,
-  `telescopeHourAngle` varchar(45) DEFAULT NULL,
-  `telescopeAltitude` varchar(45) DEFAULT NULL,
-  `telescope` varchar(45) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `fk_SHOC_Observation1_idx` (`Observation_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `ShocTech`
---
-
-DROP TABLE IF EXISTS `ShocTech`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `ShocTech` (
-  `id` int(11) NOT NULL,
-  `BZERO` varchar(45) DEFAULT NULL,
-  `BSCALE` varchar(45) DEFAULT NULL,
-  `HEAD` varchar(45) DEFAULT NULL,
-  `IMGRECT` varchar(45) DEFAULT NULL,
-  `HBIN` varchar(45) DEFAULT NULL,
-  `VBIN` varchar(45) DEFAULT NULL,
-  `SUBRECT` varchar(45) DEFAULT NULL,
-  `DATATYPE` varchar(45) DEFAULT NULL,
-  `XTYPE` varchar(45) DEFAULT NULL,
-  `XUNIT` varchar(45) DEFAULT NULL,
-  `RAYWAVE` varchar(45) DEFAULT NULL,
-  `CALBWVNM` varchar(45) DEFAULT NULL,
-  `TRIGGER` varchar(45) DEFAULT NULL,
-  `CALIB` varchar(45) DEFAULT NULL,
-  `DLLVER` varchar(45) DEFAULT NULL,
-  `EXPOSURE` varchar(45) DEFAULT NULL,
-  `TEMP` varchar(45) DEFAULT NULL,
-  `READTIME` varchar(45) DEFAULT NULL,
-  `OPERATN` varchar(45) DEFAULT NULL,
-  `GAIN` varchar(45) DEFAULT NULL,
-  `EMREALGN` varchar(45) DEFAULT NULL,
-  `VCLKAMP` varchar(45) DEFAULT NULL,
-  `VSHIFT` varchar(45) DEFAULT NULL,
-  `OUTPTAMP` varchar(45) DEFAULT NULL,
-  `PREAMP` varchar(45) DEFAULT NULL,
-  `SERNO` varchar(45) DEFAULT NULL,
-  `UNSTTEMP` varchar(45) DEFAULT NULL,
-  `BLCLAMP` varchar(45) DEFAULT NULL,
-  `PRECAN` varchar(45) DEFAULT NULL,
-  `FLIPX` varchar(45) DEFAULT NULL,
-  `FLIPY` varchar(45) DEFAULT NULL,
-  `CNTCVTMD` varchar(45) DEFAULT NULL,
-  `CNTCVT` varchar(45) DEFAULT NULL,
-  `DTNWLGTH` varchar(45) DEFAULT NULL,
-  `SNTVTY` varchar(45) DEFAULT NULL,
-  `SPSNFLTR` varchar(45) DEFAULT NULL,
-  `THRSHLD` varchar(45) DEFAULT NULL,
-  `PCNTENLD` varchar(45) DEFAULT NULL,
-  `NSETHSLD` varchar(45) DEFAULT NULL,
-  `AVGFTRMD` varchar(45) DEFAULT NULL,
-  `AVGFCTR` varchar(45) DEFAULT NULL,
-  `FRMCNT` varchar(45) DEFAULT NULL,
-  `PORTMODE` varchar(45) DEFAULT NULL,
-  `LSHEIGHT` varchar(45) DEFAULT NULL,
-  `LSSPEED` varchar(45) DEFAULT NULL,
-  `LSALTDIR` varchar(45) DEFAULT NULL,
-  `LSCTRL` varchar(45) DEFAULT NULL,
-  `LSDIR` varchar(45) DEFAULT NULL,
-  `FKSMODE` varchar(45) DEFAULT NULL,
-  `FKTMODE` varchar(45) DEFAULT NULL,
-  `DATE` varchar(45) DEFAULT NULL,
-  `FRAME` varchar(45) DEFAULT NULL,
-  `ESHTMODE` varchar(45) DEFAULT NULL,
-  `IRIGDATA` varchar(45) DEFAULT NULL,
-  `AIRMASS` varchar(45) DEFAULT NULL,
-  `DATE-OBS` varchar(45) DEFAULT NULL,
-  `DOMEPOS` varchar(45) DEFAULT NULL,
-  `FILTERA` varchar(45) DEFAULT NULL,
-  `FILTERB` varchar(45) DEFAULT NULL,
-  `GPS-INT` varchar(45) DEFAULT NULL,
-  `GPSSTART` varchar(45) DEFAULT NULL,
-  `HA` varchar(45) DEFAULT NULL,
-  `HUMIDIT` varchar(45) DEFAULT NULL,
-  `INSTANGL` varchar(45) DEFAULT NULL,
-  `INSTRUME` varchar(45) DEFAULT NULL,
-  `INSTSWV` varchar(45) DEFAULT NULL,
-  `OBJDEC` varchar(45) DEFAULT NULL,
-  `OBJECT` varchar(45) DEFAULT NULL,
-  `OBJEPOCH` varchar(45) DEFAULT NULL,
-  `OBJEQUIN` varchar(45) DEFAULT NULL,
-  `OBJRA` varchar(45) DEFAULT NULL,
-  `OBSERVER` varchar(45) DEFAULT NULL,
-  `OBSTYPE` varchar(45) DEFAULT NULL,
-  `POSA` varchar(45) DEFAULT NULL,
-  `POSB` varchar(45) DEFAULT NULL,
-  `RELSKYT` varchar(45) DEFAULT NULL,
-  `SEEING` varchar(45) DEFAULT NULL,
-  `TELDEC` varchar(45) DEFAULT NULL,
-  `TELESCOP` varchar(45) DEFAULT NULL,
-  `TELFOCUS` varchar(45) DEFAULT NULL,
-  `TELRA` varchar(45) DEFAULT NULL,
-  `TMTDEW` varchar(45) DEFAULT NULL,
-  `WHEELA` varchar(45) DEFAULT NULL,
-  `WHEELB` varchar(45) DEFAULT NULL,
-  `WIND` varchar(45) DEFAULT NULL,
-  `ZD` varchar(45) DEFAULT NULL,
-  `SHOC_id` int(11) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `fk_SHOC_TECH_SHOC1_idx` (`SHOC_id`),
-  CONSTRAINT `fk_SHOC_TECH_SHOC1` FOREIGN KEY (`SHOC_id`) REFERENCES `SHOC` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `SimbadClassification`
---
-
-DROP TABLE IF EXISTS `SimbadClassification`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `SimbadClassification` (
-  `numericCode` varchar(45) DEFAULT NULL,
-  `standardName` varchar(45) DEFAULT NULL,
-  `condition` varchar(45) DEFAULT NULL,
-  `extendedExplanation` varchar(45) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `SiriusTech`
---
-
-DROP TABLE IF EXISTS `SiriusTech`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `SiriusTech` (
-  `id` int(11) NOT NULL,
-  `BZERO` varchar(45) DEFAULT NULL,
-  `BSCALE` varchar(45) DEFAULT NULL,
-  `HEAD` varchar(45) DEFAULT NULL,
-  `IMGRECT` varchar(45) DEFAULT NULL,
-  `HBIN` varchar(45) DEFAULT NULL,
-  `VBIN` varchar(45) DEFAULT NULL,
-  `SUBRECT` varchar(45) DEFAULT NULL,
-  `DATATYPE` varchar(45) DEFAULT NULL,
-  `XTYPE` varchar(45) DEFAULT NULL,
-  `XUNIT` varchar(45) DEFAULT NULL,
-  `RAYWAVE` varchar(45) DEFAULT NULL,
-  `CALBWVNM` varchar(45) DEFAULT NULL,
-  `TRIGGER` varchar(45) DEFAULT NULL,
-  `CALIB` varchar(45) DEFAULT NULL,
-  `DLLVER` varchar(45) DEFAULT NULL,
-  `EXPOSURE` varchar(45) DEFAULT NULL,
-  `TEMP` varchar(45) DEFAULT NULL,
-  `READTIME` varchar(45) DEFAULT NULL,
-  `OPERATN` varchar(45) DEFAULT NULL,
-  `GAIN` varchar(45) DEFAULT NULL,
-  `EMREALGN` varchar(45) DEFAULT NULL,
-  `VCLKAMP` varchar(45) DEFAULT NULL,
-  `VSHIFT` varchar(45) DEFAULT NULL,
-  `OUTPTAMP` varchar(45) DEFAULT NULL,
-  `PREAMP` varchar(45) DEFAULT NULL,
-  `SERNO` varchar(45) DEFAULT NULL,
-  `UNSTTEMP` varchar(45) DEFAULT NULL,
-  `BLCLAMP` varchar(45) DEFAULT NULL,
-  `PRECAN` varchar(45) DEFAULT NULL,
-  `FLIPX` varchar(45) DEFAULT NULL,
-  `FLIPY` varchar(45) DEFAULT NULL,
-  `CNTCVTMD` varchar(45) DEFAULT NULL,
-  `CNTCVT` varchar(45) DEFAULT NULL,
-  `DTNWLGTH` varchar(45) DEFAULT NULL,
-  `SNTVTY` varchar(45) DEFAULT NULL,
-  `SPSNFLTR` varchar(45) DEFAULT NULL,
-  `THRSHLD` varchar(45) DEFAULT NULL,
-  `PCNTENLD` varchar(45) DEFAULT NULL,
-  `NSETHSLD` varchar(45) DEFAULT NULL,
-  `AVGFTRMD` varchar(45) DEFAULT NULL,
-  `AVGFCTR` varchar(45) DEFAULT NULL,
-  `FRMCNT` varchar(45) DEFAULT NULL,
-  `PORTMODE` varchar(45) DEFAULT NULL,
-  `LSHEIGHT` varchar(45) DEFAULT NULL,
-  `LSSPEED` varchar(45) DEFAULT NULL,
-  `LSALTDIR` varchar(45) DEFAULT NULL,
-  `LSCTRL` varchar(45) DEFAULT NULL,
-  `LSDIR` varchar(45) DEFAULT NULL,
-  `FKSMODE` varchar(45) DEFAULT NULL,
-  `FKTMODE` varchar(45) DEFAULT NULL,
-  `DATE` varchar(45) DEFAULT NULL,
-  `FRAME` varchar(45) DEFAULT NULL,
-  `ESHTMODE` varchar(45) DEFAULT NULL,
-  `IRIGDATA` varchar(45) DEFAULT NULL,
-  `AIRMASS` varchar(45) DEFAULT NULL,
-  `DATE-OBS` varchar(45) DEFAULT NULL,
-  `DOMEPOS` varchar(45) DEFAULT NULL,
-  `FILTERA` varchar(45) DEFAULT NULL,
-  `FILTERB` varchar(45) DEFAULT NULL,
-  `GPS-INT` varchar(45) DEFAULT NULL,
-  `GPSSTART` varchar(45) DEFAULT NULL,
-  `HA` varchar(45) DEFAULT NULL,
-  `HUMIDIT` varchar(45) DEFAULT NULL,
-  `INSTANGL` varchar(45) DEFAULT NULL,
-  `INSTRUME` varchar(45) DEFAULT NULL,
-  `INSTSWV` varchar(45) DEFAULT NULL,
-  `OBJDEC` varchar(45) DEFAULT NULL,
-  `OBJECT` varchar(45) DEFAULT NULL,
-  `OBJEPOCH` varchar(45) DEFAULT NULL,
-  `OBJEQUIN` varchar(45) DEFAULT NULL,
-  `OBJRA` varchar(45) DEFAULT NULL,
-  `OBSERVER` varchar(45) DEFAULT NULL,
-  `OBSTYPE` varchar(45) DEFAULT NULL,
-  `POSA` varchar(45) DEFAULT NULL,
-  `POSB` varchar(45) DEFAULT NULL,
-  `RELSKYT` varchar(45) DEFAULT NULL,
-  `SEEING` varchar(45) DEFAULT NULL,
-  `TELDEC` varchar(45) DEFAULT NULL,
-  `TELESCOP` varchar(45) DEFAULT NULL,
-  `TELFOCUS` varchar(45) DEFAULT NULL,
-  `TELRA` varchar(45) DEFAULT NULL,
-  `TMTDEW` varchar(45) DEFAULT NULL,
-  `WHEELA` varchar(45) DEFAULT NULL,
-  `WHEELB` varchar(45) DEFAULT NULL,
-  `WIND` varchar(45) DEFAULT NULL,
-  `ZD` varchar(45) DEFAULT NULL,
-  `SHOC_id` int(11) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `fk_SHOC_TECH_SHOC1_idx` (`SHOC_id`),
-  CONSTRAINT `fk_SHOC_TECH_SHOC10` FOREIGN KEY (`SHOC_id`) REFERENCES `SHOC` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `SpupnicTech`
---
-
-DROP TABLE IF EXISTS `SpupnicTech`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `SpupnicTech` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `u-start` varchar(45) DEFAULT NULL,
-  `lc-start` varchar(45) DEFAULT NULL,
-  `hbin` varchar(45) DEFAULT NULL,
-  `vbin` varchar(45) DEFAULT NULL,
-  `slitpos` varchar(45) DEFAULT NULL,
-  `slitwid` varchar(45) DEFAULT NULL,
-  `frame` varchar(45) DEFAULT NULL,
-  `binning` varchar(45) DEFAULT NULL,
-  `ccd-sum` varchar(45) DEFAULT NULL,
-  `sgain` varchar(45) DEFAULT NULL,
-  `srd-noise` varchar(45) DEFAULT NULL,
-  `ccd-temp` varchar(45) DEFAULT NULL,
-  `cf-temp` varchar(45) DEFAULT NULL,
-  `focus-pos` varchar(45) DEFAULT NULL,
-  `hart-pos` varchar(45) DEFAULT NULL,
-  `hart-seq` varchar(45) DEFAULT NULL,
-  `SPUPNIC_id` int(11) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `fk_SPUPNIC_TECH_SPUPNIC1_idx` (`SPUPNIC_id`),
-  CONSTRAINT `fk_SPUPNIC_TECH_SPUPNIC1` FOREIGN KEY (`SPUPNIC_id`) REFERENCES `SPUPNIC` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `SteTech`
---
-
-DROP TABLE IF EXISTS `SteTech`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `SteTech` (
-  `id` int(11) NOT NULL,
-  `BZERO` varchar(45) DEFAULT NULL,
-  `BSCALE` varchar(45) DEFAULT NULL,
-  `HEAD` varchar(45) DEFAULT NULL,
-  `IMGRECT` varchar(45) DEFAULT NULL,
-  `HBIN` varchar(45) DEFAULT NULL,
-  `VBIN` varchar(45) DEFAULT NULL,
-  `SUBRECT` varchar(45) DEFAULT NULL,
-  `DATATYPE` varchar(45) DEFAULT NULL,
-  `XTYPE` varchar(45) DEFAULT NULL,
-  `XUNIT` varchar(45) DEFAULT NULL,
-  `RAYWAVE` varchar(45) DEFAULT NULL,
-  `CALBWVNM` varchar(45) DEFAULT NULL,
-  `TRIGGER` varchar(45) DEFAULT NULL,
-  `CALIB` varchar(45) DEFAULT NULL,
-  `DLLVER` varchar(45) DEFAULT NULL,
-  `EXPOSURE` varchar(45) DEFAULT NULL,
-  `TEMP` varchar(45) DEFAULT NULL,
-  `READTIME` varchar(45) DEFAULT NULL,
-  `OPERATN` varchar(45) DEFAULT NULL,
-  `GAIN` varchar(45) DEFAULT NULL,
-  `EMREALGN` varchar(45) DEFAULT NULL,
-  `VCLKAMP` varchar(45) DEFAULT NULL,
-  `VSHIFT` varchar(45) DEFAULT NULL,
-  `OUTPTAMP` varchar(45) DEFAULT NULL,
-  `PREAMP` varchar(45) DEFAULT NULL,
-  `SERNO` varchar(45) DEFAULT NULL,
-  `UNSTTEMP` varchar(45) DEFAULT NULL,
-  `BLCLAMP` varchar(45) DEFAULT NULL,
-  `PRECAN` varchar(45) DEFAULT NULL,
-  `FLIPX` varchar(45) DEFAULT NULL,
-  `FLIPY` varchar(45) DEFAULT NULL,
-  `CNTCVTMD` varchar(45) DEFAULT NULL,
-  `CNTCVT` varchar(45) DEFAULT NULL,
-  `DTNWLGTH` varchar(45) DEFAULT NULL,
-  `SNTVTY` varchar(45) DEFAULT NULL,
-  `SPSNFLTR` varchar(45) DEFAULT NULL,
-  `THRSHLD` varchar(45) DEFAULT NULL,
-  `PCNTENLD` varchar(45) DEFAULT NULL,
-  `NSETHSLD` varchar(45) DEFAULT NULL,
-  `AVGFTRMD` varchar(45) DEFAULT NULL,
-  `AVGFCTR` varchar(45) DEFAULT NULL,
-  `FRMCNT` varchar(45) DEFAULT NULL,
-  `PORTMODE` varchar(45) DEFAULT NULL,
-  `LSHEIGHT` varchar(45) DEFAULT NULL,
-  `LSSPEED` varchar(45) DEFAULT NULL,
-  `LSALTDIR` varchar(45) DEFAULT NULL,
-  `LSCTRL` varchar(45) DEFAULT NULL,
-  `LSDIR` varchar(45) DEFAULT NULL,
-  `FKSMODE` varchar(45) DEFAULT NULL,
-  `FKTMODE` varchar(45) DEFAULT NULL,
-  `DATE` varchar(45) DEFAULT NULL,
-  `FRAME` varchar(45) DEFAULT NULL,
-  `ESHTMODE` varchar(45) DEFAULT NULL,
-  `IRIGDATA` varchar(45) DEFAULT NULL,
-  `AIRMASS` varchar(45) DEFAULT NULL,
-  `DATE-OBS` varchar(45) DEFAULT NULL,
-  `DOMEPOS` varchar(45) DEFAULT NULL,
-  `FILTERA` varchar(45) DEFAULT NULL,
-  `FILTERB` varchar(45) DEFAULT NULL,
-  `GPS-INT` varchar(45) DEFAULT NULL,
-  `GPSSTART` varchar(45) DEFAULT NULL,
-  `HA` varchar(45) DEFAULT NULL,
-  `HUMIDIT` varchar(45) DEFAULT NULL,
-  `INSTANGL` varchar(45) DEFAULT NULL,
-  `INSTRUME` varchar(45) DEFAULT NULL,
-  `INSTSWV` varchar(45) DEFAULT NULL,
-  `OBJDEC` varchar(45) DEFAULT NULL,
-  `OBJECT` varchar(45) DEFAULT NULL,
-  `OBJEPOCH` varchar(45) DEFAULT NULL,
-  `OBJEQUIN` varchar(45) DEFAULT NULL,
-  `OBJRA` varchar(45) DEFAULT NULL,
-  `OBSERVER` varchar(45) DEFAULT NULL,
-  `OBSTYPE` varchar(45) DEFAULT NULL,
-  `POSA` varchar(45) DEFAULT NULL,
-  `POSB` varchar(45) DEFAULT NULL,
-  `RELSKYT` varchar(45) DEFAULT NULL,
-  `SEEING` varchar(45) DEFAULT NULL,
-  `TELDEC` varchar(45) DEFAULT NULL,
-  `TELESCOP` varchar(45) DEFAULT NULL,
-  `TELFOCUS` varchar(45) DEFAULT NULL,
-  `TELRA` varchar(45) DEFAULT NULL,
-  `TMTDEW` varchar(45) DEFAULT NULL,
-  `WHEELA` varchar(45) DEFAULT NULL,
-  `WHEELB` varchar(45) DEFAULT NULL,
-  `WIND` varchar(45) DEFAULT NULL,
-  `ZD` varchar(45) DEFAULT NULL,
-  `SHOC_id` int(11) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `fk_SHOC_TECH_SHOC1_idx` (`SHOC_id`),
-  CONSTRAINT `fk_SHOC_TECH_SHOC13` FOREIGN KEY (`SHOC_id`) REFERENCES `SHOC` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+  `userId` int(11) DEFAULT NULL,
+  PRIMARY KEY (`proposalId`),
+  KEY `fk_ProposalInvestigatorUser_idx` (`userId`),
+  CONSTRAINT `fk_ProposalInvestigatorProposal` FOREIGN KEY (`proposalId`) REFERENCES `Proposal` (`proposalId`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `fk_ProposalInvestigatorUser` FOREIGN KEY (`userId`) REFERENCES `User` (`userId`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1028,14 +477,16 @@ DROP TABLE IF EXISTS `Target`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Target` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `targetId` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) DEFAULT NULL,
-  `rightAscension` varchar(255) DEFAULT NULL,
-  `declination` varchar(255) DEFAULT NULL,
-  `position` varchar(255) DEFAULT NULL,
-  `targetTypeId` varchar(45) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+  `rightAscension` float DEFAULT NULL,
+  `declination` float DEFAULT NULL,
+  `position` point DEFAULT NULL,
+  `targetTypeId` int(11) DEFAULT NULL,
+  PRIMARY KEY (`targetId`),
+  KEY `fk_TargetType_idx` (`targetTypeId`),
+  CONSTRAINT `fk_TargetType` FOREIGN KEY (`targetTypeId`) REFERENCES `TargetType` (`targetTypeId`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1046,11 +497,11 @@ DROP TABLE IF EXISTS `TargetType`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `TargetType` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `targetTypeId` int(11) NOT NULL AUTO_INCREMENT,
   `numericValue` varchar(45) DEFAULT NULL,
   `explanation` varchar(45) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+  PRIMARY KEY (`targetTypeId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1061,11 +512,13 @@ DROP TABLE IF EXISTS `Telescope`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Telescope` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `telescopeId` int(11) NOT NULL AUTO_INCREMENT,
   `telescopeName` varchar(45) NOT NULL,
-  `ownerId` varchar(45) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+  `ownerId` int(11) DEFAULT NULL,
+  PRIMARY KEY (`telescopeId`),
+  KEY `fk_TelescopeInstitute_idx` (`ownerId`),
+  CONSTRAINT `fk_TelescopeInstitute` FOREIGN KEY (`ownerId`) REFERENCES `Institution` (`institutionId`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1076,179 +529,16 @@ DROP TABLE IF EXISTS `User`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `User` (
-  `id` int(11) NOT NULL,
-  `institutionId` varchar(45) DEFAULT NULL,
+  `userId` int(11) NOT NULL AUTO_INCREMENT,
+  `institutionId` int(11) DEFAULT NULL,
   `institutionUserId` varchar(45) DEFAULT NULL,
   `givenName` varchar(45) DEFAULT NULL,
   `familyName` varchar(45) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `WINCAM`
---
-
-DROP TABLE IF EXISTS `WINCAM`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `WINCAM` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `telescopeName` varchar(45) DEFAULT NULL,
-  `date` varchar(45) DEFAULT NULL,
-  `observer` varchar(45) DEFAULT NULL,
-  `objectName` varchar(45) DEFAULT NULL,
-  `exposureMode` varchar(45) DEFAULT NULL,
-  `filter` varchar(45) DEFAULT NULL,
-  `humidity` varchar(45) DEFAULT NULL,
-  `rotater` varchar(45) DEFAULT NULL,
-  `telFocus` varchar(45) DEFAULT NULL,
-  `wheelA` varchar(45) DEFAULT NULL,
-  `wheelB` varchar(45) DEFAULT NULL,
-  `zenith` varchar(45) DEFAULT NULL,
-  `headModel` varchar(45) DEFAULT NULL,
-  `acquisitionMode` varchar(45) DEFAULT NULL,
-  `readMode` varchar(45) DEFAULT NULL,
-  `imageRect` varchar(45) DEFAULT NULL,
-  `hbin` varchar(45) DEFAULT NULL,
-  `vbin` varchar(45) DEFAULT NULL,
-  `exposure` varchar(45) DEFAULT NULL,
-  `serialNumber` varchar(45) DEFAULT NULL,
-  `filterA` varchar(45) DEFAULT NULL,
-  `filterB` varchar(45) DEFAULT NULL,
-  `hourAngle` varchar(45) DEFAULT NULL,
-  `instrumentAngle` varchar(45) DEFAULT NULL,
-  `triggers` varchar(45) DEFAULT NULL,
-  `instrumentName` varchar(45) DEFAULT NULL,
-  `Observation_id` int(11) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `fk_SHOC_Observation1_idx` (`Observation_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `WINCAM_TECH`
---
-
-DROP TABLE IF EXISTS `WINCAM_TECH`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `WINCAM_TECH` (
-  `id` int(11) NOT NULL,
-  `BZERO` varchar(45) DEFAULT NULL,
-  `BSCALE` varchar(45) DEFAULT NULL,
-  `HEAD` varchar(45) DEFAULT NULL,
-  `IMGRECT` varchar(45) DEFAULT NULL,
-  `HBIN` varchar(45) DEFAULT NULL,
-  `VBIN` varchar(45) DEFAULT NULL,
-  `SUBRECT` varchar(45) DEFAULT NULL,
-  `DATATYPE` varchar(45) DEFAULT NULL,
-  `XTYPE` varchar(45) DEFAULT NULL,
-  `XUNIT` varchar(45) DEFAULT NULL,
-  `RAYWAVE` varchar(45) DEFAULT NULL,
-  `CALBWVNM` varchar(45) DEFAULT NULL,
-  `TRIGGER` varchar(45) DEFAULT NULL,
-  `CALIB` varchar(45) DEFAULT NULL,
-  `DLLVER` varchar(45) DEFAULT NULL,
-  `EXPOSURE` varchar(45) DEFAULT NULL,
-  `TEMP` varchar(45) DEFAULT NULL,
-  `READTIME` varchar(45) DEFAULT NULL,
-  `OPERATN` varchar(45) DEFAULT NULL,
-  `GAIN` varchar(45) DEFAULT NULL,
-  `EMREALGN` varchar(45) DEFAULT NULL,
-  `VCLKAMP` varchar(45) DEFAULT NULL,
-  `VSHIFT` varchar(45) DEFAULT NULL,
-  `OUTPTAMP` varchar(45) DEFAULT NULL,
-  `PREAMP` varchar(45) DEFAULT NULL,
-  `SERNO` varchar(45) DEFAULT NULL,
-  `UNSTTEMP` varchar(45) DEFAULT NULL,
-  `BLCLAMP` varchar(45) DEFAULT NULL,
-  `PRECAN` varchar(45) DEFAULT NULL,
-  `FLIPX` varchar(45) DEFAULT NULL,
-  `FLIPY` varchar(45) DEFAULT NULL,
-  `CNTCVTMD` varchar(45) DEFAULT NULL,
-  `CNTCVT` varchar(45) DEFAULT NULL,
-  `DTNWLGTH` varchar(45) DEFAULT NULL,
-  `SNTVTY` varchar(45) DEFAULT NULL,
-  `SPSNFLTR` varchar(45) DEFAULT NULL,
-  `THRSHLD` varchar(45) DEFAULT NULL,
-  `PCNTENLD` varchar(45) DEFAULT NULL,
-  `NSETHSLD` varchar(45) DEFAULT NULL,
-  `AVGFTRMD` varchar(45) DEFAULT NULL,
-  `AVGFCTR` varchar(45) DEFAULT NULL,
-  `FRMCNT` varchar(45) DEFAULT NULL,
-  `PORTMODE` varchar(45) DEFAULT NULL,
-  `LSHEIGHT` varchar(45) DEFAULT NULL,
-  `LSSPEED` varchar(45) DEFAULT NULL,
-  `LSALTDIR` varchar(45) DEFAULT NULL,
-  `LSCTRL` varchar(45) DEFAULT NULL,
-  `LSDIR` varchar(45) DEFAULT NULL,
-  `FKSMODE` varchar(45) DEFAULT NULL,
-  `FKTMODE` varchar(45) DEFAULT NULL,
-  `DATE` varchar(45) DEFAULT NULL,
-  `FRAME` varchar(45) DEFAULT NULL,
-  `ESHTMODE` varchar(45) DEFAULT NULL,
-  `IRIGDATA` varchar(45) DEFAULT NULL,
-  `AIRMASS` varchar(45) DEFAULT NULL,
-  `DATE-OBS` varchar(45) DEFAULT NULL,
-  `DOMEPOS` varchar(45) DEFAULT NULL,
-  `FILTERA` varchar(45) DEFAULT NULL,
-  `FILTERB` varchar(45) DEFAULT NULL,
-  `GPS-INT` varchar(45) DEFAULT NULL,
-  `GPSSTART` varchar(45) DEFAULT NULL,
-  `HA` varchar(45) DEFAULT NULL,
-  `HUMIDIT` varchar(45) DEFAULT NULL,
-  `INSTANGL` varchar(45) DEFAULT NULL,
-  `INSTRUME` varchar(45) DEFAULT NULL,
-  `INSTSWV` varchar(45) DEFAULT NULL,
-  `OBJDEC` varchar(45) DEFAULT NULL,
-  `OBJECT` varchar(45) DEFAULT NULL,
-  `OBJEPOCH` varchar(45) DEFAULT NULL,
-  `OBJEQUIN` varchar(45) DEFAULT NULL,
-  `OBJRA` varchar(45) DEFAULT NULL,
-  `OBSERVER` varchar(45) DEFAULT NULL,
-  `OBSTYPE` varchar(45) DEFAULT NULL,
-  `POSA` varchar(45) DEFAULT NULL,
-  `POSB` varchar(45) DEFAULT NULL,
-  `RELSKYT` varchar(45) DEFAULT NULL,
-  `SEEING` varchar(45) DEFAULT NULL,
-  `TELDEC` varchar(45) DEFAULT NULL,
-  `TELESCOP` varchar(45) DEFAULT NULL,
-  `TELFOCUS` varchar(45) DEFAULT NULL,
-  `TELRA` varchar(45) DEFAULT NULL,
-  `TMTDEW` varchar(45) DEFAULT NULL,
-  `WHEELA` varchar(45) DEFAULT NULL,
-  `WHEELB` varchar(45) DEFAULT NULL,
-  `WIND` varchar(45) DEFAULT NULL,
-  `ZD` varchar(45) DEFAULT NULL,
-  `SHOC_id` int(11) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `fk_SHOC_TECH_SHOC1_idx` (`SHOC_id`),
-  CONSTRAINT `fk_SHOC_TECH_SHOC11` FOREIGN KEY (`SHOC_id`) REFERENCES `SHOC` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `testdata`
---
-
-DROP TABLE IF EXISTS `testdata`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE testdata (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `filename` varchar(45) DEFAULT NULL,
-  `categoryID` varchar(45) DEFAULT NULL,
-  `targetID` varchar(45) DEFAULT NULL,
-  `startTime` varchar(45) DEFAULT NULL,
-  `filesize` varchar(45) DEFAULT NULL,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`userId`),
+  KEY `fk_UserInstitution_idx` (`institutionId`),
+  CONSTRAINT `fk_UserInstitution` FOREIGN KEY (`institutionId`) REFERENCES `Institution` (`institutionId`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping events for database 'ssda'
---
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -1259,4 +549,4 @@ CREATE TABLE testdata (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2019-05-10  9:57:43
+-- Dump completed on 2019-05-24  9:58:50
