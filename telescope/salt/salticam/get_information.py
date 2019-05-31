@@ -1,5 +1,6 @@
 from datetime import datetime
 from connection import sdb_connect, ssda_connect
+import pandas as pd
 
 
 # Get the telescopeName, given a telescopeID
@@ -24,20 +25,91 @@ def get_telescope_id(telescope_name):
     Retrieves the telescope id given a telescope name
     
     :param telescope_name: The telescope name e.g. SALT
-    :return: int
+    :return: int or None if does not exist
     """
-    mydb = ssda_connect()
-
-    cursor = mydb.cursor()
-
-    cursor.execute("select id from Telescope where telescopeName =%s", (telescope_name,))
-    record = cursor.fetchone()
-
-    value = record[0]
-
-    mydb.close()
+    sql = """
+        SELECT telescopeId from Telescope where telescopeName =%s
+    """
     
-    return value
+    df = pd.read_sql(sql, con=ssda_connect(), params=(telescope_name,))
+
+    if df.empty:
+        return None
+    
+    return int(df['telescopeId'][0])
+
+
+def get_data_category_id(data_category_name):
+    """
+    Retrieves the data category id given a data category name
+    
+    :param data_category_name: The data category name e.g. Bais
+    :return: int or None if does not exist
+    """
+    sql = """
+        SELECT dataCategoryId from DataCategory where dataCategory =%s
+    """
+    
+    df = pd.read_sql(sql, con=ssda_connect(), params=(data_category_name,))
+    
+    if df.empty:
+        return None
+    
+    return int(df['dataCategoryId'][0])
+
+
+def get_last_observation_id():
+    """
+    Retrieves the observation id
+    
+    :return: int or None if does not exist
+    """
+    sql = """
+        SELECT observationId FROM Observation ORDER BY observationId DESC LIMIT 1
+    """
+    
+    df = pd.read_sql(sql, con=ssda_connect())
+    
+    if df.empty:
+        return None
+    
+    return int(df['observationId'][0])
+
+
+def get_last_data_file_id():
+    """
+    Retrieves the data file id
+    
+    :return: int or None if does not exist
+    """
+    sql = """
+        SELECT dataFileId FROM DataFile ORDER BY dataFileId DESC LIMIT 1
+    """
+    
+    df = pd.read_sql(sql, con=ssda_connect())
+    
+    if df.empty:
+        return None
+    
+    return int(df['dataFileId'][0])
+
+
+def get_last_target_id():
+    """
+    Retrieves the last target id
+    
+    :return: int or None if does not exist
+    """
+    sql = """
+        SELECT targetId FROM Target ORDER BY targetId DESC LIMIT 1
+    """
+    
+    df = pd.read_sql(sql, con=ssda_connect())
+    
+    if df.empty:
+        return None
+    
+    return int(df['targetId'][0])
 
 
 # Get the proposal information from the SDB
@@ -87,20 +159,44 @@ def proposal_details():
     return
 
 
-def get_observation_status(status_id):
-    mydb = ssda_connect()
+def get_observation_status_id(block_id):
+    """
+    Retrieves the observation status id of a given block id
+    
+    :param block_id:
+    :return: int or None if does not exist
+    """
+    
+    sql = """
+        SELECT BlockStatus_Id from Block where Block_Id =%s
+    """
 
-    cursor = mydb.cursor()
+    df = pd.read_sql(sql, con=sdb_connect(), params=(block_id,))
+    
+    if df.empty:
+        return None
+    
+    return int(df['BlockStatus_Id'][0])
 
-    cursor.execute("select status from ObservationStatus where id =%s", (status_id,))
-    record = cursor.fetchone()
 
-    value = record[0]
-
-    print(value)
-    mydb.close()
-
-    return
+def get_telescope_observation_id(block_id):
+    """
+    Retrieves the telescope observation id of a given block id (BlockVisit_Id for the SALT telescope)
+    
+    :param block_id:
+    :return: int or None if does not exist
+    """
+    
+    sql = """
+        SELECT BlockVisit_Id from BlockVisit where Block_Id =%s
+    """
+    
+    df = pd.read_sql(sql, con=sdb_connect(), params=(block_id,))
+    
+    if df.empty:
+        return None
+    
+    return int(df['BlockVisit_Id'][0])
 
 
 def get_category_id(category):
