@@ -1,9 +1,6 @@
 import os.path
 from astropy.io import fits
 import glob
-from astropy import units as u
-from astropy.coordinates import SkyCoord
-from astropy.coordinates import ICRS
 from connection import ssda_connect
 from telescope.salt.salticam.get_information import get_telescope_id, \
     get_observation_status_id, \
@@ -24,9 +21,10 @@ def populate_scam(data_directory):
     
     # Database cursor
     cursor = ssda_con.cursor()
-    
+
     # Recursively traverse through the data_directory search for fits file to import
-    for filename in glob.iglob(data_directory + '**/raw/*.fits', recursive=True):
+    for filename in glob.iglob(data_directory + '**/*.fits', recursive=True):
+        print(filename)
         # Obtain the file sie
         file_size = os.path.getsize(filename)
         
@@ -46,7 +44,7 @@ def populate_scam(data_directory):
                 start_time = handle_missing_header(primary_header_data_unit, 'DATE-OBS')
                 
                 # Get the telescope id from th sdda
-                telescope_id = get_telescope_id('SALT')
+                telescope_id = 1  # get_telescope_id('SALT')
                 
                 # Obtaining the block id from the fit header
                 block_id = handle_missing_header(primary_header_data_unit, 'BLOCKID')
@@ -227,6 +225,7 @@ def populate_scam(data_directory):
                     handle_missing_header(primary_header_data_unit, 'WCSNAMEA'),
                     handle_missing_header(primary_header_data_unit, 'XTALK')
                 )
+                print(salticam_params)
 
                 target_sql = """
                     INSERT INTO Target(
@@ -294,8 +293,9 @@ def populate_scam(data_directory):
                 exit(1)
                 # c.close()
                 ssda_con.commit()
-                
+
+    print("XXX....")
     ssda_con.close()
 
 
-populate_scam("/home/sifiso/Downloads/salt_data/")
+populate_scam("/home/nhlavu/nhlavu/da/database/data-archive-database/data/")
