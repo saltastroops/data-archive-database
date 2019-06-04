@@ -35,7 +35,9 @@ def get_telescope_id(telescope_name):
 
     if df.empty:
         return None
-    
+    print("DF:\n", df)
+    print()
+    print("TEl:\n", df['telescopeId'][0])
     return int(df['telescopeId'][0])
 
 

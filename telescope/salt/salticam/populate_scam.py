@@ -1,12 +1,13 @@
-import os.path
-from astropy.io import fits
 import glob
+import os.path
+
+from astropy.io import fits
+
 from connection import ssda_connect
-from telescope.salt.salticam.get_information import get_telescope_id, \
-    get_observation_status_id, \
+from util.get_information import get_observation_status_id, \
     get_telescope_observation_id, get_data_category_id, get_last_observation_id, get_last_data_file_id, \
     get_last_target_id
-from util.util import handle_missing_header, convert_time_to_float
+from util.util import handle_missing_header, dms_degree, hms_degree
 
 
 def populate_scam(data_directory):
@@ -24,7 +25,6 @@ def populate_scam(data_directory):
 
     # Recursively traverse through the data_directory search for fits file to import
     for filename in glob.iglob(data_directory + '**/*.fits', recursive=True):
-        print(filename)
         # Obtain the file sie
         file_size = os.path.getsize(filename)
         
@@ -225,7 +225,6 @@ def populate_scam(data_directory):
                     handle_missing_header(primary_header_data_unit, 'WCSNAMEA'),
                     handle_missing_header(primary_header_data_unit, 'XTALK')
                 )
-                print(salticam_params)
 
                 target_sql = """
                     INSERT INTO Target(
@@ -240,8 +239,8 @@ def populate_scam(data_directory):
                 
                 target_params = (
                     handle_missing_header(primary_header_data_unit, 'OBJECT'),
-                    convert_time_to_float((handle_missing_header(primary_header_data_unit, 'RA'))),
-                    convert_time_to_float((handle_missing_header(primary_header_data_unit, 'DEC'))),
+                    hms_degree((handle_missing_header(primary_header_data_unit, 'RA'))),
+                    dms_degree((handle_missing_header(primary_header_data_unit, 'DEC'))),
                     None,
                     1
                 )

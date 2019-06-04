@@ -37,10 +37,11 @@ DROP TABLE IF EXISTS `DataFile`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `DataFile` (
+  `dataFileId` int(11) NOT NULL AUTO_INCREMENT,
   `dataCategoryId` int(11) DEFAULT NULL,
   `startTime` varchar(45) DEFAULT NULL,
-  `dataFileId` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) DEFAULT NULL,
+  `directory` varchar(255) DEFAULT NULL,
   `targetId` int(11) DEFAULT NULL,
   `size` INT DEFAULT NULL,
   `observationId` int(11) DEFAULT NULL,
@@ -192,9 +193,9 @@ CREATE TABLE `RSS` (
   `pixelCoordinatePointX1A` FLOAT DEFAULT NULL,
   `pixelCoordinatePointX2` FLOAT DEFAULT NULL,
   `pixelCoordinatePointX2A` FLOAT DEFAULT NULL,
-  `rightAsertionPoint1` FLOAT DEFAULT NULL,
+  `rightAscensionPoint1` FLOAT DEFAULT NULL,
   `spatialCoordinatePoint1A` FLOAT DEFAULT NULL,
-  `declanationPoint2` FLOAT DEFAULT NULL,
+  `declinationPoint2` FLOAT DEFAULT NULL,
   `spacialCoordinatePoint2A` FLOAT DEFAULT NULL,
   `gnomicProjection1` VARCHAR(255) DEFAULT NULL,
   `cartesianProjection1A` VARCHAR(255) DEFAULT NULL,
