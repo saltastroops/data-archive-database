@@ -1,0 +1,14 @@
+# first column is: FITS Header
+# second column is: SSDA Column
+
+# This is a target name
+OBJECT          objectName
+RA              rightAscension
+DEC             declination
+PROPID          proposalCode
+# TODO files same night but different dates
+DATE-OBS        observationNight
+TIME-OBS        observationTime
+TIMESYS         systemTime
+# TODO  objectType from SDB
+# TODO  principal Investigator from SDB
