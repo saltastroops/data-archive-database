@@ -1,11 +1,8 @@
 import os.path
 from astropy.io import fits
 import glob
-from astropy import units as u
-from astropy.coordinates import SkyCoord
-from astropy.coordinates import ICRS
 from connection import ssda_connect
-from telescope.salt.salticam.get_information import get_telescope_id, \
+from util.get_information import get_telescope_id, \
     get_observation_status_id, \
     get_telescope_observation_id, get_data_category_id, get_last_observation_id, get_last_data_file_id, \
     get_last_target_id
@@ -298,4 +295,4 @@ def populate_scam(data_directory):
     ssda_con.close()
 
 
-populate_scam("/home/sifiso/Downloads/salt_data/")
+populate_scam("/home/sifiso/Downloads/salt_data/scam")

@@ -43,7 +43,7 @@ def get_data_category_id(data_category_name):
     """
     Retrieves the data category id given a data category name
     
-    :param data_category_name: The data category name e.g. Bais
+    :param data_category_name: The data category name e.g. Bias
     :return: int or None if does not exist
     """
     sql = """
