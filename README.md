@@ -11,8 +11,8 @@ This repository explains in details how get started and actually store the data 
 
 ## Setting up
 
-[Python3](https://www.python.org/downloads/), [pip](https://pypi.org/project/pip/) which comes bundled by default with 
-Python 3, [git](https://git-scm.com/) and [mysql](https://www.mysql.com/) must be installed on your machine.
+[Python3](https://www.python.org/downloads/), [Pip](https://pypi.org/project/pip/) which comes bundled by default with 
+Python 3, [Git](https://git-scm.com/) and [MySQL](https://www.mysql.com/) must be installed on your machine.
 
 Clone this repository to a location of your choice.
 
@@ -74,7 +74,7 @@ SSDA_PASSWORD | The SALT/SAAO Data Archive database password | databasepassword
 Variable | Description | Example
 ---- | ---- | ----
 SDB_USER | The SALT database user | username
-SDB_HOST | The SALT database host server | username@ssdadb.saao.ac.za
+SDB_HOST | The SALT database host server | username@sdb.saao.ac.za
 SDB_DATABASE | The SALT database name | database
 SDB_PASSWORD | The SALT database password | databasepassword
 
