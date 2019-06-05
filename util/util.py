@@ -4,7 +4,7 @@ import pandas as pd
 
 def handle_missing_header(header_obj, header):
     try:
-        return header_obj[header]
+        return None if str(header_obj[header]).lower() == "none" else header_obj[header]
     except KeyError:
         return None
     

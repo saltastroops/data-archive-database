@@ -60,15 +60,15 @@ def get_data_category_id(data_category_name):
     return int(df['dataCategoryId'][0])
 
 
-def get_last_observation_id():
+def get_ssda_observation_id(teleObsID, teleID):
     """
     Retrieves the observation id
     
     :return: int or None if does not exist
     """
     sql = """
-        SELECT observationId FROM Observation ORDER BY observationId DESC LIMIT 1
-    """
+        SELECT observationId FROM Observation WHERE telescopeObservationId={teleObsID} AND telescopeId={teleID} ORDER BY observationId DESC LIMIT 1
+    """.format(teleObsID=teleObsID, teleID=teleID)
     
     df = pd.read_sql(sql, con=ssda_connect())
     
