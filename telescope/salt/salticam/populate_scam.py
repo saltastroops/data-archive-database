@@ -292,8 +292,7 @@ def populate_scam(data_directory):
                 exit(1)
                 # c.close()
                 ssda_con.commit()
-
-    print("XXX....")
+                
     ssda_con.close()
 
 

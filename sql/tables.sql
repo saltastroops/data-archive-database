@@ -116,7 +116,6 @@ CREATE TABLE `HRS` (
   `instrumentName` VARCHAR(45) DEFAULT NULL,
   `lstObservation` VARCHAR(45) DEFAULT NULL,
   `numberOfAmplifiersUsed` TINYINT DEFAULT NULL,
-  `numberOfCcds` TINYINT DEFAULT NULL,
   `numberOfCcdsInDetector` TINYINT DEFAULT NULL,
   `nodCount` TINYINT DEFAULT NULL,
   `nodPeriod` FLOAT DEFAULT NULL,
@@ -137,7 +136,7 @@ CREATE TABLE `HRS` (
   `redMirrorTemperature` FLOAT DEFAULT NULL,
   `vacuumTemperature` FLOAT DEFAULT NULL,
   `startOfObservationTime` VARCHAR(45) DEFAULT NULL,
-  `systemTyme` VARCHAR(45) DEFAULT NULL,
+  `systemTime` VARCHAR(45) DEFAULT NULL,
   `fitsHeaderVersion` VARCHAR(45) DEFAULT NULL,
   PRIMARY KEY (`hrsId`),
   KEY `fk_HRSTelescope_idx` (`telescopeId`),
@@ -152,7 +151,6 @@ CREATE TABLE `HRS` (
 DROP TABLE IF EXISTS `RSS`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-
 CREATE TABLE `RSS` (
   `rssId` int(11) NOT NULL AUTO_INCREMENT,
   `telescopeId` int(11) NOT NULL,
@@ -289,12 +287,12 @@ CREATE TABLE `RSS` (
   `slitmasMachineState` VARCHAR(255) DEFAULT NULL,
   `slitmaskMagazineSteps` TINYINT DEFAULT NULL,
   `slitmaskVolts` FLOAT DEFAULT NULL,
-  `startOfObservationTime` VARCHAR(255) DEFAULT NULL,
-  `systemTyme` VARCHAR(255) DEFAULT NULL,
-  `fitsHeaderVersion` VARCHAR(255) DEFAULT NULL,
-  `spatialCoordinate` VARCHAR(255) DEFAULT NULL,
-  `waveplateMachineState` VARCHAR(255) DEFAULT NULL,
-  `polarimetryProcedurePattern` VARCHAR(255) DEFAULT NULL,
+  `startOfObservationTime` VARCHAR(45) DEFAULT NULL,
+  `systemTime` VARCHAR(45) DEFAULT NULL,
+  `fitsHeaderVersion` VARCHAR(45) DEFAULT NULL,
+  `spatialCoordinate` VARCHAR(45) DEFAULT NULL,
+  `waveplateMachineState` VARCHAR(45) DEFAULT NULL,
+  `polarimetryProcedurePattern` VARCHAR(45) DEFAULT NULL,
   `crossTalk` FLOAT DEFAULT NULL,
   PRIMARY KEY (`rssId`),
   KEY `fk_RSSTelescope_idx` (`telescopeId`),
@@ -377,7 +375,7 @@ CREATE TABLE `Salticam` (
   `ccdReadoutSpeed` VARCHAR(45) DEFAULT NULL,
   `pixelSaturation` TINYINT DEFAULT NULL,
   `startOfObservationTime` VARCHAR(45) DEFAULT NULL,
-  `systemTyme` VARCHAR(45) DEFAULT NULL,
+  `systemTime` VARCHAR(45) DEFAULT NULL,
   `fitsHeaderVersion` VARCHAR(45) DEFAULT NULL,
   `spatialCoordinate` VARCHAR(45) DEFAULT NULL,
   `crossTalk` FLOAT DEFAULT NULL,
