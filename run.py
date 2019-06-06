@@ -1,6 +1,8 @@
 """
     this script should run a night update for all telescopes
 """
+from telescope.salt.hrs.populate_hrs import populate_hrs
+from telescope.salt.salticam.populate_scam import populate_scam
 
 
 def update_scam(date):
@@ -30,3 +32,8 @@ def update_salt(date):
     update_bvit(date)
     update_hrs(date)
     update_rss(date)
+
+
+populate_scam("/salt/scam/data/2019/0101")
+
+populate_hrs("/salt/hrs/data/2019/0101")
