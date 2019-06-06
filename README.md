@@ -12,7 +12,7 @@ This repository explains in details how get started and actually store the data 
 ## Setting up
 
 [Python3](https://www.python.org/downloads/), [Pip](https://pypi.org/project/pip/) which comes bundled by default with 
-Python 3, [Git](https://git-scm.com/) and [MySQL](https://www.mysql.com/) must be installed on your machine.
+Python 3, [Git](https://git-scm.com/), [python virtual environment](https://virtualenv.pypa.io/en/stable/), and [MySQL](https://www.mysql.com/) must be installed on your machine.
 
 Clone this repository to a location of your choice.
 
@@ -24,6 +24,11 @@ Then navigate to the root directory.
 
 ```commandline
 cd data-archive-database
+```
+Install the python virtual environment. For Ubuntu OS, execute the following command
+
+```bash
+sudo apt-get install python3-venv
 ```
 
 In the data-archive-database directory, create the [python virtual environment](https://virtualenv.pypa.io/en/stable/), 
