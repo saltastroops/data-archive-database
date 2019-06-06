@@ -4,7 +4,6 @@ import os
 from astropy.io import fits
 from dateutil import parser
 
-from connection import ssda_connect
 from util.get_information import *
 from util.map_csv import create_column_value_pair_from_headers, create_insert_sql
 from util.util import handle_missing_header, dms_degree, hms_degree
@@ -27,66 +26,37 @@ def populate_rss(date):
             file_size = os.path.getsize(filename)
 
             if handle_missing_header(headers, 'INSTRUME') == 'RSS':
-                dms_degree(handle_missing_header(headers, 'DEC'))
-                hms_degree(handle_missing_header(headers, 'RA'))
 
                 # Observation-------------------------------------------------------------------Start
-                observation_id = handle_missing_header(headers, 'BLOCKID') # TODO: BlockId is not in RSS
-                telescope_id = get_telescope_id("SALT")
+                observation_id = 1  # TODO: BlockId is not in RSS
                 telescope_observation_id = get_telescope_observation_id(observation_id)
                 observation_date = handle_missing_header(headers, "DATE-OBS")
-                observation_status_id = get_observation_status_id(observation_id)
 
-                observation_sql = """
-                                    INSERT INTO Observation(
-                                        telescopeId,
-                                        telescopeObservationId,
-                                        startTime,
-                                        observationStatusId
-                                    )
-                                    VALUES (%s,%s,%s,%s)
-                                """
-                observation_params = (telescope_id, telescope_observation_id, observation_date, observation_status_id)
-                cursor.execute(observation_sql, observation_params)
-                conn.commit()
+                create_observation("LESEDI", telescope_observation_id, 1)
 
                 # Observation -------------------------------------------------------------------End
 
                 # Target ------------------------------------------------------------------------Start
-                target_sql = """
-                                    INSERT INTO Target(
-                                        name,
-                                        rightAscension,
-                                        declination,
-                                        position,
-                                        targetTypeId
-                                    )
-                                    VALUES (%s,%s,%s,%s,%s)
-                                """
-
-                target_params = (
-                    handle_missing_header(headers, 'OBJECT'),
-                    hms_degree((handle_missing_header(headers, 'RA'))),
-                    dms_degree((handle_missing_header(headers, 'DEC'))),
-                    None,
-                    1  # TODO TargetType still need to be defined
-                )
-                cursor.execute(target_sql, target_params)
+                create_target(
+                    target_name=handle_missing_header(headers, 'OBJECT'),
+                    right_ascension=hms_degree(handle_missing_header(headers, 'RA')),
+                    declination=dms_degree(handle_missing_header(headers, 'DEC')),
+                    block_id=handle_missing_header(headers, 'BLOCKID'))
                 # Target ------------------------------------------------------------------------End
 
                 # Data File ---------------------------------------------------------------------Start
                 data_category_id = get_data_category_id(handle_missing_header(headers, 'OBJECT'))
                 data_files_sql = """
-                                    INSERT INTO DataFile(
-                                        dataCategoryId,
-                                        startTime,
-                                        name,
-                                        targetId,
-                                        size,
-                                        observationId
-                                    )
-                                    VALUES (%s,%s,%s,%s,%s,%s)
-                                """
+                    INSERT INTO DataFile(
+                        dataCategoryId,
+                        startTime,
+                        name,
+                        targetId,
+                        size,
+                        observationId
+                    )
+                    VALUES (%s,%s,%s,%s,%s,%s)
+                """
 
                 data_files_params = (
                     data_category_id,
@@ -94,7 +64,7 @@ def populate_rss(date):
                     filename,
                     get_last_target_id(),
                     file_size,
-                    get_last_observation_id()
+                    1
                 )
                 cursor.execute(data_files_sql, data_files_params)
                 # Data File ---------------------------------------------------------------------End
@@ -125,3 +95,12 @@ def populate_rss(date):
 
 
 populate_rss("2019-05-10")
+
+# populate_target_type()
+
+# create_target("test target 2", 53.00, 10.5, None)
+
+# create_data_file(
+#     data_category_id=1,
+#     observation_date=parser.parse("2019-02-02 16:00:00"),
+#     # filename="this is file name", target_id=2, observation_id, file_size=None)

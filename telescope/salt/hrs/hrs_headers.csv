@@ -10,7 +10,7 @@ CCDSUM        ccdSummation
 CCDTEMP       ccdTemperature
 CCDTYPE       ccdType
 DATASEC       dataSection
-DATE-OBS      dateOfObservation
+# DATE-OBS      dateOfObservation
 DETMODE       detectorMode
 DETNAM        detectorName
 DETSEC        detectorSection
@@ -53,6 +53,6 @@ TEM-OB        opticalBenchTemperature
 TEM-RCAM      redCameraTemperature
 TEM-RMIR      redMirrorTemperature
 TEM-VAC       vacuumTemperature
-TIME-OB       startOfObservationTime
-TIMESYS       systemTime
+# TIME-OB       startOfObservationTime
+# TIMESYS       systemTime
 VERFITS       fitsHeaderVersion

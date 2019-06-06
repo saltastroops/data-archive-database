@@ -1,4 +1,7 @@
 from datetime import datetime
+
+import pymysql
+
 from connection import sdb_connect, ssda_connect
 import pandas as pd
 
@@ -20,6 +23,40 @@ def get_telescope_name(telescope_id):
     return
 
 
+def get_target_type_id(block_id):
+    """
+    Get the target type id from SSDA.
+    Given that all target types are predefined on SSDA
+    :param block_id: SBD block id
+    :return: target type id.
+    """
+
+    sdb_target_type_query = """
+SELECT NumericCode from Pointing as p
+    JOIN Observation USING(Pointing_Id)
+    JOIN Target USING(Target_Id)
+    JOIN TargetSubType USING(TargetSubType_Id)
+WHERE Block_Id = %s
+    """
+
+    numeric_code_df = pd.read_sql(sql=sdb_target_type_query, con=sdb_connect(), params=block_id)
+    if numeric_code_df.empty:
+        return None
+
+    numeric_code = numeric_code_df['NumericCode'][0]
+    sql = """
+SELECT targetTypeId FROM TargetType WHERE numericValue = %s
+    """.format(numeric_code=numeric_code)
+    numeric_code_id_df = pd.read_sql(sql=sql, con=ssda_connect(), params=numeric_code)
+    if numeric_code_id_df.empty:
+        return None
+
+    return int(numeric_code_id_df['targetTypeId'][0])
+
+
+# def get_target_type_from_sdb():
+
+
 def get_telescope_id(telescope_name):
     """
     Retrieves the telescope id given a telescope name
@@ -35,9 +72,7 @@ def get_telescope_id(telescope_name):
 
     if df.empty:
         return None
-    print("DF:\n", df)
-    print()
-    print("TEl:\n", df['telescopeId'][0])
+
     return int(df['telescopeId'][0])
 
 
@@ -246,3 +281,118 @@ def observation_details(fits_headers):
     mydb.close()
 
     return
+
+
+def create_observation(telescope, telescope_observation_id=None, observation_status_id=1):
+    """
+    Create a SSDA observation.
+    :param telescope: Telescope name
+    :param telescope_observation_id: Block id for salt
+    :param observation_status_id: Block status for salt
+    :return:
+    """
+    # with an assumption that observation_status_id=1 is SUCCESSFUL
+    conn = ssda_connect()
+    cursor = conn.cursor()
+
+    telescope_id = get_telescope_id(telescope)
+    observation_sql = """
+INSERT INTO Observation (telescopeId, telescopeObservationId, observationStatusId)
+    SELECT * FROM (SELECT %s, %s, %s) as tmp
+WHERE NOT EXISTS (
+    SELECT telescopeId, telescopeObservationId
+        FROM Observation
+    WHERE telescopeId=%s AND telescopeObservationId=%s
+) LIMIT 1;
+"""
+    params = (telescope_id, telescope_observation_id, observation_status_id, telescope_id, telescope_observation_id)
+    cursor.execute(observation_sql, params)
+    conn.commit()
+
+
+def create_target(target_name, right_ascension, declination, block_id):
+    conn = ssda_connect()
+    cursor = conn.cursor()
+    target_type_id = get_target_type_id(block_id)
+
+    target_sql = """
+
+INSERT INTO Target (name, rightAscension, declination, position, targetTypeId)
+    SELECT * FROM (SELECT %s, %s, %s, POINT(%s, %s) , %s) as tmp
+WHERE NOT EXISTS (
+    SELECT name, rightAscension, declination, targetTypeId
+        FROM Target
+    WHERE name=%s AND rightAscension=%s AND declination=%s AND targetTypeId=%s
+) LIMIT 1;
+"""
+
+    params = (
+        target_name,
+        right_ascension,
+        declination,
+        right_ascension,
+        declination,
+        target_type_id,
+        target_name,
+        right_ascension,
+        declination,
+        target_type_id
+    )
+    cursor.execute(target_sql, params)
+    conn.commit()
+    return True
+
+
+def populate_target_type():
+    """
+    Get the target Type from SDA and store then in SSDA
+
+    N.B> this method should only be ran once
+    :return: None
+    """
+    conn = ssda_connect()
+    cursor = conn.cursor()
+    get_sql = """SELECT * from TargetSubType;"""
+
+    insert_sql = "INSERT INTO TargetType (numericValue, explanation) VALUES "
+
+    get_results = pd.read_sql(get_sql, sdb_connect())
+    for i, row in get_results.iterrows():
+        insert_sql += '("{numericValue}", "{explanation}"),\n'\
+            .format(numericValue=row["NumericCode"], explanation=row["TargetSubType"])
+
+    cursor.execute(insert_sql[:-2] + ";")
+    conn.commit()
+
+
+def create_data_file(data_category_id, observation_date, filename, target_id, observation_id, file_size=None):
+    """
+    Create a data file for SSDA
+    :param data_category_id:
+    :param observation_date:
+    :param filename:
+    :param target_id:
+    :param observation_id:
+    :param file_size:
+    :return:
+    """
+    data_files_sql = """
+INSERT INTO DataFile(
+    dataCategoryId,
+    startTime,
+    name,
+    targetId,
+    size,
+    observationId
+)
+VALUES (%s,%s,%s,%s,%s,%s)
+"""
+
+    data_files_params = (
+        data_category_id,
+        observation_date,
+        filename,
+        target_id,
+        file_size,
+        observation_id
+    )

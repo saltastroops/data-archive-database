@@ -47,7 +47,7 @@ CTYPE1A     				cartesianProjection1A
 CTYPE2      				gnomicProjection2
 CTYPE2A     				cartesianProjection2A
 DATASEC     				dataSection
-DATE-OBS    				dateOfObservation
+# DATE-OBS    				dateOfObservation
 DETMODE     				detectorMode
 DETSEC      				detectorSection
 DETSIZE     				detectorSize
@@ -105,7 +105,7 @@ HWP-CMD     				halfWaveStation
 HWP-STA     				halfWaveStationEncoder
 IMAGEID     				imageId
 INSTRUME    				instrumentName
-JD          				julianDate
+# JD          				julianDate
 LST-OBS     				lstObservation
 MASKID      				slitmaskBarcode
 MASKTYP     				slitmaskType
@@ -134,8 +134,8 @@ SM-STA-V    				slitmaskStationVolts
 SM-STATE    				slitmasMachineState
 SM-STEPS    				slitmaskMagazineSteps
 SM-VOLTS    				slitmaskVolts
-TIME-OBS    				startOfObservationTime
-TIMESYS     				systemTime
+# TIME-OBS    				startOfObservationTime
+# TIMESYS     				systemTime
 VERFITS     				fitsHeaderVersion
 WCSNAMEA    				spatialCoordinate
 WP-STATE    				waveplateMachineState

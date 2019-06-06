@@ -38,7 +38,7 @@ CTYPE2A        cartesianProjection2A
 CUNIT1         anglesDegreesAlways1
 CUNIT2         anglesDegreesAlways2
 DATASEC        dataSection
-DATE-OBS       dateOfObservation
+# DATE-OBS       dateOfObservation
 DETMODE        detectorMode
 DETSEC         detectorSection
 DETSIZE        detectorSize
@@ -52,7 +52,7 @@ GAIN1          gain1
 GAINSET        gainSet
 IMAGEID        imageId
 INSTRUME       instrumentName
-JD             julianDate
+# JD             julianDate
 LST-OBS        lstObservation
 NCCDS          numberOfCcds
 NEXTEND        numberOfExtensions
@@ -65,8 +65,8 @@ PUPEND         pupilEnd
 RDNOISE        noiseReadout
 ROSPEED        ccdReadoutSpeed
 SATURATE       pixelSaturation
-TIME-OBS       startOfObservationTime
-TIMESYS        systemTime
+# TIME-OBS       startOfObservationTime
+# TIMESYS        systemTime
 VERFITS        fitsHeaderVersion
 WCSNAMEA       spatialCoordinate
 XTALK          crossTalk
