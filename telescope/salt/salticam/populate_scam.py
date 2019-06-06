@@ -140,7 +140,7 @@ def populate_scam(data_directory):
                         ccdReadoutSpeed,
                         pixelSaturation,
                         startOfObservationTime,
-                        systemTyme,
+                        systemTime,
                         fitsHeaderVersion,
                         spatialCoordinate,
                         crossTalk

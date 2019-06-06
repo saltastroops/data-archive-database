@@ -83,6 +83,14 @@ SDB_HOST | The SALT database host server | username@sdb.saao.ac.za
 SDB_DATABASE | The SALT database name | database
 SDB_PASSWORD | The SALT database password | databasepassword
 
+
+### Data File BasePath
+
+Variable | Description | Example
+---- | ---- | ----
+DATA_FILE_BASE_PATH | The path to where the fits files are located | /base/path/to/data
+
+
 When all that is set, should be good to run the SQL script for creating the data archive database with it tables.
 Assuming that mysql is installed, execute the following commands.
 
@@ -92,7 +100,7 @@ Assuming that mysql is installed, execute the following commands.
 mysql -u "salt/sooa data archive database username" -p
 ```
 
-You will be promted to enter a password, do so.
+You will be prompted to enter a password, do so.
 
 ###### Choose database to use
 

@@ -125,7 +125,7 @@ def populate_hrs(data_directory):
                     "redMirrorTemperature": handle_missing_header(primary_header_data_unit, 'TEM-RMIR'),
                     "vacuumTemperature": handle_missing_header(primary_header_data_unit, 'TEM-VAC'),
                     "startOfObservationTime": handle_missing_header(primary_header_data_unit, 'TIME-OBS'),
-                    "systemTyme": handle_missing_header(primary_header_data_unit, 'TIMESYS'),
+                    "systemTime": handle_missing_header(primary_header_data_unit, 'TIMESYS'),
                     "fitsHeaderVersion": handle_missing_header(primary_header_data_unit, 'VERFITS')
                 }
                 
