@@ -2,6 +2,12 @@
     this script should run a night update for all telescopes
 """
 
+from datetime import date
+from telescope import Telescope
+from rss_fits_data import RssFitsData
+from populate import populate
+
+populate(date(2019, 4, 3), date(2019, 4, 4))
 
 def update_scam(date):
     return date

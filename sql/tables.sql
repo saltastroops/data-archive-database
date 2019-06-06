@@ -413,7 +413,7 @@ CREATE TABLE `Observation` (
   `observationId` int(11) NOT NULL AUTO_INCREMENT,
   `telescopeId` int(11) DEFAULT NULL,
   `telescopeObservationId` VARCHAR(45) DEFAULT NULL,
-  `julianDay` VARCHAR(45) DEFAULT NULL,
+  `night` VARCHAR(45) DEFAULT NULL,
   `observationStatusId` int(11) DEFAULT NULL,
   PRIMARY KEY (`observationId`),
   KEY `fk_observationStatus_idx` (`observationStatusId`),
