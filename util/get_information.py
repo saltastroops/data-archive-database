@@ -396,43 +396,6 @@ def populate_target_type():
     conn.commit()
 
 
-def create_data_file(data_category_id, observation_date, filename, target_id, observation_id, file_size=None):
-    """
-    Create a data file for SSDA
-    :param data_category_id: The data category id. This links to the DataCategory table.
-    :param observation_date: The time when the data taking started, if the data set is a FITS file.
-    :param filename: Name of the file, which must be unique.
-    :param target_id: The id of the target which was observed. This links to the Target table.
-    :param observation_id: The id of the observation to which the data set belongs.
-    :param file_size: The file size in bytes.
-    :return: None
-    """
-    conn = ssda_connect()
-    cursor = conn.cursor()
-    data_files_sql = """
-INSERT INTO DataFile(
-    dataCategoryId,
-    startTime,
-    name,
-    targetId,
-    size,
-    observationId
-)
-VALUES (%s,%s,%s,%s,%s,%s)
-"""
-
-    data_files_params = (
-        data_category_id,
-        observation_date,
-        filename,
-        target_id,
-        file_size,
-        observation_id
-    )
-    cursor.execute(data_files_sql, data_files_params)
-    conn.commit()
-
-
 def get_ssda_observation_id(telescope_id, telescope_observation_id):
     """
     Retrieves the observation_id
@@ -497,7 +460,7 @@ SELECT dataFileId FROM DataFile WHERE name=%s
     df = pd.read_sql(sql=get_file_data_sql, con=ssda_connect(), params=(filename,))
 
     if df.empty:
-        return None
+        return
 
     data_file_id = int(df['dataFileId'][0])
 
@@ -513,3 +476,40 @@ DELETE FROM DataFile WHERE dataFileId=%s
 
     conn.commit()
 
+
+def create_data_file(data_category_id, observation_date, filename, target_id, observation_id, file_size=None):
+    """
+    Create a data file for SSDA
+    :param data_category_id: The data category id. This links to the DataCategory table.
+    :param observation_date: The time when the data taking started, if the data set is a FITS file.
+    :param filename: Name of the file, which must be unique.
+    :param target_id: The id of the target which was observed. This links to the Target table.
+    :param observation_id: The id of the observation to which the data set belongs.
+    :param file_size: The file size in bytes.
+    :return: None
+    """
+    remove_file_if_exist(filename)
+    conn = ssda_connect()
+    cursor = conn.cursor()
+    data_files_sql = """
+INSERT INTO DataFile(
+    dataCategoryId,
+    startTime,
+    name,
+    targetId,
+    size,
+    observationId
+)
+VALUES (%s,%s,%s,%s,%s,%s)
+"""
+
+    data_files_params = (
+        data_category_id,
+        observation_date,
+        filename,
+        target_id,
+        file_size,
+        observation_id
+    )
+    cursor.execute(data_files_sql, data_files_params)
+    conn.commit()
