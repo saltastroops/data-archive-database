@@ -1,10 +1,80 @@
 import os
+import pandas as pd
 from abc import ABC, abstractmethod
 from astropy.io import fits
-from datetime import date
+from datetime import date, datetime
+from enum import Enum
+from typing import List, NamedTuple, Optional
 
+from connection import ssda_connect
 from observation_status import ObservationStatus
 from telescope import Telescope
+
+
+class DataCategory(Enum):
+    """
+    Enumeration of the data categories.
+
+    The values must be the same as those of the dataCategory column in the DataCategory
+    table.
+
+    """
+
+    ARC = 'Arc'
+    BIAS = 'Bias'
+    FLAT = 'Flat'
+    SCIENCE = 'Science'
+
+    def id(self):
+        """
+        Return the primary key of the DataCategory entry for this data category.
+
+        Returns
+        -------
+        id : int
+            The primary key.
+
+        """
+        sql = """
+        SELECT dataCategoryId from DataCategory where dataCategory=%s
+        """
+        df = pd.read_sql(sql, con=ssda_connect(), params=(self.value,))
+        if len(df) == 0:
+            raise ValueError('The data category {} is not included in the DataCategory table.'.format(self.value))
+
+        return int(df['dataCategoryId'])
+
+
+class PrincipalInvestigator(NamedTuple):
+    """
+    A Principal Investigator (PI).
+
+    """
+
+    family_name: str
+    """The PI's family name (last name)."""
+
+    given_name: str
+    """The PI's given name (first name)."""
+
+
+class Target(NamedTuple):
+    """
+    A target.
+
+    """
+
+    name: str
+    """The target name."""
+
+    ra: float
+    """The right ascension, in degrees."""
+
+    dec: float
+    """The declination, in degrees."""
+
+    target_type: Optional[str]
+    """The target type, as a numerical SIMBAD Code."""
 
 
 class InstrumentFitsData(ABC):
@@ -24,6 +94,8 @@ class InstrumentFitsData(ABC):
 
     Attributes
     ----------
+    file_path : str
+        Absolute path of the FITS file.
     file_size : int
         Size of the FITS file, in bytes.
     header : Header
@@ -32,13 +104,14 @@ class InstrumentFitsData(ABC):
     """
 
     def __init__(self, fits_file: str):
+        self.file_path = os.path.abspath(fits_file)
         self.file_size = os.path.getsize(fits_file)
         with fits.open(fits_file) as header_data_unit_list:
             self.header = header_data_unit_list[0].header
 
     @staticmethod
     @abstractmethod
-    def fits_files(night: date) -> [str]:
+    def fits_files(night: date) -> List[str]:
         """
         The list of FITS files generated for the instrument during a night.
 
@@ -51,6 +124,20 @@ class InstrumentFitsData(ABC):
         -------
         files : list of str
             The list of file paths.
+
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def data_category(self) -> DataCategory:
+        """
+        The category (such as science or arc) of the data contained in the FITS file.
+
+        Returns
+        -------
+        category : DataCategory
+            The data category.
 
         """
 
@@ -85,6 +172,90 @@ class InstrumentFitsData(ABC):
 
         """
 
+        raise NotImplementedError
+
+    def principal_investigator(self) -> Optional[PrincipalInvestigator]:
+        """
+
+        The principal investigator for the proposal to which this File belonhs.
+        If the FIS file is not linked to any observation, the status is assumed to be
+        Accepted.
+
+        Returns
+        -------
+        pi : PrincipalInvestigator
+            The principal investigator for the proposal.
+
+        """
+
+        pass
+
+    @abstractmethod
+    def proposal_code(self) -> Optional[str]:
+        """
+        The unique identifier of the proposal to which the FITS file belongs.
+
+        The identifier is the identifier that would be used whe referring to the
+        proposal communication between the Principal Investigator and another
+        astronomer. For example, an identifier for a SALT proposal might look like
+        2019-1-SCI-042.
+
+        None is returned if the FITS file is not linked to a proposal.
+
+        Returns
+        -------
+        code : str
+            The proposal code.
+
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def proposal_title(self) -> Optional[str]:
+        """
+        The proposal title of the proposal to which the FITS file belongs.
+
+        None is returned if the FITS file is not linked to a proposal.
+
+        Returns
+        -------
+        title : str
+            The proposal title.
+
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def start_time(self) -> datetime:
+        """
+        The start time, i.e. the time when taking data for the FITS file began.
+
+        Returns
+        -------
+        time : datetime
+            The start time.
+
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def target(self) -> Optional[Target]:
+        """
+        The target specified in the FITS file.
+
+        None is returned if no target is specified, i.e. if no target position is
+        defined.
+
+        Returns
+        -------
+
+        """
+
+        raise NotImplementedError
+
     @abstractmethod
     def telescope(self) -> Telescope:
         """
@@ -94,7 +265,9 @@ class InstrumentFitsData(ABC):
         -------
         telescope : Telescope
             The telescope.
+
         """
+
         raise NotImplementedError
 
     @abstractmethod
@@ -114,4 +287,5 @@ class InstrumentFitsData(ABC):
             The unique id used by the telescope for identifying the observation.
 
         """
+
         raise NotImplementedError

@@ -1,4 +1,4 @@
-from pymysql import connect
+from pymysql import connect, Connection
 import os
 
 ssda_config = {
@@ -18,9 +18,9 @@ sdb_config = {
     }
 
 
-def sdb_connect():
+def sdb_connect() -> Connection:
     return connect(**sdb_config)
 
 
-def ssda_connect():
+def ssda_connect() -> Connection:
     return connect(**ssda_config)

@@ -41,7 +41,6 @@ CREATE TABLE `DataFile` (
   `dataCategoryId` int(11) DEFAULT NULL,
   `startTime` DATETIME DEFAULT NULL,
   `name` VARCHAR(255) DEFAULT NULL,
-  `directory` VARCHAR(255) DEFAULT NULL,
   `targetId` int(11) DEFAULT NULL,
   `size` FLOAT DEFAULT NULL,
   `observationId` int(11) DEFAULT NULL,
@@ -411,13 +410,16 @@ DROP TABLE IF EXISTS `Observation`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Observation` (
   `observationId` int(11) NOT NULL AUTO_INCREMENT,
+  'proposalId' int(11) NOT NULL,
   `telescopeId` int(11) DEFAULT NULL,
   `telescopeObservationId` VARCHAR(45) DEFAULT NULL,
   `night` VARCHAR(45) DEFAULT NULL,
   `observationStatusId` int(11) DEFAULT NULL,
   PRIMARY KEY (`observationId`),
+  KEY `fk_proposal_idx` (`proposalId`),
   KEY `fk_observationStatus_idx` (`observationStatusId`),
   KEY `fk_ObservationTelescope_idx` (`telescopeId`),
+  CONSTRAINT `fk_proposal` FOREIGN KEY (`proposalId`) REFERENCES `Proposal` (`proposalId`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `fk_ObservationTelescope` FOREIGN KEY (`telescopeId`) REFERENCES `Telescope` (`telescopeId`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `fk_observationStatus` FOREIGN KEY (`observationStatusId`) REFERENCES `ObservationStatus` (`observationStatusId`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -446,11 +448,10 @@ DROP TABLE IF EXISTS `Proposal`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Proposal` (
   `proposalId` int(11) NOT NULL AUTO_INCREMENT,
-  `proposalCode` VARCHAR(45) DEFAULT NULL,
-  `date` VARCHAR(45) DEFAULT NULL,
-  `principalInvestigatorGivenName` VARCHAR(45) DEFAULT NULL,
-  `principalInvestigatorFamilyName` VARCHAR(45) DEFAULT NULL,
-  `title` VARCHAR(255) DEFAULT NULL,
+  `proposalCode` VARCHAR(45) NOT NULL,
+  `principalInvestigatorGivenName` VARCHAR(45) NOT NULL,
+  `principalInvestigatorFamilyName` VARCHAR(45) NOT NULL,
+  `title` VARCHAR(255) NOT NULL,
   `lastUpdated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`proposalId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -473,6 +474,12 @@ CREATE TABLE `ProposalInvestigator` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
+
+--
+-- Spatial reference system for target positions
+--
+CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 123456 NAME 'Perfect Unit Sphere' DEFINITION 'GEOGCS["Unit Sphere",DATUM["Unit Sphere",SPHEROID["Unit Sphere",1,0]],PRIMEM["Greenwich",0],UNIT["degree",0.017453292519943278],AXIS["Lon",EAST],AXIS["Lat",NORTH]]';
+
 --
 -- Table structure for table `Target`
 --
@@ -485,7 +492,7 @@ CREATE TABLE `Target` (
   `name` VARCHAR(255) DEFAULT NULL,
   `rightAscension` float DEFAULT NULL,
   `declination` float DEFAULT NULL,
-  `position` point DEFAULT NULL,
+  `position` point SRID 123456 DEFAULT NULL COMMENT 'RA is offset by -180 deg so that it falls into [-180, 180]',
   `targetTypeId` int(11) DEFAULT NULL,
   PRIMARY KEY (`targetId`),
   KEY `fk_TargetType_idx` (`targetTypeId`),
@@ -503,7 +510,7 @@ DROP TABLE IF EXISTS `TargetType`;
 CREATE TABLE `TargetType` (
   `targetTypeId` int(11) NOT NULL AUTO_INCREMENT,
   `numericValue` VARCHAR(45) DEFAULT NULL,
-  `explanation` VARCHAR(45) DEFAULT NULL,
+  `explanation` VARCHAR(100) DEFAULT NULL,
   PRIMARY KEY (`targetTypeId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;

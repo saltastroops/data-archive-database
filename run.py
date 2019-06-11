@@ -1,11 +1,27 @@
 """
     this script should run a night update for all telescopes
 """
-
+import pandas as pd
 from datetime import date
+
+from connection import ssda_connect, sdb_connect
 from telescope import Telescope
 from rss_fits_data import RssFitsData
 from populate import populate
+
+conn = ssda_connect()
+cursor = conn.cursor()
+get_sql = """SELECT * from TargetSubType;"""
+
+insert_sql = "INSERT INTO TargetType (numericValue, explanation) VALUES "
+
+get_results = pd.read_sql(get_sql, sdb_connect())
+for i, row in get_results.iterrows():
+    insert_sql += '("{numericValue}", "{explanation}"),\n' \
+        .format(numericValue=row["NumericCode"], explanation=row["TargetSubType"])
+
+cursor.execute(insert_sql[:-2] + ";")
+conn.commit()
 
 populate(date(2019, 4, 3), date(2019, 4, 4))
 
