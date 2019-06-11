@@ -2,7 +2,7 @@ from util.get_information import get_telescope_id
 from util.util import handle_missing_header
 
 
-def create_column_value_pair_from_headers(headers):
+def create_column_value_pair_from_headers(headers, data_file_id):
 
     filepath = \
         "/home/nhlavu/nhlavu/da/database/data-archive-database/telescope/salt/hrs/hrs_headers.csv" \
@@ -21,7 +21,7 @@ def create_column_value_pair_from_headers(headers):
             if len(line) > 0 and line[0] != "#" and len(new):
                 to_return[new[1]] = handle_missing_header(headers, new[0])
             line = fp.readline()
-    to_return["telescopeId"] = get_telescope_id('SALT')
+    to_return["dataFileId"] = data_file_id
     return to_return
 
 
@@ -42,6 +42,6 @@ def create_insert_sql(table_map):
 
     sql = """
 INSERT INTO {table}({columns}) VALUES ({values});
-""".format(table=table, columns=columns, values=values)
+""".format(table=table, columns=columns[-2], values=values[-2])
     print("", sql)
     return sql
