@@ -42,6 +42,5 @@ def create_insert_sql(table_map):
 
     sql = """
 INSERT INTO {table}({columns}) VALUES ({values});
-""".format(table=table, columns=columns[-2], values=values[-2])
-    print("", sql)
+""".format(table=table, columns=columns[:-2], values=values[:-2])
     return sql

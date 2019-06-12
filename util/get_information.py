@@ -16,7 +16,6 @@ def get_telescope_name(telescope_id):
     value = record[0]
 
     "this prints a passed string into this function"
-    print(value)
     mydb.close()
     return
 
@@ -36,16 +35,14 @@ def get_target_id(target_name, right_ascension, declination):
 
 def get_data_file_id(filename):
     """
-
+    Query SSDA for data  file id and return it if the file exist.
     :param filename:
     :return: datafile Id
     """
 
-    sql = """
-                SELECT dataFileId FROM DataFile WHERE name=%s
-            """
+    sql = "SELECT dataFileId FROM DataFile WHERE name=%s"
 
-    df = pd.read_sql(sql, con=sdb_connect(), params=(filename))
+    df = pd.read_sql(sql, con=ssda_connect(), params=(filename,))
 
     if df.empty:
         return None
@@ -70,7 +67,7 @@ SELECT NumericCode from Pointing as p
 WHERE Block_Id = %s
     """
 
-    numeric_code_df = pd.read_sql(sql=sdb_target_type_query, con=sdb_connect(), params=block_id)
+    numeric_code_df = pd.read_sql(sql=sdb_target_type_query, con=sdb_connect(), params=(block_id,))
     if numeric_code_df.empty:
         return None
 
@@ -78,7 +75,7 @@ WHERE Block_Id = %s
     sql = """
 SELECT targetTypeId FROM TargetType WHERE numericValue = %s
     """.format(numeric_code=numeric_code)
-    numeric_code_id_df = pd.read_sql(sql=sql, con=ssda_connect(), params=numeric_code)
+    numeric_code_id_df = pd.read_sql(sql=sql, con=ssda_connect(), params=(numeric_code,))
     if numeric_code_id_df.empty:
         return None
 
@@ -327,6 +324,7 @@ def create_observation(telescope, telescope_observation_id=None, observation_sta
     cursor = conn.cursor()
 
     telescope_id = get_telescope_id(telescope)
+    # TODO if telescope observation id and observation status id are the same this raise an error
     observation_sql = """
 INSERT INTO Observation (telescopeId, telescopeObservationId, observationStatusId)
     SELECT * FROM (SELECT %s, %s, %s) as tmp
@@ -342,12 +340,19 @@ WHERE NOT EXISTS (
 
 
 def create_target(target_name, right_ascension, declination, block_id):
+    """
+    Creaet an SSDA Target
+    :param target_name: Name of object you need to create
+    :param right_ascension: Object's RA
+    :param declination: Objects's DEC
+    :param block_id: SSDA block id this object belong to.
+    :return: None
+    """
     conn = ssda_connect()
     cursor = conn.cursor()
     target_type_id = get_target_type_id(block_id)
-
+    # Only insert a target if it doesn't exist
     target_sql = """
-
 INSERT INTO Target (name, rightAscension, declination, position, targetTypeId)
     SELECT * FROM (SELECT %s, %s, %s, POINT(%s, %s) , %s) as tmp
 WHERE NOT EXISTS (
@@ -371,7 +376,6 @@ WHERE NOT EXISTS (
     )
     cursor.execute(target_sql, params)
     conn.commit()
-    return True
 
 
 def populate_target_type():
@@ -450,30 +454,31 @@ INSERT INTO DataPreview(
 
 
 def remove_file_if_exist(filename):
+    """
+    Remove a given file from SSDA if it exist
+    :param filename: file's name to remove is it exist
+    :return: None
+    """
 
     conn = ssda_connect()
     cursor = conn.cursor()
-
-    get_file_data_sql = """
-SELECT dataFileId FROM DataFile WHERE name=%s
-    """
+    # Checks if the file exist
+    get_file_data_sql = "SELECT dataFileId FROM DataFile WHERE name=%s"
     df = pd.read_sql(sql=get_file_data_sql, con=ssda_connect(), params=(filename,))
-
+    # If file doesn't exist stop
     if df.empty:
         return
 
     data_file_id = int(df['dataFileId'][0])
+    #  Remove all the all the files associations from SSDA
 
-    remove_data_file_sql = """
-DELETE FROM DataFile WHERE dataFileId=%s
-    """
-    cursor.execute(sql=remove_data_file_sql, con=ssda_connect(), params=(data_file_id,))
+    remove_data_file_sql = "DELETE FROM DataFile WHERE dataFileId=%s"
+    remove_data_preview_sql = "DELETE FROM DataPreview WHERE dataFileId=%s"
+    remove_rss_sql = "DELETE FROM RSS WHERE dataFileId=%s"
 
-    remove_data_preview_sql = """
-    DELETE FROM DataPreview WHERE dataFileId=%s
-        """
-    cursor.execute(sql=remove_data_preview_sql, con=ssda_connect(), params=(data_file_id,))
-
+    cursor.execute(remove_data_preview_sql, (data_file_id,))
+    cursor.execute(remove_rss_sql, (data_file_id,))
+    cursor.execute(remove_data_file_sql, (data_file_id,))
     conn.commit()
 
 
@@ -488,6 +493,7 @@ def create_data_file(data_category_id, observation_date, filename, target_id, ob
     :param file_size: The file size in bytes.
     :return: None
     """
+    # Check if file exist if it does remove it and enter it again
     remove_file_if_exist(filename)
     conn = ssda_connect()
     cursor = conn.cursor()
