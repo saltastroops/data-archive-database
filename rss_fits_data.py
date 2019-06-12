@@ -105,6 +105,57 @@ class RssFitsData(InstrumentFitsData):
         else:
             return DataCategory.SCIENCE
 
+    def instrument_details_file(self) -> str:
+        """
+        The path of the file containing FITS header keywords and corresponding columns
+        of the instrument table.
+
+        The format of the file content must be as follows:
+
+        - Lines starting with a '#' are comments.
+        - Lines containing only whitespace are comments.
+        - Any non-comment line has a FITS header keyword and a datavase column,
+          separated by whitespace.
+
+        For example:
+
+        # First column is for FITS header keywords
+        # Second column is for table columns
+
+        AMPSEC         amplifierSection
+        AMPTEM         amplifierTemperature
+        ATM1_1         amplifierReadoutX
+        ATM1_2         amplifierReadoutY
+
+        Returns
+        -------
+        path : str
+            The file path.
+
+        """
+
+        directory = os.path.dirname(os.path.abspath(__file__))
+
+        return os.path.join(directory, 'rss_headers.txt')
+
+    def instrument_table(self) -> str:
+        """
+        The name of the table containing the instrument details for the instrument that
+        took the data.
+
+        The primary key column of the table must the string you get when concatenating
+        the table name in lower case and 'Id'. For example, for the RSS table this
+        column must be named rssId.
+
+        Returns
+        -------
+        table : str
+            The name of the instrument details table.
+
+        """
+
+        return "RSS"
+
     def night(self) -> date:
         """
         The night when the data was taken.

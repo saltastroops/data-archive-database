@@ -46,6 +46,8 @@ def populate_with_data(fits_data: InstrumentFitsData) -> None:
         target_id = db_update.insert_target()
         data_file_id = db_update.insert_data_file(observation_id=observation_id, target_id=target_id)
         db_update.insert_data_preview(data_file_id)
+        db_update.insert_instrument(data_file_id)
+
         db_update.commit()
     except Exception as e:
         db_update.rollback()
@@ -501,9 +503,102 @@ class DatabaseUpdate:
 
     # Instrument ----------------------------------------------------------------- Start
 
-    def insert_instrument(self):
+    def insert_instrument(self, data_file_id: int) -> int:
+        """
+        Insert the instrument details.
 
-    # Instrument ----------------------------------------------------------------- End
+        The primary key column of the table must the string you get when concatenating
+        the table name in lower case and 'Id'. For example, for the RSS table this
+        column must be named rssId.
+
+        The primary key of the instrument entry is returned.
+
+        Parameters
+        ----------
+        data_file_id : int
+            The data file id.
+
+        Returns
+        -------
+        id : int
+            The primary key of the instrument entry.
+
+        """
+
+        # Maybe the instrument entry exists already?
+        existing_instrument_id = self.instrument_id(data_file_id)
+        if existing_instrument_id is not None:
+            return existing_instrument_id
+
+        # Collect all the instrument details
+        telescope = self.fits_data.telescope()
+        instrument_details_file = self.fits_data.instrument_details_file()
+        keywords = []
+        columns = []
+        with open(instrument_details_file, 'r') as fin:
+            for line in fin:
+                if line.strip() == '' or line.startswith('#'):
+                    continue
+                keyword, column = line.split()
+                keywords.append(keyword)
+                columns.append(column)
+
+        # Construct the SQL query
+        table = self.fits_data.instrument_table()
+        sql = """
+        INSERT INTO {table}(
+                dataFileId,
+                telescopeId,
+                {columns}
+        )
+        VALUES (%(data_file_id)s, %(telescope_id)s, {values})
+        """.format(table=table,
+                   columns=', '.join(columns),
+                   values=', '.join(['%({})s'.format(column) for column in columns]))
+
+        # Collect the parameters
+        params = dict(data_file_id=data_file_id, telescope_id=telescope.id())
+        for i in range(len(keywords)):
+            params[columns[i]] = self.fits_data.header.get(keywords[i])
+
+        # Insert the instrument entry
+        self.cursor.execute(sql, params)
+
+        # Get the instrument entry id
+        return self.last_insert_id()
+
+    def instrument_id(self, data_file_id: int) -> Optional[int]:
+        """
+        The id for the instrument entry for a data file id.
+
+        The primary key of the instrument entry is returned, or None if there is no such
+        entry.
+
+        Parameters
+        ----------
+        data_file_id : int
+            The data file id.
+
+        Returns
+        -------
+        id : int
+            The instrument entry id.
+
+        """
+
+        if data_file_id is None:
+            return None
+
+        table = self.fits_data.instrument_table()
+        id_column = table.lower() + 'Id'
+        id_sql = 'SELECT ' + id_column + ' FROM ' + table + ' WHERE dataFileId=%s'
+        id_df = pd.read_sql(id_sql, con=ssda_connect(), params=(data_file_id,))
+        if len(id_df) > 0:
+            return int(id_df[id_column])
+        else:
+            return None
+
+# Instrument ----------------------------------------------------------------- End
 
     def last_insert_id(self) -> id:
         """
