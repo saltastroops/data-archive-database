@@ -2,7 +2,7 @@ from astropy.coordinates import Angle
 from datetime import date, timedelta
 import os
 import pandas as pd
-from typing import Optional
+from typing import List, Optional
 from pymysql import Connection
 
 from connection import ssda_connect
@@ -24,17 +24,28 @@ def populate(start_date: date, end_date: date) -> None:
         night += dt
 
     for f in files:
-        print('FILE: ' + f + ' <' + RssFitsData(f).header.get('Object'))
         populate_with_data(RssFitsData(f))
 
 
 def populate_with_data(fits_data: InstrumentFitsData) -> None:
     db_update = DatabaseUpdate(fits_data)
     try:
+        # Maybe the file content been added to the database already?
+        fits_base_path_length = len(os.environ['FITS_BASE_DIR'])
+        path = os.path.abspath(fits_data.file_path)[fits_base_path_length:]
+        sql = """
+        SELECT dataFileId FROM DataFile WHERE path=%s
+        """
+        df = pd.read_sql(sql, con=ssda_connect(), params=(path,))
+        if len(df) > 0:
+            return
+
+        # Add the file content to the database
         proposal_id = db_update.insert_proposal()
         observation_id = db_update.insert_observation(proposal_id)
         target_id = db_update.insert_target()
-        print(db_update.insert_data_file(observation_id=observation_id, target_id=target_id))
+        data_file_id = db_update.insert_data_file(observation_id=observation_id, target_id=target_id)
+        db_update.insert_data_preview(data_file_id)
         db_update.commit()
     except Exception as e:
         db_update.rollback()
@@ -276,8 +287,8 @@ class DatabaseUpdate:
 
         No entry is created if the FITS data does not specify a target.
 
-        The primary key of the new Target table entry is returned, or None if no target
-        is specified in the FITS data.
+        The primary key of the Target table entry is returned, or None if no target is
+        specified in the FITS data.
 
         Returns
         -------
@@ -312,9 +323,9 @@ class DatabaseUpdate:
                 position,
                 targetTypeId
               )
-        VALUES (%(name)s, %(ra)s, %(dec)s, ST_GeomFromText('POINT(%(ra)s %(dec)s)', 123456), %(target_type_id)s)
+        VALUES (%(name)s, %(ra)s, %(dec)s, ST_GeomFromText('POINT(%(shifted_ra)s %(dec)s)', 123456), %(target_type_id)s)
         """
-        insert_params = dict(name=target.name, ra=target.ra - 180, dec=target.dec, target_type_id=target_type_id)
+        insert_params = dict(name=target.name, ra=target.ra, dec=target.dec, shifted_ra=target.ra - 180, target_type_id=target_type_id)
         self.cursor.execute(insert_sql, insert_params)
 
         # Get the target id
@@ -325,10 +336,26 @@ class DatabaseUpdate:
     # DataFile ------------------------------------------------------------------- Start
 
     def insert_data_file(self, observation_id: int, target_id: Optional[int]):
+        """
+        Insert the data file for FITS data into the database.
+
+        The primary key of the DataFile table entry is returned.
+
+        Parameters
+        ----------
+        observation_id
+        target_id
+
+        Returns
+        -------
+
+        """
         # Collect the data file properties
+        base_path_length = len(os.environ['FITS_BASE_DIR'])
         data_category = self.fits_data.data_category()
         start_time = self.fits_data.start_time()
         name = os.path.basename(self.fits_data.file_path)
+        path = os.path.abspath(self.fits_data.file_path)[base_path_length:]
         size = self.fits_data.file_size
 
         # Maybe the data file exists already?
@@ -343,13 +370,14 @@ class DatabaseUpdate:
                 dataCategoryId,
                 startTime,
                 name,
+                path,
                 targetId,
                 size,
                 observationId
               )
-        VALUES (%(data_category_id)s, %(start_time)s, %(name)s, %(target_id)s, %(size)s, %(observation_id)s)
+        VALUES (%(data_category_id)s, %(start_time)s, %(name)s, %(path)s, %(target_id)s, %(size)s, %(observation_id)s)
         """
-        params = dict(data_category_id=data_category.id(), start_time=start_time, name=name, target_id=target_id, size=size, observation_id=observation_id)
+        params = dict(data_category_id=data_category.id(), start_time=start_time, name=name, path=path, target_id=target_id, size=size, observation_id=observation_id)
         self.cursor.execute(sql, params)
 
         # Get the data file id
@@ -388,6 +416,94 @@ class DatabaseUpdate:
             return None
 
     # DataFile ------------------------------------------------------------------- End
+
+    # DataPreview ---------------------------------------------------------------- Start
+
+    def insert_data_preview(self, data_file_id: int) -> List[id]:
+        """
+        Insert the data preview entries for FITS data into the database.
+
+        The preview files referenced by the data preview entries are created.
+
+        The list of primary keys of the DataPreview table entries is returned.
+
+        Returns
+        -------
+        ids : list of id
+            The primary keys of the DataPreview entries.
+
+        """
+
+        # Create the preview files
+        preview_files = self.fits_data.create_preview_files()
+
+        # Enter the data for all preview files into the database
+        ids = []
+        for index, preview_file in enumerate(preview_files):
+            # Collect the preview data
+            base_dir_path_length = len(os.environ['PREVIEW_BASE_DIR'])
+            name = os.path.basename(preview_file)
+            path = os.path.abspath(preview_file)[base_dir_path_length:]
+            order = index + 1
+
+            # Maybe the data preview entry exists already?
+            existing_data_preview_id = self.data_preview_id(data_file_id, order)
+            if existing_data_preview_id is None:
+                # It doesn't exist, so it is inserted
+                sql = """
+                INSERT INTO DataPreview(
+                        name,
+                        path,
+                        dataFileId,
+                        `order`
+                )
+                VALUES (%(name)s, %(path)s, %(data_file_id)s, %(order)s)
+                """
+                params = dict(name=name, path=path, data_file_id=data_file_id, order=order)
+                self.cursor.execute(sql, params)
+
+                # Store the data preview entry id
+                ids.append(self.last_insert_id())
+
+        return ids
+
+    def data_preview_id(self, data_file_id, order):
+        """
+        The id of the data preview entry for a data file and order.
+
+        The primary key of the DataPreview entry is returned, or None if there is no
+        such entry.
+
+        Parameters
+        ----------
+        data_file_id
+        order
+
+        Returns
+        -------
+        id : int
+            The data preview entry id.
+
+        """
+
+        sql = """
+        SELECT dataPreviewId FROM DataPreview WHERE dataFileId=%(data_file_id)s AND `order`=%(order)s
+        """
+        params = dict(data_file_id=data_file_id, order=order)
+        df = pd.read_sql(sql, con=self._ssda_connection, params=params)
+
+        if len(df) > 0:
+            return int(df['dataPreviewId'][0])
+        else:
+            return None
+
+    # DataPreview ---------------------------------------------------------------- End
+
+    # Instrument ----------------------------------------------------------------- Start
+
+    def insert_instrument(self):
+
+    # Instrument ----------------------------------------------------------------- End
 
     def last_insert_id(self) -> id:
         """

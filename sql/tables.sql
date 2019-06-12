@@ -41,6 +41,7 @@ CREATE TABLE `DataFile` (
   `dataCategoryId` int(11) DEFAULT NULL,
   `startTime` DATETIME DEFAULT NULL,
   `name` VARCHAR(255) DEFAULT NULL,
+  `path` VARCHAR(255) DEFAULT NULL,
   `targetId` int(11) DEFAULT NULL,
   `size` FLOAT DEFAULT NULL,
   `observationId` int(11) DEFAULT NULL,
@@ -64,8 +65,9 @@ DROP TABLE IF EXISTS `DataPreview`;
 CREATE TABLE `DataPreview` (
   `dataPreviewId` int(11) NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(255) DEFAULT NULL,
+  `path` VARCHAR(255) DEFAULT NULL,
   `dataFileId` int(11) DEFAULT NULL,
-  `orders` VARCHAR(45) DEFAULT NULL,
+  `order` VARCHAR(45) DEFAULT NULL,
   PRIMARY KEY (`dataPreviewId`),
   KEY `fk_DataPreviewDataFile_idx` (`dataFileId`),
   CONSTRAINT `fk_DataPreviewDataFile` FOREIGN KEY (`dataFileId`) REFERENCES `DataFile` (`dataFileId`) ON DELETE NO ACTION ON UPDATE NO ACTION

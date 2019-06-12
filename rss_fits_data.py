@@ -20,12 +20,80 @@ class RssFitsData(InstrumentFitsData):
 
     @staticmethod
     def fits_files(night: date) -> List[str]:
-        data_directory = '{base_dir}/{year}/{monthday}/rss/raw'.format(base_dir=os.environ['SALT_FITS_BASE_DIR'],
+        """
+        The list of FITS files generated for the instrument during a night.
+
+        Parameters
+        ----------
+        night : date
+            Start date of the night for which the FITS files are returned.
+
+        Returns
+        -------
+        files : list of str
+            The list of file paths.
+
+        """
+
+        data_directory = '{base_dir}/salt/{year}/{monthday}/rss/raw'.format(base_dir=os.environ['FITS_BASE_DIR'],
                                                                        year=night.strftime('%Y'), monthday=night.strftime('%m%d'))
 
         return sorted(glob.iglob(os.path.join(data_directory, '*.fits')))
 
+    def create_preview_files(self) -> List[str]:
+        """
+        Create the preview files for the FITS file.
+
+        Returns
+        -------
+        paths: list of str
+            The list of file paths of the created preview files.
+
+        """
+
+        # Create the required directories
+        salt_dir = os.path.join(os.environ['PREVIEW_BASE_DIR'], 'salt')
+        if not os.path.exists(salt_dir):
+            os.mkdir(salt_dir)
+        year_dir = os.path.join(salt_dir, str(self.night().year))
+        if not os.path.exists(year_dir):
+            os.mkdir(year_dir)
+        day_dir = os.path.join(year_dir, self.night().strftime('%m%d'))
+        if not os.path.exists(day_dir):
+            os.mkdir(day_dir)
+        rss_dir = os.path.join(day_dir, 'rss')
+        if not os.path.exists(rss_dir):
+            os.mkdir(rss_dir)
+
+        # Create the header content file
+        basename = os.path.basename(self.file_path)[:-5]
+        header_content_file = os.path.join(rss_dir, basename + '-header.txt')
+        with open(header_content_file, 'w') as f:
+            f.write(self.header_text)
+        preview_files = [header_content_file]
+
+        # Create the image files
+        # TODO: Replace with real images
+        for i in range(1, 4):
+            image_file = os.path.join(rss_dir, '{basename}-image_{order}'.format(basename=basename, order=i))
+            with open(image_file, 'w') as f:
+                f.write(str(datetime.now()))
+            preview_files.append(image_file)
+
+        # Return the created file paths
+        return preview_files
+
     def data_category(self) -> DataCategory:
+        """
+        The category (such as science or arc) of the data contained in the FITS file.
+
+        Returns
+        -------
+        category : DataCategory
+            The data category.
+
+        """
+
         # TODO: What about standards?
         object_name = self.header.get('OBJECT').upper()
         if object_name == 'ARC':
@@ -38,9 +106,33 @@ class RssFitsData(InstrumentFitsData):
             return DataCategory.SCIENCE
 
     def night(self) -> date:
+        """
+        The night when the data was taken.
+
+        Returns
+        -------
+        night : date
+            The date of the night when the data was taken.
+
+        """
+
         return parser.parse(self.header.get('DATE-OBS')).date()
 
     def observation_status(self) -> ObservationStatus:
+        """
+        The status (such as Accepted) for the observation to which the FITS file
+        belongs.
+
+        If the FIS file is not linked to any observation, the status is assumed to be
+        Accepted.
+
+        Returns
+        -------
+        status : ObservationStatus
+            The observation status.
+
+        """
+
         block_visit_id = self.telescope_observation_id()
         if block_visit_id is None:
             return ObservationStatus.ACCEPTED
@@ -53,6 +145,18 @@ class RssFitsData(InstrumentFitsData):
         return ObservationStatus(df['BlockVisitStatus'][0])
 
     def principal_investigator(self) -> Optional[PrincipalInvestigator]:
+        """
+        The principal investigator for the proposal to which this File belonhs.
+        If the FIS file is not linked to any observation, the status is assumed to be
+        Accepted.
+
+        Returns
+        -------
+        pi : PrincipalInvestigator
+            The principal investigator for the proposal.
+
+        """
+
         proposal_code = self.proposal_code()
         if not proposal_code:
             return None
@@ -74,6 +178,23 @@ class RssFitsData(InstrumentFitsData):
                                      given_name=df['FirstName'][0])
 
     def proposal_code(self) -> Optional[str]:
+        """
+        The unique identifier of the proposal to which the FITS file belongs.
+
+        The identifier is the identifier that would be used whe referring to the
+        proposal communication between the Principal Investigator and another
+        astronomer. For example, an identifier for a SALT proposal might look like
+        2019-1-SCI-042.
+
+        None is returned if the FITS file is not linked to a proposal.
+
+        Returns
+        -------
+        code : str
+            The proposal code.
+
+        """
+
         code = self.header.get('PROPID') or None
         if not code:
             return None
@@ -85,6 +206,18 @@ class RssFitsData(InstrumentFitsData):
             return None
 
     def proposal_title(self) -> Optional[str]:
+        """
+        The proposal title of the proposal to which the FITS file belongs.
+
+        None is returned if the FITS file is not linked to a proposal.
+
+        Returns
+        -------
+        title : str
+            The proposal title.
+
+        """
+
         proposal_code = self.proposal_code()
         if not proposal_code:
             return None
@@ -100,9 +233,30 @@ class RssFitsData(InstrumentFitsData):
         return df['Title'][0]
 
     def start_time(self) -> datetime:
+        """
+        The start time, i.e. the time when taking data for the FITS file began.
+
+        Returns
+        -------
+        time : datetime
+            The start time.
+
+        """
+
         return parser.parse(self.header['DATE-OBS'] + ' ' + self.header['TIME-OBS'])
 
     def target(self) -> Optional[Target]:
+        """
+        The target specified in the FITS file.
+
+        None is returned if no target is specified, i.e. if no target position is
+        defined.
+
+        Returns
+        -------
+
+        """
+
         # Get the target position
         ra_header_value = self.header.get('RA')
         dec_header_value = self.header.get('DEC')
@@ -128,25 +282,67 @@ class RssFitsData(InstrumentFitsData):
         return Target(name=name, ra=ra, dec=dec, target_type=_target_type)
 
     def telescope(self) -> Telescope:
+        """
+        The telescope used for observing the data in the FITS file.
+
+        Returns
+        -------
+        telescope : Telescope
+            The telescope.
+
+        """
+
         return Telescope.SALT
 
     def telescope_observation_id(self) -> str:
+        """
+        The id used by the telescope for the observation.
+
+        If the FITS file was taken as part of an observation, this method returns the
+        unique id used by the telescope for identifying this observation.
+
+        If the FITS file was not taken as part of an observation (for example because it
+        refers to a standard), this method returns None.
+
+        Returns
+        -------
+        id : str
+            The unique id used by the telescope for identifying the observation.
+
+        """
+
         return self.header.get('BVISITID') or None
 
 
-def target_type(block_visit_id: Optional[str]) -> Optional[str]:
+def target_type(block_visit_id: Optional[int]) -> Optional[str]:
+    """
+    The type of target observed in a block visit.
+
+    Parameters
+    ----------
+    block_visit_id : int
+        The block visit id.
+
+    Returns
+    -------
+    type : str
+        The target type.
+
+    """
+
     # No target type can be determined if there is no observation linked to the target
-    if block_visit_id is None:
+    if block_visit_id is None or block_visit_id :
         return None
 
     # Get the target type from the SDB
     sdb_target_type_query = """
     SELECT NumericCode
-           FROM Pointing
+           FROM BlockVisit
+           JOIN Pointing ON (BlockVisit.Block_Id=Pointing.Block_Id)
            JOIN Observation USING(Pointing_Id)
            JOIN Target USING(Target_Id)
            JOIN TargetSubType USING(TargetSubType_Id)
-    WHERE Block_Id = %s
+    WHERE BlockVisit_Id = %s
     """
     numeric_code_df = pd.read_sql(sql=sdb_target_type_query, con=sdb_connect(), params=(block_visit_id,))
     if numeric_code_df.empty:

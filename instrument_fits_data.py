@@ -107,7 +107,29 @@ class InstrumentFitsData(ABC):
         self.file_path = os.path.abspath(fits_file)
         self.file_size = os.path.getsize(fits_file)
         with fits.open(fits_file) as header_data_unit_list:
+            # Only use keywords and values from the primary header
             self.header = header_data_unit_list[0].header
+
+    @property
+    def header_text(self) -> str:
+        """
+        The primary header content as a properly formatted string. The final END line
+        and any subsequent empty lines are not included.
+
+        Returns
+        -------
+        header : str
+            The primary header content.
+
+        """
+
+        # Split the header into lines of 80 characters
+        content = str(self.header)
+        lines = [content[i:i + 80] for i in range(0, len(content), 80)]
+
+        # Only include content up to the END line
+        end_index = [line.strip() for line in lines].index('END')
+        return '\n'.join(lines[:end_index])
 
     @staticmethod
     @abstractmethod
@@ -124,6 +146,19 @@ class InstrumentFitsData(ABC):
         -------
         files : list of str
             The list of file paths.
+
+        """
+
+        raise NotImplementedError
+
+    def create_preview_files(self) -> List[str]:
+        """
+        Create the preview files for the FITS file.
+
+        Returns
+        -------
+        paths: list of str
+            The list of file paths of the created preview files.
 
         """
 
@@ -176,7 +211,6 @@ class InstrumentFitsData(ABC):
 
     def principal_investigator(self) -> Optional[PrincipalInvestigator]:
         """
-
         The principal investigator for the proposal to which this File belonhs.
         If the FIS file is not linked to any observation, the status is assumed to be
         Accepted.
@@ -259,7 +293,7 @@ class InstrumentFitsData(ABC):
     @abstractmethod
     def telescope(self) -> Telescope:
         """
-        The telescope used for generating the data in the FITS file.
+        The telescope used for observing the data in the FITS file.
 
         Returns
         -------
