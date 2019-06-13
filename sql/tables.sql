@@ -454,8 +454,11 @@ CREATE TABLE `Proposal` (
   `principalInvestigatorGivenName` VARCHAR(45) NOT NULL,
   `principalInvestigatorFamilyName` VARCHAR(45) NOT NULL,
   `title` VARCHAR(255) NOT NULL,
+  `institutionId` INT(11) NOT NULL,
   `lastUpdated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`proposalId`)
+  PRIMARY KEY (`proposalId`),
+  KEY `fk_institution_idx` (`institutionId`),
+  CONSTRAINT `fk_ProposalInstitution` FOREIGN KEY (`institutionId`) REFERENCES `Institution` (`institutionId`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -468,11 +471,9 @@ DROP TABLE IF EXISTS `ProposalInvestigator`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ProposalInvestigator` (
   `proposalId` int(11) NOT NULL,
-  `userId` int(11) DEFAULT NULL,
-  PRIMARY KEY (`proposalId`),
-  KEY `fk_ProposalInvestigatorUser_idx` (`userId`),
+  `institutionUserId` varchar(255) NOT NULL,
+  PRIMARY KEY (`proposalId`, `institutionUserId`),
   CONSTRAINT `fk_ProposalInvestigatorProposal` FOREIGN KEY (`proposalId`) REFERENCES `Proposal` (`proposalId`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `fk_ProposalInvestigatorUser` FOREIGN KEY (`userId`) REFERENCES `User` (`userId`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -534,24 +535,6 @@ CREATE TABLE `Telescope` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `User`
---
-
-DROP TABLE IF EXISTS `User`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `User` (
-  `userId` int(11) NOT NULL AUTO_INCREMENT,
-  `institutionId` int(11) DEFAULT NULL,
-  `institutionUserId` VARCHAR(45) DEFAULT NULL,
-  `givenName` VARCHAR(45) DEFAULT NULL,
-  `familyName` VARCHAR(45) DEFAULT NULL,
-  PRIMARY KEY (`userId`),
-  KEY `fk_UserInstitution_idx` (`institutionId`),
-  CONSTRAINT `fk_UserInstitution` FOREIGN KEY (`institutionId`) REFERENCES `Institution` (`institutionId`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
