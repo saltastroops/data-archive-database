@@ -9,7 +9,7 @@ from typing import List, Optional
 
 from connection import sdb_connect, ssda_connect
 from instrument_fits_data import InstrumentFitsData, PrincipalInvestigator, Target, \
-    DataCategory
+    DataCategory, Institution
 from observation_status import ObservationStatus
 from telescope import Telescope
 
@@ -105,6 +105,20 @@ class RssFitsData(InstrumentFitsData):
         else:
             return DataCategory.SCIENCE
 
+    def institution(self) -> Institution:
+        """
+        The institution (such as SALT or SAAO) operating the telescope with which the
+        data was taken.
+
+        Returns
+        -------
+        institution : Institution
+            The institution.
+
+        """
+
+        return Institution.SALT
+
     def instrument_details_file(self) -> str:
         """
         The path of the file containing FITS header keywords and corresponding columns
@@ -156,6 +170,71 @@ class RssFitsData(InstrumentFitsData):
 
         return "RSS"
 
+    def investigator_ids(self) -> List[str]:
+        """
+        The list of ids of users who are an investigator on the proposal for the FITS
+        file.
+
+        The ids are those assigned by the institution (such as SALT or the SAAO) which
+        received the proposal. These may differ from ids used by the data archive.
+
+        An empty list is returned if the FITS file is not linked to a proposal.
+
+        Returns
+        -------
+        ids : list of id
+            The list of user ids.
+
+        """
+
+        # Proposals without proposal code have no users
+        proposal_code = self.proposal_code()
+        if proposal_code is None:
+            return []
+
+        # Find the users
+        salt_users_sql = """
+        SELECT Username
+               FROM PiptUser
+               JOIN Investigator ON PiptUser.Investigator_Id = Investigator.Investigator_Id
+               JOIN ProposalInvestigator ON Investigator.Investigator_Id = ProposalInvestigator.Investigator_Id
+               JOIN ProposalCode ON ProposalInvestigator.ProposalCode_Id = ProposalCode.ProposalCode_Id
+        WHERE Proposal_Code=%s
+        """
+        salt_users_df = pd.read_sql(salt_users_sql, con=sdb_connect(), params=(proposal_code,))
+
+        return list(salt_users_df['Username'])
+
+    def is_proprietary(self) -> bool:
+        """
+        Indicate whether the data for the FITS file is proprietary.
+
+        Returns
+        -------
+        proprietary : bool
+            Whether the data is proprietary.
+
+        """
+
+        sql = """
+        
+        """
+
+        # TODO: Will have to be updated
+        sql = """
+        SELECT ReleaseDate
+               FROM ProposalGeneralInfo
+               JOIN ProposalCode USING (ProposalCode_Id)
+        WHERE Proposal_Code=%s
+        """
+        with sdb_connect().cursor() as cursor:
+            cursor.execute(sql, (self.proposal_code(),))
+            result = cursor.fetchone()
+            if result is None:
+                return False
+            release_date = result['ReleaseDate']
+            return release_date > datetime.now().date()
+
     def night(self) -> date:
         """
         The night when the data was taken.
@@ -197,8 +276,8 @@ class RssFitsData(InstrumentFitsData):
 
     def principal_investigator(self) -> Optional[PrincipalInvestigator]:
         """
-        The principal investigator for the proposal to which this File belonhs.
-        If the FIS file is not linked to any observation, the status is assumed to be
+        The principal investigator for the proposal to which this file belongs.
+        If the FITS file is not linked to any observation, the status is assumed to be
         Accepted.
 
         Returns

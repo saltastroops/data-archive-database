@@ -41,12 +41,13 @@ def populate_with_data(fits_data: InstrumentFitsData) -> None:
             return
 
         # Add the file content to the database
-        proposal_id = db_update.insert_proposal()
-        observation_id = db_update.insert_observation(proposal_id)
+        db_update.insert_proposal()
+        observation_id = db_update.insert_observation()
         target_id = db_update.insert_target()
         data_file_id = db_update.insert_data_file(observation_id=observation_id, target_id=target_id)
-        db_update.insert_data_preview(data_file_id)
+        db_update.insert_data_previews(data_file_id)
         db_update.insert_instrument(data_file_id)
+        db_update.insert_proposal_investigators()
 
         db_update.commit()
     except Exception as e:
@@ -125,6 +126,7 @@ class DatabaseUpdate:
             given_name = None
             family_name = None
         proposal_title = self.fits_data.proposal_title()
+        institution = self.fits_data.institution()
 
         if proposal_code is None:
             return None
@@ -139,16 +141,19 @@ class DatabaseUpdate:
         INSERT INTO Proposal (proposalCode,
                               principalInvestigatorGivenName,
                               principalInvestigatorFamilyName,
-                              title)
+                              title,
+                              institutionId)
                     VALUES (%(proposal_code)s,
                             %(given_name)s,
                              %(family_name)s,
-                             %(proposal_title)s)
+                             %(proposal_title)s,
+                             %(institution_id)s)
         """
         params = dict(proposal_code=proposal_code,
-                             given_name=given_name,
-                             family_name=family_name,
-                             proposal_title=proposal_title)
+                      given_name=given_name,
+                      family_name=family_name,
+                      proposal_title=proposal_title,
+                      institution_id=institution.id())
         self.cursor.execute(sql, params)
 
         # Get the proposal id
@@ -186,7 +191,7 @@ class DatabaseUpdate:
 
     # Observation ---------------------------------------------------------------- Start
 
-    def insert_observation(self, proposal_id: int) -> int:
+    def insert_observation(self) -> int:
         """
         Insert the observation for FITS data into the database.
 
@@ -195,11 +200,8 @@ class DatabaseUpdate:
         The primary key of the entry in the Proposal table is returned, irrespective of
         whether the proposal has been created or existed already.
 
-        Parameters
-        ----------
-        proposal_id : int or None
-            Primary key of the Proposal table entry for the proposal to which the
-            observation belongs.
+        If the inserted observation is linked to a proposal, that proposal must exist
+        in the database already.
 
         Returns
         -------
@@ -207,6 +209,14 @@ class DatabaseUpdate:
             Primary key of the Observation table entry.
 
         """
+
+        # Get the proposal id
+        proposal_code = self.fits_data.proposal_code()
+        proposal_id = self.proposal_id(proposal_code)
+
+        # Consistency check: Does the proposal exist already?
+        if proposal_code is not None and proposal_id is None:
+            raise ValueError('The proposal {} has not been inserted into the database yet.'.format(proposal_code))
 
         # Collect the observation properties.
         telescope = self.fits_data.telescope()
@@ -421,7 +431,7 @@ class DatabaseUpdate:
 
     # DataPreview ---------------------------------------------------------------- Start
 
-    def insert_data_preview(self, data_file_id: int) -> List[id]:
+    def insert_data_previews(self, data_file_id: int) -> List[id]:
         """
         Insert the data preview entries for FITS data into the database.
 
@@ -429,12 +439,19 @@ class DatabaseUpdate:
 
         The list of primary keys of the DataPreview table entries is returned.
 
+        Preview data is only created and stored in the database if the data for the FITS
+        file is non-proprietary.
+
         Returns
         -------
         ids : list of id
             The primary keys of the DataPreview entries.
 
         """
+
+        # Only proceed for non-proprietary data
+        if self.fits_data.is_proprietary():
+            return []
 
         # Create the preview files
         preview_files = self.fits_data.create_preview_files()
@@ -598,7 +615,60 @@ class DatabaseUpdate:
         else:
             return None
 
-# Instrument ----------------------------------------------------------------- End
+    # Instrument ----------------------------------------------------------------- End
+
+    # ProposalInvestigator ------------------------------------------------------- Start
+
+    def insert_proposal_investigators(self) -> None:
+        """
+        Insert the proposal investigators.
+
+        If the FITS file is linked to a proposal, the proposal must exist in the
+        database already.
+
+        Returns
+        -------
+
+        """
+
+        # Get the proposal id
+        proposal_code = self.fits_data.proposal_code()
+        proposal_id = self.proposal_id(proposal_code)
+
+        # No proposal id - no investigators
+        if proposal_id is None:
+            return
+
+        # Consistency check: Does the proposal exist already?
+        if proposal_code is not None and proposal_id is None:
+            raise ValueError('The proposal {} has not been inserted into the database yet.'.format(proposal_code))
+
+        # Insert the investigators
+        ids = []
+        for investigator_id in self.fits_data.investigator_ids():
+            # Maybe the entry exists already?
+            select_sql = """
+            SELECT COUNT(*) AS entryCount
+                   FROM ProposalInvestigator
+                   WHERE proposalId=%(proposal_id)s AND institutionUserId=%(investigator_id)s
+            """
+            select_params = dict(proposal_id=proposal_id, investigator_id=investigator_id)
+            select_df = pd.read_sql(select_sql, con=self._ssda_connection, params=select_params)
+            if int(select_df['entryCount'][0]) > 0:
+                continue
+
+            # Insert the entry
+            insert_sql = """
+            INSERT INTO ProposalInvestigator(
+                    proposalId,
+                    institutionUserId
+            )
+            VALUES (%(proposal_id)s, %(investigator_id)s)
+            """
+            insert_params = dict(proposal_id=proposal_id, investigator_id=investigator_id)
+            self.cursor.execute(insert_sql, insert_params)
+
+    # ProposalInvestigator ------------------------------------------------------- End
 
     def last_insert_id(self) -> id:
         """

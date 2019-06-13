@@ -25,7 +25,7 @@ class DataCategory(Enum):
     FLAT = 'Flat'
     SCIENCE = 'Science'
 
-    def id(self):
+    def id(self) -> int:
         """
         Return the primary key of the DataCategory entry for this data category.
 
@@ -42,7 +42,38 @@ class DataCategory(Enum):
         if len(df) == 0:
             raise ValueError('The data category {} is not included in the DataCategory table.'.format(self.value))
 
-        return int(df['dataCategoryId'])
+        return int(df['dataCategoryId'][0])
+
+
+class Institution(Enum):
+    """
+    Enumeration of the institutions.
+
+    The values must be the same as those of the institutionName column in the
+    Institution table.
+
+    """
+
+    SAAO = 'SAAO'
+    SALT = 'SALT'
+
+    def id(self) -> int:
+        """
+        Return the primary key opf the Institution entry for this institution.
+
+        Returns
+        -------
+        id : int
+            The primary key.
+
+        """
+
+        sql = """
+        SELECT institutionId FROM Institution WHERE institutionName=%s
+        """
+        df = pd.read_sql(sql, con=ssda_connect(), params=(self.value,))
+
+        return int(df['institutionId'][0])
 
 
 class PrincipalInvestigator(NamedTuple):
@@ -179,6 +210,21 @@ class InstrumentFitsData(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def institution(self) -> Institution:
+        """
+        The institution (such as SALT or SAAO) operating the telescope with which the
+        data was taken.
+
+        Returns
+        -------
+        institution : Institution
+            The institution.
+
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
     def instrument_details_file(self) -> str:
         """
         The path of the file containing FITS header keywords and corresponding columns
@@ -226,6 +272,40 @@ class InstrumentFitsData(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def investigator_ids(self) -> List[int]:
+        """
+        The list of ids of users who are an investigator on the proposal for the FITS
+        file.
+
+        The ids are those assigned by the institution (such as SALT or the SAAO) which
+        received the proposal. These may differ from ids used by the data archive.
+
+        An empty list is returned if the FITS file is not linked to a proposal.
+
+        Returns
+        -------
+        ids : list of id
+            The list of user ids.
+
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def is_proprietary(self) -> bool:
+        """
+        Indicate whether the data for the FITS file is proprietary.
+
+        Returns
+        -------
+        proprietary : bool
+            Whether the data is proprietary.
+
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
     def night(self) -> date:
         """
         The night when the data was taken.
@@ -258,8 +338,8 @@ class InstrumentFitsData(ABC):
 
     def principal_investigator(self) -> Optional[PrincipalInvestigator]:
         """
-        The principal investigator for the proposal to which this File belonhs.
-        If the FIS file is not linked to any observation, the status is assumed to be
+        The principal investigator for the proposal to which this file belongs.
+        If the FITS file is not linked to any observation, the status is assumed to be
         Accepted.
 
         Returns
