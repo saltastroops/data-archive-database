@@ -1,4 +1,4 @@
-from pymysql import connect, Connection
+from pymysql import connect, Connection, cursors
 import os
 
 ssda_config = {
@@ -6,7 +6,8 @@ ssda_config = {
     'host': os.environ["SSDA_HOST"],
     'password': os.getenv("SSDA_PASSWORD"),
     'db': os.getenv("SSDA_DATABASE"),
-    'charset': 'utf8'
+    'charset': 'utf8',
+    'cursorclass': cursors.DictCursor
 }
 
 sdb_config = {
@@ -14,7 +15,8 @@ sdb_config = {
         'host': os.environ["SDB_HOST"],
         'password': os.getenv("SDB_PASSWORD"),
         'db': os.getenv("SDB_DATABASE"),
-        'charset': 'utf8'
+        'charset': 'utf8',
+    'cursorclass': cursors.DictCursor
     }
 
 
