@@ -1,9 +1,7 @@
-from astropy.coordinates import Angle
 from datetime import date, timedelta
 import os
 import pandas as pd
 from typing import List, Optional
-from pymysql import Connection
 
 from connection import ssda_connect
 from instrument_fits_data import InstrumentFitsData
@@ -15,7 +13,7 @@ def populate(start_date: date, end_date: date) -> None:
     # get FITS files
     # loop over all dates
     if start_date >= end_date:
-        raise ValueError('The start date must be earlier than the end date.')
+        raise ValueError("The start date must be earlier than the end date.")
     dt = timedelta(days=1)
     night = start_date
     files = []
@@ -31,7 +29,7 @@ def populate_with_data(fits_data: InstrumentFitsData) -> None:
     db_update = DatabaseUpdate(fits_data)
     try:
         # Maybe the file content been added to the database already?
-        fits_base_path_length = len(os.environ['FITS_BASE_DIR'])
+        fits_base_path_length = len(os.environ["FITS_BASE_DIR"])
         path = os.path.abspath(fits_data.file_path)[fits_base_path_length:]
         sql = """
         SELECT dataFileId FROM DataFile WHERE path=%s
@@ -44,7 +42,9 @@ def populate_with_data(fits_data: InstrumentFitsData) -> None:
         db_update.insert_proposal()
         observation_id = db_update.insert_observation()
         target_id = db_update.insert_target()
-        data_file_id = db_update.insert_data_file(observation_id=observation_id, target_id=target_id)
+        data_file_id = db_update.insert_data_file(
+            observation_id=observation_id, target_id=target_id
+        )
         db_update.insert_data_previews(data_file_id)
         db_update.insert_instrument(data_file_id)
         db_update.insert_proposal_investigators()
@@ -149,11 +149,13 @@ class DatabaseUpdate:
                              %(proposal_title)s,
                              %(institution_id)s)
         """
-        params = dict(proposal_code=proposal_code,
-                      given_name=given_name,
-                      family_name=family_name,
-                      proposal_title=proposal_title,
-                      institution_id=institution.id())
+        params = dict(
+            proposal_code=proposal_code,
+            given_name=given_name,
+            family_name=family_name,
+            proposal_title=proposal_title,
+            institution_id=institution.id(),
+        )
         self.cursor.execute(sql, params)
 
         # Get the proposal id
@@ -183,7 +185,7 @@ class DatabaseUpdate:
         """
         df = pd.read_sql(sql, con=self._ssda_connection, params=(proposal_code,))
         if len(df) > 0:
-            return int(df['proposalId'][0])
+            return int(df["proposalId"][0])
         else:
             return None
 
@@ -216,7 +218,11 @@ class DatabaseUpdate:
 
         # Consistency check: Does the proposal exist already?
         if proposal_code is not None and proposal_id is None:
-            raise ValueError('The proposal {} has not been inserted into the database yet.'.format(proposal_code))
+            raise ValueError(
+                "The proposal {} has not been inserted into the database yet.".format(
+                    proposal_code
+                )
+            )
 
         # Collect the observation properties.
         telescope = self.fits_data.telescope()
@@ -227,7 +233,9 @@ class DatabaseUpdate:
 
         # Maybe the observation exists already?
         if telescope_id and telescope_observation_id:
-            existing_observation_id = self.observation_id(telescope, telescope_observation_id)
+            existing_observation_id = self.observation_id(
+                telescope, telescope_observation_id
+            )
             if existing_observation_id is not None:
                 return existing_observation_id
 
@@ -244,17 +252,21 @@ class DatabaseUpdate:
                             %(night)s,
                             %(observation_status_id)s)
         """
-        insert_params = dict(proposal_id=proposal_id,
-                             telescope_id=telescope_id,
-                             telescope_observation_id=telescope_observation_id,
-                             night=night,
-                             observation_status_id=observation_status_id)
+        insert_params = dict(
+            proposal_id=proposal_id,
+            telescope_id=telescope_id,
+            telescope_observation_id=telescope_observation_id,
+            night=night,
+            observation_status_id=observation_status_id,
+        )
         self.cursor.execute(insert_sql, insert_params)
 
         # Get the observation id
         return self.last_insert_id()
 
-    def observation_id(self, telescope: Telescope, telescope_observation_id: str) -> Optional[int]:
+    def observation_id(
+        self, telescope: Telescope, telescope_observation_id: str
+    ) -> Optional[int]:
         """
         The id of the observation for a telescope and telescope observation id.
 
@@ -281,11 +293,13 @@ class DatabaseUpdate:
                    WHERE telescopeId=%(telescope_id)s
                          AND telescopeObservationId=%(telescope_observation_id)s
             """
-        params = dict(telescope_id=telescope.id(),
-                      telescope_observation_id=telescope_observation_id)
+        params = dict(
+            telescope_id=telescope.id(),
+            telescope_observation_id=telescope_observation_id,
+        )
         df = pd.read_sql(sql, con=self._ssda_connection, params=params)
         if len(df) > 0:
-            return int(df['observationId'][0])
+            return int(df["observationId"][0])
         else:
             return None
 
@@ -319,10 +333,16 @@ class DatabaseUpdate:
             target_type_id_sql = """
                   SELECT targetTypeId FROM TargetType WHERE numericValue = %s
             """
-            target_type_id_df = pd.read_sql(sql=target_type_id_sql, con=ssda_connect(), params=(target.target_type,))
+            target_type_id_df = pd.read_sql(
+                sql=target_type_id_sql, con=ssda_connect(), params=(target.target_type,)
+            )
             if target_type_id_df.empty:
-                raise ValueError('The target type {} is not included in the TargetType table.'.format(target.target_type_id))
-            target_type_id = int(target_type_id_df['targetTypeId'][0])
+                raise ValueError(
+                    "The target type {} is not included in the TargetType table.".format(
+                        target.target_type_id
+                    )
+                )
+            target_type_id = int(target_type_id_df["targetTypeId"][0])
         else:
             target_type_id = None
 
@@ -335,9 +355,19 @@ class DatabaseUpdate:
                 position,
                 targetTypeId
               )
-        VALUES (%(name)s, %(ra)s, %(dec)s, ST_GeomFromText('POINT(%(shifted_ra)s %(dec)s)', 123456), %(target_type_id)s)
+        VALUES (%(name)s,
+                %(ra)s,
+                %(dec)s,
+                ST_GeomFromText('POINT(%(shifted_ra)s %(dec)s)', 123456),
+                %(target_type_id)s)
         """
-        insert_params = dict(name=target.name, ra=target.ra, dec=target.dec, shifted_ra=target.ra - 180, target_type_id=target_type_id)
+        insert_params = dict(
+            name=target.name,
+            ra=target.ra,
+            dec=target.dec,
+            shifted_ra=target.ra - 180,
+            target_type_id=target_type_id,
+        )
         self.cursor.execute(insert_sql, insert_params)
 
         # Get the target id
@@ -363,7 +393,7 @@ class DatabaseUpdate:
 
         """
         # Collect the data file properties
-        base_path_length = len(os.environ['FITS_BASE_DIR'])
+        base_path_length = len(os.environ["FITS_BASE_DIR"])
         data_category = self.fits_data.data_category()
         start_time = self.fits_data.start_time()
         name = os.path.basename(self.fits_data.file_path)
@@ -387,9 +417,23 @@ class DatabaseUpdate:
                 size,
                 observationId
               )
-        VALUES (%(data_category_id)s, %(start_time)s, %(name)s, %(path)s, %(target_id)s, %(size)s, %(observation_id)s)
+        VALUES (%(data_category_id)s,
+                %(start_time)s,
+                %(name)s,
+                %(path)s,
+                %(target_id)s,
+                %(size)s,
+                %(observation_id)s)
         """
-        params = dict(data_category_id=data_category.id(), start_time=start_time, name=name, path=path, target_id=target_id, size=size, observation_id=observation_id)
+        params = dict(
+            data_category_id=data_category.id(),
+            start_time=start_time,
+            name=name,
+            path=path,
+            target_id=target_id,
+            size=size,
+            observation_id=observation_id,
+        )
         self.cursor.execute(sql, params)
 
         # Get the data file id
@@ -423,7 +467,7 @@ class DatabaseUpdate:
         df = pd.read_sql(sql, con=self._ssda_connection, params=params)
 
         if len(df) > 0:
-            return int(df['dataFileId'][0])
+            return int(df["dataFileId"][0])
         else:
             return None
 
@@ -460,7 +504,7 @@ class DatabaseUpdate:
         ids = []
         for index, preview_file in enumerate(preview_files):
             # Collect the preview data
-            base_dir_path_length = len(os.environ['PREVIEW_BASE_DIR'])
+            base_dir_path_length = len(os.environ["PREVIEW_BASE_DIR"])
             name = os.path.basename(preview_file)
             path = os.path.abspath(preview_file)[base_dir_path_length:]
             order = index + 1
@@ -478,7 +522,9 @@ class DatabaseUpdate:
                 )
                 VALUES (%(name)s, %(path)s, %(data_file_id)s, %(order)s)
                 """
-                params = dict(name=name, path=path, data_file_id=data_file_id, order=order)
+                params = dict(
+                    name=name, path=path, data_file_id=data_file_id, order=order
+                )
                 self.cursor.execute(sql, params)
 
                 # Store the data preview entry id
@@ -506,13 +552,15 @@ class DatabaseUpdate:
         """
 
         sql = """
-        SELECT dataPreviewId FROM DataPreview WHERE dataFileId=%(data_file_id)s AND `order`=%(order)s
+        SELECT dataPreviewId
+               FROM DataPreview
+        WHERE dataFileId=%(data_file_id)s AND `order`=%(order)s
         """
         params = dict(data_file_id=data_file_id, order=order)
         df = pd.read_sql(sql, con=self._ssda_connection, params=params)
 
         if len(df) > 0:
-            return int(df['dataPreviewId'][0])
+            return int(df["dataPreviewId"][0])
         else:
             return None
 
@@ -552,9 +600,9 @@ class DatabaseUpdate:
         instrument_details_file = self.fits_data.instrument_details_file()
         keywords = []
         columns = []
-        with open(instrument_details_file, 'r') as fin:
+        with open(instrument_details_file, "r") as fin:
             for line in fin:
-                if line.strip() == '' or line.startswith('#'):
+                if line.strip() == "" or line.startswith("#"):
                     continue
                 keyword, column = line.split()
                 keywords.append(keyword)
@@ -569,9 +617,11 @@ class DatabaseUpdate:
                 {columns}
         )
         VALUES (%(data_file_id)s, %(telescope_id)s, {values})
-        """.format(table=table,
-                   columns=', '.join(columns),
-                   values=', '.join(['%({})s'.format(column) for column in columns]))
+        """.format(
+            table=table,
+            columns=", ".join(columns),
+            values=", ".join(["%({})s".format(column) for column in columns]),
+        )
 
         # Collect the parameters
         params = dict(data_file_id=data_file_id, telescope_id=telescope.id())
@@ -607,8 +657,8 @@ class DatabaseUpdate:
             return None
 
         table = self.fits_data.instrument_table()
-        id_column = table.lower() + 'Id'
-        id_sql = 'SELECT ' + id_column + ' FROM ' + table + ' WHERE dataFileId=%s'
+        id_column = table.lower() + "Id"
+        id_sql = "SELECT " + id_column + " FROM " + table + " WHERE dataFileId=%s"
         id_df = pd.read_sql(id_sql, con=ssda_connect(), params=(data_file_id,))
         if len(id_df) > 0:
             return int(id_df[id_column])
@@ -641,10 +691,13 @@ class DatabaseUpdate:
 
         # Consistency check: Does the proposal exist already?
         if proposal_code is not None and proposal_id is None:
-            raise ValueError('The proposal {} has not been inserted into the database yet.'.format(proposal_code))
+            raise ValueError(
+                "The proposal {} has not been inserted into the database yet.".format(
+                    proposal_code
+                )
+            )
 
         # Insert the investigators
-        ids = []
         for investigator_id in self.fits_data.investigator_ids():
             # Maybe the entry exists already?
             select_sql = """
@@ -652,9 +705,13 @@ class DatabaseUpdate:
                    FROM ProposalInvestigator
                    WHERE proposalId=%(proposal_id)s AND institutionUserId=%(investigator_id)s
             """
-            select_params = dict(proposal_id=proposal_id, investigator_id=investigator_id)
-            select_df = pd.read_sql(select_sql, con=self._ssda_connection, params=select_params)
-            if int(select_df['entryCount'][0]) > 0:
+            select_params = dict(
+                proposal_id=proposal_id, investigator_id=investigator_id
+            )
+            select_df = pd.read_sql(
+                select_sql, con=self._ssda_connection, params=select_params
+            )
+            if int(select_df["entryCount"][0]) > 0:
                 continue
 
             # Insert the entry
@@ -665,7 +722,9 @@ class DatabaseUpdate:
             )
             VALUES (%(proposal_id)s, %(investigator_id)s)
             """
-            insert_params = dict(proposal_id=proposal_id, investigator_id=investigator_id)
+            insert_params = dict(
+                proposal_id=proposal_id, investigator_id=investigator_id
+            )
             self.cursor.execute(insert_sql, insert_params)
 
     # ProposalInvestigator ------------------------------------------------------- End
@@ -683,7 +742,9 @@ class DatabaseUpdate:
 
         id_sql = """SELECT LAST_INSERT_ID() AS lastId"""
         id_df = pd.read_sql(id_sql, con=self._ssda_connection)
-        if len(id_df) == 0 or not id_df['lastId'][0]:
-            raise ValueError('The id of the last executed INSERT statement is unavailable.')
+        if len(id_df) == 0 or not id_df["lastId"][0]:
+            raise ValueError(
+                "The id of the last executed INSERT statement is unavailable."
+            )
 
-        return int(id_df['lastId'])
+        return int(id_df["lastId"])

@@ -1,6 +1,5 @@
 import pandas as pd
 from enum import Enum
-from typing import Optional
 
 from connection import ssda_connect
 
@@ -13,9 +12,9 @@ class Telescope(Enum):
 
     """
 
-    LESEDI = 'LESEDI'
-    ONE_DOT_NINE = '1.9 m'
-    SALT = 'SALT'
+    LESEDI = "LESEDI"
+    ONE_DOT_NINE = "1.9 m"
+    SALT = "SALT"
 
     def id(self) -> int:
         """
@@ -35,6 +34,6 @@ class Telescope(Enum):
         df = pd.read_sql(sql, con=ssda_connect(), params=(self.value,))
 
         if df.empty:
-            raise ValueError('Unknown telescope name: {}'.format(self.value))
+            raise ValueError("Unknown telescope name: {}".format(self.value))
 
-        return int(df['telescopeId'][0])
+        return int(df["telescopeId"][0])

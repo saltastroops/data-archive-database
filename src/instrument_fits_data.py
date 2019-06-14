@@ -20,10 +20,10 @@ class DataCategory(Enum):
 
     """
 
-    ARC = 'Arc'
-    BIAS = 'Bias'
-    FLAT = 'Flat'
-    SCIENCE = 'Science'
+    ARC = "Arc"
+    BIAS = "Bias"
+    FLAT = "Flat"
+    SCIENCE = "Science"
 
     def id(self) -> int:
         """
@@ -40,9 +40,13 @@ class DataCategory(Enum):
         """
         df = pd.read_sql(sql, con=ssda_connect(), params=(self.value,))
         if len(df) == 0:
-            raise ValueError('The data category {} is not included in the DataCategory table.'.format(self.value))
+            raise ValueError(
+                "The data category {} is not included in the DataCategory table.".format(
+                    self.value
+                )
+            )
 
-        return int(df['dataCategoryId'][0])
+        return int(df["dataCategoryId"][0])
 
 
 class Institution(Enum):
@@ -54,8 +58,8 @@ class Institution(Enum):
 
     """
 
-    SAAO = 'SAAO'
-    SALT = 'SALT'
+    SAAO = "SAAO"
+    SALT = "SALT"
 
     def id(self) -> int:
         """
@@ -73,7 +77,7 @@ class Institution(Enum):
         """
         df = pd.read_sql(sql, con=ssda_connect(), params=(self.value,))
 
-        return int(df['institutionId'][0])
+        return int(df["institutionId"][0])
 
 
 class PrincipalInvestigator(NamedTuple):
@@ -159,8 +163,8 @@ class InstrumentFitsData(ABC):
         lines = [content[i:i + 80] for i in range(0, len(content), 80)]
 
         # Only include content up to the END line
-        end_index = [line.strip() for line in lines].index('END')
-        return '\n'.join(lines[:end_index])
+        end_index = [line.strip() for line in lines].index("END")
+        return "\n".join(lines[:end_index])
 
     @staticmethod
     @abstractmethod

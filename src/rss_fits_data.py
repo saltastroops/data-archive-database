@@ -7,9 +7,14 @@ import os
 import pandas as pd
 from typing import List, Optional
 
-from connection import sdb_connect, ssda_connect
-from instrument_fits_data import InstrumentFitsData, PrincipalInvestigator, Target, \
-    DataCategory, Institution
+from connection import sdb_connect
+from instrument_fits_data import (
+    InstrumentFitsData,
+    PrincipalInvestigator,
+    Target,
+    DataCategory,
+    Institution,
+)
 from observation_status import ObservationStatus
 from telescope import Telescope
 
@@ -35,10 +40,13 @@ class RssFitsData(InstrumentFitsData):
 
         """
 
-        data_directory = '{base_dir}/salt/{year}/{monthday}/rss/raw'.format(base_dir=os.environ['FITS_BASE_DIR'],
-                                                                       year=night.strftime('%Y'), monthday=night.strftime('%m%d'))
+        data_directory = "{base_dir}/salt/{year}/{monthday}/rss/raw".format(
+            base_dir=os.environ["FITS_BASE_DIR"],
+            year=night.strftime("%Y"),
+            monthday=night.strftime("%m%d"),
+        )
 
-        return sorted(glob.iglob(os.path.join(data_directory, '*.fits')))
+        return sorted(glob.iglob(os.path.join(data_directory, "*.fits")))
 
     def create_preview_files(self) -> List[str]:
         """
@@ -52,31 +60,33 @@ class RssFitsData(InstrumentFitsData):
         """
 
         # Create the required directories
-        salt_dir = os.path.join(os.environ['PREVIEW_BASE_DIR'], 'salt')
+        salt_dir = os.path.join(os.environ["PREVIEW_BASE_DIR"], "salt")
         if not os.path.exists(salt_dir):
             os.mkdir(salt_dir)
         year_dir = os.path.join(salt_dir, str(self.night().year))
         if not os.path.exists(year_dir):
             os.mkdir(year_dir)
-        day_dir = os.path.join(year_dir, self.night().strftime('%m%d'))
+        day_dir = os.path.join(year_dir, self.night().strftime("%m%d"))
         if not os.path.exists(day_dir):
             os.mkdir(day_dir)
-        rss_dir = os.path.join(day_dir, 'rss')
+        rss_dir = os.path.join(day_dir, "rss")
         if not os.path.exists(rss_dir):
             os.mkdir(rss_dir)
 
         # Create the header content file
         basename = os.path.basename(self.file_path)[:-5]
-        header_content_file = os.path.join(rss_dir, basename + '-header.txt')
-        with open(header_content_file, 'w') as f:
+        header_content_file = os.path.join(rss_dir, basename + "-header.txt")
+        with open(header_content_file, "w") as f:
             f.write(self.header_text)
         preview_files = [header_content_file]
 
         # Create the image files
         # TODO: Replace with real images
         for i in range(1, 4):
-            image_file = os.path.join(rss_dir, '{basename}-image_{order}'.format(basename=basename, order=i))
-            with open(image_file, 'w') as f:
+            image_file = os.path.join(
+                rss_dir, "{basename}-image_{order}".format(basename=basename, order=i)
+            )
+            with open(image_file, "w") as f:
                 f.write(str(datetime.now()))
             preview_files.append(image_file)
 
@@ -95,12 +105,12 @@ class RssFitsData(InstrumentFitsData):
         """
 
         # TODO: What about standards?
-        object_name = self.header.get('OBJECT').upper()
-        if object_name == 'ARC':
+        object_name = self.header.get("OBJECT").upper()
+        if object_name == "ARC":
             return DataCategory.ARC
-        elif object_name == 'BIAS':
+        elif object_name == "BIAS":
             return DataCategory.BIAS
-        elif object_name == 'FLAT':
+        elif object_name == "FLAT":
             return DataCategory.FLAT
         else:
             return DataCategory.SCIENCE
@@ -150,7 +160,7 @@ class RssFitsData(InstrumentFitsData):
 
         directory = os.path.dirname(os.path.abspath(__file__))
 
-        return os.path.join(directory, 'rss_headers.txt')
+        return os.path.join(directory, "rss_headers.txt")
 
     def instrument_table(self) -> str:
         """
@@ -196,14 +206,19 @@ class RssFitsData(InstrumentFitsData):
         salt_users_sql = """
         SELECT Username
                FROM PiptUser
-               JOIN Investigator ON PiptUser.Investigator_Id = Investigator.Investigator_Id
-               JOIN ProposalInvestigator ON Investigator.Investigator_Id = ProposalInvestigator.Investigator_Id
-               JOIN ProposalCode ON ProposalInvestigator.ProposalCode_Id = ProposalCode.ProposalCode_Id
+               JOIN Investigator
+                    ON PiptUser.Investigator_Id = Investigator.Investigator_Id
+               JOIN ProposalInvestigator
+                    ON Investigator.Investigator_Id = ProposalInvestigator.Investigator_Id
+               JOIN ProposalCode
+                    ON ProposalInvestigator.ProposalCode_Id = ProposalCode.ProposalCode_Id
         WHERE Proposal_Code=%s
         """
-        salt_users_df = pd.read_sql(salt_users_sql, con=sdb_connect(), params=(proposal_code,))
+        salt_users_df = pd.read_sql(
+            salt_users_sql, con=sdb_connect(), params=(proposal_code,)
+        )
 
-        return list(salt_users_df['Username'])
+        return list(salt_users_df["Username"])
 
     def is_proprietary(self) -> bool:
         """
@@ -214,10 +229,6 @@ class RssFitsData(InstrumentFitsData):
         proprietary : bool
             Whether the data is proprietary.
 
-        """
-
-        sql = """
-        
         """
 
         # TODO: Will have to be updated
@@ -232,7 +243,7 @@ class RssFitsData(InstrumentFitsData):
             result = cursor.fetchone()
             if result is None:
                 return False
-            release_date = result['ReleaseDate']
+            release_date = result["ReleaseDate"]
             return release_date > datetime.now().date()
 
     def night(self) -> date:
@@ -246,7 +257,7 @@ class RssFitsData(InstrumentFitsData):
 
         """
 
-        return parser.parse(self.header.get('DATE-OBS')).date()
+        return parser.parse(self.header.get("DATE-OBS")).date()
 
     def observation_status(self) -> ObservationStatus:
         """
@@ -272,7 +283,7 @@ class RssFitsData(InstrumentFitsData):
         """
         df = pd.read_sql(sql, con=sdb_connect(), params=(block_visit_id,))
 
-        return ObservationStatus(df['BlockVisitStatus'][0])
+        return ObservationStatus(df["BlockVisitStatus"][0])
 
     def principal_investigator(self) -> Optional[PrincipalInvestigator]:
         """
@@ -294,18 +305,25 @@ class RssFitsData(InstrumentFitsData):
         sql = """
         SELECT FirstName, Surname
                FROM Investigator
-               JOIN ProposalInvestigator ON Investigator.Investigator_Id=ProposalInvestigator.Investigator_Id
-               JOIN ProposalContact ON ProposalInvestigator.Investigator_Id=ProposalContact.Leader_Id
-               JOIN ProposalCode ON ProposalContact.ProposalCode_Id=ProposalCode.ProposalCode_Id
+               JOIN ProposalInvestigator
+                    ON Investigator.Investigator_Id=ProposalInvestigator.Investigator_Id
+               JOIN ProposalContact
+                    ON ProposalInvestigator.Investigator_Id=ProposalContact.Leader_Id
+               JOIN ProposalCode
+                    ON ProposalContact.ProposalCode_Id=ProposalCode.ProposalCode_Id
         WHERE Proposal_Code=%s
         """
         df = pd.read_sql(sql, con=sdb_connect(), params=(proposal_code,))
         if len(df) == 0:
-            raise ValueError('No Principal Investigator was found for the proposal {}'
-                             .format(proposal_code))
+            raise ValueError(
+                "No Principal Investigator was found for the proposal {}".format(
+                    proposal_code
+                )
+            )
 
-        return PrincipalInvestigator(family_name=df['Surname'][0],
-                                     given_name=df['FirstName'][0])
+        return PrincipalInvestigator(
+            family_name=df["Surname"][0], given_name=df["FirstName"][0]
+        )
 
     def proposal_code(self) -> Optional[str]:
         """
@@ -325,12 +343,12 @@ class RssFitsData(InstrumentFitsData):
 
         """
 
-        code = self.header.get('PROPID') or None
+        code = self.header.get("PROPID") or None
         if not code:
             return None
 
         # Is this a valid proposal code (rather than a fake one such as 'CAL_BIAS')?
-        if code[:2] == '20':
+        if code[:2] == "20":
             return code
         else:
             return None
@@ -360,7 +378,7 @@ class RssFitsData(InstrumentFitsData):
         """
         df = pd.read_sql(sql, con=sdb_connect(), params=(proposal_code,))
 
-        return df['Title'][0]
+        return df["Title"][0]
 
     def start_time(self) -> datetime:
         """
@@ -373,7 +391,7 @@ class RssFitsData(InstrumentFitsData):
 
         """
 
-        return parser.parse(self.header['DATE-OBS'] + ' ' + self.header['TIME-OBS'])
+        return parser.parse(self.header["DATE-OBS"] + " " + self.header["TIME-OBS"])
 
     def target(self) -> Optional[Target]:
         """
@@ -388,26 +406,30 @@ class RssFitsData(InstrumentFitsData):
         """
 
         # Get the target position
-        ra_header_value = self.header.get('RA')
-        dec_header_value = self.header.get('DEC')
+        ra_header_value = self.header.get("RA")
+        dec_header_value = self.header.get("DEC")
         if ra_header_value and not dec_header_value:
-            raise ValueError('There is a right ascension header value, but no declination header value.')
+            raise ValueError(
+                "There is a right ascension header value, but no declination header value."
+            )
         if not ra_header_value and dec_header_value:
-            raise ValueError('There is a declination header value, but no right ascension header value.')
+            raise ValueError(
+                "There is a declination header value, but no right ascension header value."
+            )
         if not ra_header_value and not dec_header_value:
             return None
-        ra = Angle('{} hours'.format(ra_header_value)).degree
-        dec = Angle('{} degrees'.format(dec_header_value)).degree
+        ra = Angle("{} hours".format(ra_header_value)).degree
+        dec = Angle("{} degrees".format(dec_header_value)).degree
 
         # Get the target name
-        name = self.header.get('OBJECT', '')
+        name = self.header.get("OBJECT", "")
 
         # Calibrations don't have a target
-        if name.upper() in ['ARC', 'BIAS', 'FLAT']:
+        if name.upper() in ["ARC", "BIAS", "FLAT"]:
             return None
 
         # Get the target type
-        _target_type = target_type(self.header.get('BVISITID'))
+        _target_type = target_type(self.header.get("BVISITID"))
 
         return Target(name=name, ra=ra, dec=dec, target_type=_target_type)
 
@@ -441,7 +463,7 @@ class RssFitsData(InstrumentFitsData):
 
         """
 
-        return self.header.get('BVISITID') or None
+        return self.header.get("BVISITID") or None
 
 
 def target_type(block_visit_id: Optional[int]) -> Optional[str]:
@@ -461,7 +483,7 @@ def target_type(block_visit_id: Optional[int]) -> Optional[str]:
     """
 
     # No target type can be determined if there is no observation linked to the target
-    if block_visit_id is None or block_visit_id :
+    if block_visit_id is None or block_visit_id:
         return None
 
     # Get the target type from the SDB
@@ -474,9 +496,10 @@ def target_type(block_visit_id: Optional[int]) -> Optional[str]:
            JOIN TargetSubType USING(TargetSubType_Id)
     WHERE BlockVisit_Id = %s
     """
-    numeric_code_df = pd.read_sql(sql=sdb_target_type_query, con=sdb_connect(), params=(block_visit_id,))
+    numeric_code_df = pd.read_sql(
+        sql=sdb_target_type_query, con=sdb_connect(), params=(block_visit_id,)
+    )
     if numeric_code_df.empty:
         return None
 
-    return numeric_code_df['NumericCode'][0]
-
+    return numeric_code_df["NumericCode"][0]

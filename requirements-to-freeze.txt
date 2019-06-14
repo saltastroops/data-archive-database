@@ -1,4 +1,0 @@
-astropy
-pandas
-PyMySQL
-python-dateutil
