@@ -1,28 +1,68 @@
 from datetime import date, timedelta
 import os
 import pandas as pd
-from typing import List, Optional
+from typing import Generator, List, Optional
 
 from connection import ssda_connect
+from instrument import Instrument
 from instrument_fits_data import InstrumentFitsData
-from rss_fits_data import RssFitsData
 from telescope import Telescope
 
 
 def populate(start_date: date, end_date: date) -> None:
     # get FITS files
     # loop over all dates
+    for file_data in fits_data_gen(start_date, end_date):
+        populate_with_data(file_data)
+
+
+def fits_data_gen(start_date: date, end_date: date, instruments: List[Instrument]=None) -> Generator[InstrumentFitsData, None, None]:
+    """
+    A generator for returning InstrumentFitsData instances for a date range.
+
+    The instances are returned ordered by date. Within a date first the instances for
+    the first instrument, then those for the second instrument are returned, and so on.
+    Within an instrument the instances are sorted by their file path.
+
+    One instance is returned at a time.
+
+    If a list of instruments is supplied, only InstrumentFitsData instances for these
+    instruments are returned.
+
+    Parameters
+    ----------
+    start_date : date
+        The start date (inclusive).
+    end_date : date
+        The end date (inclusive).
+    instruments : list of instruments
+        Consider only these instruments.
+
+    Returns
+    -------
+    generator : InstrumentFitsData instance generator
+        Generator for the InstrumentFitsData instances.
+    """
+
+    # Sanity check: the date order must be correct
     if start_date >= end_date:
         raise ValueError("The start date must be earlier than the end date.")
+
+    # If no instruments are given, all instruments are considered
+    if not instruments:
+        instruments = list(Instrument)
+
+    # Loop over all nights
     dt = timedelta(days=1)
     night = start_date
-    files = []
     while night <= end_date:
-        files += sorted(RssFitsData.fits_files(night))
-        night += dt
-
-    for f in files:
-        populate_with_data(RssFitsData(f))
+        # Loop over all instruments
+        for instrument in Instrument:
+            # Loop over all FITS files for the instrument
+            fits_data_class = instrument.fits_data_class()
+            for fits_file in sorted(fits_data_class.fits_files(night)):
+                yield fits_data_class(fits_file)
+            night += dt
 
 
 def populate_with_data(fits_data: InstrumentFitsData) -> None:

@@ -18,7 +18,7 @@ class Telescope(Enum):
 
     def id(self) -> int:
         """
-        The id for this telescope in the SSDA' Telescope table.
+        The id for this telescope in the SSDA's Telescope table.
 
         Returns
         -------
