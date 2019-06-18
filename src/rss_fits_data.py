@@ -160,7 +160,7 @@ class RssFitsData(InstrumentFitsData):
 
         directory = os.path.dirname(os.path.abspath(__file__))
 
-        return os.path.join(directory, "rss_headers.txt")
+        return os.path.join(directory, "rss_keywords.txt")
 
     def instrument_table(self) -> str:
         """

@@ -1,4 +1,4 @@
-# RSS header keywords abd database columns
+# RSS header keywords and database columns
 
 # First column is for FITS headers
 # Second column is for table field
