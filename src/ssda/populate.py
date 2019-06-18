@@ -3,10 +3,10 @@ import os
 import pandas as pd
 from typing import Generator, List, Optional
 
-from connection import ssda_connect
-from instrument import Instrument
-from instrument_fits_data import InstrumentFitsData
-from telescope import Telescope
+from ssda.connection import ssda_connect
+from ssda.instrument.instrument import Instrument
+from ssda.instrument.instrument_fits_data import InstrumentFitsData
+from ssda.telescope import Telescope
 
 
 def populate(start_date: date, end_date: date) -> None:

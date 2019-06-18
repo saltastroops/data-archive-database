@@ -7,16 +7,16 @@ import os
 import pandas as pd
 from typing import List, Optional
 
-from connection import sdb_connect
-from instrument_fits_data import (
+from ssda.connection import sdb_connect
+from ssda.instrument.instrument_fits_data import (
     InstrumentFitsData,
     PrincipalInvestigator,
     Target,
     DataCategory,
     Institution,
 )
-from observation_status import ObservationStatus
-from telescope import Telescope
+from ssda.observation_status import ObservationStatus
+from ssda.telescope import Telescope
 
 
 class RssFitsData(InstrumentFitsData):

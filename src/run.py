@@ -4,8 +4,8 @@
 import pandas as pd
 from datetime import date
 
-from connection import ssda_connect, sdb_connect
-from populate import populate
+from ssda.connection import ssda_connect, sdb_connect
+from ssda.populate import populate
 
 conn = ssda_connect()
 cursor = conn.cursor()

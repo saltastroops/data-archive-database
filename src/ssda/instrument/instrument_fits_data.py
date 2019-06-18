@@ -6,9 +6,9 @@ from datetime import date, datetime
 from enum import Enum
 from typing import List, NamedTuple, Optional
 
-from connection import ssda_connect
-from observation_status import ObservationStatus
-from telescope import Telescope
+from ssda.connection import ssda_connect
+from ssda.observation_status import ObservationStatus
+from ssda.telescope import Telescope
 
 
 class DataCategory(Enum):
