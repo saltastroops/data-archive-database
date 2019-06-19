@@ -139,9 +139,7 @@ CREATE TABLE `HRS` (
   `systemTime` VARCHAR(45) DEFAULT NULL,
   `fitsHeaderVersion` VARCHAR(45) DEFAULT NULL,
   PRIMARY KEY (`hrsId`),
-  KEY `fk_HRSObservation_idx` (`observationId`),
   KEY `fk_HRSDataFile_idx` (`dataFileId`),
-  CONSTRAINT `fk_HRSObservation` FOREIGN KEY (`ObservationId`) REFERENCES `Observation` (`ObservationId`) ON DELETE NO ACTION ON UPDATE NO ACTION
   CONSTRAINT `fk_HRSDataFile` FOREIGN KEY (`dataFileId`) REFERENCES `DataFile` (`dataFileId`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -155,7 +153,7 @@ DROP TABLE IF EXISTS `RSS`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `RSS` (
   `rssId` INT(11) NOT NULL AUTO_INCREMENT,
-  `telescopeId` INT(11) NOT NULL,
+  `dataFileId` INT(11) NOT NULL,
   `amplifierSection` VARCHAR(255) DEFAULT NULL,
   `amplifierTemperature` FLOAT DEFAULT NULL,
   `articulationAngle` FLOAT DEFAULT NULL,
@@ -297,8 +295,8 @@ CREATE TABLE `RSS` (
   `polarimetryProcedurePattern` VARCHAR(45) DEFAULT NULL,
   `crossTalk` FLOAT DEFAULT NULL,
   PRIMARY KEY (`rssId`),
-  KEY `fk_RSSTelescope_idx` (`telescopeId`),
-  CONSTRAINT `fk_RSSTelescope` FOREIGN KEY (`telescopeId`) REFERENCES `Telescope` (`telescopeId`) ON DELETE NO ACTION ON UPDATE NO ACTION
+  KEY `fk_RSSDataFile_idx` (`dataFileId`),
+  CONSTRAINT `fk_RSSDataFile` FOREIGN KEY (`dataFileId`) REFERENCES `DataFile` (`dataFileId`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -311,7 +309,7 @@ DROP TABLE IF EXISTS `Salticam`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Salticam` (
   `salticamId` int(11) NOT NULL AUTO_INCREMENT,
-  `observationId` int(11) NOT NULL,
+  `dataFileId` int(11) NOT NULL,
   `amplifierSection` VARCHAR(45) DEFAULT NULL,
   `amplifierTemperature` FLOAT DEFAULT NULL,
   `amplifierReadoutX` INT DEFAULT NULL,
@@ -382,8 +380,8 @@ CREATE TABLE `Salticam` (
   `spatialCoordinate` VARCHAR(45) DEFAULT NULL,
   `crossTalk` FLOAT DEFAULT NULL,
   PRIMARY KEY (`salticamId`),
-  KEY `fk_SalticamObservation_idx` (`observationId`),
-  CONSTRAINT `fk_SalticamObservation` FOREIGN KEY (`observationId`) REFERENCES `Observation` (`observationId`) ON DELETE NO ACTION ON UPDATE NO ACTION
+  KEY `fk_SalticamDataFile_idx` (`dataFileId`),
+  CONSTRAINT `fk_SalticamDataFile` FOREIGN KEY (`dataFileId`) REFERENCES `DataFile` (`dataFileId`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -406,11 +404,9 @@ CREATE TABLE `Institution` (
 --
 
 DROP TABLE IF EXISTS `Observation`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Observation` (
   `observationId` int(11) NOT NULL AUTO_INCREMENT,
-  'proposalId' int(11) NOT NULL,
+  `proposalId` int(11),
   `telescopeId` int(11) DEFAULT NULL,
   `telescopeObservationId` VARCHAR(45) DEFAULT NULL,
   `night` VARCHAR(45) DEFAULT NULL,
@@ -423,7 +419,6 @@ CREATE TABLE `Observation` (
   CONSTRAINT `fk_ObservationTelescope` FOREIGN KEY (`telescopeId`) REFERENCES `Telescope` (`telescopeId`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `fk_observationStatus` FOREIGN KEY (`observationStatusId`) REFERENCES `ObservationStatus` (`observationStatusId`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `ObservationStatus`
