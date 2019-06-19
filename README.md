@@ -38,6 +38,98 @@ SSDA_HOST | Host of the Data Archive database | ssda.your.host
 SSDA_PASSWORD | Password for the Data Archive database | also_secret
 SSDA_USER | Password for the Data Archive database | ssda_user
 
+## Usage
+
+The package provides a command `ssda` for inserting, updating and deleting entries in the Data Archive database. Use its `--help` option to find out about its subcommands.
+
+```bash
+ssda --help
+``` 
+
+The various subcommands for modifying the databse are explained in the following sections.
+
+### The insert subcommand
+
+The `insert` subcommand allows you to create new database entries from FITS files. This includes corresponding preview files. Typically you use it to create entries for a range of dates.
+
+```bash
+ssda insert --start 2019-06-25 --end 2019-06-27
+```
+
+Both start and end date must be given, and they must be of the format `yyyy-mm-dd`. Both the start and end date are inclusive, and they refer to the beginning of the night. So in the above example FITS files would be considered for the time between noon of 25 June and noon of 28 June 2019. If you want to insert entries for one night, the start abd end date will be the same.
+
+```bash
+ssda insert --start 2019-07-03 --end 2019-07-03
+```
+
+Existing database content is not changed by this subcommand; use the `update` subcommand to make changes. This implies that it is safe to re-run the command as often as you like.
+
+By default FITS files for all instruments are considered. However, you can limit insertions to a single instrument by adding the `--instrument` option.
+
+```bash
+ssda insert --start 2019-06-29 --end 2019-07-02 --instrument RSS
+```
+
+The spelling of the instrument name is case-insensitive. Hence you might also have riun the command as
+
+```bash
+ssda insert --start 2019-06-29 --end 2019-07-02 --instrument rss
+```
+
+You can limit insertion to a set of instruments by using the `--instrument` option more than once.
+
+```bash
+ssda insert --start 2019-06-29 --end 2019-07-02 --instrument RSS --instrument Salticam
+```
+
+If you want to create an entry for a single FITS file, you can use the `--file` option. You then need to also specify the instrument for the FITS file with the `--instrument` option. *It is up to you to ensure that the specified instrument is correct; doom and disaster may strike if you get this wrong.* You have been warned.
+
+The `--start/--end` and the `--file` option are mutually exclusive.
+
+While by default the subcommand does its job in absolute silence (unless there is an error), you can make the script morec talkative by adding the `--verbose` flag.
+
+You can remind yourself about the usage of the subcommand by running it with the `--help` flag.
+
+```bash
+ssda insert --help
+```
+
+### The update subcommand
+
+The `update` subcommand updates existing database entries and any corresponding preview files from FITS files. The usage is the same as that for the `insert` subcommand. For example, you would update all the database entries for HRS from the nights of 5 July to 10 July 2019 by running
+
+```bash
+ssda update --start 2019-07-05 --end 2019-07-10 --instrument HRS
+```
+
+The subcommand not create entries for files not covered by the database yet. Instead it will abort with an error if it encounters such a file.
+
+### The delete subcommand
+
+You can use the `delete` subcommand to delete database entries and their corresponding preview files. The usage is the same as for the `insert` subcommand. For example, the following command will delete all database entries for the night starting on 8 June 2019.
+
+```bash
+ssda delete --start 2019-06-08 --end 2019-06-08
+``` 
+
+The subcommand prompts you for a confirmation that you really want to delete database entries (and preview files). You can use the `--force` flag to skip this.
+
+### Subcommand options
+
+As explained in the previous subsections, the `ssda` subcommands accept the following options.
+
+Option | Explanation
+--- | ---
+--end | Start date of the last night for which data is considered.
+--file | Use this FITS file.
+--force | Don't ask for confirmation before running the `delete` subcommand.
+--instrument | Instrument whose FITS files shall be considered. This option may be used multiple times unless the `--file` flag is used.
+-h / --help | Display a help message.
+--start | Start date of the first night for which data is considered.
+--verbose | Run in verbose mode.
+
+With the exception of the `--force` option all these options are available with all the subcommands.
+
 ## Extending the code
 
 ### Using an additional Python library
