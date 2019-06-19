@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 with open('README.md') as readme_file:
     readme = readme_file.read()
 
-requirements = ['astropy', 'pandas', 'PyMySQL', 'python-dateutil']
+requirements = ['astropy', 'click', 'pandas', 'PyMySQL', 'python-dateutil']
 
 setup_requirements = ['pytest-runner']
 
@@ -22,14 +22,17 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.7',
     ],
-    description="Populate the SAAO/SALT Data Archive database",
+    description="Update the SAAO/SALT Data Archive database",
+    entry_points={
+        'console_scripts': ['ssda=ssda.command_line:cli']
+    },
     install_requires=requirements,
     license="MIT license",
     long_description=readme,
     long_description_content_type='text/markdown',
     include_package_data=True,
     keywords='',
-    name='populate_ssda',
+    name='ssda',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     setup_requires=setup_requirements,
