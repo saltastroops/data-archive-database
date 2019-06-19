@@ -13,3 +13,8 @@ __pycache__/
 
 #vscod
 .vscode
+/.ideaDataSources
+/dataSources
+/.tox
+*.egg-info
+.eggs

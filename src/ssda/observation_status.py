@@ -1,7 +1,7 @@
 import pandas as pd
 from enum import Enum
 
-from connection import ssda_connect
+from ssda.connection import ssda_connect
 
 
 class ObservationStatus(Enum):
@@ -13,8 +13,8 @@ class ObservationStatus(Enum):
 
     """
 
-    ACCEPTED = 'Accepted'
-    REJECTED = 'Rejected'
+    ACCEPTED = "Accepted"
+    REJECTED = "Rejected"
 
     def id(self) -> int:
         """
@@ -34,7 +34,6 @@ class ObservationStatus(Enum):
         df = pd.read_sql(sql, con=ssda_connect(), params=(self.value,))
 
         if df.empty:
-            raise ValueError('Unknown observation status value')
+            raise ValueError("Unknown observation status value")
 
-        return int(df['observationStatusId'][0])
-
+        return int(df["observationStatusId"][0])

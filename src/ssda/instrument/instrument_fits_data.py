@@ -6,9 +6,9 @@ from datetime import date, datetime
 from enum import Enum
 from typing import List, NamedTuple, Optional
 
-from connection import ssda_connect
-from observation_status import ObservationStatus
-from telescope import Telescope
+from ssda.connection import ssda_connect
+from ssda.observation_status import ObservationStatus
+from ssda.telescope import Telescope
 
 
 class DataCategory(Enum):
@@ -20,12 +20,12 @@ class DataCategory(Enum):
 
     """
 
-    ARC = 'Arc'
-    BIAS = 'Bias'
-    FLAT = 'Flat'
-    SCIENCE = 'Science'
+    ARC = "Arc"
+    BIAS = "Bias"
+    FLAT = "Flat"
+    SCIENCE = "Science"
 
-    def id(self):
+    def id(self) -> int:
         """
         Return the primary key of the DataCategory entry for this data category.
 
@@ -40,9 +40,44 @@ class DataCategory(Enum):
         """
         df = pd.read_sql(sql, con=ssda_connect(), params=(self.value,))
         if len(df) == 0:
-            raise ValueError('The data category {} is not included in the DataCategory table.'.format(self.value))
+            raise ValueError(
+                "The data category {} is not included in the DataCategory table.".format(
+                    self.value
+                )
+            )
 
-        return int(df['dataCategoryId'])
+        return int(df["dataCategoryId"][0])
+
+
+class Institution(Enum):
+    """
+    Enumeration of the institutions.
+
+    The values must be the same as those of the institutionName column in the
+    Institution table.
+
+    """
+
+    SAAO = "SAAO"
+    SALT = "SALT"
+
+    def id(self) -> int:
+        """
+        Return the primary key opf the Institution entry for this institution.
+
+        Returns
+        -------
+        id : int
+            The primary key.
+
+        """
+
+        sql = """
+        SELECT institutionId FROM Institution WHERE institutionName=%s
+        """
+        df = pd.read_sql(sql, con=ssda_connect(), params=(self.value,))
+
+        return int(df["institutionId"][0])
 
 
 class PrincipalInvestigator(NamedTuple):
@@ -107,7 +142,29 @@ class InstrumentFitsData(ABC):
         self.file_path = os.path.abspath(fits_file)
         self.file_size = os.path.getsize(fits_file)
         with fits.open(fits_file) as header_data_unit_list:
+            # Only use keywords and values from the primary header
             self.header = header_data_unit_list[0].header
+
+    @property
+    def header_text(self) -> str:
+        """
+        The primary header content as a properly formatted string. The final END line
+        and any subsequent empty lines are not included.
+
+        Returns
+        -------
+        header : str
+            The primary header content.
+
+        """
+
+        # Split the header into lines of 80 characters
+        content = str(self.header)
+        lines = [content[i:i + 80] for i in range(0, len(content), 80)]
+
+        # Only include content up to the END line
+        end_index = [line.strip() for line in lines].index("END")
+        return "\n".join(lines[:end_index])
 
     @staticmethod
     @abstractmethod
@@ -129,6 +186,19 @@ class InstrumentFitsData(ABC):
 
         raise NotImplementedError
 
+    def create_preview_files(self) -> List[str]:
+        """
+        Create the preview files for the FITS file.
+
+        Returns
+        -------
+        paths: list of str
+            The list of file paths of the created preview files.
+
+        """
+
+        raise NotImplementedError
+
     @abstractmethod
     def data_category(self) -> DataCategory:
         """
@@ -138,6 +208,102 @@ class InstrumentFitsData(ABC):
         -------
         category : DataCategory
             The data category.
+
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def institution(self) -> Institution:
+        """
+        The institution (such as SALT or SAAO) operating the telescope with which the
+        data was taken.
+
+        Returns
+        -------
+        institution : Institution
+            The institution.
+
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def instrument_details_file(self) -> str:
+        """
+        The path of the file containing FITS header keywords and corresponding columns
+        of the instrument table.
+
+        The format of the file content must be as follows:
+
+        - Lines starting with a '#' are comments.
+        - Lines containing only whitespace are comments.
+        - Any non-comment line has a FITS header keyword and a datavase column,
+          separated by whitespace.
+
+        For example:
+
+        # First column is for FITS header keywords
+        # Second column is for table columns
+
+        AMPSEC         amplifierSection
+        AMPTEM         amplifierTemperature
+        ATM1_1         amplifierReadoutX
+        ATM1_2         amplifierReadoutY
+
+        Returns
+        -------
+        path : str
+            The file path.
+
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def instrument_table(self) -> str:
+        """
+        The name of the table containing the instrument details for the instrument that
+        took the data.
+
+        Returns
+        -------
+        table : str
+            The name of the instrument details table.
+
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def investigator_ids(self) -> List[int]:
+        """
+        The list of ids of users who are an investigator on the proposal for the FITS
+        file.
+
+        The ids are those assigned by the institution (such as SALT or the SAAO) which
+        received the proposal. These may differ from ids used by the data archive.
+
+        An empty list is returned if the FITS file is not linked to a proposal.
+
+        Returns
+        -------
+        ids : list of id
+            The list of user ids.
+
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def is_proprietary(self) -> bool:
+        """
+        Indicate whether the data for the FITS file is proprietary.
+
+        Returns
+        -------
+        proprietary : bool
+            Whether the data is proprietary.
 
         """
 
@@ -176,9 +342,8 @@ class InstrumentFitsData(ABC):
 
     def principal_investigator(self) -> Optional[PrincipalInvestigator]:
         """
-
-        The principal investigator for the proposal to which this File belonhs.
-        If the FIS file is not linked to any observation, the status is assumed to be
+        The principal investigator for the proposal to which this file belongs.
+        If the FITS file is not linked to any observation, the status is assumed to be
         Accepted.
 
         Returns
@@ -259,7 +424,7 @@ class InstrumentFitsData(ABC):
     @abstractmethod
     def telescope(self) -> Telescope:
         """
-        The telescope used for generating the data in the FITS file.
+        The telescope used for observing the data in the FITS file.
 
         Returns
         -------

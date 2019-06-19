@@ -1,3 +1,5 @@
+# RSS header keywords and database columns
+
 # First column is for FITS headers
 # Second column is for table field
 
@@ -38,9 +40,9 @@ CRPIX1      				pixelCoordinatePointX1
 CRPIX1A     				pixelCoordinatePointX1A
 CRPIX2      				pixelCoordinatePointX2
 CRPIX2A     				pixelCoordinatePointX2A
-CRVAL1      				rightAsertionPoint1
+CRVAL1      				rightAscensionPoint1
 CRVAL1A     				spatialCoordinatePoint1A
-CRVAL2      				declanationPoint2
+CRVAL2      				declinationPoint2
 CRVAL2A     				spacialCoordinatePoint2A
 CTYPE1      				gnomicProjection1
 CTYPE1A     				cartesianProjection1A

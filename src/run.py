@@ -4,10 +4,8 @@
 import pandas as pd
 from datetime import date
 
-from connection import ssda_connect, sdb_connect
-from telescope import Telescope
-from rss_fits_data import RssFitsData
-from populate import populate
+from ssda.connection import ssda_connect, sdb_connect
+from ssda.populate import populate
 
 conn = ssda_connect()
 cursor = conn.cursor()
@@ -17,13 +15,15 @@ insert_sql = "INSERT INTO TargetType (numericValue, explanation) VALUES "
 
 get_results = pd.read_sql(get_sql, sdb_connect())
 for i, row in get_results.iterrows():
-    insert_sql += '("{numericValue}", "{explanation}"),\n' \
-        .format(numericValue=row["NumericCode"], explanation=row["TargetSubType"])
+    insert_sql += '("{numericValue}", "{explanation}"),\n'.format(
+        numericValue=row["NumericCode"], explanation=row["TargetSubType"]
+    )
 
 cursor.execute(insert_sql[:-2] + ";")
 conn.commit()
 
 populate(date(2019, 4, 3), date(2019, 4, 4))
+
 
 def update_scam(date):
     return date
@@ -43,7 +43,8 @@ def update_bvit(date):
 
 def update_salt(date):
     """
-        This is the method that will update all the the instruments of salt but giving it only the date you want to
+        This is the method that will update all the the instruments of salt but giving
+         it only the date you want to
         update
         :param date :-
                 A date to update
