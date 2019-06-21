@@ -653,10 +653,9 @@ class DatabaseUpdate:
         sql = """
         INSERT INTO {table}(
                 dataFileId,
-                telescopeId,
                 {columns}
         )
-        VALUES (%(data_file_id)s, %(telescope_id)s, {values})
+        VALUES (%(data_file_id)s, {values})
         """.format(
             table=table,
             columns=", ".join(columns),

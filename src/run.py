@@ -22,7 +22,7 @@ for i, row in get_results.iterrows():
 cursor.execute(insert_sql[:-2] + ";")
 conn.commit()
 
-populate(date(2019, 4, 3), date(2019, 4, 4))
+populate(date(2018, 2, 5), date(2019, 2, 9))
 
 
 def update_scam(date):

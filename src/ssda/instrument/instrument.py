@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Type
 
 from ssda.instrument.instrument_fits_data import InstrumentFitsData
-from ssda.instrument.rss_fits_data import RssFitsData
+from ssda.instrument.rss.rss_fits_data import RssFitsData
 
 
 class Instrument(Enum):

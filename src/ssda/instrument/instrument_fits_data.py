@@ -6,6 +6,7 @@ from datetime import date, datetime
 from enum import Enum
 from typing import List, NamedTuple, Optional
 
+from astropy.io.fits import ImageHDU, PrimaryHDU
 from ssda.connection import ssda_connect
 from ssda.observation_status import ObservationStatus
 from ssda.telescope import Telescope
@@ -141,9 +142,9 @@ class InstrumentFitsData(ABC):
     def __init__(self, fits_file: str):
         self.file_path = os.path.abspath(fits_file)
         self.file_size = os.path.getsize(fits_file)
-        with fits.open(fits_file) as header_data_unit_list:
+        with fits.open(fits_file) as hdul:
             # Only use keywords and values from the primary header
-            self.header = header_data_unit_list[0].header
+            self.header = hdul[0].header
 
     @property
     def header_text(self) -> str:
@@ -186,6 +187,7 @@ class InstrumentFitsData(ABC):
 
         raise NotImplementedError
 
+    @abstractmethod
     def create_preview_files(self) -> List[str]:
         """
         Create the preview files for the FITS file.
