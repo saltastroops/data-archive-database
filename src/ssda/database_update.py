@@ -1,7 +1,8 @@
 from datetime import date, timedelta
+from enum import Enum
 import os
 import pandas as pd
-from typing import Generator, List, Optional
+from typing import Generator, List, Optional, Set
 
 from ssda.connection import ssda_connect
 from ssda.instrument.instrument import Instrument
@@ -9,14 +10,13 @@ from ssda.instrument.instrument_fits_data import InstrumentFitsData
 from ssda.telescope import Telescope
 
 
-def populate(start_date: date, end_date: date) -> None:
-    # get FITS files
-    # loop over all dates
-    for file_data in fits_data_gen(start_date, end_date):
-        populate_with_data(file_data)
+class UpdateAction(Enum):
+    DELETE = "Delete"
+    INSERT = "Insert"
+    UPDATE = "Update"
 
 
-def fits_data_gen(start_date: date, end_date: date, instruments: List[Instrument]=None) -> Generator[InstrumentFitsData, None, None]:
+def fits_data_from_date_range_gen(start_date: date, end_date: date, instruments: Set[Instrument]) -> Generator[InstrumentFitsData, None, None]:
     """
     A generator for returning InstrumentFitsData instances for a date range.
 
@@ -42,22 +42,23 @@ def fits_data_gen(start_date: date, end_date: date, instruments: List[Instrument
     -------
     generator : InstrumentFitsData instance generator
         Generator for the InstrumentFitsData instances.
+
     """
 
     # Sanity check: the date order must be correct
-    if start_date >= end_date:
+    if start_date > end_date:
         raise ValueError("The start date must be earlier than the end date.")
 
     # If no instruments are given, all instruments are considered
-    if not instruments:
-        instruments = list(Instrument)
+    if not instruments or len(instruments) == 0:
+        instruments = set(Instrument)
 
     # Loop over all nights
     dt = timedelta(days=1)
     night = start_date
     while night <= end_date:
         # Loop over all instruments
-        for instrument in Instrument:
+        for instrument in instruments:
             # Loop over all FITS files for the instrument
             fits_data_class = instrument.fits_data_class()
             for fits_file in sorted(fits_data_class.fits_files(night)):
@@ -65,7 +66,52 @@ def fits_data_gen(start_date: date, end_date: date, instruments: List[Instrument
             night += dt
 
 
-def populate_with_data(fits_data: InstrumentFitsData) -> None:
+def fits_data_from_file_gen(fits_file: str, instrument: Instrument) -> Generator[InstrumentFitsData, None, None]:
+    """
+    A generator for returning an InstrumentFitsData instance for a FITS file.
+
+    The generator yields exactly one value.
+
+    Parameters
+    ----------
+    fits_file : str
+        File path of the FITS file.
+    instrument : Instrument
+        Instrument which took the data for the FITS file.
+
+    Returns
+    -------
+    generator : InstrumentFitsData instance generator
+        Generator yielding one InstrumentFitsData instance.
+
+    """
+
+    fits_data_class = instrument.fits_data_class()
+    yield fits_data_class(fits_file)
+
+
+def update_database(action: UpdateAction, fits_data: InstrumentFitsData):
+    """
+    Perform a database update from FITS data.
+
+    Parameters
+    ----------
+    action : UpdateAction
+        Action to perform (insert, update or delete).
+    fits_data : InstrumentFitsData
+        FITS data to update the database with
+
+    """
+
+    if action == UpdateAction.INSERT:
+        insert(fits_data)
+    elif action == UpdateAction.UPDATE:
+        update(fits_data)
+    elif action == UpdateAction.DELETE:
+        delete(fits_data)
+
+
+def insert(fits_data: InstrumentFitsData) -> None:
     db_update = DatabaseUpdate(fits_data)
     try:
         # Maybe the file content been added to the database already?
@@ -93,6 +139,14 @@ def populate_with_data(fits_data: InstrumentFitsData) -> None:
     except Exception as e:
         db_update.rollback()
         raise e
+
+
+def update(fits_data: InstrumentFitsData) -> None:
+    raise NotImplemented()
+
+
+def delete(fits_data: InstrumentFitsData) -> None:
+    raise NotImplemented()
 
 
 class DatabaseUpdate:
