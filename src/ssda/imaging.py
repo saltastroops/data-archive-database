@@ -3,7 +3,7 @@ from PIL import Image
 from astropy.io import fits
 from astropy.io.fits import ImageHDU
 
-BASE_HEIGHT = 644  # Base height for all thumbnail
+BASE_HEIGHT = 500  # Base height for all thumbnail
 
 
 def get_thumbnail_size(size):
@@ -35,17 +35,26 @@ def save_image_data(image_path, save_path):
     # creating a directory if it doesn't exist
     if not os.path.exists(save_path):
         os.makedirs(save_path)
-
     with fits.open(image_path) as hdul:
-        for index, image in enumerate(hdul):
-            if isinstance(image, ImageHDU):
-                im = Image.fromarray(image.data.astype('uint8'))  # Image creation
-                image_saved_path = os.path.join(
-                    save_path, "{basename}-image-{order}.png".format(basename=basename, order=index)
-                )
-                im.thumbnail(get_thumbnail_size(image.data.shape))  # getting a thumbnail scale see BASE_HEIGHT
-                # save a thumbnail
-                im.save(image_saved_path)
-                created_images.append(image_saved_path)
+        if len(hdul) == 1:
+            image = fits.getdata(image_path)
+            image_saved_path = os.path.join(
+                save_path, "{basename}-image.png".format(basename=basename)
+            )
+            im = Image.fromarray(image.astype('uint8'))
+            im.thumbnail(get_thumbnail_size(image.shape))
+            im.save(image_saved_path)
+            created_images.append(image_saved_path)
+        else:
+            for index, image in enumerate(hdul):
+                if isinstance(image, ImageHDU):
+                    im = Image.fromarray(image.data.astype('uint8'))  # Image creation
+                    image_saved_path = os.path.join(
+                        save_path, "{basename}-image-{order}.png".format(basename=basename, order=index)
+                    )
+                    im.thumbnail(get_thumbnail_size(image.data.shape))  # getting a thumbnail scale see BASE_HEIGHT
+                    # save a thumbnail
+                    im.save(image_saved_path)
+                    created_images.append(image_saved_path)
 
     return created_images

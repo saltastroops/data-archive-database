@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 with open('README.md') as readme_file:
     readme = readme_file.read()
 
-requirements = ['astropy', 'click', 'pandas', 'PyMySQL', 'python-dateutil']
+requirements = ['astropy', 'click', 'pandas', 'pillow', 'PyMySQL', 'python-dateutil']
 
 setup_requirements = ['pytest-runner']
 

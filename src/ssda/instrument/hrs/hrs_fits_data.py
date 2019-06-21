@@ -5,7 +5,6 @@ from dateutil import parser
 import glob
 import os
 import pandas as pd
-from PIL import Image
 from typing import List, Optional
 
 from ssda.connection import sdb_connect
@@ -21,10 +20,8 @@ from ssda.telescope import Telescope
 
 from ssda.imaging import save_image_data
 
-BASE_HEIGHT = 50  # Base height for all thumbnail
 
-
-class RssFitsData(InstrumentFitsData):
+class HrsFitsData(InstrumentFitsData):
     def __init__(self, fits_file: str):
         InstrumentFitsData.__init__(self, fits_file)
 
@@ -45,7 +42,7 @@ class RssFitsData(InstrumentFitsData):
 
         """
 
-        data_directory = "{base_dir}/salt/{year}/{monthday}/rss/raw".format(
+        data_directory = "{base_dir}/salt/{year}/{monthday}/hrs/raw".format(
             base_dir=os.environ["FITS_BASE_DIR"],
             year=night.strftime("%Y"),
             monthday=night.strftime("%m%d"),
@@ -74,19 +71,19 @@ class RssFitsData(InstrumentFitsData):
         day_dir = os.path.join(year_dir, self.night().strftime("%m%d"))
         if not os.path.exists(day_dir):
             os.mkdir(day_dir)
-        rss_dir = os.path.join(day_dir, "rss")
-        if not os.path.exists(rss_dir):
-            os.mkdir(rss_dir)
+        hrs_dir = os.path.join(day_dir, "hrs")
+        if not os.path.exists(hrs_dir):
+            os.mkdir(hrs_dir)
 
         # Create the header content file
         basename = os.path.basename(self.file_path)[:-5]
-        header_content_file = os.path.join(rss_dir, basename + "-header.txt")
+        header_content_file = os.path.join(hrs_dir, basename + "-header.txt")
         with open(header_content_file, "w") as f:
             f.write(self.header_text)
         preview_files = [header_content_file]
 
         # Create the image files
-        preview_files += save_image_data(self.file_path, rss_dir)
+        preview_files += save_image_data(self.file_path, hrs_dir)
 
         return preview_files
 
@@ -157,7 +154,7 @@ class RssFitsData(InstrumentFitsData):
 
         directory = os.path.dirname(os.path.abspath(__file__))
 
-        return os.path.join(directory, "rss_keywords.txt")
+        return os.path.join(directory, "hrs_keywords.txt")
 
     def instrument_table(self) -> str:
         """
@@ -165,8 +162,8 @@ class RssFitsData(InstrumentFitsData):
         took the data.
 
         The primary key column of the table must the string you get when concatenating
-        the table name in lower case and 'Id'. For example, for the RSS table this
-        column must be named rssId.
+        the table name in lower case and 'Id'. For example, for the HRS table this
+        column must be named hrsId.
 
         Returns
         -------
@@ -175,7 +172,7 @@ class RssFitsData(InstrumentFitsData):
 
         """
 
-        return "RSS"
+        return "HRS"
 
     def investigator_ids(self) -> List[str]:
         """
@@ -501,12 +498,3 @@ def target_type(block_visit_id: Optional[int]) -> Optional[str]:
 
     return numeric_code_df["NumericCode"][0]
 
-
-def get_thumbnail_size(size):
-    """
-    Create a thumbnail size with a width of BASE_HEIGHT
-    :param size: Image size (tuple of width by height (w,h,))
-    :return: width and height of the thumbnail
-    """
-    factor = size[1]/BASE_HEIGHT
-    return size[1]/factor, size[0]/factor

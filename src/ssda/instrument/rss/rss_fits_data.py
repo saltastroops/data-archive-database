@@ -5,7 +5,6 @@ from dateutil import parser
 import glob
 import os
 import pandas as pd
-from PIL import Image
 from typing import List, Optional
 
 from ssda.connection import sdb_connect
@@ -19,9 +18,7 @@ from ssda.instrument.instrument_fits_data import (
 from ssda.observation_status import ObservationStatus
 from ssda.telescope import Telescope
 
-from src.ssda.imaging import save_image_data
-
-BASE_HEIGHT = 50  # Base height for all thumbnail
+from ssda.imaging import save_image_data
 
 
 class RssFitsData(InstrumentFitsData):
@@ -500,13 +497,3 @@ def target_type(block_visit_id: Optional[int]) -> Optional[str]:
         return None
 
     return numeric_code_df["NumericCode"][0]
-
-
-def get_thumbnail_size(size):
-    """
-    Create a thumbnail size with a width of BASE_HEIGHT
-    :param size: Image size (tuple of width by height (w,h,))
-    :return: width and height of the thumbnail
-    """
-    factor = size[1]/BASE_HEIGHT
-    return size[1]/factor, size[0]/factor

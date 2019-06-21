@@ -24,7 +24,7 @@ DROP TABLE IF EXISTS `DataCategory`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `DataCategory` (
   `dataCategoryId` int(11) NOT NULL AUTO_INCREMENT,
-  `dataCategory` VARCHAR(45) DEFAULT NULL,
+  `dataCategory` VARCHAR(255) DEFAULT NULL,
   PRIMARY KEY (`dataCategoryId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -67,7 +67,7 @@ CREATE TABLE `DataPreview` (
   `name` VARCHAR(255) DEFAULT NULL,
   `path` VARCHAR(255) DEFAULT NULL,
   `dataFileId` int(11) DEFAULT NULL,
-  `order` VARCHAR(45) DEFAULT NULL,
+  `order` VARCHAR(255) DEFAULT NULL,
   PRIMARY KEY (`dataPreviewId`),
   KEY `fk_DataPreviewDataFile_idx` (`dataFileId`),
   CONSTRAINT `fk_DataPreviewDataFile` FOREIGN KEY (`dataFileId`) REFERENCES `DataFile` (`dataFileId`) ON DELETE NO ACTION ON UPDATE NO ACTION
@@ -79,55 +79,52 @@ CREATE TABLE `DataPreview` (
 --
 
 DROP TABLE IF EXISTS `HRS`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `HRS` (
   `hrsId` int(11) NOT NULL AUTO_INCREMENT,
   `dataFileId` int(11) NOT NULL,
-  `observationId` int(11) NOT NULL,
-  `amplifierSection` VARCHAR(45) DEFAULT NULL,
+  `amplifierSection` VARCHAR(255) DEFAULT NULL,
   `amplifierTemperature` FLOAT DEFAULT NULL,
-  `biasSection` VARCHAR(45) DEFAULT NULL,
+  `biasSection` VARCHAR(255) DEFAULT NULL,
   `numberOfAmplifiers` INT DEFAULT NULL,
-  `ccdSection` VARCHAR(45) DEFAULT NULL,
-  `ccdSummation` VARCHAR(45) DEFAULT NULL,
+  `ccdSection` VARCHAR(255) DEFAULT NULL,
+  `ccdSummation` VARCHAR(255) DEFAULT NULL,
   `ccdTemperature` FLOAT DEFAULT NULL,
-  `ccdType` VARCHAR(45) DEFAULT NULL,
-  `dataSection` VARCHAR(45) DEFAULT NULL,
-  `dateOfObservation` VARCHAR(45) DEFAULT NULL,
-  `detectorMode` VARCHAR(45) DEFAULT NULL,
-  `detectorName` VARCHAR(45) DEFAULT NULL,
-  `detectorSection` VARCHAR(45) DEFAULT NULL,
-  `detectorSerialNumber` VARCHAR(45) DEFAULT NULL,
-  `detectorSize` VARCHAR(45) DEFAULT NULL,
-  `detectorSoftwareVersion` VARCHAR(45) DEFAULT NULL,
+  `ccdType` VARCHAR(255) DEFAULT NULL,
+  `dataSection` VARCHAR(255) DEFAULT NULL,
+  `dateOfObservation` VARCHAR(255) DEFAULT NULL,
+  `detectorMode` VARCHAR(255) DEFAULT NULL,
+  `detectorName` VARCHAR(255) DEFAULT NULL,
+  `detectorSection` VARCHAR(255) DEFAULT NULL,
+  `detectorSerialNumber` VARCHAR(255) DEFAULT NULL,
+  `detectorSize` VARCHAR(255) DEFAULT NULL,
+  `detectorSoftwareVersion` VARCHAR(255) DEFAULT NULL,
   `exposureMean` FLOAT DEFAULT NULL,
   `exposureMidPoint` FLOAT DEFAULT NULL,
   `exposureTotal` FLOAT DEFAULT NULL,
   `exposureTime` FLOAT DEFAULT NULL,
-  `fifCentering` VARCHAR(45) DEFAULT NULL,
-  `fifCenteringOffset` FLOAT DEFAULT NULL,
-  `fifPortOffset` FLOAT DEFAULT NULL,
-  `fifPort` VARCHAR(45) DEFAULT NULL,
-  `fifSeparation` FLOAT DEFAULT NULL,
+  `fifCentering` VARCHAR(255) DEFAULT NULL,
+  `fifCenteringOffset` VARCHAR(255) DEFAULT NULL,
+  `fifPortOffset` VARCHAR(255) DEFAULT NULL,
+  `fifPort` VARCHAR(255) DEFAULT NULL,
+  `fifSeparation` VARCHAR(255) DEFAULT NULL,
   `focusBlueArm` FLOAT DEFAULT NULL,
   `focusRedArm` FLOAT DEFAULT NULL,
-  `gain` FLOAT DEFAULT NULL,
-  `gainSet` VARCHAR(45) DEFAULT NULL,
-  `iodenStagePosition` VARCHAR(45) DEFAULT NULL,
-  `instrumentName` VARCHAR(45) DEFAULT NULL,
-  `lstObservation` VARCHAR(45) DEFAULT NULL,
+  `gain` VARCHAR(255) DEFAULT NULL,
+  `gainSet` VARCHAR(255) DEFAULT NULL,
+  `iodenStagePosition` VARCHAR(255) DEFAULT NULL,
+  `instrumentName` VARCHAR(255) DEFAULT NULL,
+  `lstObservation` VARCHAR(255) DEFAULT NULL,
   `numberOfAmplifiersUsed` INT DEFAULT NULL,
   `numberOfCcdsInDetector` INT DEFAULT NULL,
   `nodCount` INT DEFAULT NULL,
   `nodPeriod` FLOAT DEFAULT NULL,
   `nodShuffle` INT DEFAULT NULL,
-  `observationMode` VARCHAR(45) DEFAULT NULL,
-  `observationType` VARCHAR(45) DEFAULT NULL,
+  `observationMode` VARCHAR(255) DEFAULT NULL,
+  `observationType` VARCHAR(255) DEFAULT NULL,
   `pressureDewar` FLOAT DEFAULT NULL,
   `pressureVacuum` FLOAT DEFAULT NULL,
   `prescan` INT DEFAULT NULL,
-  `ccdReadoutSpeed` VARCHAR(45) DEFAULT NULL,
+  `ccdReadoutSpeed` VARCHAR(255) DEFAULT NULL,
   `airTemperature` FLOAT DEFAULT NULL,
   `blueCameraTemperature` FLOAT DEFAULT NULL,
   `collimatorTemperature` FLOAT DEFAULT NULL,
@@ -137,22 +134,19 @@ CREATE TABLE `HRS` (
   `redCameraTemperature` FLOAT DEFAULT NULL,
   `redMirrorTemperature` FLOAT DEFAULT NULL,
   `vacuumTemperature` FLOAT DEFAULT NULL,
-  `startOfObservationTime` VARCHAR(45) DEFAULT NULL,
-  `systemTime` VARCHAR(45) DEFAULT NULL,
-  `fitsHeaderVersion` VARCHAR(45) DEFAULT NULL,
+  `startOfObservationTime` VARCHAR(255) DEFAULT NULL,
+  `systemTime` VARCHAR(255) DEFAULT NULL,
+  `fitsHeaderVersion` VARCHAR(255) DEFAULT NULL,
   PRIMARY KEY (`hrsId`),
   KEY `fk_HRSDataFile_idx` (`dataFileId`),
   CONSTRAINT `fk_HRSDataFile` FOREIGN KEY (`dataFileId`) REFERENCES `DataFile` (`dataFileId`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `RSS`
 --
 
 DROP TABLE IF EXISTS `RSS`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `RSS` (
   `rssId` INT(11) NOT NULL AUTO_INCREMENT,
   `dataFileId` INT(11) NOT NULL,
@@ -241,8 +235,8 @@ CREATE TABLE `RSS` (
   `focusMachineState` VARCHAR(255) DEFAULT NULL,
   `focusVolts` FLOAT DEFAULT NULL,
   `focusSteps` INT DEFAULT NULL,
-  `gain` FLOAT DEFAULT NULL,
-  `gain1` FLOAT DEFAULT NULL,
+  `gain` VARCHAR(255) DEFAULT NULL,
+  `gain1` VARCHAR(255) DEFAULT NULL,
   `gainSet` VARCHAR(255) DEFAULT NULL,
   `gratingMagazineSteps` INT DEFAULT NULL,
   `gratingMagazineVolts` FLOAT DEFAULT NULL,
@@ -289,42 +283,39 @@ CREATE TABLE `RSS` (
   `slitmasMachineState` VARCHAR(255) DEFAULT NULL,
   `slitmaskMagazineSteps` INT DEFAULT NULL,
   `slitmaskVolts` FLOAT DEFAULT NULL,
-  `startOfObservationTime` VARCHAR(45) DEFAULT NULL,
-  `systemTime` VARCHAR(45) DEFAULT NULL,
-  `fitsHeaderVersion` VARCHAR(45) DEFAULT NULL,
-  `spatialCoordinate` VARCHAR(45) DEFAULT NULL,
-  `waveplateMachineState` VARCHAR(45) DEFAULT NULL,
-  `polarimetryProcedurePattern` VARCHAR(45) DEFAULT NULL,
+  `startOfObservationTime` VARCHAR(255) DEFAULT NULL,
+  `systemTime` VARCHAR(255) DEFAULT NULL,
+  `fitsHeaderVersion` VARCHAR(255) DEFAULT NULL,
+  `spatialCoordinate` VARCHAR(255) DEFAULT NULL,
+  `waveplateMachineState` VARCHAR(255) DEFAULT NULL,
+  `polarimetryProcedurePattern` VARCHAR(255) DEFAULT NULL,
   `crossTalk` FLOAT DEFAULT NULL,
   PRIMARY KEY (`rssId`),
   KEY `fk_RSSDataFile_idx` (`dataFileId`),
   CONSTRAINT `fk_RSSDataFile` FOREIGN KEY (`dataFileId`) REFERENCES `DataFile` (`dataFileId`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `RSS`
 --
 
 DROP TABLE IF EXISTS `Salticam`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Salticam` (
   `salticamId` int(11) NOT NULL AUTO_INCREMENT,
   `dataFileId` int(11) NOT NULL,
-  `amplifierSection` VARCHAR(45) DEFAULT NULL,
+  `amplifierSection` VARCHAR(255) DEFAULT NULL,
   `amplifierTemperature` FLOAT DEFAULT NULL,
   `amplifierReadoutX` INT DEFAULT NULL,
   `amplifierReadoutY` INT DEFAULT NULL,
-  `biasSection` VARCHAR(45) DEFAULT NULL,
+  `biasSection` VARCHAR(255) DEFAULT NULL,
   `beamSplitterScale` FLOAT DEFAULT NULL,
   `beamSplitterZero` FLOAT DEFAULT NULL,
   `detectorFocusPosition` INT DEFAULT NULL,
   `numberOfAmplifiers` INT DEFAULT NULL,
-  `ccdSection` VARCHAR(45) DEFAULT NULL,
-  `ccdSummation` VARCHAR(45) DEFAULT NULL,
+  `ccdSection` VARCHAR(255) DEFAULT NULL,
+  `ccdSummation` VARCHAR(255) DEFAULT NULL,
   `ccdTemperature` FLOAT DEFAULT NULL,
-  `ccdType` VARCHAR(45) DEFAULT NULL,
+  `ccdType` VARCHAR(255) DEFAULT NULL,
   `transformationMatrix11` FLOAT DEFAULT NULL,
   `transformationMatrix11A` FLOAT DEFAULT NULL,
   `transformationMatrix12` FLOAT DEFAULT NULL,
@@ -342,50 +333,49 @@ CREATE TABLE `Salticam` (
   `spatialCoordinatePoint1A` FLOAT DEFAULT NULL,
   `declanationPoint2` FLOAT DEFAULT NULL,
   `spacialCoordinatePoint2A` FLOAT DEFAULT NULL,
-  `gnomicProjection1` VARCHAR(45) DEFAULT NULL,
-  `cartesianProjection1A` VARCHAR(45) DEFAULT NULL,
-  `gnomicProjection2` VARCHAR(45) DEFAULT NULL,
-  `cartesianProjection2A` VARCHAR(45) DEFAULT NULL,
-  `anglesDegreesAlways1` VARCHAR(45) DEFAULT NULL,
-  `anglesDegreesAlways2` VARCHAR(45) DEFAULT NULL,
-  `dataSection` VARCHAR(45) DEFAULT NULL,
-  `dateOfObservation` VARCHAR(45) DEFAULT NULL,
-  `detectorMode` VARCHAR(45) DEFAULT NULL,
-  `detectorSection` VARCHAR(45) DEFAULT NULL,
-  `detectorSize` VARCHAR(45) DEFAULT NULL,
-  `detectorSoftwareVersion` VARCHAR(45) DEFAULT NULL,
+  `gnomicProjection1` VARCHAR(255) DEFAULT NULL,
+  `cartesianProjection1A` VARCHAR(255) DEFAULT NULL,
+  `gnomicProjection2` VARCHAR(255) DEFAULT NULL,
+  `cartesianProjection2A` VARCHAR(255) DEFAULT NULL,
+  `anglesDegreesAlways1` VARCHAR(255) DEFAULT NULL,
+  `anglesDegreesAlways2` VARCHAR(255) DEFAULT NULL,
+  `dataSection` VARCHAR(255) DEFAULT NULL,
+  `dateOfObservation` VARCHAR(255) DEFAULT NULL,
+  `detectorMode` VARCHAR(255) DEFAULT NULL,
+  `detectorSection` VARCHAR(255) DEFAULT NULL,
+  `detectorSize` VARCHAR(255) DEFAULT NULL,
+  `detectorSoftwareVersion` VARCHAR(255) DEFAULT NULL,
   `coolerBoxTemperature` FLOAT DEFAULT NULL,
   `exposureTime` FLOAT DEFAULT NULL,
   `filterPosition` INT DEFAULT NULL,
-  `filterName` VARCHAR(45) DEFAULT NULL,
-  `gain` FLOAT DEFAULT NULL,
-  `gain1` FLOAT DEFAULT NULL,
-  `gainSet` VARCHAR(45) DEFAULT NULL,
-  `imageId` VARCHAR(45) DEFAULT NULL,
-  `instrumentName` VARCHAR(45) DEFAULT NULL,
+  `filterName` VARCHAR(255) DEFAULT NULL,
+  `gain` VARCHAR(255) DEFAULT NULL,
+  `gain1` VARCHAR(255) DEFAULT NULL,
+  `gainSet` VARCHAR(255) DEFAULT NULL,
+  `imageId` VARCHAR(255) DEFAULT NULL,
+  `instrumentName` VARCHAR(255) DEFAULT NULL,
   `julianDate` FLOAT DEFAULT NULL,
-  `lstObservation` VARCHAR(45) DEFAULT NULL,
+  `lstObservation` VARCHAR(255) DEFAULT NULL,
   `numberOfCcds` INT DEFAULT NULL,
   `numberOfExtensions` INT DEFAULT NULL,
   `numberOfWindows` INT DEFAULT NULL,
-  `objectName` VARCHAR(45) DEFAULT NULL,
-  `observationMode` VARCHAR(45) DEFAULT NULL,
-  `observationType` VARCHAR(45) DEFAULT NULL,
+  `objectName` VARCHAR(255) DEFAULT NULL,
+  `observationMode` VARCHAR(255) DEFAULT NULL,
+  `observationType` VARCHAR(255) DEFAULT NULL,
   `pixelScale` FLOAT DEFAULT NULL,
   `pupilEnd` FLOAT DEFAULT NULL,
   `noiseReadout` FLOAT DEFAULT NULL,
-  `ccdReadoutSpeed` VARCHAR(45) DEFAULT NULL,
+  `ccdReadoutSpeed` VARCHAR(255) DEFAULT NULL,
   `pixelSaturation` INT DEFAULT NULL,
-  `startOfObservationTime` VARCHAR(45) DEFAULT NULL,
-  `systemTime` VARCHAR(45) DEFAULT NULL,
-  `fitsHeaderVersion` VARCHAR(45) DEFAULT NULL,
-  `spatialCoordinate` VARCHAR(45) DEFAULT NULL,
+  `startOfObservationTime` VARCHAR(255) DEFAULT NULL,
+  `systemTime` VARCHAR(255) DEFAULT NULL,
+  `fitsHeaderVersion` VARCHAR(255) DEFAULT NULL,
+  `spatialCoordinate` VARCHAR(255) DEFAULT NULL,
   `crossTalk` FLOAT DEFAULT NULL,
   PRIMARY KEY (`salticamId`),
   KEY `fk_SalticamDataFile_idx` (`dataFileId`),
   CONSTRAINT `fk_SalticamDataFile` FOREIGN KEY (`dataFileId`) REFERENCES `DataFile` (`dataFileId`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `Institution`
@@ -396,7 +386,7 @@ DROP TABLE IF EXISTS `Institution`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Institution` (
   `institutionId` int(11) NOT NULL AUTO_INCREMENT,
-  `institutionName` VARCHAR(45) DEFAULT NULL,
+  `institutionName` VARCHAR(255) DEFAULT NULL,
   PRIMARY KEY (`institutionId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -410,8 +400,8 @@ CREATE TABLE `Observation` (
   `observationId` int(11) NOT NULL AUTO_INCREMENT,
   `proposalId` int(11),
   `telescopeId` int(11) DEFAULT NULL,
-  `telescopeObservationId` VARCHAR(45) DEFAULT NULL,
-  `night` VARCHAR(45) DEFAULT NULL,
+  `telescopeObservationId` VARCHAR(255) DEFAULT NULL,
+  `night` VARCHAR(255) DEFAULT NULL,
   `observationStatusId` int(11) DEFAULT NULL,
   PRIMARY KEY (`observationId`),
   KEY `fk_proposal_idx` (`proposalId`),
@@ -431,7 +421,7 @@ DROP TABLE IF EXISTS `ObservationStatus`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ObservationStatus` (
   `observationStatusId` int(11) NOT NULL,
-  `status` VARCHAR(45) DEFAULT NULL,
+  `status` VARCHAR(255) DEFAULT NULL,
   PRIMARY KEY (`observationStatusId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -445,9 +435,9 @@ DROP TABLE IF EXISTS `Proposal`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Proposal` (
   `proposalId` int(11) NOT NULL AUTO_INCREMENT,
-  `proposalCode` VARCHAR(45) NOT NULL,
-  `principalInvestigatorGivenName` VARCHAR(45) NOT NULL,
-  `principalInvestigatorFamilyName` VARCHAR(45) NOT NULL,
+  `proposalCode` VARCHAR(255) NOT NULL,
+  `principalInvestigatorGivenName` VARCHAR(255) NOT NULL,
+  `principalInvestigatorFamilyName` VARCHAR(255) NOT NULL,
   `title` VARCHAR(255) NOT NULL,
   `institutionId` INT(11) NOT NULL,
   `lastUpdated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -507,7 +497,7 @@ DROP TABLE IF EXISTS `TargetType`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `TargetType` (
   `targetTypeId` int(11) NOT NULL AUTO_INCREMENT,
-  `numericValue` VARCHAR(45) DEFAULT NULL,
+  `numericValue` VARCHAR(255) DEFAULT NULL,
   `explanation` VARCHAR(100) DEFAULT NULL,
   PRIMARY KEY (`targetTypeId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -522,22 +512,9 @@ DROP TABLE IF EXISTS `Telescope`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Telescope` (
   `telescopeId` int(11) NOT NULL AUTO_INCREMENT,
-  `telescopeName` VARCHAR(45) NOT NULL,
+  `telescopeName` VARCHAR(255) NOT NULL,
   `ownerId` int(11) DEFAULT NULL,
   PRIMARY KEY (`telescopeId`),
   KEY `fk_TelescopeInstitute_idx` (`ownerId`),
   CONSTRAINT `fk_TelescopeInstitute` FOREIGN KEY (`ownerId`) REFERENCES `Institution` (`institutionId`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
-
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-
--- Dump completed on 2019-05-24  9:58:50
