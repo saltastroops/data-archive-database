@@ -111,7 +111,7 @@ def update_database(action: UpdateAction, start: datetime, end: datetime, file: 
         if start and end:
             fits_data_gen = fits_data_from_date_range_gen(start_date=start.date(),
                                                           end_date=end.date(),
-                                                          instruments = set(instruments))
+                                                          instruments=set(instruments))
         elif file:
             fits_data_gen = fits_data_from_file_gen(fits_file=file,
                                                     instrument=list(instruments)[0])

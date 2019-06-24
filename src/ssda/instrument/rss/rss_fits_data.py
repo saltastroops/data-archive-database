@@ -18,6 +18,8 @@ from ssda.instrument.instrument_fits_data import (
 from ssda.observation_status import ObservationStatus
 from ssda.telescope import Telescope
 
+from ssda.imaging import save_image_data
+
 
 class RssFitsData(InstrumentFitsData):
     def __init__(self, fits_file: str):
@@ -81,16 +83,8 @@ class RssFitsData(InstrumentFitsData):
         preview_files = [header_content_file]
 
         # Create the image files
-        # TODO: Replace with real images
-        for i in range(1, 4):
-            image_file = os.path.join(
-                rss_dir, "{basename}-image_{order}".format(basename=basename, order=i)
-            )
-            with open(image_file, "w") as f:
-                f.write(str(datetime.now()))
-            preview_files.append(image_file)
+        preview_files += save_image_data(self.file_path, rss_dir)
 
-        # Return the created file paths
         return preview_files
 
     def data_category(self) -> DataCategory:

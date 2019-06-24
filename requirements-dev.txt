@@ -6,3 +6,4 @@ pip
 pytest
 pytest-runner
 tox
+pillow
