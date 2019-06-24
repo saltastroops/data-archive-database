@@ -46,6 +46,7 @@ CREATE TABLE `DataFile` (
   `size` FLOAT DEFAULT NULL,
   `observationId` int(11) DEFAULT NULL,
   PRIMARY KEY (`dataFileId`),
+  UNIQUE KEY (`path`),
   KEY `fk_DataFileCategory_idx` (`dataCategoryId`),
   KEY `fk_DataFileTarget_idx` (`targetId`),
   KEY `fk_DataFileObservation_idx` (`observationId`),
@@ -63,12 +64,11 @@ DROP TABLE IF EXISTS `DataPreview`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `DataPreview` (
-  `dataPreviewId` int(11) NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(255) DEFAULT NULL,
-  `path` VARCHAR(255) DEFAULT NULL,
   `dataFileId` int(11) DEFAULT NULL,
   `order` VARCHAR(45) DEFAULT NULL,
-  PRIMARY KEY (`dataPreviewId`),
+  `name` VARCHAR(255) DEFAULT NULL,
+  `path` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`dataFileId`, `order`),
   KEY `fk_DataPreviewDataFile_idx` (`dataFileId`),
   CONSTRAINT `fk_DataPreviewDataFile` FOREIGN KEY (`dataFileId`) REFERENCES `DataFile` (`dataFileId`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -412,7 +412,7 @@ DROP TABLE IF EXISTS `Observation`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Observation` (
   `observationId` int(11) NOT NULL AUTO_INCREMENT,
-  'proposalId' int(11) NOT NULL,
+  'proposalId' int(11),
   `telescopeId` int(11) DEFAULT NULL,
   `telescopeObservationId` VARCHAR(45) DEFAULT NULL,
   `night` VARCHAR(45) DEFAULT NULL,
@@ -457,6 +457,7 @@ CREATE TABLE `Proposal` (
   `institutionId` INT(11) NOT NULL,
   `lastUpdated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`proposalId`),
+  UNIQUE KEY (`proposalCode`),
   KEY `fk_institution_idx` (`institutionId`),
   CONSTRAINT `fk_ProposalInstitution` FOREIGN KEY (`institutionId`) REFERENCES `Institution` (`institutionId`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
