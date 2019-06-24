@@ -44,7 +44,7 @@ CREATE TABLE `DataFile` (
  */
 DROP TABLE IF EXISTS `DataPreview`;
 CREATE TABLE `DataPreview` (
-  `dataPreviewId` int(11) NOT NULL AUTO_INCREMENT,   -- Primary key.
+  `dataPreviewId` int(11) NOT NULL AUTO_INCREMENT,  -- Primary key.
   `name` VARCHAR(255) DEFAULT NULL,
   `path` VARCHAR(255) DEFAULT NULL,                 -- Path to preview path
   `dataFileId` int(11) DEFAULT NULL,                -- A foreign key linking to data file, see table DataFile
