@@ -156,6 +156,20 @@ class HrsFitsData(InstrumentFitsData):
 
         return os.path.join(directory, "hrs_keywords.txt")
 
+    def instrument_id_column(self) -> str:
+        """
+        The name of the column containing the id (i.e. the primary key) in the table
+        containing the instrument details for the instrument that took the data.
+
+        Returns
+        -------
+        column : str
+            The column name.
+
+        """
+
+        return "hrsId"
+
     def instrument_table(self) -> str:
         """
         The name of the table containing the instrument details for the instrument that
