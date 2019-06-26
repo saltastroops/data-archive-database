@@ -1,4 +1,4 @@
-SET FOREIGN_KEY_CHECKS=0 COMMENT 'Since tables are not in other this must be disable and enabled at the end';
+SET FOREIGN_KEY_CHECKS=0;  -- Since tables are not in other this must be disable and enabled at the end.
 
 /**
  * Spatial reference system for target positions
@@ -491,4 +491,4 @@ CREATE TABLE `ProposalInvestigator` (
  CONSTRAINT `fk_ProposalInvestigatorProposal` FOREIGN KEY (`proposalId`) REFERENCES `Proposal` (`proposalId`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-SET FOREIGN_KEY_CHECKS=1 COMMENT 'Make sure that this is ran';;
+SET FOREIGN_KEY_CHECKS=1  -- Make sure that this is ran;

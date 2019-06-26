@@ -88,7 +88,7 @@ FO-POS-V    				focusPositionVolts
 FO-STATE    				focusMachineState
 FO-VOLTS    				focusVolts
 FOCUS       				focusSteps
-GAIN        				gain
+# GAIN        				gain
 GAIN1       				gain1
 GAINSET     				gainSet
 GM-STEPS    				gratingMagazineSteps

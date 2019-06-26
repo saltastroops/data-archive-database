@@ -5,12 +5,12 @@ import glob
 import os
 from typing import List, Optional
 
+from ssda.institution import Institution
 from ssda.instrument.instrument_fits_data import (
     InstrumentFitsData,
     PrincipalInvestigator,
     Target,
     DataCategory,
-    Institution,
 )
 from ssda.instrument.salt_instruments import SALTInstruments
 from ssda.observation_status import ObservationStatus
@@ -347,3 +347,15 @@ class SalticamFitsData(InstrumentFitsData):
         """
 
         return self.header.get("BVISITID") or None
+
+    def gain(self) -> Optional[str]:
+        """
+        An average of gain values
+
+        Returns
+        -------
+        gain : float
+            The average of gain values.
+
+        """
+        return SALTInstruments.gain(self.header.get("GAIN"))

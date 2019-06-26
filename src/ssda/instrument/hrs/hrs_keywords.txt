@@ -30,7 +30,7 @@ FIFPORT       fifPort
 FIFSEP        fifSeparation
 FOC-BMIR      focusBlueArm
 FOC-RMIR      focusRedArm
-GAIN          gain
+#  GAIN          gain
 GAINSET       gainSet
 I2STAGE       iodenStagePosition
 INSTRUME      instrumentName

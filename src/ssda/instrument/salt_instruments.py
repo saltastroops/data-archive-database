@@ -340,3 +340,23 @@ class SALTInstruments:
         _target_type = SALTInstruments.target_type(block_visit_id)
 
         return Target(name=object_name, ra=ra, dec=dec, target_type=_target_type)
+
+    @staticmethod
+    def gain(all_gains):
+        """
+        Method sums up the values of gain and return th average.
+
+        Returns
+        -------
+        gain_average:
+            Gain average
+
+        """
+        if all_gains is None or all_gains == "":
+            return None
+        list_gains = all_gains.split()
+        try:
+            gain_sum = sum([float(gain) for gain in list_gains])
+            return gain_sum / len(list_gains)
+        except:
+            return None
