@@ -1246,7 +1246,7 @@ class DatabaseUpdate:
         data_file_id = self.data_file_id(True)
 
         sql = """
-        SELECT dataPreviewId
+        SELECT dataFileId, previewOrder
                FROM DataPreview
         WHERE dataFileId=%(data_file_id)s AND previewOrder=%(order)s
         """
@@ -1254,7 +1254,7 @@ class DatabaseUpdate:
         df = pd.read_sql(sql, con=self._ssda_connection, params=params)
 
         if len(df) > 0:
-            return int(df["dataPreviewId"][0])
+            return int(df["dataFileId"][0]), int(df["previewOrder"][0])
         else:
             return None
 
@@ -1290,22 +1290,26 @@ class DatabaseUpdate:
         # Collect all the instrument details
         properties = self.instrument_properties()
 
+        #  An average of gain values
+        gain_average = self.fits_data.gain()
+
         # Construct the SQL query
         table = self.fits_data.instrument_table()
         columns = list(properties.header_values.keys())
         sql = """
         INSERT INTO {table}(
                 dataFileId,
+                gain,
                 {columns}
         )
-        VALUES (%(data_file_id)s, {values})
+        VALUES (%(data_file_id)s, %(gain_average)s, {values})
         """.format(
             table=table,
             columns=", ".join(columns),
             values=", ".join(["%({})s".format(column) for column in columns]),
         )
         # Collect the parameters
-        params = dict(data_file_id=data_file_id)
+        params = dict(data_file_id=data_file_id, gain_average=gain_average)
         for column in columns:
             params[column] = properties.header_values[column]
 
