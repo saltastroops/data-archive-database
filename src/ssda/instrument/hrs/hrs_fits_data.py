@@ -1,6 +1,5 @@
 from datetime import date, datetime
 
-from astropy.coordinates import Angle
 from dateutil import parser
 import glob
 import os
@@ -15,6 +14,8 @@ from ssda.instrument.instrument_fits_data import (
     DataCategory,
     Institution,
 )
+from ssda.instrument.salt_instruments import SALTInstruments
+
 from ssda.observation_status import ObservationStatus
 from ssda.telescope import Telescope
 
@@ -99,15 +100,8 @@ class HrsFitsData(InstrumentFitsData):
         """
 
         # TODO: What about standards?
-        object_name = self.header.get("OBJECT").upper()
-        if object_name == "ARC":
-            return DataCategory.ARC
-        elif object_name == "BIAS":
-            return DataCategory.BIAS
-        elif object_name == "FLAT":
-            return DataCategory.FLAT
-        else:
-            return DataCategory.SCIENCE
+
+        return SALTInstruments.data_category(self.header.get("OBJECT"))
 
     def institution(self) -> Institution:
         """
@@ -204,29 +198,7 @@ class HrsFitsData(InstrumentFitsData):
             The list of user ids.
 
         """
-
-        # Proposals without proposal code have no users
-        proposal_code = self.proposal_code()
-        if proposal_code is None:
-            return []
-
-        # Find the users
-        salt_users_sql = """
-        SELECT Username
-               FROM PiptUser
-               JOIN Investigator
-                    ON PiptUser.Investigator_Id = Investigator.Investigator_Id
-               JOIN ProposalInvestigator
-                    ON Investigator.Investigator_Id = ProposalInvestigator.Investigator_Id
-               JOIN ProposalCode
-                    ON ProposalInvestigator.ProposalCode_Id = ProposalCode.ProposalCode_Id
-        WHERE Proposal_Code=%s
-        """
-        salt_users_df = pd.read_sql(
-            salt_users_sql, con=sdb_connect(), params=(proposal_code,)
-        )
-
-        return list(salt_users_df["Username"])
+        return SALTInstruments.investigator_ids(self.proposal_code())
 
     def is_proprietary(self) -> bool:
         """
@@ -238,21 +210,7 @@ class HrsFitsData(InstrumentFitsData):
             Whether the data is proprietary.
 
         """
-
-        # TODO: Will have to be updated
-        sql = """
-        SELECT ReleaseDate
-               FROM ProposalGeneralInfo
-               JOIN ProposalCode USING (ProposalCode_Id)
-        WHERE Proposal_Code=%s
-        """
-        with sdb_connect().cursor() as cursor:
-            cursor.execute(sql, (self.proposal_code(),))
-            result = cursor.fetchone()
-            if result is None:
-                return False
-            release_date = result["ReleaseDate"]
-            return release_date > datetime.now().date()
+        return SALTInstruments.is_proprietary(self.proposal_code())
 
     def night(self) -> date:
         """
@@ -281,17 +239,7 @@ class HrsFitsData(InstrumentFitsData):
             The observation status.
 
         """
-
-        block_visit_id = self.telescope_observation_id()
-        if block_visit_id is None:
-            return ObservationStatus.ACCEPTED
-
-        sql = """
-        SELECT BlockVisitStatus FROM BlockVisitStatus JOIN BlockVisit WHERE BlockVisit_Id=%s
-        """
-        df = pd.read_sql(sql, con=sdb_connect(), params=(block_visit_id,))
-
-        return ObservationStatus(df["BlockVisitStatus"][0])
+        return SALTInstruments.observation_status(self.telescope_observation_id())
 
     def principal_investigator(self) -> Optional[PrincipalInvestigator]:
         """
@@ -305,33 +253,7 @@ class HrsFitsData(InstrumentFitsData):
             The principal investigator for the proposal.
 
         """
-
-        proposal_code = self.proposal_code()
-        if not proposal_code:
-            return None
-
-        sql = """
-        SELECT FirstName, Surname
-               FROM Investigator
-               JOIN ProposalInvestigator
-                    ON Investigator.Investigator_Id=ProposalInvestigator.Investigator_Id
-               JOIN ProposalContact
-                    ON ProposalInvestigator.Investigator_Id=ProposalContact.Leader_Id
-               JOIN ProposalCode
-                    ON ProposalContact.ProposalCode_Id=ProposalCode.ProposalCode_Id
-        WHERE Proposal_Code=%s
-        """
-        df = pd.read_sql(sql, con=sdb_connect(), params=(proposal_code,))
-        if len(df) == 0:
-            raise ValueError(
-                "No Principal Investigator was found for the proposal {}".format(
-                    proposal_code
-                )
-            )
-
-        return PrincipalInvestigator(
-            family_name=df["Surname"][0], given_name=df["FirstName"][0]
-        )
+        return SALTInstruments.principal_investigator(self.proposal_code())
 
     def proposal_code(self) -> Optional[str]:
         """
@@ -351,15 +273,7 @@ class HrsFitsData(InstrumentFitsData):
 
         """
 
-        code = self.header.get("PROPID") or None
-        if not code:
-            return None
-
-        # Is this a valid proposal code (rather than a fake one such as 'CAL_BIAS')?
-        if code[:2] == "20":
-            return code
-        else:
-            return None
+        return SALTInstruments.proposal_code(self.header.get("PROPID"))
 
     def proposal_title(self) -> Optional[str]:
         """
@@ -412,34 +326,12 @@ class HrsFitsData(InstrumentFitsData):
         -------
 
         """
-
-        # Get the target position
-        ra_header_value = self.header.get("RA")
-        dec_header_value = self.header.get("DEC")
-        if ra_header_value and not dec_header_value:
-            raise ValueError(
-                "There is a right ascension header value, but no declination header value."
-            )
-        if not ra_header_value and dec_header_value:
-            raise ValueError(
-                "There is a declination header value, but no right ascension header value."
-            )
-        if not ra_header_value and not dec_header_value:
-            return None
-        ra = Angle("{} hours".format(ra_header_value)).degree
-        dec = Angle("{} degrees".format(dec_header_value)).degree
-
-        # Get the target name
-        name = self.header.get("OBJECT", "")
-
-        # Calibrations don't have a target
-        if name.upper() in ["ARC", "BIAS", "FLAT"]:
-            return None
-
-        # Get the target type
-        _target_type = target_type(self.header.get("BVISITID"))
-
-        return Target(name=name, ra=ra, dec=dec, target_type=_target_type)
+        return SALTInstruments.get_target(
+            ra_header_value=self.header.get("RA"),
+            dec_header_value=self.header.get("DEC"),
+            block_visit_id=self.header.get("BVISITID"),
+            object_name=self.header.get("OBJECT", "")
+        )
 
     def telescope(self) -> Telescope:
         """
@@ -472,43 +364,4 @@ class HrsFitsData(InstrumentFitsData):
         """
 
         return self.header.get("BVISITID") or None
-
-
-def target_type(block_visit_id: Optional[int]) -> Optional[str]:
-    """
-    The type of target observed in a block visit.
-
-    Parameters
-    ----------
-    block_visit_id : int
-        The block visit id.
-
-    Returns
-    -------
-    type : str
-        The target type.
-
-    """
-
-    # No target type can be determined if there is no observation linked to the target
-    if block_visit_id is None or block_visit_id:
-        return None
-
-    # Get the target type from the SDB
-    sdb_target_type_query = """
-    SELECT NumericCode
-           FROM BlockVisit
-           JOIN Pointing ON (BlockVisit.Block_Id=Pointing.Block_Id)
-           JOIN Observation USING(Pointing_Id)
-           JOIN Target USING(Target_Id)
-           JOIN TargetSubType USING(TargetSubType_Id)
-    WHERE BlockVisit_Id = %s
-    """
-    numeric_code_df = pd.read_sql(
-        sql=sdb_target_type_query, con=sdb_connect(), params=(block_visit_id,)
-    )
-    if numeric_code_df.empty:
-        return None
-
-    return numeric_code_df["NumericCode"][0]
 

@@ -216,8 +216,6 @@ class DatabaseUpdate:
         self._ssda_connection.autocommit(False)
         self.cursor = self._ssda_connection.cursor()
 
-
-
     def commit(self):
         """
         Commit all the updates to the database.
@@ -364,6 +362,7 @@ class DatabaseUpdate:
             family_name = None
         proposal_title = self.fits_data.proposal_title()
         institution = self.fits_data.institution()
+        print(institution.id)
 
         if proposal_code is None:
             return None
@@ -777,7 +776,7 @@ class DatabaseUpdate:
 
         # Maybe the data file exists already?
         if observation_id is not None:
-            existing_data_file_id = self.data_file_id()
+            existing_data_file_id = self.data_file_id(False)
             if existing_data_file_id is not None:
                 return existing_data_file_id
 
@@ -1108,9 +1107,8 @@ class DatabaseUpdate:
         """.format(
             table=table,
             columns=", ".join(columns),
-            values=", ".join(["%({})s".format(properties.header_values[column]) for column in columns]),
+            values=", ".join(["%({})s".format(column) for column in columns]),
         )
-
         # Collect the parameters
         params = dict(data_file_id=data_file_id, telescope_id=properties.telescope_id)
         for column in columns:
