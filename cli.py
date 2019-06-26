@@ -130,6 +130,7 @@ def update_database(action: UpdateAction, start: datetime, end: datetime, file: 
     # Success!
     return 0
 
+
 @click.group()
 def cli():
     """
@@ -323,3 +324,7 @@ def delete(end: datetime, file: str, force: bool, instruments: Tuple[str], start
         return 0
 
     return update_database(UpdateAction.DELETE, start, end, file, instruments, verbose)
+
+
+if __name__ == '__main__':
+    cli()

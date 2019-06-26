@@ -44,27 +44,19 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr .pytest_cache
 
 format: ## format code with black
-	black src tests
+	pipenv run black src tests
 
 lint: ## check style with flake8
-	flake8 src tests
+	pipenv run flake8 src tests
 
 test: ## run tests quickly with the default Python
-	pytest
+	pipenv run pytest
 
 tox: ## run tests on every Python version with tox
-	tox
+	pipenv run tox
 
 coverage: ## check code coverage quickly with the default Python
-	coverage run --source salt_finder_charts -m pytest
-	coverage report -m
-	coverage html
+	pipenv run coverage run --source salt_finder_charts -m pytest
+	pipenv run coverage report -m
+	pipenv run coverage html
 	$(BROWSER) htmlcov/index.html
-
-dist: clean ## builds source and wheel package
-	python setup.py sdist
-	python setup.py bdist_wheel
-	ls -l dist
-
-install: clean ## install the package to the active Python's site-packages
-	pip install -e .

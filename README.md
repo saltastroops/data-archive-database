@@ -4,7 +4,25 @@ This package lets you populate (and update) the SAAO/SALT Data Archive database.
 
 ## Installation and configuration
 
-Clone the package from its repository,
+Ensure that Python 3.7 is running on your machine. You can check this with the `--version flag`.
+
+```bash
+python3 --version
+```
+
+If it is not installed on your machine already, [install pipenv](https://pipenv.readthedocs.io/en/latest/install/#installing-pipenv). One option for this is to use pip,
+
+```bash
+pip3 install pipenv
+```
+
+but you may also use Homebrew (on a Mac) or Lunuxbrew (on a Linux machine),
+
+```bash
+brew install pipenv
+```
+
+Then clone the package from its repository,
 
 ```bash
 git clone https://github.com/saltastroops/data-archive-database.git
@@ -16,11 +34,10 @@ and make sure you are in the master branch,
 git checkout master
 ```
 
-You can then install the package with pip.
+You can then install all requirements with pipenv,
 
 ```bash
-cd data-archive-database
-pip install -e .
+pipenv install --ignore-pipfile
 ```
 
 Before using the package you need to define the following environment variables.
@@ -38,28 +55,60 @@ SSDA_HOST | Host of the Data Archive database | ssda.your.host
 SSDA_PASSWORD | Password for the Data Archive database | also_secret
 SSDA_USER | Password for the Data Archive database | ssda_user
 
-## Usage
+## Upgrading
 
-The package provides a command `ssda` for inserting, updating and deleting entries in the Data Archive database. Use its `--help` option to find out about its subcommands.
+In order to upgrade the script, make sure you are in the master branch
 
 ```bash
-ssda --help
+git checkout master
+```
+
+and pull the changes from the remote repository,
+
+```bash
+git pull
+```
+
+As requirements may have changed, you should upgrade the installed packages afterwards.
+
+```bash
+pipenv install
+```
+
+## Usage
+
+The package provides a script `cli.py` for inserting, updating and deleting entries in the Data Archive database. To run this script, first open a new pipenv shell.
+
+```bash
+pipenv shell
+```
+
+To find out about the available subcommands you may use the `--help` option.
+
+```bash
+python cli.py --help
 ``` 
 
 The various subcommands for modifying the databse are explained in the following sections.
+
+If you don't want ro open a new shell you may also execute the script with pipenv's `run` command.
+
+```bash
+pipenv run python cli.py --help
+```
 
 ### The insert subcommand
 
 The `insert` subcommand allows you to create new database entries from FITS files. This includes corresponding preview files. Typically you use it to create entries for a range of dates.
 
 ```bash
-ssda insert --start 2019-06-25 --end 2019-06-27
+python insert --start 2019-06-25 --end 2019-06-27
 ```
 
 Both start and end date must be given, and they must be of the format `yyyy-mm-dd`. Both the start and end date are inclusive, and they refer to the beginning of the night. So in the above example FITS files would be considered for the time between noon of 25 June and noon of 28 June 2019. If you want to insert entries for one night, the start abd end date will be the same.
 
 ```bash
-ssda insert --start 2019-07-03 --end 2019-07-03
+python  insert --start 2019-07-03 --end 2019-07-03
 ```
 
 Existing database content is not changed by this subcommand; use the `update` subcommand to make changes. This implies that it is safe to re-run the command as often as you like.
@@ -67,19 +116,19 @@ Existing database content is not changed by this subcommand; use the `update` su
 By default FITS files for all instruments are considered. However, you can limit insertions to a single instrument by adding the `--instrument` option.
 
 ```bash
-ssda insert --start 2019-06-29 --end 2019-07-02 --instrument RSS
+python insert --start 2019-06-29 --end 2019-07-02 --instrument RSS
 ```
 
 The spelling of the instrument name is case-insensitive. Hence you might also have riun the command as
 
 ```bash
-ssda insert --start 2019-06-29 --end 2019-07-02 --instrument rss
+python insert --start 2019-06-29 --end 2019-07-02 --instrument rss
 ```
 
 You can limit insertion to a set of instruments by using the `--instrument` option more than once.
 
 ```bash
-ssda insert --start 2019-06-29 --end 2019-07-02 --instrument RSS --instrument Salticam
+python insert --start 2019-06-29 --end 2019-07-02 --instrument RSS --instrument Salticam
 ```
 
 If you want to create an entry for a single FITS file, you can use the `--file` option. You then need to also specify the instrument for the FITS file with the `--instrument` option. *It is up to you to ensure that the specified instrument is correct; doom and disaster may strike if you get this wrong.* You have been warned.
