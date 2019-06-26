@@ -1,5 +1,6 @@
 from datetime import date, datetime, timedelta
 from enum import Enum
+import logging
 import os
 import pandas as pd
 from typing import Dict, Generator, List, NamedTuple, Optional, Set
@@ -90,7 +91,7 @@ def fits_data_from_file_gen(fits_file: str, instrument: Instrument) -> Generator
     yield fits_data_class(fits_file)
 
 
-def update_database(action: UpdateAction, fits_data: InstrumentFitsData):
+def update_database(action: UpdateAction, fits_data: InstrumentFitsData, verbose: bool):
     """
     Perform a database update from FITS data.
 
@@ -100,8 +101,23 @@ def update_database(action: UpdateAction, fits_data: InstrumentFitsData):
         Action to perform (insert, update or delete).
     fits_data : InstrumentFitsData
         FITS data to update the database with
+    verbose : bool
+        Whether to run in verbose mode.
 
     """
+
+    status = ''
+    if action == UpdateAction.INSERT:
+        status = 'Inserting'
+    elif action == UpdateAction.UPDATE:
+        status = 'Updating'
+    elif action == UpdateAction.DELETE:
+        status = 'Deleting'
+    status_message = '{status} {path}'.format(status=status, path=fits_data.file_path)
+    logging.info(status_message)
+    if verbose:
+        print(status_message)
+    raise ValueError('????')
 
     if action == UpdateAction.INSERT:
         insert(fits_data)
@@ -470,7 +486,6 @@ class DatabaseUpdate:
             family_name = None
         proposal_title = self.fits_data.proposal_title()
         institution = self.fits_data.institution()
-        print(institution.id)
 
         if proposal_code is None:
             return None
@@ -1279,7 +1294,7 @@ class DatabaseUpdate:
 
         """
 
-        # Get the data file id.
+        # Get the data file id
         data_file_id = self.data_file_id(False)
 
         # Maybe the instrument entry exists already?
@@ -1290,8 +1305,8 @@ class DatabaseUpdate:
         # Collect all the instrument details
         properties = self.instrument_properties()
 
-        #  An average of gain values
-        gain_average = self.fits_data.gain()
+        # Get the gain value
+        gain = self.fits_data.gain()
 
         # Construct the SQL query
         table = self.fits_data.instrument_table()
@@ -1302,14 +1317,15 @@ class DatabaseUpdate:
                 gain,
                 {columns}
         )
-        VALUES (%(data_file_id)s, %(gain_average)s, {values})
+        VALUES (%(data_file_id)s, %(gain)s, {values})
         """.format(
             table=table,
             columns=", ".join(columns),
             values=", ".join(["%({})s".format(column) for column in columns]),
         )
+
         # Collect the parameters
-        params = dict(data_file_id=data_file_id, gain_average=gain_average)
+        params = dict(data_file_id=data_file_id, gain=gain)
         for column in columns:
             params[column] = properties.header_values[column]
 

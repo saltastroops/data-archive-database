@@ -1,5 +1,6 @@
 import click
 from datetime import date, datetime, timedelta
+import logging
 from typing import Generator, Optional, Set, Tuple
 
 import ssda.database_update
@@ -120,11 +121,11 @@ def update_database(action: UpdateAction, start: datetime, end: datetime, file: 
 
         # Perform the database update for every FITS file
         for fits_data in fits_data_gen:
-            ssda.database_update.update_database(action, fits_data)
+            ssda.database_update.update_database(action, fits_data, verbose)
 
     except Exception as e:
-        # TODO: Better error handling
-        click.echo(str(e))
+        logging.critical('Exception occurred', exc_info=True)
+        click.echo(click.style(str(e), fg='red', blink=True, bold=True))
         return -1
 
     # Success!
