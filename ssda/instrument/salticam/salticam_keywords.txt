@@ -49,7 +49,7 @@ DEWTEM         coolerBoxTemperature
 EXPTIME        exposureTime
 FILPOS         filterPosition
 FILTER         filterName
-GAIN           gain
+# GAIN           gain
 GAIN1          gain1
 GAINSET        gainSet
 IMAGEID        imageId

@@ -1,4 +1,4 @@
-SET FOREIGN_KEY_CHECKS=0 COMMENT 'Since tables are not in other this must be disable and enabled at the end';
+SET FOREIGN_KEY_CHECKS=0;  -- Since tables are not in other this must be disable and enabled at the end.
 
 /**
  * Spatial reference system for target positions
@@ -269,14 +269,14 @@ CREATE TABLE `RSS` (
   `ccdSummation` VARCHAR(255) DEFAULT NULL,
   `ccdTemperature` FLOAT DEFAULT NULL,
   `ccdType` VARCHAR(255) DEFAULT NULL,
-  `transfromationMatrix11` FLOAT DEFAULT NULL,
-  `transfromationMatrix11A` FLOAT DEFAULT NULL,
-  `transfromationMatrix12` FLOAT DEFAULT NULL,
-  `transfromationMatrix12A` FLOAT DEFAULT NULL,
-  `transfromationMatrix21` FLOAT DEFAULT NULL,
-  `transfromationMatrix21A` FLOAT DEFAULT NULL,
-  `transfromationMatrix22` FLOAT DEFAULT NULL,
-  `transfromationMatrix22A` FLOAT DEFAULT NULL,
+  `transformationMatrix11` FLOAT DEFAULT NULL,
+  `transformationMatrix11A` FLOAT DEFAULT NULL,
+  `transformationMatrix12` FLOAT DEFAULT NULL,
+  `transformationMatrix12A` FLOAT DEFAULT NULL,
+  `transformationMatrix21` FLOAT DEFAULT NULL,
+  `transformationMatrix21A` FLOAT DEFAULT NULL,
+  `transformationMatrix22` FLOAT DEFAULT NULL,
+  `transformationMatrix22A` FLOAT DEFAULT NULL,
   `coldEndTemperature` FLOAT DEFAULT NULL,
   `configMachineState` VARCHAR(255) DEFAULT NULL,
   `collimatorTemperature` FLOAT DEFAULT NULL,
@@ -414,14 +414,14 @@ CREATE TABLE `Salticam` (
   `ccdSummation` VARCHAR(255) DEFAULT NULL,
   `ccdTemperature` FLOAT DEFAULT NULL,
   `ccdType` VARCHAR(255) DEFAULT NULL,
-  `transfromationMatrix11` FLOAT DEFAULT NULL,
-  `transfromationMatrix11A` FLOAT DEFAULT NULL,
-  `transfromationMatrix12` FLOAT DEFAULT NULL,
-  `transfromationMatrix12A` FLOAT DEFAULT NULL,
-  `transfromationMatrix21` FLOAT DEFAULT NULL,
-  `transfromationMatrix21A` FLOAT DEFAULT NULL,
-  `transfromationMatrix22` FLOAT DEFAULT NULL,
-  `transfromationMatrix22A` FLOAT DEFAULT NULL,
+  `transformationMatrix11` FLOAT DEFAULT NULL,
+  `transformationMatrix11A` FLOAT DEFAULT NULL,
+  `transformationMatrix12` FLOAT DEFAULT NULL,
+  `transformationMatrix12A` FLOAT DEFAULT NULL,
+  `transformationMatrix21` FLOAT DEFAULT NULL,
+  `transformationMatrix21A` FLOAT DEFAULT NULL,
+  `transformationMatrix22` FLOAT DEFAULT NULL,
+  `transformationMatrix22A` FLOAT DEFAULT NULL,
   `coldEndTemperature` FLOAT DEFAULT NULL,
   `pixelCoordinatePointX1` FLOAT DEFAULT NULL,
   `pixelCoordinatePointX1A` FLOAT DEFAULT NULL,
@@ -491,4 +491,4 @@ CREATE TABLE `ProposalInvestigator` (
  CONSTRAINT `fk_ProposalInvestigatorProposal` FOREIGN KEY (`proposalId`) REFERENCES `Proposal` (`proposalId`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-SET FOREIGN_KEY_CHECKS=1 COMMENT 'Make sure that this is ran';;
+SET FOREIGN_KEY_CHECKS=1  -- Make sure that this is ran;

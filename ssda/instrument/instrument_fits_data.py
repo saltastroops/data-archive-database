@@ -8,6 +8,7 @@ from typing import List, NamedTuple, Optional
 
 from astropy.io.fits import ImageHDU, PrimaryHDU
 from ssda.connection import ssda_connect
+from ssda.institution import Institution
 from ssda.observation_status import ObservationStatus
 from ssda.telescope import Telescope
 
@@ -48,37 +49,6 @@ class DataCategory(Enum):
             )
 
         return int(df["dataCategoryId"][0])
-
-
-class Institution(Enum):
-    """
-    Enumeration of the institutions.
-
-    The values must be the same as those of the institutionName column in the
-    Institution table.
-
-    """
-
-    SAAO = "SAAO"
-    SALT = "SALT"
-
-    def id(self) -> int:
-        """
-        Return the primary key opf the Institution entry for this institution.
-
-        Returns
-        -------
-        id : int
-            The primary key.
-
-        """
-
-        sql = """
-        SELECT institutionId FROM Institution WHERE institutionName=%s
-        """
-        df = pd.read_sql(sql, con=ssda_connect(), params=(self.value,))
-
-        return int(df["institutionId"][0])
 
 
 class PrincipalInvestigator(NamedTuple):
@@ -388,6 +358,20 @@ class InstrumentFitsData(ABC):
         -------
         code : str
             The proposal code.
+
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def gain(self) -> Optional[str]:
+        """
+        An average of gain values
+
+        Returns
+        -------
+        gain : float
+            The average of gain values.
 
         """
 
