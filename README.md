@@ -160,26 +160,36 @@ def irsf_connect() -> Connection:
 
 As shown in this example, all the connection parameters should be provided in form of environment variables. In particular, do not hard-code the username and password. Remember to update the table of environment variables in the [installation and configuration section](#installation-and-configuration) above.
 
-### Adding a telescope
+### Adding an institution
 
-A new telescope must be added to the Telescope table in the SSDA database, and if it is owned by a new institution this institution needs to be added to the Institution table.
-
-For example, in order to define a telescope called Ikhwezi, owned by the University of Wakanda, you would first run the following SQL statement,
+A new institution must be added to the Institution table in the SSDA database. For example, in order to add the University of Wakanda as an institution, you would have to execute the following SQL statement,
 
 ```mysql
 INSERT INTO Institution (institutionName) VALUES ('University of Wakanda')
 ```
 
-and, assuming that the primary key of the new entry has the value 42, then run the following SQL statement,                                              `
+Afterwards you have to add the institution as an enum member to the `Institution` enumeration in the file `ssda/institution.py`,
+
+```python
+UNIVERSITY_OF_WAKANDA = "University of Wakanda"
+```
+
+The enum member (`University of Wakanda` in this case) must be the same as the value of the `institutionName` column in the Institution table.
+
+### Adding a telescope
+
+A new telescope must be added to the Telescope table in the SSDA database, and if it is owned by a new institution this institution needs to be added to the Institution table, as explained above.
+
+For example, assume that the institutionId column of the Institution table has the value 42 for the University of Wakanda. Then in order to define a telescope called Ikhwezi, owned by the University of Wakanda, you would run the following SQL statement,                                              `
 
 ```mysql
 INSERT INTO Telescope (telescopeName, ownerId) VALUES ('Ikhwezi', 42)
 ```
 
-Once the database has been updated, you should add the new telescope as an enum member to the `telescope` class in the file `src/ssda/telescope.py`.
+Once the database has been updated, you should add the new telescope as an enum member to the `telescope` class in the file `ssda/telescope.py`.
 
 ```python
-IKHWEZI = 'Ikhwezi'
+IKHWEZI = "Ikhwezi"
 ```
 
 Note that the enum member value (`Ikwezi` in this case) must be the same as the value of the telescopeName column in the Telescope table.
