@@ -326,7 +326,7 @@ class HrsFitsData(InstrumentFitsData):
         -------
 
         """
-        return SALTInstruments.get_target(
+        return SALTInstruments.target(
             ra_header_value=self.header.get("RA"),
             dec_header_value=self.header.get("DEC"),
             block_visit_id=self.header.get("BVISITID"),
