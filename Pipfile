@@ -18,6 +18,7 @@ pandas = "*"
 pillow = "*"
 PyMySQL = "*"
 python-dateutil = "*"
+cryptography = "*"
 
 [requires]
 python_version = "3.7"
