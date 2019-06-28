@@ -117,7 +117,6 @@ def update_database(action: UpdateAction, fits_data: InstrumentFitsData, verbose
     logging.info(status_message)
     if verbose:
         print(status_message)
-    raise ValueError('????')
 
     if action == UpdateAction.INSERT:
         insert(fits_data)
@@ -1314,10 +1313,9 @@ class DatabaseUpdate:
         sql = """
         INSERT INTO {table}(
                 dataFileId,
-                gain,
                 {columns}
         )
-        VALUES (%(data_file_id)s, %(gain)s, {values})
+        VALUES (%(data_file_id)s, {values})
         """.format(
             table=table,
             columns=", ".join(columns),
@@ -1416,7 +1414,9 @@ class DatabaseUpdate:
                 if line.strip() == "" or line.startswith("#"):
                     continue
                 keyword, column = line.split()
-                header_values[column] = self.fits_data.header.get(keyword)
+                raw_value = self.fits_data.header.get(keyword)
+                preprocessed_value = self.fits_data.preprocess_header_value(keyword, raw_value)
+                header_values[column] = preprocessed_value
 
         return InstrumentProperties(telescope_id=telescope_id, header_values=header_values)
 
