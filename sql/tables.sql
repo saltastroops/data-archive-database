@@ -2,6 +2,12 @@
  * SQL for creating the MySQL database for the SAAO/SALT data archive.
  */
 
+-- Create (and use) the database.
+
+CREATE DATABASE IF NOT EXISTS `ssda`;
+
+USE `ssda`;
+
 -- Avoid foreign key issues caused solely by the order of the CREATE statements below.
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -178,7 +184,7 @@ CREATE TABLE `Observation` (
 
 DROP TABLE IF EXISTS `ObservationStatus`;
 CREATE TABLE `ObservationStatus` (
-                                     `observationStatusId` INT(11) UNSIGNED NOT NULL COMMENT 'Primary key.',
+                                     `observationStatusId` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Primary key.',
                                      `status` VARCHAR(255) UNIQUE NOT NULL COMMENT 'Observation status.',
                                      PRIMARY KEY (`observationStatusId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -467,7 +473,7 @@ CREATE TABLE `Target` (
                           `rightAscension` FLOAT NOT NULL COMMENT 'Right ascension, in degrees from 0 to 360.',
                           `declination` FLOAT NOT NULL COMMENT 'Declination, indegrees from -90 to 90.',
                           `position` POINT SRID 123456 NOT NULL COMMENT 'Right ascension and declination. The right ascension is offset by -180 deg so that it falls into [-180, 180].',
-                          `targetTypeId` INT(11) UNSIGNED COMMENT 'Id of the target's target type.'',
+                          `targetTypeId` INT(11) UNSIGNED COMMENT 'Id of the target type.',
                           PRIMARY KEY (`targetId`),
                           KEY `fk_TargetTargetType_idx` (`targetTypeId`),
                           CONSTRAINT `fk_TargetTargetType` FOREIGN KEY (`targetTypeId`) REFERENCES `TargetType` (`targetTypeId`) ON DELETE NO ACTION ON UPDATE NO ACTION
@@ -481,7 +487,7 @@ CREATE TABLE `Target` (
 DROP TABLE IF EXISTS `TargetType`;
 CREATE TABLE `TargetType` (
                               `targetTypeId` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Primary key.',
-                              `numericValue` VARCHAR(255) UNIQUE NOT NULL COMMENT 'The numeric code for the target type, such as “14.06.16.01”.',
+                              `numericCode` VARCHAR(255) UNIQUE NOT NULL COMMENT 'The numeric code for the target type, such as “14.06.16.01”.',
                               `explanation` VARCHAR(255) NOT NULL COMMENT 'An explanation of the target type, such as “pulsating white dwarf”.',
                               PRIMARY KEY (`targetTypeId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -540,7 +546,7 @@ INSERT INTO `TargetType` (`numericCode`, `explanation`) VALUES ('14.09.00.00', '
 INSERT INTO `TargetType` (`numericCode`, `explanation`) VALUES ('14.00.00.00', 'star') ;
 INSERT INTO `TargetType` (`numericCode`, `explanation`) VALUES ('15.15.04.00', 'quasar') ;
 INSERT INTO `TargetType` (`numericCode`, `explanation`) VALUES ('14.06.16.00', 'white dwarf') ;
-INSERT INTO `TargetType` (`numericCode`, `explanation`) VALUES ('12.13.00.00,double', ' binary or multiple star') ;
+INSERT INTO `TargetType` (`numericCode`, `explanation`) VALUES ('12.13.00.00', 'double, binary or multiple star') ;
 INSERT INTO `TargetType` (`numericCode`, `explanation`) VALUES ('15.00.53.00', 'irregular galaxy') ;
 INSERT INTO `TargetType` (`numericCode`, `explanation`) VALUES ('14.09.01.00', 'variable star of irregular type') ;
 INSERT INTO `TargetType` (`numericCode`, `explanation`) VALUES ('50.01.07.00', 'Uranus') ;
