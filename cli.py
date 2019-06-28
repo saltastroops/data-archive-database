@@ -12,6 +12,33 @@ from ssda.database_update import UpdateAction, fits_data_from_date_range_gen, \
 INSTRUMENTS = [instrument.value for instrument in Instrument]
 
 
+class DateWithKeywordsParamType(click.ParamType):
+    """
+    Parameter type for dates.
+
+    The value must be a date of the form yyyy-mm-dd, the string yesterday or the string
+    last-year.
+
+    yesterday is converted to yesterday's date; last-night is converted to the date 365
+    days ago.
+
+    """
+
+    name = "date"
+
+    def convert(self, value: str, param, ctx):
+        value = value.lower()
+
+        if value == 'yesterday':
+            return (datetime.now() - timedelta(days=1)).date()
+        if value == 'last-year':
+            return (datetime.now() - timedelta(days=365)).date()
+        try:
+            return datetime.strptime(value, '%Y-%m-%d').date()
+        except ValueError:
+            self.fail(f'{value} is neither a date of the form yyyy-mm-dd, nor the string yesterday, nor the string lasty-year.')
+
+
 def validate_options(start: Optional[datetime], end: Optional[datetime], file: Optional[str], instruments: Set[str]):
     """
     Validate the command line options.
@@ -146,7 +173,7 @@ def cli(verbose):
 
 @cli.command()
 @click.option('--end',
-              type=click.DateTime(formats=['%Y-%m-%d']),
+              type=DateWithKeywordsParamType(),
               help='Start date of the last night to consider.')
 @click.option('--file',
               type=click.Path(exists=True, file_okay=True),
@@ -156,7 +183,7 @@ def cli(verbose):
               multiple=True,
               help='Instrument to consider.')
 @click.option('--start',
-              type=click.DateTime(formats=['%Y-%m-%d']),
+              type=DateWithKeywordsParamType(),
               help='Start date of the last night to consider.')
 def insert(end: datetime, file: str, instruments: Tuple[str], start: datetime):
     """
@@ -200,7 +227,7 @@ def insert(end: datetime, file: str, instruments: Tuple[str], start: datetime):
 
 @cli.command()
 @click.option('--end',
-              type=click.DateTime(formats=['%Y-%m-%d']),
+              type=DateWithKeywordsParamType(),
               help='Start date of the last night to consider.')
 @click.option('--file',
               type=click.Path(exists=True, file_okay=True),
@@ -210,7 +237,7 @@ def insert(end: datetime, file: str, instruments: Tuple[str], start: datetime):
               multiple=True,
               help='Instrument to consider.')
 @click.option('--start',
-              type=click.DateTime(formats=['%Y-%m-%d']),
+              type=DateWithKeywordsParamType(),
               help='Start date of the last night to consider.')
 def update(end: datetime, file: str, instruments: Tuple[str], start: datetime):
     """
@@ -252,7 +279,7 @@ def update(end: datetime, file: str, instruments: Tuple[str], start: datetime):
 
 @cli.command()
 @click.option('--end',
-              type=click.DateTime(formats=['%Y-%m-%d']),
+              type=DateWithKeywordsParamType(),
               help='Start date of the last night to consider.')
 @click.option('--file',
               type=click.Path(exists=True, file_okay=True),
@@ -265,7 +292,7 @@ def update(end: datetime, file: str, instruments: Tuple[str], start: datetime):
               multiple=True,
               help='Instrument to consider.')
 @click.option('--start',
-              type=click.DateTime(formats=['%Y-%m-%d']),
+              type=DateWithKeywordsParamType(),
               help='Start date of the last night to consider.')
 def delete(end: datetime, file: str, force: bool, instruments: Tuple[str], start: datetime):
     """
