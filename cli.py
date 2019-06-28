@@ -67,7 +67,7 @@ def validate_options(start: Optional[datetime], end: Optional[datetime], file: O
         raise Exception('The --start and --end options do not allow future dates.')
 
 
-def update_database(action: UpdateAction, start: datetime, end: datetime, file: str, instruments: Tuple[str], verbose: bool):
+def update_database(action: UpdateAction, start: datetime, end: datetime, file: str, instruments: Tuple[str]):
     """
     Update the database by inserting, updating or deleting entries.
 
@@ -86,8 +86,6 @@ def update_database(action: UpdateAction, start: datetime, end: datetime, file: 
         File path of the FITS file to consider.
     instruments : tuple of str
         Instruments to consider.
-    verbose : bool
-        Whether to run in verbose mode.
 
     Returns
     -------
@@ -110,8 +108,9 @@ def update_database(action: UpdateAction, start: datetime, end: datetime, file: 
 
         # Create a generator for the FITS data
         if start and end:
-            fits_data_gen = fits_data_from_date_range_gen(start_date=start.date(),
-                                                          end_date=end.date(),
+            logging.info('Files from {start} to {end} are considered.'.format(start=start.strftime('%d %b %Y'), end=end.strftime('%d %b %Y')))
+            fits_data_gen = fits_data_from_date_range_gen(start_date=start,
+                                                          end_date=end,
                                                           instruments=set(instruments))
         elif file:
             fits_data_gen = fits_data_from_file_gen(fits_file=file,
@@ -121,7 +120,7 @@ def update_database(action: UpdateAction, start: datetime, end: datetime, file: 
 
         # Perform the database update for every FITS file
         for fits_data in fits_data_gen:
-            ssda.database_update.update_database(action, fits_data, verbose)
+            ssda.database_update.update_database(action, fits_data)
 
     except Exception as e:
         logging.critical('Exception occurred', exc_info=True)
@@ -133,14 +132,17 @@ def update_database(action: UpdateAction, start: datetime, end: datetime, file: 
 
 
 @click.group()
-def cli():
+@click.option('--verbose',
+              is_flag=True,
+              help='Log in verbose mode.')
+def cli(verbose):
     """
     Update the database for the SAAO/SALT Data Archive.
 
     """
 
-    pass
-
+    if verbose:
+        logging.basicConfig(level=logging.INFO)
 
 @cli.command()
 @click.option('--end',
@@ -156,10 +158,7 @@ def cli():
 @click.option('--start',
               type=click.DateTime(formats=['%Y-%m-%d']),
               help='Start date of the last night to consider.')
-@click.option('--verbose',
-              is_flag=True,
-              help='Run in verbose mode.')
-def insert(end: datetime, file: str, instruments: Tuple[str], start: datetime, verbose: bool):
+def insert(end: datetime, file: str, instruments: Tuple[str], start: datetime):
     """
     Insert entries into the data archive database.
 
@@ -188,8 +187,6 @@ def insert(end: datetime, file: str, instruments: Tuple[str], start: datetime, v
         Instruments to consider.
     start : datetime
         Start date of the first night to consider
-    verbose : bool
-        Whether to run in verbose mode.
 
     Returns
     -------
@@ -198,7 +195,7 @@ def insert(end: datetime, file: str, instruments: Tuple[str], start: datetime, v
 
     """
 
-    return update_database(UpdateAction.INSERT, start, end, file, instruments, verbose)
+    return update_database(UpdateAction.INSERT, start, end, file, instruments)
 
 
 @cli.command()
@@ -215,10 +212,7 @@ def insert(end: datetime, file: str, instruments: Tuple[str], start: datetime, v
 @click.option('--start',
               type=click.DateTime(formats=['%Y-%m-%d']),
               help='Start date of the last night to consider.')
-@click.option('--verbose',
-              is_flag=True,
-              help='Run in verbose mode.')
-def update(end: datetime, file: str, instruments: Tuple[str], start: datetime, verbose: bool):
+def update(end: datetime, file: str, instruments: Tuple[str], start: datetime):
     """
     Update entries in the data archive database.
 
@@ -245,8 +239,6 @@ def update(end: datetime, file: str, instruments: Tuple[str], start: datetime, v
         Instruments to consider.
     start : datetime
         Start date of the first night to consider
-    verbose : bool
-        Whether to run in verbose mode.
 
     Returns
     -------
@@ -255,7 +247,7 @@ def update(end: datetime, file: str, instruments: Tuple[str], start: datetime, v
 
     """
 
-    return update_database(UpdateAction.UPDATE, start, end, file, instruments, verbose)
+    return update_database(UpdateAction.UPDATE, start, end, file, instruments)
 
 
 @cli.command()
@@ -275,10 +267,7 @@ def update(end: datetime, file: str, instruments: Tuple[str], start: datetime, v
 @click.option('--start',
               type=click.DateTime(formats=['%Y-%m-%d']),
               help='Start date of the last night to consider.')
-@click.option('--verbose',
-              is_flag=True,
-              help='Run in verbose mode.')
-def delete(end: datetime, file: str, force: bool, instruments: Tuple[str], start: datetime, verbose: bool):
+def delete(end: datetime, file: str, force: bool, instruments: Tuple[str], start: datetime):
     """
     Delete entries from the data archive database.
 
@@ -310,8 +299,6 @@ def delete(end: datetime, file: str, force: bool, instruments: Tuple[str], start
         Instruments to consider.
     start : datetime
         Start date of the first night to consider
-    verbose : bool
-        Whether to run in verbose mode.
 
     Returns
     -------
@@ -324,7 +311,7 @@ def delete(end: datetime, file: str, force: bool, instruments: Tuple[str], start
         click.echo('No entries have been deleted.')
         return 0
 
-    return update_database(UpdateAction.DELETE, start, end, file, instruments, verbose)
+    return update_database(UpdateAction.DELETE, start, end, file, instruments)
 
 
 if __name__ == '__main__':

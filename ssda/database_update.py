@@ -91,7 +91,7 @@ def fits_data_from_file_gen(fits_file: str, instrument: Instrument) -> Generator
     yield fits_data_class(fits_file)
 
 
-def update_database(action: UpdateAction, fits_data: InstrumentFitsData, verbose: bool):
+def update_database(action: UpdateAction, fits_data: InstrumentFitsData):
     """
     Perform a database update from FITS data.
 
@@ -101,8 +101,6 @@ def update_database(action: UpdateAction, fits_data: InstrumentFitsData, verbose
         Action to perform (insert, update or delete).
     fits_data : InstrumentFitsData
         FITS data to update the database with
-    verbose : bool
-        Whether to run in verbose mode.
 
     """
 
@@ -115,8 +113,6 @@ def update_database(action: UpdateAction, fits_data: InstrumentFitsData, verbose
         status = 'Deleting'
     status_message = '{status} {path}'.format(status=status, path=fits_data.file_path)
     logging.info(status_message)
-    if verbose:
-        print(status_message)
 
     if action == UpdateAction.INSERT:
         insert(fits_data)
