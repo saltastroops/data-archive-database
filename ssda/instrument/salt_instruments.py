@@ -1,6 +1,6 @@
 import pandas as pd
 from astropy.coordinates import Angle
-from typing import List, Optional
+from typing import List, Optional, Any
 from ssda.connection import sdb_connect
 from datetime import datetime
 from ssda.instrument.instrument_fits_data import (
@@ -33,16 +33,46 @@ class SALTInstruments:
             return DataCategory.SCIENCE
 
     @staticmethod
-    def gain(all_gains):
+    def preprocess_header_value(self, keyword: str, value: str) -> Any:
         """
-        Method sums up the values of gain and return th average.
+        Preprocess a FITS header value for use in the database.
+
+        Parameters
+        ----------
+        keyword : str
+            FITs header keyword
+        value : str
+            FITS header value
 
         Returns
         -------
-        gain_average:
-            Gain average
+        preprocessed : Any
+            The preprocessed value.
 
         """
+
+        if keyword.upper() == 'GAIN':
+            return SALTInstruments.gain(value)
+        else:
+            return value
+
+    @staticmethod
+    def gain(all_gains: str) -> Optional[float]:
+        """
+        The average of gain values from a FITS header value.
+
+        Parameters
+        ----------
+        all_gains : Optional[str]
+            FITS header value with a list of gain values
+
+        Returns
+        -------
+        gain : float
+            The average gain value.
+
+        """
+
         if all_gains is None or all_gains == "":
             return None
         list_gains = all_gains.split()

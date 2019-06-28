@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from astropy.io import fits
 from datetime import date, datetime
 from enum import Enum
-from typing import List, NamedTuple, Optional
+from typing import List, NamedTuple, Optional, Any
 
 from astropy.io.fits import ImageHDU, PrimaryHDU
 from ssda.connection import ssda_connect
@@ -327,6 +327,27 @@ class InstrumentFitsData(ABC):
 
         raise NotImplementedError
 
+    @abstractmethod
+    def preprocess_header_value(self, keyword: str, value: str) -> Any:
+        """
+        Preprocess a FITS header value for use in the database.
+
+        Parameters
+        ----------
+        keyword : str
+            FITs header keyword
+        value : str
+            FITS header value
+
+        Returns
+        -------
+        preprocessed : Any
+            The preprocessed value.
+
+        """
+
+        raise NotImplementedError
+
     def principal_investigator(self) -> Optional[PrincipalInvestigator]:
         """
         The principal investigator for the proposal to which this file belongs.
@@ -358,20 +379,6 @@ class InstrumentFitsData(ABC):
         -------
         code : str
             The proposal code.
-
-        """
-
-        raise NotImplementedError
-
-    @abstractmethod
-    def gain(self) -> Optional[str]:
-        """
-        An average of gain values
-
-        Returns
-        -------
-        gain : float
-            The average of gain values.
 
         """
 

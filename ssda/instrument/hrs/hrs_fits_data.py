@@ -4,7 +4,7 @@ from dateutil import parser
 import glob
 import os
 import pandas as pd
-from typing import List, Optional
+from typing import List, Optional, Any
 
 from ssda.connection import sdb_connect
 from ssda.institution import Institution
@@ -241,6 +241,26 @@ class HrsFitsData(InstrumentFitsData):
         """
         return SALTInstruments.observation_status(self.telescope_observation_id())
 
+    def preprocess_header_value(self, keyword: str, value: str) -> Any:
+        """
+        Preprocess a FITS header value for use in the database.
+
+        Parameters
+        ----------
+        keyword : str
+            FITs header keyword
+        value : str
+            FITS header value
+
+        Returns
+        -------
+        preprocessed : Any
+            The preprocessed value.
+
+        """
+
+        return SALTInstruments.preprocess_header_value(keyword, value)
+
     def principal_investigator(self) -> Optional[PrincipalInvestigator]:
         """
         The principal investigator for the proposal to which this file belongs.
@@ -364,15 +384,3 @@ class HrsFitsData(InstrumentFitsData):
         """
 
         return self.header.get("BVISITID") or None
-
-    def gain(self) -> Optional[str]:
-        """
-        An average of gain values
-
-        Returns
-        -------
-        gain : float
-            The average of gain values.
-
-        """
-        return SALTInstruments.gain(self.header.get("GAIN"))
