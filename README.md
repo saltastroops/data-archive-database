@@ -1,6 +1,6 @@
 # Populating the SAAO/SALT Data Archive Database
 
-This package lets you populate (and update) the SAAO/SALT Data Archive database.
+This application lets you populate (and update) the SAAO/SALT Data Archive database.
 
 ## Installation and configuration
 
@@ -55,6 +55,18 @@ SSDA_HOST | Host of the Data Archive database | ssda.your.host
 SSDA_PASSWORD | Password for the Data Archive database | also_secret
 SSDA_USER | Password for the Data Archive database | ssda_user
 
+See below for instructions on how to run the script as a cron job.
+
+## Setting up the database
+
+If the database does not exist yet, you can create it with the SQL script in `sql/tables.sql`.
+
+```bash
+mysql -u <admin_user> -h <host> -p < sql/tables.sql
+```
+
+Be careful with running the script - if the database exists its tables will be dropped and recreated.
+
 ## Upgrading
 
 In order to upgrade the script, make sure you are in the master branch
@@ -89,7 +101,7 @@ To find out about the available subcommands you may use the `--help` option.
 python cli.py --help
 ``` 
 
-The various subcommands for modifying the databse are explained in the following sections.
+The various subcommands for modifying the database are explained in the following sections.
 
 If you don't want ro open a new shell you may also execute the script with pipenv's `run` command.
 
@@ -102,38 +114,52 @@ pipenv run python cli.py --help
 The `insert` subcommand allows you to create new database entries from FITS files. This includes corresponding preview files. Typically you use it to create entries for a range of dates.
 
 ```bash
-python insert --start 2019-06-25 --end 2019-06-27
+python cli.py insert --start 2019-06-25 --end 2019-06-27
 ```
 
-Both start and end date must be given, and they must be of the format `yyyy-mm-dd`. Both the start and end date are inclusive, and they refer to the beginning of the night. So in the above example FITS files would be considered for the time between noon of 25 June and noon of 28 June 2019. If you want to insert entries for one night, the start abd end date will be the same.
+Both start and end date must be given, and they must be of the format `yyyy-mm-dd`. Both the start and end date are inclusive, and they refer to the beginning of the night. So in the above example FITS files would be considered for the time between noon of 25 June and noon of 28 June 2019. If you want to insert entries for one night, the start and end date must be the same.
 
 ```bash
-python  insert --start 2019-07-03 --end 2019-07-03
+python cli.py insert --start 2019-07-03 --end 2019-07-03
 ```
+
+For convenience, you may use the keyword 'yesterday', which will be replaced with (gasp!) yesterday's date.
+
+```bash
+python cli.py insert --start yesterday --end yesterday
+```
+
+Another choice is the keyword `last-year`, which means 365 days ago, irrespective of whether the year had 365 or 366 days.
+
+```bash
+python cli.py insert --start last-year --end yesterday
+```
+
+This keyword is mostly intended for updating obsercvation status values and proposal investigators.
 
 Existing database content is not changed by this subcommand; use the `update` subcommand to make changes. This implies that it is safe to re-run the command as often as you like.
 
 By default FITS files for all instruments are considered. However, you can limit insertions to a single instrument by adding the `--instrument` option.
 
 ```bash
-python insert --start 2019-06-29 --end 2019-07-02 --instrument RSS
+python cli.py insert --start 2019-06-29 --end 2019-07-02 --instrument RSS
 ```
 
 The spelling of the instrument name is case-insensitive. Hence you might also have riun the command as
 
 ```bash
-python insert --start 2019-06-29 --end 2019-07-02 --instrument rss
+python cli.py insert --start 2019-06-29 --end 2019-07-02 --instrument rss
 ```
 
 You can limit insertion to a set of instruments by using the `--instrument` option more than once.
 
 ```bash
-python insert --start 2019-06-29 --end 2019-07-02 --instrument RSS --instrument Salticam
+python cli.py insert --start 2019-06-29 --end 2019-07-02 --instrument RSS --instrument Salticam
 ```
 
 If you want to create an entry for a single FITS file, you can use the `--file` option. You then need to also specify the instrument for the FITS file with the `--instrument` option. *It is up to you to ensure that the specified instrument is correct; doom and disaster may strike if you get this wrong.* You have been warned.
 
-The `--start/--end` and the `--file` option are mutually exclusive.
+The `--start/--end` and `--file` option are mutually exclusive.
 
 While by default the subcommand does its job in absolute silence (unless there is an error), you can make the script morec talkative by adding the `--verbose` flag.
 
@@ -148,17 +174,29 @@ ssda insert --help
 The `update` subcommand updates existing database entries and any corresponding preview files from FITS files. The usage is the same as that for the `insert` subcommand. For example, you would update all the database entries for HRS from the nights of 5 July to 10 July 2019 by running
 
 ```bash
-ssda update --start 2019-07-05 --end 2019-07-10 --instrument HRS
+python cli.py update --start 2019-07-05 --end 2019-07-10 --instrument HRS
 ```
 
-The subcommand not create entries for files not covered by the database yet. Instead it will abort with an error if it encounters such a file.
+The subcommand does not create entries for files not covered by the database yet. Instead it will abort with an error if it encounters such a file.
+
+By default all information related to a FITS file is updated. However, this can be limited with the `--scope` option to the observation status values,
+
+```bash
+python cli.py update --start 2019-07-05 --end 2019-07-10 --scope observation-status
+```
+
+or the proposal investigators,
+
+```bash
+python cli.py update --start 2019-07-05 --end 2019-07-10 --scope investigator
+```
 
 ### The delete subcommand
 
 You can use the `delete` subcommand to delete database entries and their corresponding preview files. The usage is the same as for the `insert` subcommand. For example, the following command will delete all database entries for the night starting on 8 June 2019.
 
 ```bash
-ssda delete --start 2019-06-08 --end 2019-06-08
+python cli.py delete --start 2019-06-08 --end 2019-06-08
 ``` 
 
 The subcommand prompts you for a confirmation that you really want to delete database entries (and preview files). You can use the `--force` flag to skip this.
@@ -174,17 +212,61 @@ Option | Explanation
 --force | Don't ask for confirmation before running the `delete` subcommand.
 --instrument | Instrument whose FITS files shall be considered. This option may be used multiple times unless the `--file` flag is used.
 -h / --help | Display a help message.
+--scope | The scope of updates. This can be `all`, `observation-status` or `investigator`. `all` is the default.
 --start | Start date of the first night for which data is considered.
---verbose | Run in verbose mode.
 
-With the exception of the `--force` option all these options are available with all the subcommands.
+Generally these options are available for all the subcommands. The only exceptions are `--force` (only used with `delete`) and `--scope` (only used with `update`).
+
+## Logging in verbose mode
+
+If you want to log in verbose mode, you can use the `--verbose` option before the subcommand.
+
+```bash
+python cli.py --verbose insert --start yesterday --end yesterday
+```
+
+## Running the application as a cron job.
+
+In case you plan to run the application as a cron job, you should create the `.bashrc` file in the home directory (if it does not exist yet) and define the required environment variables in that file.
+
+```bash
+export FITS_BASE_DIR=/path/to/fits/files
+export PREVIEW_BASE_DIR=/path/to/preview/files
+# ... export commands for all the other environment variables ...
+``` 
+
+Assuming that the application is in the folder `/home/ssda/applications/database-update`, that you want to insert last night's content, update the observation status and proposal investigators before, and that you want to log errors to the file `/home/ssda/logs/database-update.txt`, you should then open the crontab file,
+
+```bash
+crontab -e
+```
+
+and add code like the following to it.
+
+```text
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+SSDA_LOG=/home/ssda/logs/database-update.txt
+8 * * * source .bashrc; cd /home/ssda/applications/database-update; pipenv run python cli.py --verbose update --start last-year --end yesterday --scope observation-status > $SSDA_LOG 2>&1
+9 * * * source .bashrc; cd /home/ssda/applications/database-update; pipenv run python cli.py --verbose update --start last-year --end yesterday --scope investigator > $SSDA_LOG 2>&1
+10 * * * source .bashrc; cd /home/ssda/applications/database-update; pipenv run python cli.py --verbose insert --start yesterday --end yesterday > $SSDA_LOG 2>&1
+```
 
 ## Extending the code
 
 ### Using an additional Python library
 
-If you need to make use of a new Python library, you need to add it to the requirements in the
-`setup.py` file. In case the library is needed for development purposes only, you should instead add it to the `requirements-dev.txt` file. Either way, you'll have to install the package via pip.
+If you need to make use of a new Python library, you need to install it with `pipenv`.
+
+```bash
+pipenv install new_paqckage
+```
+
+If the new package is needed for development only, you should use the `--dev` glag when installing it.
+
+```bash
+pipenv install --dev new_package
+```
 
 ### Accessing a new database
 
