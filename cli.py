@@ -11,6 +11,7 @@ from ssda.database_update import UpdateAction, fits_data_from_date_range_gen, \
 
 INSTRUMENTS = [instrument.value for instrument in Instrument]
 
+TABLES = ['Observation', 'Proposal']
 
 class DateWithKeywordsParamType(click.ParamType):
     """
@@ -94,7 +95,7 @@ def validate_options(start: Optional[datetime], end: Optional[datetime], file: O
         raise Exception('The --start and --end options do not allow future dates.')
 
 
-def update_database(action: UpdateAction, start: datetime, end: datetime, file: str, instruments: Tuple[str]):
+def update_database(action: UpdateAction, start: datetime, end: datetime, file: str, instruments: Tuple[str], tables: Tuple[str] = None):
     """
     Update the database by inserting, updating or deleting entries.
 
@@ -113,6 +114,9 @@ def update_database(action: UpdateAction, start: datetime, end: datetime, file: 
         File path of the FITS file to consider.
     instruments : tuple of str
         Instruments to consider.
+    tables : str
+        Which tables to update. All tables are updated if an empty set is passed. This
+        argument is ignored when inserting or deleting.
 
     Returns
     -------
@@ -130,6 +134,9 @@ def update_database(action: UpdateAction, start: datetime, end: datetime, file: 
         raise ValueError('No instrument found for name: {}'.format(name))
 
     try:
+        # Clean up table values.
+        tables = set(tables or ())
+
         # Convert instrument names to instruments
         instruments = set(instrument_from_name(name) for name in instruments)
 
@@ -147,7 +154,7 @@ def update_database(action: UpdateAction, start: datetime, end: datetime, file: 
 
         # Perform the database update for every FITS file
         for fits_data in fits_data_gen:
-            ssda.database_update.update_database(action, fits_data)
+            ssda.database_update.update_database(action, fits_data, tables)
 
     except Exception as e:
         logging.critical('Exception occurred', exc_info=True)
@@ -170,6 +177,7 @@ def cli(verbose):
 
     if verbose:
         logging.basicConfig(level=logging.INFO)
+
 
 @cli.command()
 @click.option('--end',
@@ -210,7 +218,7 @@ def insert(end: datetime, file: str, instruments: Tuple[str], start: datetime):
     file : str
         FITS file to consider.
     force
-    instruments : set of str
+    instruments : tuple of str
         Instruments to consider.
     start : datetime
         Start date of the first night to consider
@@ -239,7 +247,11 @@ def insert(end: datetime, file: str, instruments: Tuple[str], start: datetime):
 @click.option('--start',
               type=DateWithKeywordsParamType(),
               help='Start date of the last night to consider.')
-def update(end: datetime, file: str, instruments: Tuple[str], start: datetime):
+@click.option('--table', 'tables',
+              type=click.Choice(TABLES, case_sensitive=False),
+              multiple=True,
+              help='What information to update.')
+def update(end: datetime, file: str, instruments: Tuple[str], start: datetime, tables: Tuple[str]):
     """
     Update entries in the data archive database.
 
@@ -262,10 +274,11 @@ def update(end: datetime, file: str, instruments: Tuple[str], start: datetime):
         Start date of the last night to consider.
     file : str
         FITS file to consider.
-    instruments : set of str
+    instruments : tuple of str
         Instruments to consider.
     start : datetime
         Start date of the first night to consider
+    tables :
 
     Returns
     -------
@@ -274,7 +287,7 @@ def update(end: datetime, file: str, instruments: Tuple[str], start: datetime):
 
     """
 
-    return update_database(UpdateAction.UPDATE, start, end, file, instruments)
+    return update_database(UpdateAction.UPDATE, start, end, file, instruments, tables)
 
 
 @cli.command()
@@ -322,7 +335,7 @@ def delete(end: datetime, file: str, force: bool, instruments: Tuple[str], start
         FITS file to consider.
     force : bool
         Whether to skip the confirmation prompt.
-    instruments : set of str
+    instruments : tuple of str
         Instruments to consider.
     start : datetime
         Start date of the first night to consider

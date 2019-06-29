@@ -91,7 +91,7 @@ def fits_data_from_file_gen(fits_file: str, instrument: Instrument) -> Generator
     yield fits_data_class(fits_file)
 
 
-def update_database(action: UpdateAction, fits_data: InstrumentFitsData):
+def update_database(action: UpdateAction, fits_data: InstrumentFitsData, tables: Set[str]):
     """
     Perform a database update from FITS data.
 
@@ -101,6 +101,9 @@ def update_database(action: UpdateAction, fits_data: InstrumentFitsData):
         Action to perform (insert, update or delete).
     fits_data : InstrumentFitsData
         FITS data to update the database with
+    tables : str
+        Which tables to update. All tables are updated if an empty set is passed. This
+        argument is ignored when inserting or deleting.
 
     """
 
@@ -117,7 +120,7 @@ def update_database(action: UpdateAction, fits_data: InstrumentFitsData):
     if action == UpdateAction.INSERT:
         insert(fits_data)
     elif action == UpdateAction.UPDATE:
-        update(fits_data)
+        update(fits_data, tables)
     elif action == UpdateAction.DELETE:
         delete(fits_data)
 
@@ -166,7 +169,7 @@ def insert(fits_data: InstrumentFitsData) -> None:
         raise e
 
 
-def update(fits_data: InstrumentFitsData) -> None:
+def update(fits_data: InstrumentFitsData, tables: Set[str]) -> None:
     """
     Update existing database entries from FITS data.
 
@@ -177,19 +180,24 @@ def update(fits_data: InstrumentFitsData) -> None:
     ----------
     fits_data : InstrumentFitsData
         FITS data.
+    tables : str
+        Which tables to update. All tables are updated if an empty set is passed.
 
     """
 
     db_update = DatabaseUpdate(fits_data)
     try:
         # Update the database from the FITS file content
-        db_update.update_proposal()
-        db_update.update_observation()
-        target_id = db_update.update_target()
-        db_update.update_data_file(target_id)
-        db_update.update_data_previews()
-        db_update.update_instrument()
-        db_update.update_proposal_investigators()
+        if len(tables) == 0 or 'Proposal' in tables:
+            db_update.update_proposal()
+        if len(tables) == 0 or 'Observation' in tables:
+            db_update.update_observation()
+        if len(tables) == 0:
+            target_id = db_update.update_target()
+            db_update.update_data_file(target_id)
+            db_update.update_data_previews()
+            db_update.update_instrument()
+            db_update.update_proposal_investigators()
 
         db_update.commit()
     except Exception as e:
