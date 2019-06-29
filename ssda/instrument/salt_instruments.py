@@ -33,7 +33,7 @@ class SALTInstruments:
             return DataCategory.SCIENCE
 
     @staticmethod
-    def preprocess_header_value(self, keyword: str, value: str) -> Any:
+    def preprocess_header_value(keyword: str, value: str) -> Any:
         """
         Preprocess a FITS header value for use in the database.
 

@@ -757,7 +757,7 @@ class DatabaseUpdate:
         # Insert the target
         insert_sql = """
         INSERT INTO Target(
-                name,
+                targetName,
                 rightAscension,
                 declination,
                 position,
@@ -827,7 +827,7 @@ class DatabaseUpdate:
         # Update the target
         update_sql = """
         UPDATE Target
-               SET name=%(name)s,
+               SET targetName=%(name)s,
                    rightAscension=%(ra)s,
                    declination=%(dec)s,
                    position=ST_GeomFromText('POINT(%(shifted_ra)s %(dec)s)', 123456),
@@ -965,7 +965,7 @@ class DatabaseUpdate:
         INSERT INTO DataFile(
                 dataCategoryId,
                 startTime,
-                name,
+                dataFileName,
                 path,
                 targetId,
                 size,
@@ -1022,7 +1022,7 @@ class DatabaseUpdate:
         # Update the data file entry
         update_sql = """
         UPDATE DataFile
-               SET name=%(name)s,
+               SET dataFileName=%(name)s,
                    path=%(path)s,
                    startTime=%(start_time)s,
                    size=%(size)s,
@@ -1157,7 +1157,6 @@ class DatabaseUpdate:
         preview_files = self.fits_data.create_preview_files()
 
         # Enter the data for all preview files into the database
-        ids = []
         for index, preview_file in enumerate(preview_files):
             # Collect the preview data
             base_dir_path_length = len(os.environ["PREVIEW_BASE_DIR"])
@@ -1173,7 +1172,7 @@ class DatabaseUpdate:
                 INSERT INTO DataPreview(
                         dataFileId,
                         previewOrder,
-                        name,
+                        dataPreviewName,
                         path
                 )
                 VALUES (%(data_file_id)s, %(preview_order)s, %(name)s, %(path)s)
@@ -1182,9 +1181,6 @@ class DatabaseUpdate:
                     data_file_id=data_file_id, preview_order=preview_order, name=name, path=path
                 )
                 self.cursor.execute(sql, params)
-
-                # Store the data preview entry id
-                ids.append(self.last_insert_id())
 
     def update_data_previews(self):
         """
@@ -1300,9 +1296,6 @@ class DatabaseUpdate:
         # Collect all the instrument details
         properties = self.instrument_properties()
 
-        # Get the gain value
-        gain = self.fits_data.gain()
-
         # Construct the SQL query
         table = self.fits_data.instrument_table()
         columns = list(properties.header_values.keys())
@@ -1319,7 +1312,7 @@ class DatabaseUpdate:
         )
 
         # Collect the parameters
-        params = dict(data_file_id=data_file_id, gain=gain)
+        params = dict(data_file_id=data_file_id)
         for column in columns:
             params[column] = properties.header_values[column]
 
