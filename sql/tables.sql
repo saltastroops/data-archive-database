@@ -360,7 +360,7 @@ CREATE TABLE `RSS` (
                        `ccdReadoutSpeed` VARCHAR(255) DEFAULT NULL,
                        `pixelSaturation` INT(11) DEFAULT NULL,
                        `shutterMachineState` VARCHAR(255) DEFAULT NULL,
-                       `slitmaskStation` FLOAT DEFAULT NULL,
+                       `slitmaskStation` VARCHAR(255) DEFAULT NULL,
                        `slitmaskStationSteps` FLOAT DEFAULT NULL,
                        `slitmaskStationVolts` FLOAT DEFAULT NULL,
                        `slitmasMachineState` VARCHAR(255) DEFAULT NULL,
