@@ -179,16 +179,22 @@ python cli.py update --start 2019-07-05 --end 2019-07-10 --instrument HRS
 
 The subcommand does not create entries for files not covered by the database yet. Instead it will abort with an error if it encounters such a file.
 
-By default all information related to a FITS file is updated. However, this can be limited with the `--scope` option to the observation status values,
+By default all information related to a FITS file is updated. However, this can be limited with the `--scope` option to the observations,
 
 ```bash
-python cli.py update --start 2019-07-05 --end 2019-07-10 --scope observation-status
+python cli.py update --start 2019-07-05 --end 2019-07-10 --table Observation
 ```
 
-or the proposal investigators,
+or the proposals,
 
 ```bash
-python cli.py update --start 2019-07-05 --end 2019-07-10 --scope investigator
+python cli.py update --start 2019-07-05 --end 2019-07-10 --table Proposal
+```
+
+You can include the `--table` option twice to update both observation and proposal entries (but nothing else),
+
+```bash
+python cli.py update --start 2019-07-05 --end 2019-07-10 --table Observation --table Proposal
 ```
 
 ### The delete subcommand
@@ -212,10 +218,10 @@ Option | Explanation
 --force | Don't ask for confirmation before running the `delete` subcommand.
 --instrument | Instrument whose FITS files shall be considered. This option may be used multiple times unless the `--file` flag is used.
 -h / --help | Display a help message.
---scope | The scope of updates. This can be `all`, `observation-status` or `investigator`. `all` is the default.
 --start | Start date of the first night for which data is considered.
+--table | Table whose entries shall be updated. This option may be used multiple times. The available values are `Observation` and `Proposal`.
 
-Generally these options are available for all the subcommands. The only exceptions are `--force` (only used with `delete`) and `--scope` (only used with `update`).
+Generally these options are available for all the subcommands. The only exceptions are `--force` (only used with `delete`) and `--table` (only used with `update`).
 
 ## Logging in verbose mode
 
@@ -247,8 +253,8 @@ and add code like the following to it.
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 SSDA_LOG=/home/ssda/logs/database-update.txt
-8 * * * source .bashrc; cd /home/ssda/applications/database-update; pipenv run python cli.py --verbose update --start last-year --end yesterday --scope observation-status > $SSDA_LOG 2>&1
-9 * * * source .bashrc; cd /home/ssda/applications/database-update; pipenv run python cli.py --verbose update --start last-year --end yesterday --scope investigator > $SSDA_LOG 2>&1
+8 * * * source .bashrc; cd /home/ssda/applications/database-update; pipenv run python cli.py --verbose update --start last-year --end yesterday --scope observations > $SSDA_LOG 2>&1
+9 * * * source .bashrc; cd /home/ssda/applications/database-update; pipenv run python cli.py --verbose update --start last-year --end yesterday --scope proposals > $SSDA_LOG 2>&1
 10 * * * source .bashrc; cd /home/ssda/applications/database-update; pipenv run python cli.py --verbose insert --start yesterday --end yesterday > $SSDA_LOG 2>&1
 ```
 
