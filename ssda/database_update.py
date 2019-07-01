@@ -1180,7 +1180,7 @@ class DatabaseUpdate:
                 INSERT INTO DataPreview(
                         dataFileId,
                         previewOrder,
-                        dataPreviewName,
+                        previewFileName,
                         path
                 )
                 VALUES (%(data_file_id)s, %(preview_order)s, %(name)s, %(path)s)

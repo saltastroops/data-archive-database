@@ -61,7 +61,7 @@ CREATE TABLE `DataFile` (
  */
 DROP TABLE IF EXISTS `DataPreview`;
 CREATE TABLE `DataPreview` (
-                               `dataPreviewName` VARCHAR(255) NOT NULL COMMENT 'Filename of the file containing the preview image, such as R20190203000023-1.png.',
+                               `previewFileName` VARCHAR(255) NOT NULL COMMENT 'Filename of the file containing the preview image, such as R20190203000023-1.png.',
                                `path` VARCHAR(255) UNIQUE NOT NULL COMMENT 'File path of the file containing the preview image, such as /home/path/to/preview/R20190203000023-1.png.',
                                `dataFileId` INT(11) UNSIGNED NOT NULL COMMENT 'Id of the data file to which the preview image belongs.',
                                `previewOrder` INT(11) UNSIGNED NOT NULL COMMENT 'Defines an order within multiple preview files for the same data file.',
@@ -144,6 +144,7 @@ CREATE TABLE `HRS` (
  *
  * An institution, such as SAAO or SALT, accepting proposals.
  */
+DROP TABLE IF EXISTS `Institution`;
 DROP TABLE IF EXISTS `Institution`;
 CREATE TABLE `Institution` (
                                `institutionId` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Primary key.',
