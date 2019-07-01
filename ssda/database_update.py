@@ -447,12 +447,12 @@ class DatabaseUpdate:
         if proposal_id is None or observation_id is None:
             return
 
-        # Only delete the proposal investigators if the proposal is not referenced by
-        # another observation.
+        # Only delete the proposal if the proposal is not referenced by another
+        # observation.
         other_observations_sql = """
         SELECT COUNT(*) as otherObservationsCount
                FROM Observation
-        WHERE proposalId=%(proposal_id)s AND observationId=%(observation_id)s
+        WHERE proposalId=%(proposal_id)s AND observationId!=%(observation_id)s
         """
         other_observations_params = dict(proposal_id=proposal_id, observation_id=observation_id)
         other_observations_df = pd.read_sql(other_observations_sql, con=self._ssda_connection, params=other_observations_params)
@@ -1554,7 +1554,7 @@ class DatabaseUpdate:
         other_observations_sql = """
         SELECT COUNT(*) as otherObservationsCount
                FROM Observation
-        WHERE proposalId=%(proposal_id)s AND observationId=%(observation_id)s
+        WHERE proposalId=%(proposal_id)s AND observationId!=%(observation_id)s
         """
         other_observations_params = dict(proposal_id=proposal_id, observation_id=observation_id)
         other_observations_df = pd.read_sql(other_observations_sql, con=self._ssda_connection, params= other_observations_params)
