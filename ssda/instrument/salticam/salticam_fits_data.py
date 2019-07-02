@@ -60,18 +60,13 @@ class SalticamFitsData(InstrumentFitsData):
         """
 
         # Create the required directories
-        salt_dir = os.path.join(os.environ["PREVIEW_BASE_DIR"], "salt")
-        if not os.path.exists(salt_dir):
-            os.mkdir(salt_dir)
-        year_dir = os.path.join(salt_dir, str(self.night().year))
-        if not os.path.exists(year_dir):
-            os.mkdir(year_dir)
-        day_dir = os.path.join(year_dir, self.night().strftime("%m%d"))
-        if not os.path.exists(day_dir):
-            os.mkdir(day_dir)
-        salticam_dir = os.path.join(day_dir, "salticam")
+        salticam_dir = os.path.join(os.environ["PREVIEW_BASE_DIR"],
+                               "salt",
+                               str(self.night().year),
+                               self.night().strftime("%m%d"),
+                               "salticam")
         if not os.path.exists(salticam_dir):
-            os.mkdir(salticam_dir)
+            os.makedirs(salticam_dir)
 
         # Create the header content file
         basename = os.path.basename(self.file_path)[:-5]

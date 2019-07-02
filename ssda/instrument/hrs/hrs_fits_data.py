@@ -63,16 +63,11 @@ class HrsFitsData(InstrumentFitsData):
         """
 
         # Create the required directories
-        salt_dir = os.path.join(os.environ["PREVIEW_BASE_DIR"], "salt")
-        if not os.path.exists(salt_dir):
-            os.mkdir(salt_dir)
-        year_dir = os.path.join(salt_dir, str(self.night().year))
-        if not os.path.exists(year_dir):
-            os.mkdir(year_dir)
-        day_dir = os.path.join(year_dir, self.night().strftime("%m%d"))
-        if not os.path.exists(day_dir):
-            os.mkdir(day_dir)
-        hrs_dir = os.path.join(day_dir, "hrs")
+        hrs_dir = os.path.join(os.environ["PREVIEW_BASE_DIR"],
+                               "salt",
+                               str(self.night().year),
+                               self.night().strftime("%m%d"),
+                               "hrs")
         if not os.path.exists(hrs_dir):
             os.mkdir(hrs_dir)
 
