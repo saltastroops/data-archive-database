@@ -2,21 +2,24 @@ import os
 from PIL import Image
 from astropy.io import fits
 from astropy.io.fits import ImageHDU
+from typing import List, Tuple
+
+from ssda.instrument.instrument_fits_data import DataPreviewType
 
 BASE_HEIGHT = 500  # Base height for all thumbnail
 
 
-def get_thumbnail_size(size):
+def get_thumbnail_size(size: Tuple[float, float]):
     """
     Create a thumbnail size with a width of BASE_HEIGHT
     :param size: Image size (tuple of width by height (w,h,))
     :return: width and height of the thumbnail
     """
-    factor = size[1]/BASE_HEIGHT
-    return size[1]/factor, size[0]/factor
+    factor = size[1] / BASE_HEIGHT
+    return size[1] / factor, size[0] / factor
 
 
-def save_image_data(image_path, save_path):
+def save_image_data(image_path: str, save_path: str) -> List[Tuple[str, DataPreviewType]]:
     """
     It creates and save the image and the thumbnail of the image.
     If the same filename is opened from the the same telescope the image will be over written
@@ -45,6 +48,6 @@ def save_image_data(image_path, save_path):
                 im.thumbnail(get_thumbnail_size(image.data.shape))  # getting a thumbnail scale see BASE_HEIGHT
                 # save a thumbnail
                 im.save(image_saved_path)
-                created_images.append(image_saved_path)
+                created_images.append((image_saved_path, DataPreviewType.IMAGE))
 
     return created_images

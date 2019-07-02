@@ -1165,7 +1165,7 @@ class DatabaseUpdate:
         preview_files = self.fits_data.create_preview_files()
 
         # Enter the data for all preview files into the database
-        for index, preview_file in enumerate(preview_files):
+        for index, (preview_file, preview_type) in enumerate(preview_files):
             # Collect the preview data
             base_dir_path_length = len(os.environ["PREVIEW_BASE_DIR"])
             name = os.path.basename(preview_file)
@@ -1181,12 +1181,13 @@ class DatabaseUpdate:
                         dataFileId,
                         previewOrder,
                         previewFileName,
-                        path
+                        path,
+                        previewTypeId
                 )
-                VALUES (%(data_file_id)s, %(preview_order)s, %(name)s, %(path)s)
+                VALUES (%(data_file_id)s, %(preview_order)s, %(name)s, %(path)s, %(preview_type_id)s)
                 """
                 params = dict(
-                    data_file_id=data_file_id, preview_order=preview_order, name=name, path=path
+                    data_file_id=data_file_id, preview_order=preview_order, name=name, path=path, preview_type_id=preview_type.id()
                 )
                 self.cursor.execute(sql, params)
 

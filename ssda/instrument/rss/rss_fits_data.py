@@ -3,19 +3,18 @@ from datetime import date, datetime
 from dateutil import parser
 import glob
 import os
-from typing import List, Optional, Any
+from typing import Any, List, Optional, Tuple
 
+from ssda.imaging import save_image_data
 from ssda.institution import Institution
 from ssda.instrument.instrument_fits_data import (
     InstrumentFitsData,
     PrincipalInvestigator,
     DataCategory,
-    Target)
+    Target, DataPreviewType)
 from ssda.instrument.salt_instruments import SALTInstruments
 from ssda.observation_status import ObservationStatus
 from ssda.telescope import Telescope
-
-from ssda.imaging import save_image_data
 
 
 class RssFitsData(InstrumentFitsData):
@@ -47,7 +46,7 @@ class RssFitsData(InstrumentFitsData):
 
         return sorted(glob.iglob(os.path.join(data_directory, "*.fits")))
 
-    def create_preview_files(self) -> List[str]:
+    def create_preview_files(self) -> List[Tuple[str, DataPreviewType]]:
         """
         Create the preview files for the FITS file.
 
@@ -72,7 +71,7 @@ class RssFitsData(InstrumentFitsData):
         header_content_file = os.path.join(rss_dir, basename + "-header.txt")
         with open(header_content_file, "w") as f:
             f.write(self.header_text)
-        preview_files = [header_content_file]
+        preview_files = [(header_content_file, DataPreviewType.HEADER)]
 
         # Create the image files
         preview_files += save_image_data(self.file_path, rss_dir)
