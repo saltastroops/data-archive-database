@@ -18,7 +18,7 @@ def get_thumbnail_size(size):
 
 def save_image_data(image_path, save_path):
     """
-    It creates and save the image and the thumpnail of the image.
+    It creates and save the image and the thumbnail of the image.
     If the same filename is opened from the the same telescope the image will be over written
     :param image_path:
         Path of fits file to save image of
@@ -36,25 +36,15 @@ def save_image_data(image_path, save_path):
     if not os.path.exists(save_path):
         os.makedirs(save_path)
     with fits.open(image_path) as hdul:
-        if len(hdul) == 1:
-            image = fits.getdata(image_path)
-            image_saved_path = os.path.join(
-                save_path, "{basename}-image.png".format(basename=basename)
-            )
-            im = Image.fromarray(image.astype('uint8'))
-            im.thumbnail(get_thumbnail_size(image.shape))
-            im.save(image_saved_path)
-            created_images.append(image_saved_path)
-        else:
-            for index, image in enumerate(hdul):
-                if isinstance(image, ImageHDU):
-                    im = Image.fromarray(image.data.astype('uint8'))  # Image creation
-                    image_saved_path = os.path.join(
-                        save_path, "{basename}-image-{order}.png".format(basename=basename, order=index)
-                    )
-                    im.thumbnail(get_thumbnail_size(image.data.shape))  # getting a thumbnail scale see BASE_HEIGHT
-                    # save a thumbnail
-                    im.save(image_saved_path)
-                    created_images.append(image_saved_path)
+        for index, image in enumerate(hdul):
+            if isinstance(image, ImageHDU):
+                im = Image.fromarray(image.data.astype('uint8'))  # Image creation
+                image_saved_path = os.path.join(
+                    save_path, "{basename}-image-{order}.png".format(basename=basename, order=index)
+                )
+                im.thumbnail(get_thumbnail_size(image.data.shape))  # getting a thumbnail scale see BASE_HEIGHT
+                # save a thumbnail
+                im.save(image_saved_path)
+                created_images.append(image_saved_path)
 
     return created_images
