@@ -37,7 +37,7 @@ CREATE TABLE `DataCategory` (
  */
 DROP TABLE IF EXISTS `DataFile`;
 CREATE TABLE `DataFile` (
-                            `dataFileId` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Primary key',
+                            `dataFileId` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Primary key.',
                             `dataCategoryId` INT(11) UNSIGNED NOT NULL COMMENT 'Category of data contained in the data file.',
                             `startTime` DATETIME NOT NULL COMMENT 'The observation start time recorded in the data file.',
                             `dataFileName` VARCHAR(255) NOT NULL COMMENT 'Filename, such as R20190203000023.fits.',
@@ -57,7 +57,7 @@ CREATE TABLE `DataFile` (
 /**
  * DataPreview
  *
- * Preview image for a data file.
+ * Preview file for a data file.
  */
 DROP TABLE IF EXISTS `DataPreview`;
 CREATE TABLE `DataPreview` (
@@ -65,9 +65,24 @@ CREATE TABLE `DataPreview` (
                                `path` VARCHAR(255) UNIQUE NOT NULL COMMENT 'File path of the file containing the preview image, such as /home/path/to/preview/R20190203000023-1.png.',
                                `dataFileId` INT(11) UNSIGNED NOT NULL COMMENT 'Id of the data file to which the preview image belongs.',
                                `previewOrder` INT(11) UNSIGNED NOT NULL COMMENT 'Defines an order within multiple preview files for the same data file.',
+                               `previewTypeId` INT(11) UNSIGNED NOT NULL COMMENT 'Type of data preview file',
                                PRIMARY KEY (`dataFileId`, `previewOrder`),
                                KEY `fk_DataPreviewDataFile_idx` (`dataFileId`),
-                               CONSTRAINT `fk_DataPreviewDataFile` FOREIGN KEY (`dataFileId`) REFERENCES `DataFile` (`dataFileId`) ON DELETE NO ACTION ON UPDATE NO ACTION
+                               KEY `fk_DataPreviewDataPreviewType_idx` (`previewTypeId`),
+                               CONSTRAINT `fk_DataPreviewDataFile` FOREIGN KEY (`dataFileId`) REFERENCES `DataFile` (`dataFileId`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+                               CONSTRAINT `fk_DataPreviewDataPreviewType` FOREIGN KEY (`previewTypeId`) REFERENCES `DataPreviewType` (`dataPreviewTypeId`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/**
+ * DataPreviewType
+ *
+ * Type of a preview file, such as "Header" or "Image".
+ */
+DROP TABLE IF EXISTS `DataPreviewType`;
+CREATE TABLE `DataPreviewType` (
+                               `dataPreviewTypeId` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Primary key.',
+                               `dataPreviewType` VARCHAR(32) UNIQUE NOT NULL COMMENT 'Type of data preview file/',
+                               PRIMARY KEY (`dataPreviewTypeId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /**
@@ -144,7 +159,6 @@ CREATE TABLE `HRS` (
  *
  * An institution, such as SAAO or SALT, accepting proposals.
  */
-DROP TABLE IF EXISTS `Institution`;
 DROP TABLE IF EXISTS `Institution`;
 CREATE TABLE `Institution` (
                                `institutionId` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Primary key.',
@@ -515,6 +529,10 @@ SET FOREIGN_KEY_CHECKS=1;
 -- Add the data categories.
 
 INSERT INTO DataCategory (dataCategory) VALUES ('Arc'), ('Bias'), ('Flat'), ('Science');
+
+-- Add the data preview types.
+
+INSERT INTO DataPreviewType (dataPreviewType) VALUES ('Header'), ('Image');
 
 -- Add the institutions.
 
