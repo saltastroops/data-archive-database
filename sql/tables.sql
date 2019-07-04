@@ -57,14 +57,17 @@ CREATE TABLE `DataFile` (
     `targetId` INT(11) UNSIGNED COMMENT 'Target which was observed.',
     `size` FLOAT NOT NULL COMMENT 'File size in bytes.',
     `observationId` INT(11) UNSIGNED NOT NULL COMMENT 'Observation to which the data file belongs.',
+    `instrumentId` INT(11) UNSIGNED NOT NULL COMMENT 'Instrument used for this data file',
     INDEX(startTime),
     PRIMARY KEY (`dataFileId`),
     KEY `fk_DataFileDataCategory_idx` (`dataCategoryId`),
     KEY `fk_DataFileTarget_idx` (`targetId`),
     KEY `fk_DataFileObservation_idx` (`observationId`),
+    KEY `fk_DataPreviewInstrument_idx` (`instrumentId`),
     CONSTRAINT `fk_DataFileDataCategory` FOREIGN KEY (`dataCategoryId`) REFERENCES `DataCategory` (`dataCategoryId`) ON DELETE NO ACTION ON UPDATE NO ACTION,
     CONSTRAINT `fk_DataFileObservation` FOREIGN KEY (`observationId`) REFERENCES `Observation` (`observationId`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-    CONSTRAINT `fk_DataFileTarget` FOREIGN KEY (`targetId`) REFERENCES `Target` (`targetId`) ON DELETE NO ACTION ON UPDATE NO ACTION
+    CONSTRAINT `fk_DataFileTarget` FOREIGN KEY (`targetId`) REFERENCES `Target` (`targetId`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+    CONSTRAINT `fk_DataPreviewInstrument` FOREIGN KEY (`instrumentId`) REFERENCES `Instrument` (`instrumentId`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /**
