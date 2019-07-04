@@ -974,6 +974,7 @@ class DatabaseUpdate:
             if existing_data_file_id is not None:
                 return existing_data_file_id
 
+        instrument_id = self.instrument_name_id()
         # Insert the data file
         sql = """
         INSERT INTO DataFile(
@@ -983,7 +984,8 @@ class DatabaseUpdate:
                 path,
                 targetId,
                 size,
-                observationId
+                observationId,
+                instrumentId
               )
         VALUES (%(data_category_id)s,
                 %(start_time)s,
@@ -991,7 +993,8 @@ class DatabaseUpdate:
                 %(path)s,
                 %(target_id)s,
                 %(size)s,
-                %(observation_id)s)
+                %(observation_id)s,
+                %(instrument_id)s)
         """
         params = dict(
             data_category_id=properties.data_category_id,
@@ -1001,6 +1004,7 @@ class DatabaseUpdate:
             target_id=target_id,
             size=properties.size,
             observation_id=observation_id,
+            instrument_id=instrument_id,
         )
         self.cursor.execute(sql, params)
 
@@ -1147,6 +1151,25 @@ class DatabaseUpdate:
             if must_exist:
                 raise ValueError('There exists no DataFile entry for the path {}.'.format(self.fits_data.file_path))
             return None
+
+    def instrument_name_id(self) -> int:
+        """
+
+        must_exist : bool
+            Whether to raise an error if no data file entry exists.
+        """
+
+        instrument_name = self.fits_data.instrument_name()
+
+        sql = """
+        SELECT instrumentId FROM Instrument WHERE instrumentName=%s
+        """
+        df = pd.read_sql(sql, con=self._ssda_connection, params=(instrument_name,))
+
+        if len(df) > 0:
+            return int(df["instrumentId"][0])
+        else:
+            raise ValueError('The instrument is not known.')
 
     # DataFile ------------------------------------------------------------------- End
 
