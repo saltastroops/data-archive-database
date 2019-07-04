@@ -270,26 +270,26 @@ class SALTInstruments:
         return df["Title"][0]
 
     @staticmethod
-    def public_from(proposal_code) -> date:
+    def public_from(observation_id) -> date:
         """
-        Indicate whether the data for the FITS file is proprietary.
+        Indicate when the the became public.
 
         Returns
         -------
-        proprietary : bool
-            Whether the data is proprietary.
+        date :
+            When data became public.
 
         """
 
         # TODO: Will have to be updated
         sql = """
-            SELECT ReleaseDate
-                   FROM ProposalGeneralInfo
-                   JOIN ProposalCode USING (ProposalCode_Id)
-            WHERE Proposal_Code=%s
+            SELECT ReleaseDate FROM Block
+                JOIN Proposal ON( Block.Proposal_Id = Proposal.Proposal_Id)
+                JOIN ProposalGeneralInfo ON (Proposal.ProposalCode_Id = ProposalGeneralInfo.ProposalCode_Id)
+            WHERE Block_Id=%s
             """
         with sdb_connect().cursor() as cursor:
-            cursor.execute(sql, (proposal_code,))
+            cursor.execute(sql, (observation_id,))
             result = cursor.fetchone()
             if result is None:
                 return (datetime.now()).date()
