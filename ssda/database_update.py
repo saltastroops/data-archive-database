@@ -274,6 +274,7 @@ class DataFileProperties(NamedTuple):
     start_time: datetime
     size: int
     data_category_id: int
+    instrument_id: int
 
 
 class InstrumentProperties(NamedTuple):
@@ -974,7 +975,6 @@ class DatabaseUpdate:
             if existing_data_file_id is not None:
                 return existing_data_file_id
 
-        instrument_id = self.instrument_name_id()
         # Insert the data file
         sql = """
         INSERT INTO DataFile(
@@ -1004,7 +1004,7 @@ class DatabaseUpdate:
             target_id=target_id,
             size=properties.size,
             observation_id=observation_id,
-            instrument_id=instrument_id,
+            instrument_id=properties.instrument_id,
         )
         self.cursor.execute(sql, params)
 
@@ -1098,12 +1098,15 @@ class DatabaseUpdate:
         start_time = self.fits_data.start_time()
         size = self.fits_data.file_size
         data_category_id = self.fits_data.data_category().id()
+        instrument = Instrument(self.fits_data.instrument_name())
+        instrument_id = instrument.id()
 
         return DataFileProperties(name=name,
                                   path=path,
                                   start_time=start_time,
                                   size=size,
-                                  data_category_id=data_category_id)
+                                  data_category_id=data_category_id,
+                                  instrument_id=instrument_id)
 
     def fits_file_path_for_db(self):
         """
@@ -1151,25 +1154,6 @@ class DatabaseUpdate:
             if must_exist:
                 raise ValueError('There exists no DataFile entry for the path {}.'.format(self.fits_data.file_path))
             return None
-
-    def instrument_name_id(self) -> int:
-        """
-
-        must_exist : bool
-            Whether to raise an error if no data file entry exists.
-        """
-
-        instrument_name = self.fits_data.instrument_name()
-
-        sql = """
-        SELECT instrumentId FROM Instrument WHERE instrumentName=%s
-        """
-        df = pd.read_sql(sql, con=self._ssda_connection, params=(instrument_name,))
-
-        if len(df) > 0:
-            return int(df["instrumentId"][0])
-        else:
-            raise ValueError('The instrument is not known.')
 
     # DataFile ------------------------------------------------------------------- End
 
@@ -1438,6 +1422,7 @@ class DatabaseUpdate:
         """
 
         telescope_id = self.fits_data.telescope().id()
+
         instrument_details_file = self.fits_data.instrument_details_file()
         header_values = {}
         with open(instrument_details_file, "r") as fin:
