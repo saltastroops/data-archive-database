@@ -150,33 +150,6 @@ class SALTInstruments:
             return release_date > datetime.now().date()
 
     @staticmethod
-    def available_from_date(proposal_code) -> date:
-        """
-        Indicate whether the data for the FITS file is proprietary.
-
-        Returns
-        -------
-        proprietary : bool
-            Whether the data is proprietary.
-
-        """
-
-        # TODO: Will have to be updated
-        sql = """
-            SELECT ReleaseDate
-                   FROM ProposalGeneralInfo
-                   JOIN ProposalCode USING (ProposalCode_Id)
-            WHERE Proposal_Code=%s
-            """
-        with sdb_connect().cursor() as cursor:
-            cursor.execute(sql, (proposal_code,))
-            result = cursor.fetchone()
-            if result is None:
-                return (datetime.now()).date()
-            release_date = result["ReleaseDate"]
-            return release_date
-
-    @staticmethod
     def observation_status(block_visit_id: Optional[str]) -> ObservationStatus:
         """
         The status (such as Accepted) for the observation to which the FITS file
@@ -295,6 +268,33 @@ class SALTInstruments:
         df = pd.read_sql(sql, con=sdb_connect(), params=(proposal_code,))
 
         return df["Title"][0]
+
+    @staticmethod
+    def public_from(proposal_code) -> date:
+        """
+        Indicate whether the data for the FITS file is proprietary.
+
+        Returns
+        -------
+        proprietary : bool
+            Whether the data is proprietary.
+
+        """
+
+        # TODO: Will have to be updated
+        sql = """
+            SELECT ReleaseDate
+                   FROM ProposalGeneralInfo
+                   JOIN ProposalCode USING (ProposalCode_Id)
+            WHERE Proposal_Code=%s
+            """
+        with sdb_connect().cursor() as cursor:
+            cursor.execute(sql, (proposal_code,))
+            result = cursor.fetchone()
+            if result is None:
+                return (datetime.now()).date()
+            release_date = result["ReleaseDate"]
+            return release_date
 
     @staticmethod
     def target(

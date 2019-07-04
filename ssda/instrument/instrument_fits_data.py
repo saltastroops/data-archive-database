@@ -329,20 +329,6 @@ class InstrumentFitsData(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def available_from_date(self) -> date:
-        """
-        Indicate whether the data for the FITS file is proprietary.
-
-        Returns
-        -------
-        proprietary : bool
-            Whether the data is proprietary.
-
-        """
-
-        raise NotImplementedError
-
-    @abstractmethod
     def night(self) -> date:
         """
         The night when the data was taken.
@@ -441,6 +427,20 @@ class InstrumentFitsData(ABC):
         -------
         title : str
             The proposal title.
+
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def public_from(self) -> date:
+        """
+        The date when the data becomes public.
+
+        Returns
+        -------
+        public : date
+            Date when the data becomes public.
 
         """
 

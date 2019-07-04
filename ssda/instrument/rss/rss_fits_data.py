@@ -21,31 +21,6 @@ class RssFitsData(InstrumentFitsData):
     def __init__(self, fits_file: str):
         InstrumentFitsData.__init__(self, fits_file)
 
-    @staticmethod
-    def fits_files(night: date) -> List[str]:
-        """
-        The list of FITS files generated for the instrument during a night.
-
-        Parameters
-        ----------
-        night : date
-            Start date of the night for which the FITS files are returned.
-
-        Returns
-        -------
-        files : list of str
-            The list of file paths.
-
-        """
-
-        data_directory = "{base_dir}/salt/{year}/{monthday}/rss/raw".format(
-            base_dir=os.environ["FITS_BASE_DIR"],
-            year=night.strftime("%Y"),
-            monthday=night.strftime("%m%d"),
-        )
-
-        return sorted(glob.iglob(os.path.join(data_directory, "*.fits")))
-
     def create_preview_files(self) -> List[Tuple[str, DataPreviewType]]:
         """
         Create the preview files for the FITS file.
@@ -90,6 +65,31 @@ class RssFitsData(InstrumentFitsData):
         """
 
         return SALTInstruments.data_category(object_name=self.header.get("OBJECT"))
+
+    @staticmethod
+    def fits_files(night: date) -> List[str]:
+        """
+        The list of FITS files generated for the instrument during a night.
+
+        Parameters
+        ----------
+        night : date
+            Start date of the night for which the FITS files are returned.
+
+        Returns
+        -------
+        files : list of str
+            The list of file paths.
+
+        """
+
+        data_directory = "{base_dir}/salt/{year}/{monthday}/rss/raw".format(
+            base_dir=os.environ["FITS_BASE_DIR"],
+            year=night.strftime("%Y"),
+            monthday=night.strftime("%m%d"),
+        )
+
+        return sorted(glob.iglob(os.path.join(data_directory, "*.fits")))
 
     def institution(self) -> Institution:
         """
@@ -200,18 +200,6 @@ class RssFitsData(InstrumentFitsData):
         """
         return SALTInstruments.is_proprietary(self.proposal_code())
 
-    def available_from_date(self) -> date:
-        """
-        Indicate the date when this became available.
-
-        Returns
-        -------
-        proprietary : date
-            a date this data become available.
-
-        """
-        return SALTInstruments.available_from_date(self.proposal_code())
-
     def night(self) -> date:
         """
         The night when the data was taken.
@@ -307,6 +295,19 @@ class RssFitsData(InstrumentFitsData):
 
         """
         return SALTInstruments.proposal_title(self.proposal_code())
+
+    def public_from(self) -> date:
+        """
+        The date when the data becomes public.
+
+        Returns
+        -------
+        public : date
+            Date when the data becomes public.
+
+        """
+
+        return SALTInstruments.public_from(self.proposal_code())
 
     def start_time(self) -> datetime:
         """
