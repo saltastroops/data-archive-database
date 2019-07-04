@@ -810,3 +810,4 @@ INSERT INTO `TargetType` (`numericCode`, `explanation`) VALUES ('52.00.00.00', '
 -- Add the telescopes.
 
 INSERT INTO Telescope (telescopeName, institutionId) VALUE ('SALT', 1), ('1.9 m', 1), ('1.0 m', 1), ('Lesedi', 1);
+INSERT INTO Instrument (instrumentName, instrumentId) VALUE ('RSS', 1), ('HRS', 2), ('Salticam', 3), ('SHOC', 4);

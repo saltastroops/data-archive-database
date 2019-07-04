@@ -508,3 +508,16 @@ class InstrumentFitsData(ABC):
         """
 
         raise NotImplementedError
+
+    @abstractmethod
+    def instrument_name(self) -> str:
+        """
+        The name of the instrument is the same as the table name of its data table.
+
+        Returns
+        -------
+        column : str
+            The instrument name.
+
+        """
+        return self.instrument_table()
