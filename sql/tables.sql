@@ -30,14 +30,14 @@ CREATE TABLE `DataCategory` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /**
- * Instruments
+ * Instrument
  *
- * Instrument names for SAAO telescopes and SALT
+ * An instrument, such as SpUpNIC or RSS.
  */
 DROP TABLE IF EXISTS `Instrument`;
 CREATE TABLE `Instrument` (
-     `instrumentId` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Primary key for this table(Instrument).',
-     `instrumentName` VARCHAR(255) NOT NULL COMMENT 'Name given to an instrument.',
+     `instrumentId` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Primary key.',
+     `instrumentName` VARCHAR(255) UNIQUE NOT NULL COMMENT 'Instrument name.',
     PRIMARY KEY (`instrumentId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -195,9 +195,9 @@ CREATE TABLE `Observation` (
     `observationId` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Primary key.',
     `proposalId` INT(11) UNSIGNED COMMENT 'Proposal to which the observation belongs.',
     `telescopeId` INT(11) UNSIGNED NOT NULL  COMMENT 'Telescope used for taking the data.',
-    `telescopeObservationId` VARCHAR(255) COMMENT 'Identifier used by the telescope for the observsation,',
-    `night` DATE NOT NULL COMMENT 'Date an observation was taken',
-    `availableFrom` DATE NOT NULL COMMENT 'A date observation is available to the public',
+    `telescopeObservationId` VARCHAR(255) COMMENT 'Identifier used by the telescope for the observation.',
+    `night` DATE NOT NULL COMMENT 'Start date of the night when the observation was taken.',
+    `publicFrom` DATE NOT NULL COMMENT 'Date from when the observation is available to the public.',
     `observationStatusId` INT(11) UNSIGNED NOT NULL COMMENT 'A foreign key linking to observation status, see table ObservationStatus',
     PRIMARY KEY (`observationId`),
     KEY `fk_ObservationProposal_idx` (`proposalId`),

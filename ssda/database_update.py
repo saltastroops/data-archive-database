@@ -571,8 +571,8 @@ class DatabaseUpdate:
         if existing_observation_id is not None:
             return existing_observation_id
 
-        # A date data became available to public
-        available_from = self.fits_data.available_from_date()
+        # When the data become available to the public
+        public_from = self.fits_data.public_from()
 
         # Create the observation
         insert_sql = """
@@ -580,13 +580,13 @@ class DatabaseUpdate:
                                  telescopeId,
                                  telescopeObservationId,
                                  night,
-                                 availableFrom,
+                                 publicFrom,
                                  observationStatusId)
                     VALUES (%(proposal_id)s,
                             %(telescope_id)s,
                             %(telescope_observation_id)s,
                             %(night)s,
-                            %(available_from)s,
+                            %(public_from)s,
                             %(observation_status_id)s)
         """
         insert_params = dict(
@@ -594,7 +594,7 @@ class DatabaseUpdate:
             telescope_id=properties.telescope_id,
             telescope_observation_id=properties.telescope_observation_id,
             night=properties.night,
-            available_from=available_from,
+            public_from=public_from,
             observation_status_id=properties.observation_status_id,
         )
         self.cursor.execute(insert_sql, insert_params)
