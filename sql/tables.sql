@@ -30,18 +30,6 @@ CREATE TABLE `DataCategory` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /**
- * Instrument
- *
- * An instrument, such as SpUpNIC or RSS.
- */
-DROP TABLE IF EXISTS `Instrument`;
-CREATE TABLE `Instrument` (
-     `instrumentId` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Primary key.',
-     `instrumentName` VARCHAR(255) UNIQUE NOT NULL COMMENT 'Instrument name.',
-    PRIMARY KEY (`instrumentId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-/**
  * DataFile
  *
  * Metadata for (raw) data files. The data file usually is a (raw) FITS file, but it may also be a text file containing
@@ -180,6 +168,18 @@ CREATE TABLE `Institution` (
     `institutionId` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Primary key.',
     `institutionName` VARCHAR(255) UNIQUE NOT NULL COMMENT 'Name of the institution.',
     PRIMARY KEY (`institutionId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/**
+ * Instrument
+ *
+ * An instrument, such as SpUpNIC or RSS.
+ */
+DROP TABLE IF EXISTS `Instrument`;
+CREATE TABLE `Instrument` (
+     `instrumentId` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Primary key.',
+     `instrumentName` VARCHAR(255) UNIQUE NOT NULL COMMENT 'Instrument name.',
+    PRIMARY KEY (`instrumentId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /**
