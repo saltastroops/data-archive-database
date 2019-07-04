@@ -571,17 +571,22 @@ class DatabaseUpdate:
         if existing_observation_id is not None:
             return existing_observation_id
 
+        # A date data became available to public
+        available_from = self.fits_data.available_from_date()
+
         # Create the observation
         insert_sql = """
         INSERT INTO Observation (proposalId,
                                  telescopeId,
                                  telescopeObservationId,
                                  night,
+                                 availableFrom,
                                  observationStatusId)
                     VALUES (%(proposal_id)s,
                             %(telescope_id)s,
                             %(telescope_observation_id)s,
                             %(night)s,
+                            %(available_from)s,
                             %(observation_status_id)s)
         """
         insert_params = dict(
@@ -589,6 +594,7 @@ class DatabaseUpdate:
             telescope_id=properties.telescope_id,
             telescope_observation_id=properties.telescope_observation_id,
             night=properties.night,
+            available_from=available_from,
             observation_status_id=properties.observation_status_id,
         )
         self.cursor.execute(insert_sql, insert_params)
@@ -1179,15 +1185,19 @@ class DatabaseUpdate:
                 sql = """
                 INSERT INTO DataPreview(
                         dataFileId,
-                        previewOrder,
-                        previewFileName,
+                        dataPreviewOrder,
+                        dataPreviewFileName,
                         path,
-                        previewTypeId
+                        dataPreviewTypeId
                 )
                 VALUES (%(data_file_id)s, %(preview_order)s, %(name)s, %(path)s, %(preview_type_id)s)
                 """
                 params = dict(
-                    data_file_id=data_file_id, preview_order=preview_order, name=name, path=path, preview_type_id=preview_type.id()
+                    data_file_id=data_file_id,
+                    preview_order=preview_order,
+                    name=name,
+                    path=path,
+                    preview_type_id=preview_type.id()
                 )
                 self.cursor.execute(sql, params)
 
@@ -1261,15 +1271,15 @@ class DatabaseUpdate:
         data_file_id = self.data_file_id(True)
 
         sql = """
-        SELECT dataFileId, previewOrder
+        SELECT dataFileId, dataPreviewOrder
                FROM DataPreview
-        WHERE dataFileId=%(data_file_id)s AND previewOrder=%(order)s
+        WHERE dataFileId=%(data_file_id)s AND dataPreviewOrder=%(order)s
         """
         params = dict(data_file_id=data_file_id, order=order)
         df = pd.read_sql(sql, con=self._ssda_connection, params=params)
 
         if len(df) > 0:
-            return int(df["dataFileId"][0]), int(df["previewOrder"][0])
+            return int(df["dataFileId"][0]), int(df["dataPreviewOrder"][0])
         else:
             return None
 

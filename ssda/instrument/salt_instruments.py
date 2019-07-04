@@ -2,7 +2,7 @@ import pandas as pd
 from astropy.coordinates import Angle
 from typing import List, Optional, Any
 from ssda.connection import sdb_connect
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from ssda.instrument.instrument_fits_data import (
     Target,
     PrincipalInvestigator,
@@ -148,6 +148,33 @@ class SALTInstruments:
                 return False
             release_date = result["ReleaseDate"]
             return release_date > datetime.now().date()
+
+    @staticmethod
+    def available_from_date(proposal_code) -> date:
+        """
+        Indicate whether the data for the FITS file is proprietary.
+
+        Returns
+        -------
+        proprietary : bool
+            Whether the data is proprietary.
+
+        """
+
+        # TODO: Will have to be updated
+        sql = """
+            SELECT ReleaseDate
+                   FROM ProposalGeneralInfo
+                   JOIN ProposalCode USING (ProposalCode_Id)
+            WHERE Proposal_Code=%s
+            """
+        with sdb_connect().cursor() as cursor:
+            cursor.execute(sql, (proposal_code,))
+            result = cursor.fetchone()
+            if result is None:
+                return (datetime.now()).date()
+            release_date = result["ReleaseDate"]
+            return release_date
 
     @staticmethod
     def observation_status(block_visit_id: Optional[str]) -> ObservationStatus:

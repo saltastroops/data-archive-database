@@ -200,6 +200,18 @@ class RssFitsData(InstrumentFitsData):
         """
         return SALTInstruments.is_proprietary(self.proposal_code())
 
+    def available_from_date(self) -> date:
+        """
+        Indicate the date when this became available.
+
+        Returns
+        -------
+        proprietary : date
+            a date this data become available.
+
+        """
+        return SALTInstruments.available_from_date(self.proposal_code())
+
     def night(self) -> date:
         """
         The night when the data was taken.
