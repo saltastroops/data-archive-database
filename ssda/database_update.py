@@ -64,7 +64,7 @@ def fits_data_from_date_range_gen(start_date: date, end_date: date, instruments:
             fits_data_class = instrument.fits_data_class()
             for fits_file in sorted(fits_data_class.fits_files(night)):
                 yield fits_data_class(fits_file)
-            night += dt
+        night += dt
 
 
 def fits_data_from_file_gen(fits_file: str, instrument: Instrument) -> Generator[InstrumentFitsData, None, None]:
