@@ -83,7 +83,7 @@ class RssFitsData(InstrumentFitsData):
 
         """
 
-        data_directory = "{base_dir}/salt/{year}/{monthday}/rss/raw".format(
+        data_directory = "{base_dir}/salt/data/{year}/{monthday}/rss/raw".format(
             base_dir=os.environ["FITS_BASE_DIR"],
             year=night.strftime("%Y"),
             monthday=night.strftime("%m%d"),
