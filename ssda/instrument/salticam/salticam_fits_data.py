@@ -85,7 +85,7 @@ class SalticamFitsData(InstrumentFitsData):
 
         """
 
-        data_directory = "{base_dir}/salt/data/{year}/{monthday}/salticam/raw".format(
+        data_directory = "{base_dir}/salt/data/{year}/{monthday}/scam/raw".format(
             base_dir=os.environ["FITS_BASE_DIR"],
             year=night.strftime("%Y"),
             monthday=night.strftime("%m%d"),
