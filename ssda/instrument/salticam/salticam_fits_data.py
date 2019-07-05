@@ -154,6 +154,21 @@ class SalticamFitsData(InstrumentFitsData):
 
         return "salticamId"
 
+    def instrument_name(self) -> str:
+        """
+        The name of the instrument used for taking the data.
+
+        The name must be one of the values of the Instrument enumeration.
+
+        Returns
+        -------
+        column : str
+            The instrument name.
+
+        """
+
+        return "Salticam"
+
     def instrument_table(self) -> str:
         """
         The name of the table containing the instrument details for the instrument that
@@ -375,22 +390,3 @@ class SalticamFitsData(InstrumentFitsData):
         """
 
         return self.header.get("BVISITID") or None
-
-    def instrument_name(self) -> str:
-        """
-        The id used by the telescope for the observation.
-
-        If the FITS file was taken as part of an observation, this method returns the
-        unique id used by the telescope for identifying this observation.
-
-        If the FITS file was not taken as part of an observation (for example because it
-        refers to a standard), this method returns None.
-
-        Returns
-        -------
-        id : str
-            The unique id used by the telescope for identifying the observation.
-
-        """
-
-        return "Salticam"

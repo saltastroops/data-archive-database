@@ -280,6 +280,22 @@ class InstrumentFitsData(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def instrument_name(self) -> str:
+        """
+        The name of the instrument used for taking the data.
+
+        The name must be one of the values of the Instrument enumeration.
+
+        Returns
+        -------
+        column : str
+            The instrument name.
+
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
     def instrument_table(self) -> str:
         """
         The name of the table containing the instrument details for the instrument that
@@ -508,16 +524,3 @@ class InstrumentFitsData(ABC):
         """
 
         raise NotImplementedError
-
-    @abstractmethod
-    def instrument_name(self) -> str:
-        """
-        The name of the instrument is the same as the table name of its data table.
-
-        Returns
-        -------
-        column : str
-            The instrument name.
-
-        """
-        return self.instrument_table()
