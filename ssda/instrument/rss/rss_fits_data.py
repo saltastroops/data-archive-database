@@ -5,7 +5,7 @@ import glob
 import os
 from typing import Any, List, Optional, Tuple
 
-from ssda.imaging import save_image_data
+from ssda.images import save_image_data
 from ssda.institution import Institution
 from ssda.instrument.instrument_fits_data import (
     InstrumentFitsData,

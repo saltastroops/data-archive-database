@@ -19,7 +19,7 @@ from ssda.instrument.salt_instruments import SALTInstruments
 from ssda.observation_status import ObservationStatus
 from ssda.telescope import Telescope
 
-from ssda.imaging import save_image_data
+from ssda.images import save_image_data
 
 
 class HrsFitsData(InstrumentFitsData):
