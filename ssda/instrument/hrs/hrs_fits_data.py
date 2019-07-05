@@ -44,7 +44,7 @@ class HrsFitsData(InstrumentFitsData):
                                self.night().strftime("%m%d"),
                                "hrs")
         if not os.path.exists(hrs_dir):
-            os.mkdir(hrs_dir)
+            os.makedirs(hrs_dir)
 
         # Create the header content file
         basename = os.path.basename(self.file_path)[:-5]

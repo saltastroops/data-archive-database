@@ -146,8 +146,8 @@ class SALTInstruments:
             result = cursor.fetchone()
             if result is None:
                 return False
-            release_date = result["ReleaseDate"]
-            return release_date > datetime.now().date()
+            public_from = result["ReleaseDate"]
+            return public_from > datetime.now().date()
 
     @staticmethod
     def observation_status(block_visit_id: Optional[str]) -> ObservationStatus:
@@ -270,7 +270,7 @@ class SALTInstruments:
         return df["Title"][0]
 
     @staticmethod
-    def public_from(observation_id) -> date:
+    def public_from(telescope_observation_id) -> date:
         """
         Indicate when the the became public.
 
@@ -289,12 +289,12 @@ class SALTInstruments:
             WHERE Block_Id=%s
             """
         with sdb_connect().cursor() as cursor:
-            cursor.execute(sql, (observation_id,))
+            cursor.execute(sql, (telescope_observation_id,))
             result = cursor.fetchone()
             if result is None:
                 return (datetime.now()).date()
-            release_date = result["ReleaseDate"]
-            return release_date
+            public_from = result["ReleaseDate"]
+            return public_from
 
     @staticmethod
     def target(

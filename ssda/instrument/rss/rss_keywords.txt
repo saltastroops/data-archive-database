@@ -106,7 +106,7 @@ HWP-ANG     				halfWaveAngle
 HWP-CMD     				halfWaveStation
 HWP-STA     				halfWaveStationEncoder
 IMAGEID     				imageId
-INSTRUME    				instrumentName
+# INSTRUME    				instrumentName
 JD          				julianDate
 LST-OBS     				lstObservation
 MASKID      				slitmaskBarcode
