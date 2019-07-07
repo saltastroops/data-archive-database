@@ -717,8 +717,12 @@ class DatabaseUpdate:
         """
         The id of the observation for the FITS data.
 
-        The observation id of the DataFile entry for the FITS data is returned, or None
-        if there is no such entry.
+        In principle, we can return the id (if there is one) the combination of
+        telescope and telescope observation id. However, an observation may not have a
+        # telescope observation id, and in this case we check whether there is an entry
+        for the data file in the DataFile table and, if so, return its observation id.
+
+        None is returned if no id is found.
 
         Returns
         -------
@@ -727,20 +731,37 @@ class DatabaseUpdate:
 
         """
 
+        # Get the telescope and telescope observation id
+        telescope = self.fits_data.telescope()
+        telescope_observation_id = self.fits_data.telescope_observation_id()
+
+        # Get the observation id for their combination
+        telescope_sql = """
+        SELECT observationId
+               FROM Observation
+        WHERE telescopeId=%(telescope_id)s
+              AND telescopeObservationId=%(telescope_observation_id)s
+        """
+        telescope_params = dict(telescope_id=telescope.id(), telescope_observation_id=telescope_observation_id)
+        telescope_df = pd.read_sql(telescope_sql, con=self._ssda_connection, params=telescope_params)
+        if len(telescope_df) > 0:
+            return int(telescope_df['observationId'][0])
+
         # Get the data file id
         data_file_id = self.data_file_id(False)
         if data_file_id is None:
             return None
 
-        # Get the observation id
+        # Get the observation id for this data file id
         sql = """
         SELECT observationId FROM DataFile WHERE dataFileId=%s
          """
         df = pd.read_sql(sql, con=self._ssda_connection, params=(data_file_id,))
         if len(df) > 0:
             return int(df["observationId"][0])
-        else:
-            return None
+
+        # No observation id was found
+        return None
 
     # Observation ---------------------------------------------------------------- End
 
