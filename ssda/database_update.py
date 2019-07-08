@@ -923,7 +923,7 @@ class DatabaseUpdate:
         # Get the target type id
         if target.target_type is not None:
             target_type_id_sql = """
-                      SELECT targetTypeId FROM TargetType WHERE numericValue = %s
+                      SELECT targetTypeId FROM TargetType WHERE numericCode = %s
                 """
             target_type_id_df = pd.read_sql(
                 sql=target_type_id_sql, con=ssda_connect(), params=(target.target_type,)

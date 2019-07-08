@@ -355,8 +355,9 @@ class SALTInstruments:
 
         """
 
-        # No target type can be determined if there is no observation linked to the target
-        if block_visit_id is None or block_visit_id:
+        # No target type can be determined if there is no observation linked to the
+        # target
+        if block_visit_id is None or block_visit_id=='':
             return None
 
         # Get the target type from the SDB
