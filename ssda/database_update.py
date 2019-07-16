@@ -64,7 +64,7 @@ def fits_data_from_date_range_gen(start_date: date, end_date: date, instruments:
             fits_data_class = instrument.fits_data_class()
             for fits_file in sorted(fits_data_class.fits_files(night)):
                 yield fits_data_class(fits_file)
-            night += dt
+        night += dt
 
 
 def fits_data_from_file_gen(fits_file: str, instrument: Instrument) -> Generator[InstrumentFitsData, None, None]:
@@ -274,6 +274,7 @@ class DataFileProperties(NamedTuple):
     start_time: datetime
     size: int
     data_category_id: int
+    instrument_id: int
 
 
 class InstrumentProperties(NamedTuple):
@@ -571,17 +572,22 @@ class DatabaseUpdate:
         if existing_observation_id is not None:
             return existing_observation_id
 
+        # When the data become available to the public
+        public_from = self.fits_data.public_from()
+
         # Create the observation
         insert_sql = """
         INSERT INTO Observation (proposalId,
                                  telescopeId,
                                  telescopeObservationId,
                                  night,
+                                 publicFrom,
                                  observationStatusId)
                     VALUES (%(proposal_id)s,
                             %(telescope_id)s,
                             %(telescope_observation_id)s,
                             %(night)s,
+                            %(public_from)s,
                             %(observation_status_id)s)
         """
         insert_params = dict(
@@ -589,6 +595,7 @@ class DatabaseUpdate:
             telescope_id=properties.telescope_id,
             telescope_observation_id=properties.telescope_observation_id,
             night=properties.night,
+            public_from=public_from,
             observation_status_id=properties.observation_status_id,
         )
         self.cursor.execute(insert_sql, insert_params)
@@ -710,8 +717,12 @@ class DatabaseUpdate:
         """
         The id of the observation for the FITS data.
 
-        The observation id of the DataFile entry for the FITS data is returned, or None
-        if there is no such entry.
+        In principle, we can return the id (if there is one) the combination of
+        telescope and telescope observation id. However, an observation may not have a
+        # telescope observation id, and in this case we check whether there is an entry
+        for the data file in the DataFile table and, if so, return its observation id.
+
+        None is returned if no id is found.
 
         Returns
         -------
@@ -720,20 +731,37 @@ class DatabaseUpdate:
 
         """
 
+        # Get the telescope and telescope observation id
+        telescope = self.fits_data.telescope()
+        telescope_observation_id = self.fits_data.telescope_observation_id()
+
+        # Get the observation id for their combination
+        telescope_sql = """
+        SELECT observationId
+               FROM Observation
+        WHERE telescopeId=%(telescope_id)s
+              AND telescopeObservationId=%(telescope_observation_id)s
+        """
+        telescope_params = dict(telescope_id=telescope.id(), telescope_observation_id=telescope_observation_id)
+        telescope_df = pd.read_sql(telescope_sql, con=self._ssda_connection, params=telescope_params)
+        if len(telescope_df) > 0:
+            return int(telescope_df['observationId'][0])
+
         # Get the data file id
         data_file_id = self.data_file_id(False)
         if data_file_id is None:
             return None
 
-        # Get the observation id
+        # Get the observation id for this data file id
         sql = """
         SELECT observationId FROM DataFile WHERE dataFileId=%s
          """
         df = pd.read_sql(sql, con=self._ssda_connection, params=(data_file_id,))
         if len(df) > 0:
             return int(df["observationId"][0])
-        else:
-            return None
+
+        # No observation id was found
+        return None
 
     # Observation ---------------------------------------------------------------- End
 
@@ -895,7 +923,7 @@ class DatabaseUpdate:
         # Get the target type id
         if target.target_type is not None:
             target_type_id_sql = """
-                      SELECT targetTypeId FROM TargetType WHERE numericValue = %s
+                      SELECT targetTypeId FROM TargetType WHERE numericCode = %s
                 """
             target_type_id_df = pd.read_sql(
                 sql=target_type_id_sql, con=ssda_connect(), params=(target.target_type,)
@@ -977,7 +1005,8 @@ class DatabaseUpdate:
                 path,
                 targetId,
                 size,
-                observationId
+                observationId,
+                instrumentId
               )
         VALUES (%(data_category_id)s,
                 %(start_time)s,
@@ -985,7 +1014,8 @@ class DatabaseUpdate:
                 %(path)s,
                 %(target_id)s,
                 %(size)s,
-                %(observation_id)s)
+                %(observation_id)s,
+                %(instrument_id)s)
         """
         params = dict(
             data_category_id=properties.data_category_id,
@@ -995,6 +1025,7 @@ class DatabaseUpdate:
             target_id=target_id,
             size=properties.size,
             observation_id=observation_id,
+            instrument_id=properties.instrument_id,
         )
         self.cursor.execute(sql, params)
 
@@ -1088,12 +1119,15 @@ class DatabaseUpdate:
         start_time = self.fits_data.start_time()
         size = self.fits_data.file_size
         data_category_id = self.fits_data.data_category().id()
+        instrument = Instrument(self.fits_data.instrument_name())
+        instrument_id = instrument.id()
 
         return DataFileProperties(name=name,
                                   path=path,
                                   start_time=start_time,
                                   size=size,
-                                  data_category_id=data_category_id)
+                                  data_category_id=data_category_id,
+                                  instrument_id=instrument_id)
 
     def fits_file_path_for_db(self):
         """
@@ -1165,7 +1199,7 @@ class DatabaseUpdate:
         preview_files = self.fits_data.create_preview_files()
 
         # Enter the data for all preview files into the database
-        for index, preview_file in enumerate(preview_files):
+        for index, (preview_file, preview_type) in enumerate(preview_files):
             # Collect the preview data
             base_dir_path_length = len(os.environ["PREVIEW_BASE_DIR"])
             name = os.path.basename(preview_file)
@@ -1179,14 +1213,19 @@ class DatabaseUpdate:
                 sql = """
                 INSERT INTO DataPreview(
                         dataFileId,
-                        previewOrder,
-                        previewFileName,
-                        path
+                        dataPreviewOrder,
+                        dataPreviewFileName,
+                        path,
+                        dataPreviewTypeId
                 )
-                VALUES (%(data_file_id)s, %(preview_order)s, %(name)s, %(path)s)
+                VALUES (%(data_file_id)s, %(preview_order)s, %(name)s, %(path)s, %(preview_type_id)s)
                 """
                 params = dict(
-                    data_file_id=data_file_id, preview_order=preview_order, name=name, path=path
+                    data_file_id=data_file_id,
+                    preview_order=preview_order,
+                    name=name,
+                    path=path,
+                    preview_type_id=preview_type.id()
                 )
                 self.cursor.execute(sql, params)
 
@@ -1260,15 +1299,15 @@ class DatabaseUpdate:
         data_file_id = self.data_file_id(True)
 
         sql = """
-        SELECT dataFileId, previewOrder
+        SELECT dataFileId, dataPreviewOrder
                FROM DataPreview
-        WHERE dataFileId=%(data_file_id)s AND previewOrder=%(order)s
+        WHERE dataFileId=%(data_file_id)s AND dataPreviewOrder=%(order)s
         """
         params = dict(data_file_id=data_file_id, order=order)
         df = pd.read_sql(sql, con=self._ssda_connection, params=params)
 
         if len(df) > 0:
-            return int(df["dataFileId"][0]), int(df["previewOrder"][0])
+            return int(df["dataFileId"][0]), int(df["dataPreviewOrder"][0])
         else:
             return None
 
@@ -1404,6 +1443,7 @@ class DatabaseUpdate:
         """
 
         telescope_id = self.fits_data.telescope().id()
+
         instrument_details_file = self.fits_data.instrument_details_file()
         header_values = {}
         with open(instrument_details_file, "r") as fin:

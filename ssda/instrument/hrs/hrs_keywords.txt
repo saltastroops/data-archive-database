@@ -33,7 +33,7 @@ FOC-RMIR      focusRedArm
 #  GAIN          gain
 GAINSET       gainSet
 I2STAGE       iodenStagePosition
-INSTRUME      instrumentName
+# INSTRUME      instrumentName
 LST-OBS       lstObservation
 NAMPS         numberOfAmplifiersUsed
 NCCDS         numberOfCcdsInDetector

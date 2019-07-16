@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from astropy.io import fits
 from datetime import date, datetime
 from enum import Enum
-from typing import List, NamedTuple, Optional, Any
+from typing import Any, List, NamedTuple, Optional, Tuple
 
 from astropy.io.fits import ImageHDU, PrimaryHDU
 from ssda.connection import ssda_connect
@@ -49,6 +49,38 @@ class DataCategory(Enum):
             )
 
         return int(df["dataCategoryId"][0])
+
+
+class DataPreviewType(Enum):
+    """
+    Enumeration of the data preview types.
+
+    The values must be the same as those of the dataPreviewType column in the
+    DataPreviewType table.
+
+    """
+
+    HEADER = 'Header'
+    IMAGE = "Image"
+
+    def id(self) -> int:
+        """
+        The id of this data preview type.
+
+        Returns
+        -------
+        id : int
+            The id.
+
+        """
+
+        sql = """
+        SELECT dataPreviewTypeId FROM DataPreviewType WHERE dataPreviewType=%s
+        """
+        df = pd.read_sql(sql, con=ssda_connect(), params=(self.value,))
+        if len(df) == 0:
+            raise ValueError('There is no database entry for the preview type {}'.format(self.value))
+        return int(df['dataPreviewTypeId'])
 
 
 class PrincipalInvestigator(NamedTuple):
@@ -158,7 +190,7 @@ class InstrumentFitsData(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def create_preview_files(self) -> List[str]:
+    def create_preview_files(self) -> List[Tuple[str, DataPreviewType]]:
         """
         Create the preview files for the FITS file.
 
@@ -242,6 +274,22 @@ class InstrumentFitsData(ABC):
         -------
         column : str
             The column name.
+
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def instrument_name(self) -> str:
+        """
+        The name of the instrument used for taking the data.
+
+        The name must be one of the values of the Instrument enumeration.
+
+        Returns
+        -------
+        column : str
+            The instrument name.
 
         """
 
@@ -395,6 +443,20 @@ class InstrumentFitsData(ABC):
         -------
         title : str
             The proposal title.
+
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def public_from(self) -> date:
+        """
+        The date when the data becomes public.
+
+        Returns
+        -------
+        public : date
+            Date when the data becomes public.
 
         """
 
