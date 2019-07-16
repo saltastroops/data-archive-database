@@ -18,6 +18,7 @@ pandas = "*"
 pillow = "*"
 PyMySQL = "*"
 python-dateutil = "*"
+raven = "*"
 cryptography = "*"
 
 [requires]
