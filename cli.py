@@ -5,7 +5,7 @@ import click
 from datetime import datetime, timedelta
 import logging
 from typing import Optional, Set, Tuple
-from raven import Client
+import sentry_sdk
 
 import ssda.database_update
 from ssda.instrument.instrument import Instrument
@@ -15,6 +15,8 @@ from ssda.database_update import UpdateAction, fits_data_from_date_range_gen, \
 INSTRUMENTS = [instrument.value for instrument in Instrument]
 
 TABLES = ['Observation', 'Proposal']
+if os.environ.get('SENTRY_DSN'):
+    sentry_sdk.init(os.environ.get('SENTRY_DSN'))
 
 
 class DateWithKeywordsParamType(click.ParamType):
@@ -362,10 +364,4 @@ def delete(end: datetime, file: str, force: bool, instruments: Tuple[str], start
 
 
 if __name__ == '__main__':
-    try:
-        cli()
-    except:
-        if os.environ.get('SENTRY_DSN'):
-            client = Client(os.environ.get('SENTRY_DSN')).capture_exceptions()
-        else:
-            traceback.print_exc()
+    cli()
