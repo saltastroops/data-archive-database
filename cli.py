@@ -1,17 +1,23 @@
+import os
+import traceback
+
 import click
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 import logging
-from typing import Generator, Optional, Set, Tuple
+from typing import Optional, Set, Tuple
+import sentry_sdk
 
 import ssda.database_update
 from ssda.instrument.instrument import Instrument
-from ssda.instrument.instrument_fits_data import InstrumentFitsData
 from ssda.database_update import UpdateAction, fits_data_from_date_range_gen, \
     fits_data_from_file_gen
 
 INSTRUMENTS = [instrument.value for instrument in Instrument]
 
 TABLES = ['Observation', 'Proposal']
+if os.environ.get('SENTRY_DSN'):
+    sentry_sdk.init(os.environ.get('SENTRY_DSN'))
+
 
 class DateWithKeywordsParamType(click.ParamType):
     """
@@ -37,7 +43,8 @@ class DateWithKeywordsParamType(click.ParamType):
         try:
             return datetime.strptime(value, '%Y-%m-%d').date()
         except ValueError:
-            self.fail(f'{value} is neither a date of the form yyyy-mm-dd, nor the string yesterday, nor the string lasty-year.')
+            self.fail(f'{value} is neither a date of the form yyyy-mm-dd, nor the string yesterday, nor the '
+                      f'string last-year.')
 
 
 def validate_options(start: Optional[datetime], end: Optional[datetime], file: Optional[str], instruments: Set[str]):
@@ -80,7 +87,8 @@ def validate_options(start: Optional[datetime], end: Optional[datetime], file: O
 
     # Either a date range or a FITS file must be specified
     if not start and not end:
-        raise Exception('You must either specify a date range (with the --start/--end options) or a FITS file (with the --file option).')
+        raise Exception('You must either specify a date range (with the --start/--end options) or '
+                        'a FITS file (with the --file option).')
 
     # Exactly one instrument must be specified if the --file option is used
     if file and len(set(instruments)) != 1:
@@ -95,7 +103,8 @@ def validate_options(start: Optional[datetime], end: Optional[datetime], file: O
         raise Exception('The --start and --end options do not allow future dates.')
 
 
-def update_database(action: UpdateAction, start: datetime, end: datetime, file: str, instruments: Tuple[str], tables: Tuple[str] = None):
+def update_database(action: UpdateAction, start: datetime, end: datetime, file: str, instruments: Tuple[str],
+                    tables: Tuple[str] = None):
     """
     Update the database by inserting, updating or deleting entries.
 
@@ -142,7 +151,8 @@ def update_database(action: UpdateAction, start: datetime, end: datetime, file: 
 
         # Create a generator for the FITS data
         if start and end:
-            logging.info('Files from {start} to {end} are considered.'.format(start=start.strftime('%d %b %Y'), end=end.strftime('%d %b %Y')))
+            logging.info('Files from {start} to {end} are considered.'.format(start=start.strftime('%d %b %Y'),
+                                                                              end=end.strftime('%d %b %Y')))
             fits_data_gen = fits_data_from_date_range_gen(start_date=start,
                                                           end_date=end,
                                                           instruments=set(instruments))
@@ -217,7 +227,6 @@ def insert(end: datetime, file: str, instruments: Tuple[str], start: datetime):
         Start date of the last night to consider.
     file : str
         FITS file to consider.
-    force
     instruments : tuple of str
         Instruments to consider.
     start : datetime

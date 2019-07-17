@@ -18,6 +18,7 @@ pandas = "*"
 pillow = "*"
 PyMySQL = "*"
 python-dateutil = "*"
+sentry-sdk = "*"
 cryptography = "*"
 
 [requires]
