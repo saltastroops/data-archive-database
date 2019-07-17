@@ -4,7 +4,7 @@ from dateutil import parser
 import glob
 import os
 import pandas as pd
-from typing import List, Optional, Any
+from typing import Any, List, Optional, Tuple
 
 from ssda.connection import sdb_connect
 from ssda.institution import Institution
@@ -13,45 +13,20 @@ from ssda.instrument.instrument_fits_data import (
     PrincipalInvestigator,
     Target,
     DataCategory,
-)
+    DataPreviewType)
 from ssda.instrument.salt_instruments import SALTInstruments
 
 from ssda.observation_status import ObservationStatus
 from ssda.telescope import Telescope
 
-from ssda.imaging import save_image_data
+from ssda.images import save_image_data
 
 
 class HrsFitsData(InstrumentFitsData):
     def __init__(self, fits_file: str):
         InstrumentFitsData.__init__(self, fits_file)
 
-    @staticmethod
-    def fits_files(night: date) -> List[str]:
-        """
-        The list of FITS files generated for the instrument during a night.
-
-        Parameters
-        ----------
-        night : date
-            Start date of the night for which the FITS files are returned.
-
-        Returns
-        -------
-        files : list of str
-            The list of file paths.
-
-        """
-
-        data_directory = "{base_dir}/salt/{year}/{monthday}/hrs/raw".format(
-            base_dir=os.environ["FITS_BASE_DIR"],
-            year=night.strftime("%Y"),
-            monthday=night.strftime("%m%d"),
-        )
-
-        return sorted(glob.iglob(os.path.join(data_directory, "*.fits")))
-
-    def create_preview_files(self) -> List[str]:
+    def create_preview_files(self) -> List[Tuple[str, DataPreviewType]]:
         """
         Create the preview files for the FITS file.
 
@@ -63,25 +38,20 @@ class HrsFitsData(InstrumentFitsData):
         """
 
         # Create the required directories
-        salt_dir = os.path.join(os.environ["PREVIEW_BASE_DIR"], "salt")
-        if not os.path.exists(salt_dir):
-            os.mkdir(salt_dir)
-        year_dir = os.path.join(salt_dir, str(self.night().year))
-        if not os.path.exists(year_dir):
-            os.mkdir(year_dir)
-        day_dir = os.path.join(year_dir, self.night().strftime("%m%d"))
-        if not os.path.exists(day_dir):
-            os.mkdir(day_dir)
-        hrs_dir = os.path.join(day_dir, "hrs")
+        hrs_dir = os.path.join(os.environ["PREVIEW_BASE_DIR"],
+                               "salt",
+                               str(self.night().year),
+                               self.night().strftime("%m%d"),
+                               "hrs")
         if not os.path.exists(hrs_dir):
-            os.mkdir(hrs_dir)
+            os.makedirs(hrs_dir)
 
         # Create the header content file
         basename = os.path.basename(self.file_path)[:-5]
         header_content_file = os.path.join(hrs_dir, basename + "-header.txt")
         with open(header_content_file, "w") as f:
             f.write(self.header_text)
-        preview_files = [header_content_file]
+        preview_files = [(header_content_file, DataPreviewType.HEADER)]
 
         # Create the image files
         preview_files += save_image_data(self.file_path, hrs_dir)
@@ -102,6 +72,31 @@ class HrsFitsData(InstrumentFitsData):
         # TODO: What about standards?
 
         return SALTInstruments.data_category(self.header.get("OBJECT"))
+
+    @staticmethod
+    def fits_files(night: date) -> List[str]:
+        """
+        The list of FITS files generated for the instrument during a night.
+
+        Parameters
+        ----------
+        night : date
+            Start date of the night for which the FITS files are returned.
+
+        Returns
+        -------
+        files : list of str
+            The list of file paths.
+
+        """
+
+        data_directory = "{base_dir}/salt/data/{year}/{monthday}/hrs/raw".format(
+            base_dir=os.environ["FITS_BASE_DIR"],
+            year=night.strftime("%Y"),
+            monthday=night.strftime("%m%d"),
+        )
+
+        return sorted(glob.iglob(os.path.join(data_directory, "*.fits")))
 
     def institution(self) -> Institution:
         """
@@ -163,6 +158,21 @@ class HrsFitsData(InstrumentFitsData):
         """
 
         return "hrsId"
+
+    def instrument_name(self) -> str:
+        """
+        The name of the instrument used for taking the data.
+
+        The name must be one of the values of the Instrument enumeration.
+
+        Returns
+        -------
+        column : str
+            The instrument name.
+
+        """
+
+        return "HRS"
 
     def instrument_table(self) -> str:
         """
@@ -321,6 +331,19 @@ class HrsFitsData(InstrumentFitsData):
         df = pd.read_sql(sql, con=sdb_connect(), params=(proposal_code,))
 
         return df["Title"][0]
+
+    def public_from(self) -> date:
+        """
+        The date when the data becomes public.
+
+        Returns
+        -------
+        public : date
+            Date when the data becomes public.
+
+        """
+
+        return SALTInstruments.public_from(self.telescope_observation_id())
 
     def start_time(self) -> datetime:
         """

@@ -2,7 +2,7 @@ import pandas as pd
 from astropy.coordinates import Angle
 from typing import List, Optional, Any
 from ssda.connection import sdb_connect
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from ssda.instrument.instrument_fits_data import (
     Target,
     PrincipalInvestigator,
@@ -146,8 +146,8 @@ class SALTInstruments:
             result = cursor.fetchone()
             if result is None:
                 return False
-            release_date = result["ReleaseDate"]
-            return release_date > datetime.now().date()
+            public_from = result["ReleaseDate"]
+            return public_from > datetime.now().date()
 
     @staticmethod
     def observation_status(block_visit_id: Optional[str]) -> ObservationStatus:
@@ -270,6 +270,33 @@ class SALTInstruments:
         return df["Title"][0]
 
     @staticmethod
+    def public_from(telescope_observation_id) -> date:
+        """
+        Indicate when the the became public.
+
+        Returns
+        -------
+        date :
+            When data became public.
+
+        """
+
+        # TODO: Will have to be updated
+        sql = """
+            SELECT ReleaseDate FROM Block
+                JOIN Proposal ON( Block.Proposal_Id = Proposal.Proposal_Id)
+                JOIN ProposalGeneralInfo ON (Proposal.ProposalCode_Id = ProposalGeneralInfo.ProposalCode_Id)
+            WHERE Block_Id=%s
+            """
+        with sdb_connect().cursor() as cursor:
+            cursor.execute(sql, (telescope_observation_id,))
+            result = cursor.fetchone()
+            if result is None:
+                return (datetime.now()).date()
+            public_from = result["ReleaseDate"]
+            return public_from
+
+    @staticmethod
     def target(
             ra_header_value: Optional[str],
             dec_header_value: Optional[str],
@@ -328,8 +355,9 @@ class SALTInstruments:
 
         """
 
-        # No target type can be determined if there is no observation linked to the target
-        if block_visit_id is None or block_visit_id:
+        # No target type can be determined if there is no observation linked to the
+        # target
+        if block_visit_id is None or block_visit_id=='':
             return None
 
         # Get the target type from the SDB

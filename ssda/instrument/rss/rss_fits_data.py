@@ -3,51 +3,25 @@ from datetime import date, datetime
 from dateutil import parser
 import glob
 import os
-from typing import List, Optional, Any
+from typing import Any, List, Optional, Tuple
 
+from ssda.images import save_image_data
 from ssda.institution import Institution
 from ssda.instrument.instrument_fits_data import (
     InstrumentFitsData,
     PrincipalInvestigator,
     DataCategory,
-    Target)
+    Target, DataPreviewType)
 from ssda.instrument.salt_instruments import SALTInstruments
 from ssda.observation_status import ObservationStatus
 from ssda.telescope import Telescope
-
-from ssda.imaging import save_image_data
 
 
 class RssFitsData(InstrumentFitsData):
     def __init__(self, fits_file: str):
         InstrumentFitsData.__init__(self, fits_file)
 
-    @staticmethod
-    def fits_files(night: date) -> List[str]:
-        """
-        The list of FITS files generated for the instrument during a night.
-
-        Parameters
-        ----------
-        night : date
-            Start date of the night for which the FITS files are returned.
-
-        Returns
-        -------
-        files : list of str
-            The list of file paths.
-
-        """
-
-        data_directory = "{base_dir}/salt/{year}/{monthday}/rss/raw".format(
-            base_dir=os.environ["FITS_BASE_DIR"],
-            year=night.strftime("%Y"),
-            monthday=night.strftime("%m%d"),
-        )
-
-        return sorted(glob.iglob(os.path.join(data_directory, "*.fits")))
-
-    def create_preview_files(self) -> List[str]:
+    def create_preview_files(self) -> List[Tuple[str, DataPreviewType]]:
         """
         Create the preview files for the FITS file.
 
@@ -59,25 +33,20 @@ class RssFitsData(InstrumentFitsData):
         """
 
         # Create the required directories
-        salt_dir = os.path.join(os.environ["PREVIEW_BASE_DIR"], "salt")
-        if not os.path.exists(salt_dir):
-            os.mkdir(salt_dir)
-        year_dir = os.path.join(salt_dir, str(self.night().year))
-        if not os.path.exists(year_dir):
-            os.mkdir(year_dir)
-        day_dir = os.path.join(year_dir, self.night().strftime("%m%d"))
-        if not os.path.exists(day_dir):
-            os.mkdir(day_dir)
-        rss_dir = os.path.join(day_dir, "rss")
+        rss_dir = os.path.join(os.environ["PREVIEW_BASE_DIR"],
+                               "salt",
+                               str(self.night().year),
+                               self.night().strftime("%m%d"),
+                               "rss")
         if not os.path.exists(rss_dir):
-            os.mkdir(rss_dir)
+            os.makedirs(rss_dir)
 
         # Create the header content file
         basename = os.path.basename(self.file_path)[:-5]
         header_content_file = os.path.join(rss_dir, basename + "-header.txt")
         with open(header_content_file, "w") as f:
             f.write(self.header_text)
-        preview_files = [header_content_file]
+        preview_files = [(header_content_file, DataPreviewType.HEADER)]
 
         # Create the image files
         preview_files += save_image_data(self.file_path, rss_dir)
@@ -96,6 +65,31 @@ class RssFitsData(InstrumentFitsData):
         """
 
         return SALTInstruments.data_category(object_name=self.header.get("OBJECT"))
+
+    @staticmethod
+    def fits_files(night: date) -> List[str]:
+        """
+        The list of FITS files generated for the instrument during a night.
+
+        Parameters
+        ----------
+        night : date
+            Start date of the night for which the FITS files are returned.
+
+        Returns
+        -------
+        files : list of str
+            The list of file paths.
+
+        """
+
+        data_directory = "{base_dir}/salt/data/{year}/{monthday}/rss/raw".format(
+            base_dir=os.environ["FITS_BASE_DIR"],
+            year=night.strftime("%Y"),
+            monthday=night.strftime("%m%d"),
+        )
+
+        return sorted(glob.iglob(os.path.join(data_directory, "*.fits")))
 
     def institution(self) -> Institution:
         """
@@ -157,6 +151,21 @@ class RssFitsData(InstrumentFitsData):
         """
 
         return "rssId"
+
+    def instrument_name(self) -> str:
+        """
+        The name of the instrument used for taking the data.
+
+        The name must be one of the values of the Instrument enumeration.
+
+        Returns
+        -------
+        column : str
+            The instrument name.
+
+        """
+
+        return "RSS"
 
     def instrument_table(self) -> str:
         """
@@ -301,6 +310,19 @@ class RssFitsData(InstrumentFitsData):
 
         """
         return SALTInstruments.proposal_title(self.proposal_code())
+
+    def public_from(self) -> date:
+        """
+        The date when the data becomes public.
+
+        Returns
+        -------
+        public : date
+            Date when the data becomes public.
+
+        """
+
+        return SALTInstruments.public_from(self.proposal_code())
 
     def start_time(self) -> datetime:
         """

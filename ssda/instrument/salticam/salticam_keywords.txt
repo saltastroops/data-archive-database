@@ -53,7 +53,7 @@ FILTER         filterName
 GAIN1          gain1
 GAINSET        gainSet
 IMAGEID        imageId
-INSTRUME       instrumentName
+# INSTRUME       instrumentName
 # JD             julianDate
 LST-OBS        lstObservation
 NCCDS          numberOfCcds
