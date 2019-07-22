@@ -377,7 +377,7 @@ CREATE TABLE `RSS` (
     `objectName` VARCHAR(255) DEFAULT NULL,
     `observationMode` VARCHAR(255) DEFAULT NULL,
     `observationType` VARCHAR(255) DEFAULT NULL,
-    `pfsiControlSystemVersion` VARCHAR(255) DEFAULT NULL,
+    `pfisControlSystemVersion` VARCHAR(255) DEFAULT NULL,
     `pixelScale` FLOAT DEFAULT NULL,
     `polarizationConfig` VARCHAR(255) DEFAULT NULL,
     `pfisProcedure` VARCHAR(255) DEFAULT NULL,
