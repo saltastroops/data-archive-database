@@ -13,7 +13,8 @@ from ssda.instrument.instrument_fits_data import (
     PrincipalInvestigator,
     Target,
     DataCategory,
-    DataPreviewType)
+    DataPreviewType,
+)
 from ssda.instrument.salt_instruments import SALTInstruments
 
 from ssda.observation_status import ObservationStatus
@@ -38,11 +39,13 @@ class HrsFitsData(InstrumentFitsData):
         """
 
         # Create the required directories
-        hrs_dir = os.path.join(os.environ["PREVIEW_BASE_DIR"],
-                               "salt",
-                               str(self.night().year),
-                               self.night().strftime("%m%d"),
-                               "hrs")
+        hrs_dir = os.path.join(
+            os.environ["PREVIEW_BASE_DIR"],
+            "salt",
+            str(self.night().year),
+            self.night().strftime("%m%d"),
+            "hrs",
+        )
         if not os.path.exists(hrs_dir):
             os.makedirs(hrs_dir)
 
@@ -386,7 +389,7 @@ class HrsFitsData(InstrumentFitsData):
             ra_header_value=self.header.get("RA"),
             dec_header_value=self.header.get("DEC"),
             block_visit_id=self.header.get("BVISITID"),
-            object_name=self.header.get("OBJECT", "")
+            object_name=self.header.get("OBJECT", ""),
         )
 
     def telescope(self) -> Telescope:

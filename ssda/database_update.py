@@ -17,7 +17,9 @@ class UpdateAction(Enum):
     UPDATE = "Update"
 
 
-def fits_data_from_date_range_gen(start_date: date, end_date: date, instruments: Set[Instrument]) -> Generator[InstrumentFitsData, None, None]:
+def fits_data_from_date_range_gen(
+    start_date: date, end_date: date, instruments: Set[Instrument]
+) -> Generator[InstrumentFitsData, None, None]:
     """
     A generator for returning InstrumentFitsData instances for a date range.
 
@@ -67,7 +69,9 @@ def fits_data_from_date_range_gen(start_date: date, end_date: date, instruments:
         night += dt
 
 
-def fits_data_from_file_gen(fits_file: str, instrument: Instrument) -> Generator[InstrumentFitsData, None, None]:
+def fits_data_from_file_gen(
+    fits_file: str, instrument: Instrument
+) -> Generator[InstrumentFitsData, None, None]:
     """
     A generator for returning an InstrumentFitsData instance for a FITS file.
 
@@ -91,7 +95,9 @@ def fits_data_from_file_gen(fits_file: str, instrument: Instrument) -> Generator
     yield fits_data_class(fits_file)
 
 
-def update_database(action: UpdateAction, fits_data: InstrumentFitsData, tables: Set[str]):
+def update_database(
+    action: UpdateAction, fits_data: InstrumentFitsData, tables: Set[str]
+):
     """
     Perform a database update from FITS data.
 
@@ -107,14 +113,14 @@ def update_database(action: UpdateAction, fits_data: InstrumentFitsData, tables:
 
     """
 
-    status = ''
+    status = ""
     if action == UpdateAction.INSERT:
-        status = 'Inserting'
+        status = "Inserting"
     elif action == UpdateAction.UPDATE:
-        status = 'Updating'
+        status = "Updating"
     elif action == UpdateAction.DELETE:
-        status = 'Deleting'
-    status_message = '{status} {path}'.format(status=status, path=fits_data.file_path)
+        status = "Deleting"
+    status_message = "{status} {path}".format(status=status, path=fits_data.file_path)
     logging.info(status_message)
 
     if action == UpdateAction.INSERT:
@@ -188,9 +194,9 @@ def update(fits_data: InstrumentFitsData, tables: Set[str]) -> None:
     db_update = DatabaseUpdate(fits_data)
     try:
         # Update the database from the FITS file content
-        if len(tables) == 0 or 'Proposal' in tables:
+        if len(tables) == 0 or "Proposal" in tables:
             db_update.update_proposal()
-        if len(tables) == 0 or 'Observation' in tables:
+        if len(tables) == 0 or "Observation" in tables:
             db_update.update_observation()
         if len(tables) == 0:
             target_id = db_update.update_target()
@@ -404,7 +410,11 @@ class DatabaseUpdate:
         # Check that the proposal exists already
         proposal_id = self.proposal_id()
         if proposal_id is None:
-            raise ValueError('There exists no proposal with proposal code {}'.format(properties.proposal_code))
+            raise ValueError(
+                "There exists no proposal with proposal code {}".format(
+                    properties.proposal_code
+                )
+            )
 
         # Update the proposal
         sql = """
@@ -415,12 +425,14 @@ class DatabaseUpdate:
                             institutionId=%(institution_id)s
         WHERE proposalId=%(proposal_id)s
         """
-        params = dict(proposal_code=properties.proposal_code,
-                      given_name=properties.pi_given_name,
-                      family_name=properties.pi_family_name,
-                      proposal_title=properties.proposal_title,
-                      institution_id=properties.institution_id,
-                      proposal_id=proposal_id)
+        params = dict(
+            proposal_code=properties.proposal_code,
+            given_name=properties.pi_given_name,
+            family_name=properties.pi_family_name,
+            proposal_title=properties.proposal_title,
+            institution_id=properties.institution_id,
+            proposal_id=proposal_id,
+        )
         self.cursor.execute(sql, params)
 
         # Return the proposal id
@@ -453,8 +465,10 @@ class DatabaseUpdate:
                FROM Observation
         WHERE proposalId=%s
         """
-        observations_df = pd.read_sql(observations_sql, con=self._ssda_connection, params=(proposal_id,))
-        if observations_df['observationsCount'][0] > 0:
+        observations_df = pd.read_sql(
+            observations_sql, con=self._ssda_connection, params=(proposal_id,)
+        )
+        if observations_df["observationsCount"][0] > 0:
             return
 
         # Delete the proposal
@@ -491,11 +505,13 @@ class DatabaseUpdate:
         if proposal_code is None:
             return None
 
-        return ProposalProperties(proposal_code=proposal_code,
-                                  pi_given_name=given_name,
-                                  pi_family_name=family_name,
-                                  proposal_title=proposal_title,
-                                  institution_id=institution.id())
+        return ProposalProperties(
+            proposal_code=proposal_code,
+            pi_given_name=given_name,
+            pi_family_name=family_name,
+            proposal_title=proposal_title,
+            institution_id=institution.id(),
+        )
 
     def proposal_id(self) -> Optional[int]:
         """
@@ -635,14 +651,16 @@ class DatabaseUpdate:
             telescope_observation_id=properties.telescope_observation_id,
             night=properties.night,
             observation_status_id=properties.observation_status_id,
-            observation_id=observation_id
+            observation_id=observation_id,
         )
         self.cursor.execute(update_sql, update_params)
 
         # Return the observation id
         return observation_id
 
-    def delete_observation(self, observation_id: Optional[int], data_file_id: Optional[int]) -> None:
+    def delete_observation(
+        self, observation_id: Optional[int], data_file_id: Optional[int]
+    ) -> None:
         """
         Delete the observation for an observation id.
 
@@ -670,11 +688,14 @@ class DatabaseUpdate:
         WHERE observationId=%(observation_id)s AND dataFileId!=%(data_file_id)s
         """
         other_data_files_params = dict(
-            observation_id=observation_id,
-            data_file_id=data_file_id
+            observation_id=observation_id, data_file_id=data_file_id
         )
-        other_data_files_df = pd.read_sql(other_data_files_sql, con=self._ssda_connection, params=other_data_files_params)
-        if other_data_files_df['otherFilesCount'][0] > 0:
+        other_data_files_df = pd.read_sql(
+            other_data_files_sql,
+            con=self._ssda_connection,
+            params=other_data_files_params,
+        )
+        if other_data_files_df["otherFilesCount"][0] > 0:
             return
 
         # Delete the observation entry
@@ -702,13 +723,15 @@ class DatabaseUpdate:
         night = self.fits_data.night()
         observation_status_id = self.fits_data.observation_status().id()
 
-        return ObservationProperties(proposal_code=proposal_code,
-                                     proposal_id=proposal_id,
-                                     telescope_id=telescope_id,
-                                     telescope=telescope,
-                                     telescope_observation_id=telescope_observation_id,
-                                     night=night,
-                                     observation_status_id=observation_status_id)
+        return ObservationProperties(
+            proposal_code=proposal_code,
+            proposal_id=proposal_id,
+            telescope_id=telescope_id,
+            telescope=telescope,
+            telescope_observation_id=telescope_observation_id,
+            night=night,
+            observation_status_id=observation_status_id,
+        )
 
     def observation_id(self) -> Optional[int]:
         """
@@ -739,10 +762,15 @@ class DatabaseUpdate:
         WHERE telescopeId=%(telescope_id)s
               AND telescopeObservationId=%(telescope_observation_id)s
         """
-        telescope_params = dict(telescope_id=telescope.id(), telescope_observation_id=telescope_observation_id)
-        telescope_df = pd.read_sql(telescope_sql, con=self._ssda_connection, params=telescope_params)
+        telescope_params = dict(
+            telescope_id=telescope.id(),
+            telescope_observation_id=telescope_observation_id,
+        )
+        telescope_df = pd.read_sql(
+            telescope_sql, con=self._ssda_connection, params=telescope_params
+        )
         if len(telescope_df) > 0:
-            return int(telescope_df['observationId'][0])
+            return int(telescope_df["observationId"][0])
 
         # Get the data file id
         data_file_id = self.data_file_id(False)
@@ -851,7 +879,7 @@ class DatabaseUpdate:
         # If there was a target before, but there is none now, we have to delete the
         # target entry.
         if target_id is not None and properties is None:
-             self.delete_target()
+            self.delete_target()
 
         # If there is no target, there is nothing left to do
         if properties is None:
@@ -867,12 +895,14 @@ class DatabaseUpdate:
                    targetTypeId=%(target_type_id)s
         WHERE targetId=%(target_id)s
         """
-        update_params = dict(name=properties.target.name,
-                             ra=properties.target.ra,
-                             dec=properties.target.dec,
-                             shifted_ra=properties.target.ra - 180,
-                             target_type_id=properties.target_type_id,
-                             target_id=target_id)
+        update_params = dict(
+            name=properties.target.name,
+            ra=properties.target.ra,
+            dec=properties.target.dec,
+            shifted_ra=properties.target.ra - 180,
+            target_type_id=properties.target_type_id,
+            target_id=target_id,
+        )
         self.cursor.execute(update_sql, update_params)
 
         # Return the target id
@@ -935,8 +965,7 @@ class DatabaseUpdate:
         else:
             target_type_id = None
 
-        return TargetProperties(target=target,
-                                target_type_id=target_type_id)
+        return TargetProperties(target=target, target_type_id=target_type_id)
 
     def target_id(self) -> Optional[int]:
         """
@@ -954,11 +983,15 @@ class DatabaseUpdate:
         path = self.fits_file_path_for_db()
         id_sql = """
             SELECT targetId FROM DataFile WHERE path=%s
-            """.format(path)
+            """.format(
+            path
+        )
         id_df = pd.read_sql(id_sql, con=self._ssda_connection, params=(path,))
         if len(id_df) == 0:
-            raise ValueError('There exists no DataFile entry for the path {}.'.format(path))
-        target_id = id_df['targetId'][0]
+            raise ValueError(
+                "There exists no DataFile entry for the path {}.".format(path)
+            )
+        target_id = id_df["targetId"][0]
         if target_id is not None:
             return int(target_id)
         else:
@@ -1066,13 +1099,15 @@ class DatabaseUpdate:
                    targetId=%(target_id)s
         WHERE dataFileId=%(data_file_id)s
         """
-        update_params = dict(name=properties.name,
-                             path=properties.path,
-                             start_time=properties.start_time,
-                             size=properties.size,
-                             data_category_id=properties.data_category_id,
-                             target_id=target_id,
-                             data_file_id=data_file_id)
+        update_params = dict(
+            name=properties.name,
+            path=properties.path,
+            start_time=properties.start_time,
+            size=properties.size,
+            data_category_id=properties.data_category_id,
+            target_id=target_id,
+            data_file_id=data_file_id,
+        )
         self.cursor.execute(update_sql, update_params)
 
         # Return the data file id
@@ -1119,12 +1154,14 @@ class DatabaseUpdate:
         instrument = Instrument(self.fits_data.instrument_name())
         instrument_id = instrument.id()
 
-        return DataFileProperties(name=name,
-                                  path=path,
-                                  start_time=start_time,
-                                  size=size,
-                                  data_category_id=data_category_id,
-                                  instrument_id=instrument_id)
+        return DataFileProperties(
+            name=name,
+            path=path,
+            start_time=start_time,
+            size=size,
+            data_category_id=data_category_id,
+            instrument_id=instrument_id,
+        )
 
     def fits_file_path_for_db(self):
         """
@@ -1170,7 +1207,11 @@ class DatabaseUpdate:
             return int(df["dataFileId"][0])
         else:
             if must_exist:
-                raise ValueError('There exists no DataFile entry for the path {}.'.format(self.fits_data.file_path))
+                raise ValueError(
+                    "There exists no DataFile entry for the path {}.".format(
+                        self.fits_data.file_path
+                    )
+                )
             return None
 
     # DataFile ------------------------------------------------------------------- End
@@ -1222,7 +1263,7 @@ class DatabaseUpdate:
                     preview_order=preview_order,
                     name=name,
                     path=path,
-                    preview_type_id=preview_type.id()
+                    preview_type_id=preview_type.id(),
                 )
                 self.cursor.execute(sql, params)
 
@@ -1259,13 +1300,17 @@ class DatabaseUpdate:
         existing_sql = """
         SELECT path FROM DataPreview WHERE dataFileId=%s
         """
-        existing_df = pd.read_sql(existing_sql, con=self._ssda_connection, params=(data_file_id,))
-        existing_paths = existing_df['path']
+        existing_df = pd.read_sql(
+            existing_sql, con=self._ssda_connection, params=(data_file_id,)
+        )
+        existing_paths = existing_df["path"]
 
         # Remove the existing preview files
         for path in existing_paths:
             try:
-                os.remove(os.path.join(os.environ["PREVIEW_BASE_DIR"], path.lstrip('/')))
+                os.remove(
+                    os.path.join(os.environ["PREVIEW_BASE_DIR"], path.lstrip("/"))
+                )
             except Exception as e:
                 pass
 
@@ -1384,7 +1429,11 @@ class DatabaseUpdate:
         # Get the instrument id
         instrument_id = self.instrument_id()
         if instrument_id is None:
-            raise ValueError('No instrument entry exists for the FITS file {}'.format(self.fits_data.file_path))
+            raise ValueError(
+                "No instrument entry exists for the FITS file {}".format(
+                    self.fits_data.file_path
+                )
+            )
 
         # Collect all the instrument details
         properties = self.instrument_properties()
@@ -1396,10 +1445,20 @@ class DatabaseUpdate:
         UPDATE {table}
                SET {update_set}
         WHERE {id_column}=%(instrument_id)s
-        """.format(table=table, update_set=', '.join(['{column}=%({column})s'.format(column=column) for column in columns]), id_column=self.fits_data.instrument_id_column())
+        """.format(
+            table=table,
+            update_set=", ".join(
+                ["{column}=%({column})s".format(column=column) for column in columns]
+            ),
+            id_column=self.fits_data.instrument_id_column(),
+        )
 
         # Collect the parameters
-        params = dict(data_file_id=data_file_id, telescope_id=properties.telescope_id, instrument_id=instrument_id)
+        params = dict(
+            data_file_id=data_file_id,
+            telescope_id=properties.telescope_id,
+            instrument_id=instrument_id,
+        )
         for column in columns:
             params[column] = properties.column_values[column]
 
@@ -1425,7 +1484,10 @@ class DatabaseUpdate:
         # Delete the instrument
         sql = """
         DELETE FROM {table} WHERE {id_column}=%s
-        """.format(table=self.fits_data.instrument_table(), id_column=self.fits_data.instrument_id_column())
+        """.format(
+            table=self.fits_data.instrument_table(),
+            id_column=self.fits_data.instrument_id_column(),
+        )
         self.cursor.execute(sql, (instrument_id,))
 
     def instrument_properties(self) -> InstrumentProperties:
@@ -1451,14 +1513,18 @@ class DatabaseUpdate:
                     continue
                 keyword, column = line.split()
                 raw_value = self.fits_data.header.get(keyword)
-                preprocessed_value = self.fits_data.preprocess_header_value(keyword, raw_value)
+                preprocessed_value = self.fits_data.preprocess_header_value(
+                    keyword, raw_value
+                )
                 column_values[column] = preprocessed_value
 
         # Add additional column values
         for key, value in self.fits_data.derived_values().items():
             column_values[key] = value
 
-        return InstrumentProperties(telescope_id=telescope_id, column_values=column_values)
+        return InstrumentProperties(
+            telescope_id=telescope_id, column_values=column_values
+        )
 
     def instrument_id(self) -> Optional[int]:
         """
@@ -1599,9 +1665,15 @@ class DatabaseUpdate:
                FROM Observation
         WHERE proposalId=%(proposal_id)s AND observationId!=%(observation_id)s
         """
-        other_observations_params = dict(proposal_id=proposal_id, observation_id=observation_id)
-        other_observations_df = pd.read_sql(other_observations_sql, con=self._ssda_connection, params= other_observations_params)
-        if other_observations_df['otherObservationsCount'][0] > 0:
+        other_observations_params = dict(
+            proposal_id=proposal_id, observation_id=observation_id
+        )
+        other_observations_df = pd.read_sql(
+            other_observations_sql,
+            con=self._ssda_connection,
+            params=other_observations_params,
+        )
+        if other_observations_df["otherObservationsCount"][0] > 0:
             return
 
         # Delete the proposal investigators for the proposal id

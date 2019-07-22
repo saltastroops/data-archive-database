@@ -60,7 +60,7 @@ class DataPreviewType(Enum):
 
     """
 
-    HEADER = 'Header'
+    HEADER = "Header"
     IMAGE = "Image"
 
     def id(self) -> int:
@@ -79,8 +79,10 @@ class DataPreviewType(Enum):
         """
         df = pd.read_sql(sql, con=ssda_connect(), params=(self.value,))
         if len(df) == 0:
-            raise ValueError('There is no database entry for the preview type {}'.format(self.value))
-        return int(df['dataPreviewTypeId'])
+            raise ValueError(
+                "There is no database entry for the preview type {}".format(self.value)
+            )
+        return int(df["dataPreviewTypeId"])
 
 
 class PrincipalInvestigator(NamedTuple):
@@ -163,7 +165,7 @@ class InstrumentFitsData(ABC):
 
         # Split the header into lines of 80 characters
         content = str(self.header)
-        lines = [content[i:i + 80] for i in range(0, len(content), 80)]
+        lines = [content[i : i + 80] for i in range(0, len(content), 80)]
 
         # Only include content up to the END line
         end_index = [line.strip() for line in lines].index("END")

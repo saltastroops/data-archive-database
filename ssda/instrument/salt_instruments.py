@@ -6,7 +6,7 @@ from datetime import date, datetime, timedelta
 from ssda.instrument.instrument_fits_data import (
     Target,
     PrincipalInvestigator,
-    DataCategory
+    DataCategory,
 )
 
 from ssda.observation_status import ObservationStatus
@@ -51,7 +51,7 @@ class SALTInstruments:
 
         """
 
-        if keyword.upper() == 'GAIN':
+        if keyword.upper() == "GAIN":
             return SALTInstruments.gain(value)
         else:
             return value
@@ -298,10 +298,11 @@ class SALTInstruments:
 
     @staticmethod
     def target(
-            ra_header_value: Optional[str],
-            dec_header_value: Optional[str],
-            block_visit_id: Optional[int],
-            object_name: Optional[str]) -> Optional[Target]:
+        ra_header_value: Optional[str],
+        dec_header_value: Optional[str],
+        block_visit_id: Optional[int],
+        object_name: Optional[str],
+    ) -> Optional[Target]:
         """
         The target specified in the FITS file.
 
@@ -357,7 +358,7 @@ class SALTInstruments:
 
         # No target type can be determined if there is no observation linked to the
         # target
-        if block_visit_id is None or block_visit_id=='':
+        if block_visit_id is None or block_visit_id == "":
             return None
 
         # Get the target type from the SDB
