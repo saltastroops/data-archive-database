@@ -403,9 +403,35 @@ CREATE TABLE `RSS` (
     `waveplateMachineState` VARCHAR(255) DEFAULT NULL,
     `polarimetryProcedurePattern` VARCHAR(255) DEFAULT NULL,
     `crossTalk` FLOAT DEFAULT NULL,
+    `rssModeId` INT(11) UNSIGNED NOT NULL COMMENT 'RSS mode.',
+    `rssFabryPerotModeId` INT(11) UNSIGNED COMMENT 'RSS mode.',
     PRIMARY KEY (`rssId`),
     KEY `fk_RSSDataFile_idx` (`dataFileId`),
     CONSTRAINT `fk_RSSDataFile` FOREIGN KEY (`dataFileId`) REFERENCES `DataFile` (`dataFileId`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/**
+ * RssFabryPerotMode
+ *
+ * Fabry-Perot mode, such as LR.
+ */
+DROP TABLE IF EXISTS `RssFabryPerotMode`;
+CREATE TABLE `RssFabryPerotMode` (
+    `rssFabryPerotModeId` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Primary key.',
+    `rssFabryPerotMode` VARCHAR(32) UNIQUE NOT NULL COMMENT 'RSS Fabry-Perot mode.',
+     PRIMARY KEY(`rssFabryPerotModeId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/**
+ * RssMode
+ *
+ * RSS mode, such as "Spectroscopy" or "FP Polarimetry".
+ */
+DROP TABLE IF EXISTS `RssMode`;
+CREATE TABLE `RssMode` (
+    `rssModeId` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Primary key.',
+    `rssMode` VARCHAR(32) UNIQUE NOT NULL COMMENT 'RSS mode.',
+    PRIMARY KEY(`rssModeId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /**
@@ -555,6 +581,14 @@ INSERT INTO Institution (institutionId, institutionName) VALUES (1, 'SAAO'), (2,
 -- Add the observation status values.
 
 INSERT INTO ObservationStatus (`status`) VALUES ('Accepted'), ('Rejected');
+
+-- Add the RSS modes.
+
+INSERT INTO RssMode (`rssMode`) VALUES ('Fabry Perot'), ('FP polarimetry'), ('Imaging'), ('MOS'), ('MOS polarimetry'), ('Polarimetric imaging'), ('Spectropolarimetry'), ('Spectroscopy');
+
+-- Add the RSS Fabry-Perot modes.
+
+INSERT INTO `RssFabryPerotMode` (`rssFabryPerotMode`) VALUES ('HR'), ('LR'), ('MR'), ('TF');
 
 -- Add the target types.
 

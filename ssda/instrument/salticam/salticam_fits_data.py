@@ -3,7 +3,7 @@ from datetime import date, datetime
 from dateutil import parser
 import glob
 import os
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from ssda.institution import Institution
 from ssda.instrument.instrument_fits_data import (
@@ -67,6 +67,19 @@ class SalticamFitsData(InstrumentFitsData):
         """
 
         return SALTInstruments.data_category(self.header.get("OBJECT"))
+
+    def derived_values(self) -> Dict[str, Any]:
+        """
+        Key-value pairs that are not in FITS header but are derived from it and should
+        be included in the instrument table.
+
+        Returns
+        -------
+        values : Dict[str, Any]
+            Key-value pairs derived from the FITS header.
+        """
+
+        return dict()
 
     @staticmethod
     def fits_files(night: date) -> List[str]:

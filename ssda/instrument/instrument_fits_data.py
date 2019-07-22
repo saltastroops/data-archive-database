@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from astropy.io import fits
 from datetime import date, datetime
 from enum import Enum
-from typing import Any, List, NamedTuple, Optional, Tuple
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 from astropy.io.fits import ImageHDU, PrimaryHDU
 from ssda.connection import ssda_connect
@@ -213,6 +213,20 @@ class InstrumentFitsData(ABC):
         category : DataCategory
             The data category.
 
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def derived_values(self) -> Dict[str, Any]:
+        """
+        Key-value pairs that are not in FITS header but are derived from it and should
+        be included in the instrument table.
+
+        Returns
+        -------
+        values : Dict[str, any]
+            Key-value pairs derived from the FITS header.
         """
 
         raise NotImplementedError

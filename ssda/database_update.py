@@ -279,7 +279,7 @@ class DataFileProperties(NamedTuple):
 
 class InstrumentProperties(NamedTuple):
     telescope_id: int
-    header_values: Dict[str, str]
+    column_values: Dict[str, str]
 
 
 class DatabaseUpdate:
@@ -1342,7 +1342,7 @@ class DatabaseUpdate:
 
         # Construct the SQL query
         table = self.fits_data.instrument_table()
-        columns = list(properties.header_values.keys())
+        columns = list(properties.column_values.keys())
         sql = """
         INSERT INTO {table}(
                 dataFileId,
@@ -1358,7 +1358,7 @@ class DatabaseUpdate:
         # Collect the parameters
         params = dict(data_file_id=data_file_id)
         for column in columns:
-            params[column] = properties.header_values[column]
+            params[column] = properties.column_values[column]
 
         # Insert the instrument entry
         self.cursor.execute(sql, params)
@@ -1391,7 +1391,7 @@ class DatabaseUpdate:
 
         # Construct the SQL query
         table = self.fits_data.instrument_table()
-        columns = list(properties.header_values.keys())
+        columns = list(properties.column_values.keys())
         sql = """
         UPDATE {table}
                SET {update_set}
@@ -1401,7 +1401,7 @@ class DatabaseUpdate:
         # Collect the parameters
         params = dict(data_file_id=data_file_id, telescope_id=properties.telescope_id, instrument_id=instrument_id)
         for column in columns:
-            params[column] = properties.header_values[column]
+            params[column] = properties.column_values[column]
 
         # Update the instrument entry
         self.cursor.execute(sql, params)
@@ -1430,7 +1430,8 @@ class DatabaseUpdate:
 
     def instrument_properties(self) -> InstrumentProperties:
         """
-        The instrument properties, as obtained from the FITS file.
+        The instrument properties, as obtained from the FITS file, plus additional
+        properties derived from the FITS file.
 
         Returns
         -------
@@ -1441,8 +1442,9 @@ class DatabaseUpdate:
 
         telescope_id = self.fits_data.telescope().id()
 
+        # Use the FITS file content
         instrument_details_file = self.fits_data.instrument_details_file()
-        header_values = {}
+        column_values = {}
         with open(instrument_details_file, "r") as fin:
             for line in fin:
                 if line.strip() == "" or line.startswith("#"):
@@ -1450,9 +1452,13 @@ class DatabaseUpdate:
                 keyword, column = line.split()
                 raw_value = self.fits_data.header.get(keyword)
                 preprocessed_value = self.fits_data.preprocess_header_value(keyword, raw_value)
-                header_values[column] = preprocessed_value
+                column_values[column] = preprocessed_value
 
-        return InstrumentProperties(telescope_id=telescope_id, header_values=header_values)
+        # Add additional column values
+        for key, value in self.fits_data.derived_values().items():
+            column_values[key] = value
+
+        return InstrumentProperties(telescope_id=telescope_id, column_values=column_values)
 
     def instrument_id(self) -> Optional[int]:
         """

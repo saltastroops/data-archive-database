@@ -4,7 +4,7 @@ from dateutil import parser
 import glob
 import os
 import pandas as pd
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from ssda.connection import sdb_connect
 from ssda.institution import Institution
@@ -72,6 +72,19 @@ class HrsFitsData(InstrumentFitsData):
         # TODO: What about standards?
 
         return SALTInstruments.data_category(self.header.get("OBJECT"))
+
+    def derived_values(self) -> Dict[str, Any]:
+        """
+        Key-value pairs that are not in FITS header but are derived from it and should
+        be included in the instrument table.
+
+        Returns
+        -------
+        values : Dict[str, any]
+            Key-value pairs derived from the FITS header.
+        """
+
+        return dict()
 
     @staticmethod
     def fits_files(night: date) -> List[str]:
