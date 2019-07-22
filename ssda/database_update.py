@@ -237,7 +237,7 @@ def delete(fits_data: InstrumentFitsData) -> None:
         db_update.delete_target(target_id)
         db_update.delete_observation(observation_id, data_file_id)
         db_update.delete_proposal_investigators(proposal_id, observation_id)
-        db_update.delete_proposal(proposal_id, observation_id)
+        db_update.delete_proposal(proposal_id)
 
         db_update.commit()
     except Exception as e:
@@ -426,38 +426,35 @@ class DatabaseUpdate:
         # Return the proposal id
         return proposal_id
 
-    def delete_proposal(self, proposal_id: int, observation_id: int):
+    def delete_proposal(self, proposal_id: int):
         """
         Delete the proposal linked to the FITS data.
 
         Nothing is done if the FITS data is not linked to a proposal or if there exists
         no database entry for the proposal.
 
-        The proposal is only deleted if the proposal is not referenced by an observation
-        with an id other than the given one.
+        The proposal is only deleted if the proposal is not referenced by an
+        observation.
 
         Parameters
         ----------
         proposal_id : int
             Proposal id.
-        observation_id : int
-            Observation id.
 
         """
 
-        if proposal_id is None or observation_id is None:
+        if proposal_id is None:
             return
 
-        # Only delete the proposal if the proposal is not referenced by another
+        # Only delete the proposal if the proposal is not referenced by an
         # observation.
-        other_observations_sql = """
-        SELECT COUNT(*) as otherObservationsCount
+        observations_sql = """
+        SELECT COUNT(*) as observationsCount
                FROM Observation
-        WHERE proposalId=%(proposal_id)s AND observationId!=%(observation_id)s
+        WHERE proposalId=%s
         """
-        other_observations_params = dict(proposal_id=proposal_id, observation_id=observation_id)
-        other_observations_df = pd.read_sql(other_observations_sql, con=self._ssda_connection, params=other_observations_params)
-        if other_observations_df['otherObservationsCount'][0] > 0:
+        observations_df = pd.read_sql(observations_sql, con=self._ssda_connection, params=(proposal_id,))
+        if observations_df['observationsCount'][0] > 0:
             return
 
         # Delete the proposal
@@ -1081,7 +1078,7 @@ class DatabaseUpdate:
         # Return the data file id
         return data_file_id
 
-    def delete_data_file(self, data_file_id) -> None:
+    def delete_data_file(self, data_file_id: Optional[int]) -> None:
         """
         Delete the data file entry for a data file id.
 
