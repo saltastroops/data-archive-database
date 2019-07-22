@@ -117,10 +117,10 @@ NWINDOW     				numberOfWindows
 OBJECT      				objectName
 OBSMODE     				observationMode
 OBSTYPE     				observationType
-PCS-VER     				pfsiControlSystemVersion
+PCS-VER     				pfisControlSystemVersion
 PIXSCALE    				pixelScale
 POLCONF     				polarizationConfig
-PROC        				pfsiProcedure
+PROC        				pfisProcedure
 PUPEND      				pupilEnd
 QW-STEPS    				quaterWaveSteps
 QWP-ANG     				quaterWaveAngle

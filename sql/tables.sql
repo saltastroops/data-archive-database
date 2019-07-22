@@ -380,7 +380,7 @@ CREATE TABLE `RSS` (
     `pfsiControlSystemVersion` VARCHAR(255) DEFAULT NULL,
     `pixelScale` FLOAT DEFAULT NULL,
     `polarizationConfig` VARCHAR(255) DEFAULT NULL,
-    `pfsiProcedure` VARCHAR(255) DEFAULT NULL,
+    `pfisProcedure` VARCHAR(255) DEFAULT NULL,
     `pupilEnd` FLOAT DEFAULT NULL,
     `quaterWaveSteps` INT(11) DEFAULT NULL,
     `quaterWaveAngle` FLOAT DEFAULT NULL,
