@@ -1029,6 +1029,7 @@ class DatabaseUpdate:
         # Insert the data file
         sql = """
         INSERT INTO DataFile(
+                dataFileUUID,
                 dataCategoryId,
                 startTime,
                 dataFileName,
@@ -1038,7 +1039,8 @@ class DatabaseUpdate:
                 observationId,
                 instrumentId
               )
-        VALUES (%(data_category_id)s,
+        VALUES (UUID_TO_BIN(UUID()),
+                %(data_category_id)s,
                 %(start_time)s,
                 %(name)s,
                 %(path)s,
