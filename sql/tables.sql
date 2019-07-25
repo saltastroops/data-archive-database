@@ -38,6 +38,7 @@ CREATE TABLE `DataCategory` (
 DROP TABLE IF EXISTS `DataFile`;
 CREATE TABLE `DataFile` (
     `dataFileId` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Primary key.',
+    `uuid` BINARY(16) NOT NULL COMMENT 'Unique identifyer (UUID) for the data file',
     `dataCategoryId` INT(11) UNSIGNED NOT NULL COMMENT 'Category of data contained in the data file.',
     `startTime` DATETIME NOT NULL COMMENT 'The observation start time recorded in the data file.',
     `dataFileName` VARCHAR(255) NOT NULL COMMENT 'Filename, such as R20190203000023.fits.',
