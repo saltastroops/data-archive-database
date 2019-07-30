@@ -336,7 +336,7 @@ CREATE TABLE `RSS` (
     `etalon2Y` FLOAT DEFAULT NULL,
     `etalon2Z` FLOAT DEFAULT NULL,
     `exposureTime` FLOAT DEFAULT NULL,
-    `filterStation` INT(11) DEFAULT NULL,
+    `filterStation` VARCHAR(255) DEFAULT NULL,
     `filterMachineState` VARCHAR(255) DEFAULT NULL,
     `filterPosition` INT(11) DEFAULT NULL,
     `filterBarcode` VARCHAR(255) DEFAULT NULL,
