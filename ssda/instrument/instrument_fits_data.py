@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from astropy.io import fits
 from datetime import date, datetime
 from enum import Enum
-from typing import Any, List, NamedTuple, Optional, Tuple
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 from astropy.io.fits import ImageHDU, PrimaryHDU
 from ssda.connection import ssda_connect
@@ -60,7 +60,7 @@ class DataPreviewType(Enum):
 
     """
 
-    HEADER = 'Header'
+    HEADER = "Header"
     IMAGE = "Image"
 
     def id(self) -> int:
@@ -79,8 +79,10 @@ class DataPreviewType(Enum):
         """
         df = pd.read_sql(sql, con=ssda_connect(), params=(self.value,))
         if len(df) == 0:
-            raise ValueError('There is no database entry for the preview type {}'.format(self.value))
-        return int(df['dataPreviewTypeId'])
+            raise ValueError(
+                "There is no database entry for the preview type {}".format(self.value)
+            )
+        return int(df["dataPreviewTypeId"])
 
 
 class PrincipalInvestigator(NamedTuple):
@@ -163,7 +165,7 @@ class InstrumentFitsData(ABC):
 
         # Split the header into lines of 80 characters
         content = str(self.header)
-        lines = [content[i:i + 80] for i in range(0, len(content), 80)]
+        lines = [content[i : i + 80] for i in range(0, len(content), 80)]
 
         # Only include content up to the END line
         end_index = [line.strip() for line in lines].index("END")
@@ -213,6 +215,20 @@ class InstrumentFitsData(ABC):
         category : DataCategory
             The data category.
 
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def derived_values(self) -> Dict[str, Any]:
+        """
+        Key-value pairs that are not in FITS header but are derived from it and should
+        be included in the instrument table.
+
+        Returns
+        -------
+        values : Dict[str, any]
+            Key-value pairs derived from the FITS header.
         """
 
         raise NotImplementedError

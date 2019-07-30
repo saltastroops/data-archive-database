@@ -31,7 +31,10 @@ def get_thumbnail_size(original_size: Tuple[float, float]):
 
     if thumbnail_size[0] > MAX_WIDTH:
         max_width_factor = thumbnail_size[0] / MAX_WIDTH
-        thumbnail_size = (thumbnail_size[0] / max_width_factor, thumbnail_size[1] / max_width_factor)
+        thumbnail_size = (
+            thumbnail_size[0] / max_width_factor,
+            thumbnail_size[1] / max_width_factor,
+        )
 
     return thumbnail_size
 
@@ -64,15 +67,21 @@ def save_image_data(fits_file: str, save_dir: str) -> List[Tuple[str, DataPrevie
         for index, image in enumerate(hdul):
             if isinstance(image, ImageHDU):
                 # Convert FITS data to a Pillow object
-                im = Image.fromarray(image.data.astype('uint8'))
+                im = Image.fromarray(image.data.astype("uint8"))
 
                 # Rescale the image to thumbnail size
-                original_width, original_height = image.data.shape[1], image.data.shape[0]
+                original_width, original_height = (
+                    image.data.shape[1],
+                    image.data.shape[0],
+                )
                 im.thumbnail(get_thumbnail_size((original_width, original_height)))
 
                 # Save the thumbnail
                 image_save_path = os.path.join(
-                    save_dir, "{basename}-image-{order}.png".format(basename=basename, order=index)
+                    save_dir,
+                    "{basename}-image-{order}.png".format(
+                        basename=basename, order=index
+                    ),
                 )
                 im.save(image_save_path)
 

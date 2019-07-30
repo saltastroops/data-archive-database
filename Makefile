@@ -44,7 +44,7 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr .pytest_cache
 
 format: ## format code with black
-	pipenv run black src tests
+	pipenv run black cli.py ssda tests
 
 lint: ## check style with flake8
 	pipenv run flake8 src tests
