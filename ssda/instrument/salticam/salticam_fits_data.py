@@ -341,7 +341,7 @@ class SalticamFitsData(InstrumentFitsData):
 
         """
 
-        return SALTInstruments.public_from(self.proposal_code())
+        return SALTInstruments.public_from(self.telescope_observation_id())
 
     def start_time(self) -> datetime:
         """
