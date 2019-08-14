@@ -118,7 +118,7 @@ dimension | number of measurements (pixels) on the energy axis | see below | see
 resolvingPower | median spectral resolving power per pixel | see below | see below
 sampleSize | median pixel size | see below | see below
 
-The calculation of the dimension, resolving power and sample size is explained in the section on spectral properties.
+The calculation of the dimension, resolving power and sample size is explained in the section on calculating energy properties.
 
 ### EnergyInterval
 
@@ -130,7 +130,7 @@ energyId | id of the Energy entry to which this interval belongs | id of entry i
 lower | lower energy bound, in Angstroms | see below | see below
 upper | upper energy bound, in Angstroms | see below | see below
 
-The calculation of the energy intervals is explained in the section on spectral properties.
+The calculation of the energy intervals is explained in the section on calculating energy properties.
 
 ### Polarization
 
@@ -140,12 +140,11 @@ Column | Description | SALT | SAAO
 --- | --- | --- | ---
 id | internal id | internal id | internal id
 states | comma-separated list of the polarization states (such as "Q,U") | see below |
-dimension | number of polarization states included | see below |
 
 SALT's polarization configurations are mapped as follows.
 
-Configuration | States | Dimension
---- | --- | ---
+Configuration | States
+--- | ---
 Linear |
 Linear Hi |
 Circular |
@@ -164,61 +163,195 @@ equinox | equinox | from the FITS file | from the FITS file
 ra | right ascension | from the FITS file | from the FITS file
 dec| declination | from the FITS file | from the FITS file
 
-## Calculating spectral properties
+## Calculating energy properties
 
-### RSS
+### RSS (longslit spectroscopy)
 
-RSS has three CCDs, each with 2048 pixels in the spectral direction. Hence we have
+RSS has three CCDs, each with 2048 pixels in the spectral direction. However, effectively only 2032 can be used, so that we have
 
 ```
-dimensions = 3 * 2048 = 6144
+dimension = 3 * 2032 = 6096
 ```
 
 The wavelength for a CCD pixel depends on the grating angle, the camera angle, the grating frequency and the pixel's position. Its calculation is described by the following code.
 
-```java
-    /*
-     * Returns the wavelength at the specified distance {@code x}
-     * from the center of the middle CCD.
-     *
-     * See http://www.sal.wisc.edu/~khn/salt/Outgoing/3170AM0010_Spectrograph_Model_Draft_2.pdf
-     * for the constants.
-     *
-     * @param x                distance (in spectral direction from center (in pixels)
-     * @param gratingAngle     the grating angle (in degrees)
-     * @param cameraAngle      the camera angle (in degrees)
-     * @param gratingFrequency the grating frequency (in grooves/mm)
-     * @return the wavelength (in Angstrom)
-     */
-    public static double getWavelength(double x, double gratingAngle, double cameraAngle, double gratingFrequency)
-    {
-        // What is the outgoing angle beta0 for the center of the middle chip?
-        // (Normally, the camera angle will be twice the grating angle, so that
-        // the incoming angle (i.e. the grating angle) alpha is equal to beta0.
-        double alpha0 = 0; // grating rotation home error, in degrees
-        double beta_ae = -0.063; // alignment error of the articulation home, in degrees
-        double f_A = -4.2e-5;  // correction factor allowing for the mechanical error in placement of the articulation detent ring
-        double Lambda = 1e7 / gratingFrequency;    // grating period
-        double alpha = Math.toRadians(gratingAngle + alpha0);
-        double beta0 = Math.toRadians((1 + f_A) * cameraAngle + beta_ae - (gratingAngle + alpha0));
+```
+/*
+ * the focal length of the RSS imaging lens (in mm)
+ */
+double FOCAL_LENGTH_RSS_IMAGING_LENS = 328;
 
-        // The relevant distance for the optics is that from the optical axis
-        // rather than that from the CCD center.
-        x -= SaltData.RSS_OPTICAL_AXIS_ON_CCD.getX() / SaltData.RSS_PIXEL_SIZE;
+/*
+ * the location (in x direction) of the intersection between the center CCD
+ * and the optical axis in mm
+ *
+ * Note: the sign convention differs from that used by the
+ * PySpectrograph package.
+ */
+double RSS_OPTICAL_AXIS_ON_CCD = 0.3066;
 
-        // "FUDGE FACTOR"
-        x += 20.9;
+/*
+ * the size of a pixel on the RSS CCD chips (in millimeters)
+ */
+double RSS_PIXEL_SIZE = 0.015;
 
-        // The outgoing angle for a distance x is slightly different; the
-        // correction dbeta is given by tan(dbeta) = x / f_cam with the focal
-        // length f_cam of the imaging lens. Note that x must be converted from
-        // pixels to a length.
-        double dbeta = Math.atan((x * SaltData.RSS_PIXEL_SIZE) / SaltData.FOCAL_LENGTH_RSS_IMAGING_LENS);
-        double beta = beta0 + dbeta;
+/*
+ * Returns the wavelength at the specified distance {@code x}
+ * from the center of the middle CCD.
+ *
+ * See http://www.sal.wisc.edu/~khn/salt/Outgoing/3170AM0010_Spectrograph_Model_Draft_2.pdf
+ * for the constants.
+ *
+ * @param x                distance (in spectral direction from center (in pixels)
+ * @param gratingAngle     the grating angle (in degrees)
+ * @param cameraAngle      the camera angle (in degrees)
+ * @param gratingFrequency the grating frequency (in grooves/mm)
+ * @return the wavelength (in metres)
+ */
+double getWavelength(double x, double gratingAngle, double cameraAngle, double gratingFrequency)
+{
+    // What is the outgoing angle beta0 for the center of the middle chip?
+    // (Normally, the camera angle will be twice the grating angle, so that
+    // the incoming angle (i.e. the grating angle) alpha is equal to beta0.
+    double alpha0 = 0; // grating rotation home error, in degrees
+    double beta_ae = -0.063; // alignment error of the articulation home, in degrees
+    double f_A = -4.2e-5;  // correction factor allowing for the mechanical error in placement of the articulation detent ring
+    double Lambda = 1e7 / gratingFrequency;    // grating period
+    double alpha = Math.toRadians(gratingAngle + alpha0);
+    double beta0 = Math.toRadians((1 + f_A) * cameraAngle + beta_ae - (gratingAngle + alpha0));
 
-        // The wavelength can now be obtained from the grating equation.
-        return Lambda * (Math.sin(alpha) + Math.sin(beta));
-    }
+    // The relevant distance for the optics is that from the optical axis
+    // rather than that from the CCD center.
+    x -= RSS_OPTICAL_AXIS_ON_CCD.getX() / RSS_PIXEL_SIZE;
+
+    // "FUDGE FACTOR"
+    x += 20.9;
+
+    // The outgoing angle for a distance x is slightly different; the
+    // correction dbeta is given by tan(dbeta) = x / f_cam with the focal
+    // length f_cam of the imaging lens. Note that x must be converted from
+    // pixels to a length.
+    double dbeta = Math.atan((x * RSS_PIXEL_SIZE) / SaltData.FOCAL_LENGTH_RSS_IMAGING_LENS);
+    double beta = beta0 + dbeta;
+
+    // The wavelength can now be obtained from the grating equation.
+    double wavelength = Lambda * (Math.sin(alpha) + Math.sin(beta));
+    
+    // The CAOM expects the wavelength to be in metres, not Angstroms.
+    return wavelength / 1e10;
+}
 ```
 
-The following table lists the positions $x$ 
+The following table lists the positions x for the CCD edges. Edge 1 abd 2 correspond to the smallest and largest wavelength detected by the CCD, respectively.
+
+CCD | x(edge 1) | x(edge 2)
+--- | --- | ---
+1 | -3162 | -1130
+2 | -1016 | 1016
+3 | 1130 | 3162
+
+We estimate the sample size to be
+
+```
+sampleSize = getWavelength(1, gratingAngle, cameraAngle, gratingFrequency) - getWavelength(9, gratingAngle, cameraAngle, gratingFrequency)
+```
+
+The calculation of the resolving power is described by the following code.
+
+```
+/*
+ * the focal length of the telescope (in mm)
+ */
+double FOCAL_LENGTH_TELESCOPE = 46200;
+
+/*
+ * the focal length of the RSS collimator (in mm)
+ */
+double FOCAL_LENGTH_RSS_COLLIMATOR = 630;
+
+/*
+ * Returns the resolution element for the given grating frequency, grating angle and slit width.
+ *
+ * @param gratingFrequency the grating frequence (in grooves/mm)
+ * @param gratingAngle     the grating angle (in degrees)
+ * @param slitWidth        the slit width (in arcseconds)
+ * @return the resolution element
+ */
+double getResolutionElement(double gratingFrequency, double gratingAngle, double slitWidth)
+{
+    double Lambda = 1e7 / gratingFrequency;
+    return Math.toRadians(slitWidth / 3600) * Lambda * Math.cos(Math.toRadians(gratingAngle)) * (
+            FOCAL_LENGTH_TELESCOPE / FOCAL_LENGTH_RSS_COLLIMATOR);
+}
+
+/*
+ * Returns the resolution at the center of the middle CCD. This is the ratio
+ * of the resolution element and the wavelength at the CD's center.
+ *
+ * @param gratingAngle     the grating angle (in degrees)
+ * @param cameraAngle      the camera angle (in degrees)
+ * @param gratingFrequency the grating frequency (in grooves/mm)
+ * @param slitWidth        the slit width (in arcseconds)
+ * @return the resolution
+ */
+double getWavelengthResolution(double gratingAngle,
+                               double cameraAngle,
+                               double gratingFrequency,
+                               double slitWidth)
+{
+    double wavelength = getWavelength(0, gratingAngle, cameraAngle, gratingFrequency);
+    double wavelengthResolutionElement = getResolutionElement(gratingFrequency, gratingAngle, slitWidth);
+    return wavelength / wavelengthResolutionElement;
+}
+```
+
+The camera angle, grating angle and slit barcode can be obtained directly from the FITS header; their keywords are `AR-ANGLE`, `GR-ANGLE` and `MASKID`, respectively. The slit width can be obtained from the barcode, as shown in the following code.
+
+```
+/**
+ * Returns the slit width for the given barcode.
+ *
+ * @param barcode barcode
+ * @return the slit width (in arcseconds)
+ */
+public static Double slitWidthFromBarcode(String barcode)
+{
+    if (barcode.equals("P000000N02")) {
+        return 0.333333;
+    }
+    if (barcode.equals("P000000P08") || barcode.equals("P000000P09")) {
+        return 1.5;
+    }
+    return Double.parseDouble(barcode.substring(2, 6)) / 100;
+}
+```
+
+The values for the grating frequency are collected in the following table.
+
+Grating | Grating frequency
+--- | ---
+pg0300 | 300
+pg0900 | 903.89
+pg1300 | 1299.6
+pg1800 | 1801.89
+pg2300 | 2302.60
+pg3000 | 3000.55
+
+### RSS (imaging, MOS, Fabry-Perot)
+
+[TO BE ADDED]
+
+### HRS
+
+The dimension, sample size, wavelength range and resolving power for the two detector arms and the various modes are given in the following table.
+
+Arm | Mode | Dimension | Sample size (A) | Wavelength range (nm) | Resolving power
+--- | --- | --- | --- | --- | ---
+Blue | Low Resolution | | 370 - 555 | 15000
+Blue | Medium Resolution | | 370 - 555 | 43000
+Blue | High Resolution | | 370 - 555 | 65000
+Blue | High Stability | | 370 - 555 | 65000
+Red | Low Resolution | | 555 - 890 | 14000
+Red | Medium Resolution | | 555 - 890 | 40000
+Red | High Resolution | | 555 - 890 | 74000
+Red | High Stability | | 555 - 890 | 65000
