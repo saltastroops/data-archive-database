@@ -12,6 +12,7 @@ Column | Description | SALT | SAAO
 --- | --- | --- | ---
 collection | the name of the data collection this observation belongs to | "SALT" | "SAAO"
 observationID | the collection-specific identifier for this observation | See below |
+observationGroup | identifier for the group of observations to which this observation belongs | block visit id
 metaRelease | timestamp after which metadata for the observation instance is public | the date after which the data is public | 
 type | the type of observation (FITS OBSTYPE keyword); usually OBJECT for intent = science | FITS OBSTYPE keyword |
 intent | the intent of the original observer in acquiring this data, such as "SCIENCE" or "ARC" | See below |
@@ -24,8 +25,6 @@ telescopeId | id of the telescope used for taking the data | id in Telescope tab
 
 The observationID value for SALT depends on whether the observation forms part of a proposal. If it does, the proposal code, the block visit id and a running number are concatenated with a dash. An example would be 2019-1-SCI-042-21563-7.
 
-[TODO: How is the type determined?]
-
 ### Instrument
 
 An instrument taking observation data, such as RSS or SHOC.
@@ -34,6 +33,43 @@ Column | Description | SALT | SAAO
 --- | --- | --- | ---
 id | internal id | internal id | internal id
 name | instrument name | instrument name | instrument name
+instrumentModeId | instrument mode, such as "imaging" or "MOS" | instrument mode
+
+### InstrumentMode
+
+An enumeration of the instrument modes.
+
+Column | Description | SALT | SAAO
+--- | --- | --- | ---
+id | internal id | internal id | internal id
+instrumentMode | instrument mode | see below | see below
+
+The following table lists the instrument modes for SALT.
+
+Detector | Instrument modes
+--- | ---
+Salticam | Imaging
+RSS | Fabry Perot, FP polarimetry, Imaging, MOS, MOS polarimetry, Polarimetric imaging, Spectropolarimetry, Spectroscopy
+HRS | Spectroscopy
+BVIT | Imaging, Streaming
+
+### Detector mode
+
+An enumeration of the detector modes.
+
+Column | Description | SALT | SAAO
+--- | --- | --- | ---
+id | internal id | internal id | internal id
+detectorMode | detector mode | see below| see below
+
+The following table lists the detector modes for SALT.
+
+Detector | Detector modes
+--- | ---
+Salticam | Drift Scan, Frame Transfer, Normal, Slot Mode
+RSS | Drift Scan, Frame Transfer, Normal, Shuffle, Slot Mode
+HRS | Normal
+BVIT | ?
 
 ### Proposal
 
@@ -45,6 +81,7 @@ id | internal id | internal id | internal id
 proposalID | collection-specific identifier for the proposal | proposal code |
 pi | proper name of the principal investigator | first name and surname of the PI |
 title | title of the proposal | title of the proposal |
+institutionId | id of the Institution entry for this proposal | id for "SALT" | id for "SAAO"
 
 ### Telescope
 
@@ -88,6 +125,15 @@ dec | the declination | see below |
 
 For SALT in general the coordinates from the Target table are used. However, in case of a non-sidereal target the coordinates from the FITS file are used instead.
 
+### Institution
+
+An institution to which proposals can be sent.
+
+Column | Description | SALT | SAAO
+--- | --- | --- | ---
+id | internal id | internal id | internal id
+name | name of the institution | "SALT" | "SAAO"
+
 ### Plane
 
 A component of an observation that describes one product of the observation.
@@ -104,7 +150,7 @@ dataProductType | standard classification of the type of data product; describes
 energyId | id of energy description | id in Energy table | id in Energy table
 polarizationId | id of polarization description | id in Polarization table
 positionId | id of the position description | id in Position table | id in Position table
-quality | id of the quality | id of entry in Quality table | id of entry in Quality table
+qualityId | id of the quality | id of entry in Quality table | id of entry in Quality table
 timeId | id of the time description | id of entry in Time table | id of entry in Time table
 
 ### Energy
@@ -127,8 +173,8 @@ An energy interval.
 Column | Description | SALT | SAAO
 --- | --- | --- | ---
 energyId | id of the Energy entry to which this interval belongs | id of entry in the Energy table | id of entry in the Energy table
-lower | lower energy bound, in Angstroms | see below | see below
-upper | upper energy bound, in Angstroms | see below | see below
+lower | lower energy bound, in metres | see below | see below
+upper | upper energy bound, in metres | see below | see below
 
 The calculation of the energy intervals is explained in the section on calculating energy properties.
 
@@ -163,14 +209,122 @@ equinox | equinox | from the FITS file | from the FITS file
 ra | right ascension | from the FITS file | from the FITS file
 dec| declination | from the FITS file | from the FITS file
 
+### Data quality
+
+Description of the data quality.
+
+Column | Description | SALT | SAAO
+--- | --- | --- | ---
+id | internal id | internal id | internal id
+quality | quality | "Accepted" or "Rejected"
+
+The terms "Accepted" and "Rejected" might change.
+
+### Time
+
+A description of the time coverage and sampling of the data.
+
+Column | Description | SALT | SAAO
+--- | --- | --- | ---
+id | internal id | internal id | internal id
+resolution | median temporal resolution per pixel, in seconds | exposure time from the FITS file
+start | start time, as UTC | start of observation from the FITS file |
+end | end time, as UTC | start time + exposure time from the FITS file |
+exposure | median exposure time per pixel, in seconds | exposure time from the FITS file
+
+### TimeInterval
+
+### Artifact
+
+A physical product (typically a file).
+
+Column | Description | SALT | SAAO
+--- | --- | --- | ---
+id | internal id | internal id | internal id
+planeId | id of the Plane entry to which this artifact belongs | id of entry in Plane table | id of entry in Plane table
+artifactId | a UUID | a UUID | a UUID
+artifactName | name of the artifact | name of the FITS file
+path | file path | location of the FITS file | location of the FITS file
+productType | the primary product type of the artifact; for multi-part artifacts where the parts have different types, this is the primary type; for example, if an artifact has a science part and an auxiliary part, the artifact should have type science | See below
+contentLength | the size of the resolved artifact; typically file size in bytes | size of the FITS file, in bytes
+contentChecksum | the checksum of the artifact data; the URI must conform to the pattern {algorithm}:{value}, for example: md5:4be91751541fd804e7207663a0822f56 | MD5 checksum of the FITS file | MD5 checksum of the FITS file
+
+The following algorithm is used to determine the product type for SALT.
+
+1. If the observation type is "OBJECT" or "SCIENCE", the product type is science.
+
+2. If the observation type contains "BIAS" or the object name is "BIAS", the product type is bias.
+
+3. If the observation type contains "FLAT", the product type is flat.
+
+4. The product type is calibration in all other cases.
+
+Note that the CAOM does not define a product type specifically for arcs.
+
 ## Calculating energy properties
+
+### Caveat: a word on binning
+
+The binning doesn't seem to be recorded in the FITS header. So these properties might have to be calculated under the assumption of a 1x1 binning.
+
+### Imaging with a filter
+
+Let T be the transmission of the filter used. Define lambda1 and lambda2 as follows:
+
+lambda1: T(lambda1) = p && T(lambda) < p for all lambda < lambda1
+
+lambda2: T(lambda2) = p && T(lambda) < p for all lambda > lambda2
+
+Here p = 0.5, i.e. lambda2 - lambda1 is the FWHM.
+
+If there are no such values lambda1 and lambda2, no energy properties are defined.
+
+If there are such values lambda1 and lambda2, there is a single energy interval, taken to be bounded by lambda1 and lambda2:
+
+```
+energy intervals = [[lambda1, lambda2]]
+```
+
+The resolving power then is taken to be
+
+```
+resolving power = 0.5 * (lambda1 + lambda2) / (lambda2 - lambda1)
+```
+
+The dimension is just 1.
+
+For a practical calculation, the filter transmission is given as an array `t` of pairs of wavelengths and corresponding transmissions. Then the following algorithm is used for getting lambda1 and lambda2.
+
+1. Sort `t` so that `t[i][0] > t[i - 1][0]` for all array index values `i` greater than 0.
+
+2. Loop over the array and find the first index value `i` for which `t[i][1] < p` and `t[i + 1][1]` >= p.
+
+3. Let `x1 = t[i][0]`, `x2 = t[i + 1][0]`, `t1 = t[i][1]` and `t2 = t[i + 1][1]`. Let f be the line through (x1, t1) and (x2, t2). Then lambda1 is defined by f(lambda1) = p.
+
+4. Loop over the array and find the last index value `i` for which `t[i][1] >= p` and `t[i + 1][1]` < p.
+
+5. Again let `x1 = t[i][0]`, `x2 = t[i + 1][0]`, `t1 = t[i][1]` and `t2 = t[i + 1][1]`. Let g be the line through (x1, t1) and (x2, t2). Then lambda2 is defined by g(lambda1) = p.
+
+In steps 3 and 5 the value of lambda1 or lambda2 can be calculated by means of the formula `lambda = (p + m * x1 - t1) / m`, where m is the gradient of the line, `m = (t2 - t1) / (x2 - x1)`.
+
+### Imaging without a filter
+
+No energy properties are defined for this case.
+
+### Salticam
+
+The energy properties are obtained as described in the section on imaging with a filter.
+
+### RSS (imaging)
+
+The energy properties are obtained as described in the section on imaging with a filter.
 
 ### RSS (longslit spectroscopy)
 
 RSS has three CCDs, each with 2048 pixels in the spectral direction. However, effectively only 2032 can be used, so that we have
 
 ```
-dimension = 3 * 2032 = 6096
+dimension = 3 * 2032 / spectral binning = 6096 / spectral binning
 ```
 
 The wavelength for a CCD pixel depends on the grating angle, the camera angle, the grating frequency and the pixel's position. Its calculation is described by the following code.
@@ -250,10 +404,16 @@ CCD | x(edge 1) | x(edge 2)
 2 | -1016 | 1016
 3 | 1130 | 3162
 
+The energy intervals are the wavelength intervals for these values of x:
+
+```
+energy intervals = [[getWavelength(x(edge 1 of CCD i), gratingAngle, cameraAngle, gratingFrequency), getWavelength(x(edge 2 of CCD i), gratingAngle, cameraAngle, gratingFrequency)] for i in (1, 2, 3)]
+```
+
 We estimate the sample size to be
 
 ```
-sampleSize = getWavelength(1, gratingAngle, cameraAngle, gratingFrequency) - getWavelength(9, gratingAngle, cameraAngle, gratingFrequency)
+sampleSize = getWavelength(spectral binning, gratingAngle, cameraAngle, gratingFrequency) - getWavelength(0, gratingAngle, cameraAngle, gratingFrequency)
 ```
 
 The calculation of the resolving power is described by the following code.
@@ -337,9 +497,46 @@ pg1800 | 1801.89
 pg2300 | 2302.60
 pg3000 | 3000.55
 
-### RSS (imaging, MOS, Fabry-Perot)
+### RSS (MOS)
 
-[TO BE ADDED]
+No energy properties are defined for this case.
+
+### RSS (Fabry-Perot)
+
+The FITS header contains two fields for wavelengths, `ET1WAVE0` and `ET2WAVE0`. Which of these is the approximate wavelength depends on the etalon state, as recorded by the `ET-STATE` keyword. The following table lists the wavelength values to ue:
+
+Value for ET_STATE | Keyword to use for wavelength
+--- | ---
+S1 - Etalon Open | n/a
+S2 - Etalon 1 | ET1WAVE0
+S3 - Etalon 2 | ET2WAVE0
+S4 - Etalon 1 & 2 | ET1WAVE0
+
+As these wavelength values are not calibrated, they are approximations only.
+
+The FWHM values are given for all modes (TF, LR, MR, HR) and a list of wavelengths in Table 1 of in the paper [An Imaging Fabry-Pérot system for the Robert Stobie Spectrograph on the Southern African Large Telescope](https://iopscience.iop.org/article/10.1088/0004-6256/135/5/1825/meta) by Naseem Rangwala, Ted Williams and their collaborators (2008).
+
+Linear interpolation is used to get the FWHM for the observation's wavelength from these values. Then the (single) energy interval is taken to be
+
+```
+energy intervals = [[lambda - FWHM / 2, lambda + FWHM / 2]]
+```
+
+The resolving power is
+
+```
+resolving power = lambda / FWHM
+```
+
+The sample size is
+
+```
+sample size = FWHM
+```
+
+It should be noted that these values are rough approximations as the etalons' FWHM has degraded since the measurements taken in 2008.
+
+The dimension is just 1.
 
 ### HRS
 
@@ -355,3 +552,8 @@ Red | Low Resolution | | 555 - 890 | 14000
 Red | Medium Resolution | | 555 - 890 | 40000
 Red | High Resolution | | 555 - 890 | 74000
 Red | High Stability | | 555 - 890 | 65000
+
+### BVIT
+
+The energy properties are obtained as described in the section on imaging with a filter.
+
