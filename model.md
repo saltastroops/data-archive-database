@@ -29,47 +29,32 @@ The observationID value for SALT depends on whether the observation forms part o
 
 An instrument taking observation data, such as RSS or SHOC.
 
-Column | Description | SALT | SAAO
---- | --- | --- | ---
-id | internal id | internal id | internal id
-name | instrument name | instrument name | instrument name
-instrumentModeId | instrument mode, such as "imaging" or "MOS" | instrument mode
-
-### InstrumentMode
-
-An enumeration of the instrument modes.
-
-Column | Description | SALT | SAAO
---- | --- | --- | ---
-id | internal id | internal id | internal id
-instrumentMode | instrument mode | see below | see below
-
-The following table lists the instrument modes for SALT.
-
-Detector | Instrument modes
+Column | Description
 --- | ---
-Salticam | Imaging
-RSS | Fabry Perot, FP polarimetry, Imaging, MOS, MOS polarimetry, Polarimetric imaging, Spectropolarimetry, Spectroscopy
-HRS | Spectroscopy
-BVIT | Imaging, Streaming
+id | internal id
+name | instrument name
 
-### Detector mode
+### InstrumentKeyword
 
-An enumeration of the detector modes.
+A lookup table for the instrument keywords.
 
-Column | Description | SALT | SAAO
---- | --- | --- | ---
-id | internal id | internal id | internal id
-detectorMode | detector mode | see below| see below
+Keywords should be all upper case. They should also be as general as possible.
 
-The following table lists the detector modes for SALT.
-
-Detector | Detector modes
+Column | Description
 --- | ---
-Salticam | Drift Scan, Frame Transfer, Normal, Slot Mode
-RSS | Drift Scan, Frame Transfer, Normal, Shuffle, Slot Mode
-HRS | Normal
-BVIT | ?
+id | internal id
+keyword | instrument keyword
+
+### InstrumentKeywordValue
+
+Instrument keywords and corresponding values.
+
+Column | Description
+--- | ---
+id | internal id
+instrumentId | id of the instrument entry
+instrumentKeywordId | id of the instrument keyword entry
+value | value (as a string)
 
 ### Proposal
 
@@ -87,26 +72,28 @@ institutionId | id of the Institution entry for this proposal | id for "SALT" | 
 
 A telescope used to acquire the data for an observation.
 
-Column | Description | SALT | SAAO
---- | --- | --- | ---
-id | internal id | internal id | internal id
-name | telescope name | "SALT" | telescope name
-geoLocationX | x-coordinate of the geocentric location of the telescope at the time of observation (see FITS WCS Paper III) | ? | ?
-geoLocationY | y-coordinate of the geocentric location of the telescope at the time of observation (see FITS WCS Paper III) | ? | ?
-geoLocationZ | z-coordinate of the geocentric location of the telescope at the time of observation (see FITS WCS Paper III) | ? | ?
+Column | Description
+--- | ---
+id | internal id
+name | telescope name
+geoLocationX | x-coordinate of the geocentric location of the telescope at the time of observation (see FITS WCS Paper III)
+geoLocationY | y-coordinate of the geocentric location of the telescope at the time of observation (see FITS WCS Paper III)
+geoLocationZ | z-coordinate of the geocentric location of the telescope at the time of observation (see FITS WCS Paper III)
 
 ### Target
 
 A target of an observation.
 
-Column | Description | SALT | SAAO
---- | --- | --- | ---
-id | internal id | internal id | internal id
-name | proper name of the target | target name | target name
-simbadTargetTypeId | id of numeric SIMBAD target type code | id in SimbadTargetType table | id in SimbadTargetType table
-type | type of target; typically used to figure out what the target name means and where to look for additional information about it | ? | ?
-standard | indicates that the target is typically used as a standard (astrometric, photometric, etc) | ? | ?
-moving | indicates that the target is a moving object; used for solar system objects but not high proper motion stars | true if the target is a Horizons target | ?
+Column | Description
+--- | ---
+id | internal id 
+name | proper name of the target
+simbadTargetTypeId | id of numeric SIMBAD target type code
+type | type of target; typically used to figure out what the target name means and where to look for additional information about it
+standard | indicates that the target is typically used as a standard (astrometric, photometric, etc)
+moving | indicates that the target is a moving object; used for solar system objects but not high proper motion stars
+
+For SALT, `moving` is set to true if the target is a Horizons target.
 
 [TODO: Can we figure out the type?]
 
@@ -116,12 +103,12 @@ The intended position of an observation (not the position of the intended or act
  
 This table differs markedly from the TargetPosition object in the CAOM, as it explicitly uses `ra` and `dec` as column names and does not include a `coordsys` column.
 
-Column | Description | SALT | SAAO
---- | --- | --- | ---
-id | internal id | internal id | internal id
-equinox | the equinox of the coordinates | the equinox
-ra | the right ascension | see below |
-dec | the declination | see below |
+Column | Description
+--- | ---
+id | internal id
+equinox | the equinox of the coordinates
+ra | the right ascension
+dec | the declination
 
 For SALT in general the coordinates from the Target table are used. However, in case of a non-sidereal target the coordinates from the FITS file are used instead.
 
@@ -157,12 +144,12 @@ timeId | id of the time description | id of entry in Time table | id of entry in
 
 A description of the energy coverage and sampling of the data.
 
-Column | Description | SALT | SAAO
---- | --- | --- | ---
-id | internal id | internal id | internal id
-dimension | number of measurements (pixels) on the energy axis | see below | see below
-resolvingPower | median spectral resolving power per pixel | see below | see below
-sampleSize | median pixel size | see below | see below
+Column | Description
+--- | ---
+id | internal id
+dimension | number of measurements (pixels) on the energy axis
+resolvingPower | median spectral resolving power per pixel
+sampleSize | median pixel size
 
 The calculation of the dimension, resolving power and sample size is explained in the section on calculating energy properties.
 
@@ -170,11 +157,11 @@ The calculation of the dimension, resolving power and sample size is explained i
 
 An energy interval.
 
-Column | Description | SALT | SAAO
---- | --- | --- | ---
-energyId | id of the Energy entry to which this interval belongs | id of entry in the Energy table | id of entry in the Energy table
-lower | lower energy bound, in metres | see below | see below
-upper | upper energy bound, in metres | see below | see below
+Column | Description
+--- | ---
+energyId | id of the Energy entry to which this interval belongs
+lower | lower energy bound, in metres
+upper | upper energy bound, in metres
 
 The calculation of the energy intervals is explained in the section on calculating energy properties.
 
@@ -182,10 +169,10 @@ The calculation of the energy intervals is explained in the section on calculati
 
 A description of polarization measurements included in the data.
 
-Column | Description | SALT | SAAO
---- | --- | --- | ---
-id | internal id | internal id | internal id
-states | comma-separated list of the polarization states (such as "Q,U") | see below |
+Column | Description
+--- | ---
+id | internal id
+states | set of polarization states (such as "Q,U")
 
 SALT's polarization configurations are mapped as follows.
 
@@ -194,7 +181,7 @@ Configuration | States
 Linear |
 Linear Hi |
 Circular |
-All Stokes | 
+All Stokes |
 
 ### Position
 
@@ -202,12 +189,12 @@ The position to where the telescope was pointing when taking the data.
 
 This table bears no resemblance at all to the Position model in the CAOM model and completely sidesteps its geometry aspects.
 
-Column | Description | SALT | SAAO
---- | --- | --- | ---
-id | internal id | internal id | internal id
-equinox | equinox | from the FITS file | from the FITS file
-ra | right ascension | from the FITS file | from the FITS file
-dec| declination | from the FITS file | from the FITS file
+Column | Description
+--- | ---
+id | internal id
+equinox | equinox
+ra | right ascension
+dec| declination
 
 ### Data quality
 
@@ -232,22 +219,23 @@ start | start time, as UTC | start of observation from the FITS file |
 end | end time, as UTC | start time + exposure time from the FITS file |
 exposure | median exposure time per pixel, in seconds | exposure time from the FITS file
 
-### TimeInterval
-
 ### Artifact
 
 A physical product (typically a file).
 
-Column | Description | SALT | SAAO
---- | --- | --- | ---
-id | internal id | internal id | internal id
-planeId | id of the Plane entry to which this artifact belongs | id of entry in Plane table | id of entry in Plane table
-artifactId | a UUID | a UUID | a UUID
-artifactName | name of the artifact | name of the FITS file
-path | file path | location of the FITS file | location of the FITS file
-productType | the primary product type of the artifact; for multi-part artifacts where the parts have different types, this is the primary type; for example, if an artifact has a science part and an auxiliary part, the artifact should have type science | See below
-contentLength | the size of the resolved artifact; typically file size in bytes | size of the FITS file, in bytes
-contentChecksum | the checksum of the artifact data; the URI must conform to the pattern {algorithm}:{value}, for example: md5:4be91751541fd804e7207663a0822f56 | MD5 checksum of the FITS file | MD5 checksum of the FITS file
+Column | Description
+--- | ---
+id | internal id
+planeId | id of the Plane entry to which this artifact belongs
+artifactId | a UUID
+artifactName | name of the artifact
+path | file path
+productType | the primary product type of the artifact; for multi-part artifacts where the parts have different types, this is the primary type; for example, if an artifact has a science part and an auxiliary part, the artifact should have type science
+contentLength | the size of the resolved artifact; typically file size in bytes
+contentChecksum | the checksum of the artifact data; the URI must conform to the pattern {algorithm}:{value}, for example: md5:4be91751541fd804e7207663a0822f56
+
+`artifactName` is taken to be the filename of the FITS file. `path` id taken to be the location of the FITS file. `contentLength` is the file size in bytes.
+`contentChecksum` is the MD5 checksum of the FITS file.
 
 The following algorithm is used to determine the product type for SALT.
 
@@ -262,10 +250,6 @@ The following algorithm is used to determine the product type for SALT.
 Note that the CAOM does not define a product type specifically for arcs.
 
 ## Calculating energy properties
-
-### Caveat: a word on binning
-
-The binning doesn't seem to be recorded in the FITS header. So these properties might have to be calculated under the assumption of a 1x1 binning.
 
 ### Imaging with a filter
 
@@ -326,6 +310,14 @@ RSS has three CCDs, each with 2048 pixels in the spectral direction. However, ef
 ```
 dimension = 3 * 2032 / spectral binning = 6096 / spectral binning
 ```
+
+The binning in spectral and spatial direction is given by the `CCDSUM` keyword in the FITS header, with the spectral ome coming first. For example, if the FITS header contains the line
+
+```
+CCDSUM  = '2 4     '           / On chip summation                              
+```
+
+the spectral binning is 2.
 
 The wavelength for a CCD pixel depends on the grating angle, the camera angle, the grating frequency and the pixel's position. Its calculation is described by the following code.
 
@@ -540,18 +532,34 @@ The dimension is just 1.
 
 ### HRS
 
-The dimension, sample size, wavelength range and resolving power for the two detector arms and the various modes are given in the following table.
+The wavelength range and resolving power for the two detector arms and the various modes are given in the following table.
 
-Arm | Mode | Dimension | Sample size (A) | Wavelength range (nm) | Resolving power
---- | --- | --- | --- | --- | ---
-Blue | Low Resolution | | 370 - 555 | 15000
-Blue | Medium Resolution | | 370 - 555 | 43000
-Blue | High Resolution | | 370 - 555 | 65000
-Blue | High Stability | | 370 - 555 | 65000
-Red | Low Resolution | | 555 - 890 | 14000
-Red | Medium Resolution | | 555 - 890 | 40000
-Red | High Resolution | | 555 - 890 | 74000
-Red | High Stability | | 555 - 890 | 65000
+Arm | Mode | Wavelength range (nm) | Resolving power
+--- | --- | --- | ---
+Blue | Low Resolution | 370 - 555 | 15000
+Blue | Medium Resolution | 370 - 555 | 43400
+Blue | High Resolution | 370 - 555 | 66700
+Blue | High Stability (P) | 370 - 555 | 66900
+Blue | High Stability (O) | 370 - 555 | 94600
+Red | Low Resolution | 555 - 890 | 14000
+Red | Medium Resolution | 555 - 890 | 39600
+Red | High Resolution | 555 - 890 | 73700
+Red | High Stability (P) | 555 - 890 | 64600
+Red | High Stability (O) | 555 - 890 | 84200
+
+The sample size is given in the following table.
+
+Arm | Sample size (A)
+--- | ---
+Blue | 0.032 A
+Red | 0.043 A
+
+The dimension is calculated as the ratio of the wavelength range and sample size.
+
+Arm | Dimension
+--- | ---
+Blue | 57812
+Red | 77906
 
 ### BVIT
 
