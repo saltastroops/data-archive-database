@@ -10,20 +10,32 @@ A single top-level entry in the data archive. This generally corresponds to a si
 
 Column | Description | SALT | SAAO
 --- | --- | --- | ---
+observationId | internal id | internal id | internal id
 collection | the name of the data collection this observation belongs to | "SALT" | "SAAO"
-observationID | the collection-specific identifier for this observation | See below |
+observationIdentifier | the collection-specific identifier for this observation | See below |
 observationGroup | identifier for the group of observations to which this observation belongs | block visit id
 metaRelease | timestamp after which metadata for the observation instance is public | the date after which the data is public | 
 type | the type of observation (FITS OBSTYPE keyword); usually OBJECT for intent = science | FITS OBSTYPE keyword |
 intent | the intent of the original observer in acquiring this data, such as "SCIENCE" or "ARC" | See below |
-algorithm | the algorithm or process that created this observation | "exposure" |
+statusId | id of the Status table entry | id in Status table | id in Status table
+algorithmId | id of the Algorithm table entry | id in Algorithm table | id in Algorithm table
 instrumentId | id of the instrument used to acquire the data | id in Instrument table | id in Instrument table
 proposalId | id of the proposal to which the observation belongs | id in Proposal table | id in Proposal table
 targetId | id of the observed target | id in Target table | id in Target table
-targetPositionId | id of the target position | id in TargetPosition table | id in TargetPosition table
 telescopeId | id of the telescope used for taking the data | id in Telescope table | id in Telescope table
 
 The observationID value for SALT depends on whether the observation forms part of a proposal. If it does, the proposal code, the block visit id and a running number are concatenated with a dash. An example would be 2019-1-SCI-042-21563-7.
+
+### Status
+
+The status of the observation.
+
+Column | Description
+--- | ---
+statusId | internal id
+status | status
+
+The possible values for `status` are `accepted` (the observation meets the requirements) and `rejected` (the observation does not meet the requirements).
 
 ### Instrument
 
@@ -31,7 +43,7 @@ An instrument taking observation data, such as RSS or SHOC.
 
 Column | Description
 --- | ---
-id | internal id
+instrumentId | internal id
 name | instrument name
 
 ### InstrumentKeyword
@@ -42,8 +54,8 @@ Keywords should be all upper case. They should also be as general as possible.
 
 Column | Description
 --- | ---
-id | internal id
-keyword | instrument keyword
+instrumentKeywordId | internal id
+instrumentKeyword | instrument keyword
 
 ### InstrumentKeywordValue
 
@@ -62,8 +74,8 @@ A description of the science proposal or programme that initiated an observation
 
 Column | Description | SALT | SAAO
 --- | --- | --- | ---
-id | internal id | internal id | internal id
-proposalID | collection-specific identifier for the proposal | proposal code |
+proposalId | internal id | internal id | internal id
+proposalIdentifier | collection-specific identifier for the proposal | proposal code |
 pi | proper name of the principal investigator | first name and surname of the PI |
 title | title of the proposal | title of the proposal |
 institutionId | id of the Institution entry for this proposal | id for "SALT" | id for "SAAO"
@@ -74,7 +86,7 @@ A telescope used to acquire the data for an observation.
 
 Column | Description
 --- | ---
-id | internal id
+telescopeId | internal id
 name | telescope name
 geoLocationX | x-coordinate of the geocentric location of the telescope at the time of observation (see FITS WCS Paper III)
 geoLocationY | y-coordinate of the geocentric location of the telescope at the time of observation (see FITS WCS Paper III)
@@ -86,10 +98,9 @@ A target of an observation.
 
 Column | Description
 --- | ---
-id | internal id 
+targetId | internal id 
 name | proper name of the target
-simbadTargetTypeId | id of numeric SIMBAD target type code
-type | type of target; typically used to figure out what the target name means and where to look for additional information about it
+targetTypeId | id of numeric SIMBAD target type code
 standard | indicates that the target is typically used as a standard (astrometric, photometric, etc)
 moving | indicates that the target is a moving object; used for solar system objects but not high proper motion stars
 
@@ -97,29 +108,37 @@ For SALT, `moving` is set to true if the target is a Horizons target.
 
 [TODO: Can we figure out the type?]
 
-### TargetPosition
+### TargetType
 
-The intended position of an observation (not the position of the intended or actual target).
- 
-This table differs markedly from the TargetPosition object in the CAOM, as it explicitly uses `ra` and `dec` as column names and does not include a `coordsys` column.
+A target type, as defined by the [SIMBAD object classification](http://simbad.u-strasbg.fr/simbad/sim-display?data=otypes&option=display+numeric+codes).
 
 Column | Description
 --- | ---
-id | internal id
-equinox | the equinox of the coordinates
-ra | the right ascension
-dec | the declination
-
-For SALT in general the coordinates from the Target table are used. However, in case of a non-sidereal target the coordinates from the FITS file are used instead.
+targetTypeId | internal id
+numericCode | numeric code for the target type
+description | human-friendly description of the target type
 
 ### Institution
 
 An institution to which proposals can be sent.
 
-Column | Description | SALT | SAAO
---- | --- | --- | ---
-id | internal id | internal id | internal id
-name | name of the institution | "SALT" | "SAAO"
+Column | Description
+--- | ---
+institutionId | internal id
+name | name of the institution
+
+The name is `SALT` or `SAAO`.
+
+### Algorithm
+
+Algorithm or process that created the observation.
+
+Column | Description
+--- | ---
+algorithmId | internal id
+algorithm | algorithm
+
+For simple observations the value of `algorithm` should be `exposure`.
 
 ### Plane
 
@@ -129,16 +148,27 @@ The table does not include the calibration level.
 
 Column | Description | SALT | SAAO
 --- | --- | --- | ---
-id | internal id | internal id | internal id
-productID | collection- and observationID-specific identifier for this product | FITS filename without the file extension |
+planeId | internal id | internal id | internal id
+productIdentifier | collection- and observationIdentifier-specific identifier for this product | FITS filename without the file extension |
 metaRelease | timestamp after which metadata for the plane is public; this metaRelease timestamp applies to all children of the plane and to artifacts with releaseType=meta | the date after which the data is public |
 dataRelease | timestamp after which data for the plane is public; this dataRelease timestamp applies to all children of the plane and to artifacts with releaseType=data | the date after which the data is public |
-dataProductType | standard classification of the type of data product; describes the logical data type for the main artifacts | "image" for Salticam and RSS imaging and Fabry-Perot, "spectrum" otherwise |
+dataProductTypeId | id of the DataProductType table entry | id in DataProductType table | id in ProductDataTypeEntry
 energyId | id of energy description | id in Energy table | id in Energy table
 polarizationId | id of polarization description | id in Polarization table
 positionId | id of the position description | id in Position table | id in Position table
 qualityId | id of the quality | id of entry in Quality table | id of entry in Quality table
 timeId | id of the time description | id of entry in Time table | id of entry in Time table
+
+### DataProductType
+
+Standard classification of the type of data product; describes the logical data type for the main artifacts.
+
+Column | Description
+--- | ---
+dataProductTypeId | internal id
+dataProductType | data product type
+
+For SALT, the data product type is `image` for Salticam and RSS imaging and Fabry-Perot, `spectrum` otherwise.
 
 ### Energy
 
@@ -146,7 +176,7 @@ A description of the energy coverage and sampling of the data.
 
 Column | Description
 --- | ---
-id | internal id
+energyId | internal id
 dimension | number of measurements (pixels) on the energy axis
 resolvingPower | median spectral resolving power per pixel
 sampleSize | median pixel size
@@ -191,21 +221,10 @@ This table bears no resemblance at all to the Position model in the CAOM model a
 
 Column | Description
 --- | ---
-id | internal id
+positionId | internal id
 equinox | equinox
 ra | right ascension
 dec| declination
-
-### Data quality
-
-Description of the data quality.
-
-Column | Description | SALT | SAAO
---- | --- | --- | ---
-id | internal id | internal id | internal id
-quality | quality | "Accepted" or "Rejected"
-
-The terms "Accepted" and "Rejected" might change.
 
 ### Time
 
@@ -213,7 +232,7 @@ A description of the time coverage and sampling of the data.
 
 Column | Description | SALT | SAAO
 --- | --- | --- | ---
-id | internal id | internal id | internal id
+timeId | internal id | internal id | internal id
 resolution | median temporal resolution per pixel, in seconds | exposure time from the FITS file
 start | start time, as UTC | start of observation from the FITS file |
 end | end time, as UTC | start time + exposure time from the FITS file |
@@ -225,9 +244,9 @@ A physical product (typically a file).
 
 Column | Description
 --- | ---
-id | internal id
+artifactId | internal id
 planeId | id of the Plane entry to which this artifact belongs
-artifactId | a UUID
+artifactIdentifier | a UUID
 artifactName | name of the artifact
 path | file path
 productType | the primary product type of the artifact; for multi-part artifacts where the parts have different types, this is the primary type; for example, if an artifact has a science part and an auxiliary part, the artifact should have type science
@@ -248,6 +267,18 @@ The following algorithm is used to determine the product type for SALT.
 4. The product type is calibration in all other cases.
 
 Note that the CAOM does not define a product type specifically for arcs.
+
+### ProductType
+
+The primary product type of the artifact; for multi-part artifacts where the parts have different types, this is the primary type; for example, if an artifact has a science part and an auxiliary part, the artifact should have type science.
+id | internal id
+
+Column | Description
+--- | ---
+productTypeId | internal id
+productType | product type
+
+The product type must be chosen from the [list of defined product types](http://www.opencadc.org/caom2/ProductType/).
 
 ## Calculating energy properties
 
@@ -560,6 +591,8 @@ Arm | Dimension
 --- | ---
 Blue | 57812
 Red | 77906
+
+these values have to be corrected with the spectral binning, which is the first of the two numbers in the value for the `CCDSUM` keyword in the FITS header.
 
 ### BVIT
 
