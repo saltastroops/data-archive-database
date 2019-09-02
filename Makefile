@@ -44,13 +44,16 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr .pytest_cache
 
 format: ## format code with black
-	pipenv run black cli.py ssda tests
+	pipenv run black src/ssda tests
 
 lint: ## check style with flake8
 	pipenv run flake8 src tests
 
 test: ## run tests quickly with the default Python
 	pipenv run pytest
+
+types: ## run tests quickly with the default Python
+	pipenv run mypy --strict src/ssda
 
 tox: ## run tests on every Python version with tox
 	pipenv run tox
