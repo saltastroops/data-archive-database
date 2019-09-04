@@ -11,8 +11,6 @@ A single top-level entry in the data archive. This generally corresponds to a si
 Column | Description | SALT | SAAO
 --- | --- | --- | ---
 observationId | internal id | internal id | internal id
-collection | the name of the data collection this observation belongs to | "SALT" | "SAAO"
-observationIdentifier | the collection-specific identifier for this observation | See below |
 observationGroup | identifier for the group of observations to which this observation belongs | block visit id
 metaRelease | timestamp after which metadata for the observation instance is public | the date after which the data is public | 
 type | the type of observation (FITS OBSTYPE keyword); usually OBJECT for intent = science | FITS OBSTYPE keyword |
@@ -35,7 +33,7 @@ Column | Description
 statusId | internal id
 status | status
 
-The possible values for `status` are `accepted` (the observation meets the requirements) and `rejected` (the observation does not meet the requirements).
+The possible values for `status` are `Accepted` (the observation meets the requirements) and `Rejected` (the observation does not meet the requirements).
 
 ### Instrument
 
@@ -177,6 +175,8 @@ A description of the energy coverage and sampling of the data.
 Column | Description
 --- | ---
 energyId | internal id
+lowerBound | lower energy bound, in metres
+upperBound | upper energy bound, in metres
 dimension | number of measurements (pixels) on the energy axis
 resolvingPower | median spectral resolving power per pixel
 sampleSize | median pixel size
@@ -197,21 +197,30 @@ The calculation of the energy intervals is explained in the section on calculati
 
 ### Polarization
 
-A description of polarization measurements included in the data.
+A junction table for linking planes and Stokes parameters.
 
 Column | Description
 --- | ---
 id | internal id
-states | set of polarization states (such as "Q,U")
+planeId | id of a Plane entry
+stokesParameterId | id of a StokesParameter entry
 
-SALT's polarization configurations are mapped as follows.
+SALT's polarization configurations are mapped as follows to Stokes parameters.
 
-Configuration | States
+Configuration | Stokes parameters
 --- | ---
-Linear |
-Linear Hi |
-Circular |
-All Stokes |
+Linear | Q, U
+Linear Hi | Q, U
+Circular | V
+All Stokes | Q, U, V
+
+### StokesParameter
+
+The Stokes parameters.
+
+Column | Description
+stokesParameterId | internal id
+stokesParameter | Stokes parameter
 
 ### Position
 
@@ -431,6 +440,12 @@ The energy intervals are the wavelength intervals for these values of x:
 
 ```
 energy intervals = [[getWavelength(x(edge 1 of CCD i), gratingAngle, cameraAngle, gratingFrequency), getWavelength(x(edge 2 of CCD i), gratingAngle, cameraAngle, gratingFrequency)] for i in (1, 2, 3)]
+```
+
+However, as the Common Archive Observation Model limits the number of energy intervals to one per plane, we ignore chip gaps and just use
+
+```
+energy interval = [getWavelength(3162, gratingAngle, cameraAngle, gratingFrequency), getWavelength(-3162, gratingAngle, cameraAngle, gratingFrequency)]
 ```
 
 We estimate the sample size to be
