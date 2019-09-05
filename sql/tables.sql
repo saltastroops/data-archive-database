@@ -250,9 +250,11 @@ COMMENT ON TABLE instrument_keyword_value IS 'Value for an instrument keyword fo
 CREATE TABLE plane
 (
     plane_id       bigserial PRIMARY KEY,
+    data_product_type_id int NOT NULL REFERENCES data_product_type (data_product_type_id),
     observation_id int NOT NULL REFERENCES observation (observation_id) ON DELETE CASCADE
 );
 
+CREATE INDEX plane_data_product_type_idx ON plane (data_product_type_id);
 CREATE INDEX plane_observation_idx ON plane (observation_id);
 
 COMMENT ON TABLE plane IS 'A component of an observation that describes one product of the observation';
