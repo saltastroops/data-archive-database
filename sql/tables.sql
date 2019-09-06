@@ -32,16 +32,17 @@ VALUES ('Image'),
 
 CREATE TABLE institution
 (
-    institution_id serial PRIMARY KEY,
-    name           varchar(200) UNIQUE NOT NULL
+    institution_id   serial PRIMARY KEY,
+    abbreviated_name varchar(20) UNIQUE  NOT NULL,
+    name             varchar(200) UNIQUE NOT NULL
 );
 
 COMMENT ON TABLE institution IS 'An institution which grants observing time';
 COMMENT ON COLUMN institution.name IS 'The name of the institution.';
 
-INSERT INTO institution (name)
-VALUES ('South African Astronomical Observatory'),
-       ('Southern African Large Telescope');
+INSERT INTO institution (abbreviated_name, name)
+VALUES ('SAAO', 'South African Astronomical Observatory'),
+       ('SALT', 'Southern African Large Telescope');
 
 -- instrument
 
@@ -120,6 +121,7 @@ VALUES ('Arc'),
        ('Info'),
        ('Noise'),
        ('Preview'),
+       ('Science'),
        ('Thumbnail'),
        ('Weight');
 
@@ -249,9 +251,9 @@ COMMENT ON TABLE instrument_keyword_value IS 'Value for an instrument keyword fo
 
 CREATE TABLE plane
 (
-    plane_id       bigserial PRIMARY KEY,
+    plane_id             bigserial PRIMARY KEY,
     data_product_type_id int NOT NULL REFERENCES data_product_type (data_product_type_id),
-    observation_id int NOT NULL REFERENCES observation (observation_id) ON DELETE CASCADE
+    observation_id       int NOT NULL REFERENCES observation (observation_id) ON DELETE CASCADE
 );
 
 CREATE INDEX plane_data_product_type_idx ON plane (data_product_type_id);
@@ -367,8 +369,8 @@ CREATE TABLE artifact
     content_length   bigint              NOT NULL CHECK (content_length > 0),
     identifier       varchar(50) UNIQUE  NOT NULL,
     name             varchar(200)        NOT NULL,
-    plane_id         int                 NOT NULL REFERENCES Plane (plane_id),
     path             varchar(255) UNIQUE NOT NULL,
+    plane_id         int                 NOT NULL REFERENCES Plane (plane_id),
     product_type_id  int REFERENCES product_type (product_type_id)
 );
 
