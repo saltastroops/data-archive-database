@@ -6,7 +6,7 @@ setup(
     package_dir={'': 'src'},
     python_requires=">=3.7",
     setup_requires=['pytest-runner'],
-    install_requires=[],
+    install_requires=['astropy'],
     tests_require=['pytest', 'pytest-mock'],
     entry_points={"console_scripts": ["ssda = ssda.cli:main"]},
     version="0.1.0"
