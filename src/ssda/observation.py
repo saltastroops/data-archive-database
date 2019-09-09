@@ -19,7 +19,9 @@ class ObservationProperties(ABC):
     def energy(self, plane_id: int) -> types.Energy:
         raise NotImplemented
 
-    def instrument_keyword_values(self, observation_id) -> List[types.InstrumentKeywordValue]:
+    def instrument_keyword_values(
+        self, observation_id: int
+    ) -> List[types.InstrumentKeywordValue]:
         raise NotImplemented
 
     def observation(self, proposal_id: Optional[int]) -> types.Observation:
@@ -40,9 +42,8 @@ class ObservationProperties(ABC):
     def proposal(self) -> Optional[types.Proposal]:
         raise NotImplemented
 
-    def target(self) -> types.Target:
+    def target(self, observation_id: int) -> types.Target:
         raise NotImplemented
-
 
 
 class StandardObservationProperties(ObservationProperties):
