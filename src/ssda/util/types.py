@@ -329,7 +329,7 @@ class Energy:
         try:
             sample_size.to(u.meter)
         except u.UnitConversionError:
-            raise ValueError('The sample size must have a length unit.')
+            raise ValueError("The sample size must have a length unit.")
         if sample_size < 0:
             raise ValueError("The sample size must be non-negative.")
 
@@ -843,11 +843,13 @@ class Proposal:
 
     """
 
-    def __init__(self, institution: Institution, pi: str, proposal_code: str, title: str):
+    def __init__(
+        self, institution: Institution, pi: str, proposal_code: str, title: str
+    ):
         if len(pi) > 100:
             raise ValueError("The PI must have at most 100 characters.")
         if len(proposal_code) > 50:
-            raise ValueError('The proposal code must have at most 50 characters.')
+            raise ValueError("The proposal code must have at most 50 characters.")
         if len(title) > 200:
             raise ValueError("The title must have at most 200 characters.")
 
@@ -889,7 +891,7 @@ class ProposalInvestigator:
 
     def __init__(self, proposal_id: int, investigator_id: str):
         if len(investigator_id) > 50:
-            raise ValueError('The investigator id must have at most 30 characters.')
+            raise ValueError("The investigator id must have at most 30 characters.")
 
         self._proposal_id = proposal_id
         self._investigator_id = investigator_id
@@ -901,6 +903,7 @@ class ProposalInvestigator:
     @property
     def investigator_id(self) -> str:
         return self._investigator_id
+
 
 class Status(Enum):
     """

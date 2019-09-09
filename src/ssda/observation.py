@@ -43,7 +43,9 @@ class ObservationProperties(ABC):
     def proposal(self) -> Optional[types.Proposal]:
         raise NotImplementedError
 
-    def proposal_investigators(self, proposal_id: int) -> List[types.ProposalInvestigator]:
+    def proposal_investigators(
+        self, proposal_id: int
+    ) -> List[types.ProposalInvestigator]:
         raise NotImplementedError
 
     def target(self, observation_id: int) -> types.Target:

@@ -316,7 +316,7 @@ def test_energy_max_wavelength_must_not_be_less_than_min_wavelength():
             min_wavelength=7000.1 * u.nanometer,
             plane_id=83,
             resolving_power=1200,
-            sample_size=2.34 * u.nanometer
+            sample_size=2.34 * u.nanometer,
         )
 
     assert "minimum" in str(excinfo) and "maximum" in str(excinfo)
@@ -330,7 +330,7 @@ def test_energy_resolving_power_must_be_non_negative():
             min_wavelength=5500 * u.nanometer,
             plane_id=83,
             resolving_power=-1,
-            sample_size=2.34 * u.nanometer
+            sample_size=2.34 * u.nanometer,
         )
 
     assert "resolving power" in str(excinfo)
@@ -344,10 +344,10 @@ def test_energy_sample_size_must_have_a_length_unit():
             min_wavelength=5500 * u.nanometer,
             plane_id=83,
             resolving_power=1200,
-            sample_size=2.34 * u.second
+            sample_size=2.34 * u.second,
         )
 
-    assert 'sample size' in str(excinfo) and 'length' in str(excinfo)
+    assert "sample size" in str(excinfo) and "length" in str(excinfo)
 
 
 def test_energy_sample_size_must_be_non_negative():
@@ -358,7 +358,7 @@ def test_energy_sample_size_must_be_non_negative():
             min_wavelength=5500 * u.nanometer,
             plane_id=83,
             resolving_power=1200,
-            sample_size=-1 * u.nanometer
+            sample_size=-1 * u.nanometer,
         )
 
     assert "sample size" in str(excinfo)
@@ -668,7 +668,10 @@ def test_position_declination_must_be_in_allowed_range(ra):
 
 def test_proposal_is_created_correctly():
     proposal = types.Proposal(
-        institution=types.Institution.SAAO, pi="John Doe", proposal_code='2019-1-SCI-042',  title="Some Proposal"
+        institution=types.Institution.SAAO,
+        pi="John Doe",
+        proposal_code="2019-1-SCI-042",
+        title="Some Proposal",
     )
 
     assert proposal.institution == types.Institution.SAAO
@@ -679,7 +682,10 @@ def test_proposal_is_created_correctly():
 def test_proposal_pi_too_long():
     with pytest.raises(ValueError) as excinfo:
         types.Proposal(
-            institution=types.Institution.SAAO, pi=101 * "a", proposal_code='2019-1-SCI-042', title="Some Proposal"
+            institution=types.Institution.SAAO,
+            pi=101 * "a",
+            proposal_code="2019-1-SCI-042",
+            title="Some Proposal",
         )
 
     assert "PI" in str(excinfo)
@@ -688,7 +694,10 @@ def test_proposal_pi_too_long():
 def test_proposal_proposal_code_too_long():
     with pytest.raises(ValueError) as excinfo:
         types.Proposal(
-            institution=types.Institution.SAAO, pi='John Doe', proposal_code='p' * 51, title="Some Proposal"
+            institution=types.Institution.SAAO,
+            pi="John Doe",
+            proposal_code="p" * 51,
+            title="Some Proposal",
         )
 
     assert "proposal code" in str(excinfo)
@@ -697,7 +706,10 @@ def test_proposal_proposal_code_too_long():
 def test_proposal_title_too_long():
     with pytest.raises(ValueError) as excinfo:
         types.Proposal(
-            institution=types.Institution.SALT, pi="John Doe", proposal_code='2019-1-SCI-042', title=201 * "a"
+            institution=types.Institution.SALT,
+            pi="John Doe",
+            proposal_code="2019-1-SCI-042",
+            title=201 * "a",
         )
 
     assert "title" in str(excinfo)
@@ -707,19 +719,19 @@ def test_proposal_title_too_long():
 
 
 def test_proposal_investigator_is_created_correctly():
-    proposal_investigator = types.ProposalInvestigator(proposal_id=532,
-                                                       investigator_id='j78b')
+    proposal_investigator = types.ProposalInvestigator(
+        proposal_id=532, investigator_id="j78b"
+    )
 
     assert proposal_investigator.proposal_id == 532
-    assert proposal_investigator.investigator_id == 'j78b'
+    assert proposal_investigator.investigator_id == "j78b"
 
 
 def test_proposal_investigator_id_too_long():
     with pytest.raises(ValueError) as excinfo:
-        types.ProposalInvestigator(proposal_id=532,
-                                   investigator_id='i' * 51)
+        types.ProposalInvestigator(proposal_id=532, investigator_id="i" * 51)
 
-    assert 'investigator id' in str(excinfo)
+    assert "investigator id" in str(excinfo)
 
 
 # Target

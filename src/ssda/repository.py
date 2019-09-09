@@ -2,7 +2,9 @@ from ssda.database import DatabaseService
 from ssda.observation import ObservationProperties
 
 
-def insert(observation_properties: ObservationProperties, database_service: DatabaseService) -> None:
+def insert(
+    observation_properties: ObservationProperties, database_service: DatabaseService
+) -> None:
     # start the transaction
     database_service.begin_transaction()
 
@@ -10,13 +12,17 @@ def insert(observation_properties: ObservationProperties, database_service: Data
         # insert proposal (if need be)
         proposal = observation_properties.proposal()
         if proposal:
-            proposal_id = database_service.find_proposal_id(proposal_code=proposal.proposal_code, institution=proposal.institution)
+            proposal_id = database_service.find_proposal_id(
+                proposal_code=proposal.proposal_code, institution=proposal.institution
+            )
             if proposal_id is None:
                 # insert proposal
                 proposal_id = database_service.insert_proposal(proposal)
 
                 # insert proposal investigators
-                proposal_investigators = observation_properties.proposal_investigators(proposal_id)
+                proposal_investigators = observation_properties.proposal_investigators(
+                    proposal_id
+                )
                 for proposal_investigator in proposal_investigators:
                     database_service.insert_proposal_investigator(proposal_investigator)
         else:
@@ -38,7 +44,9 @@ def insert(observation_properties: ObservationProperties, database_service: Data
         database_service.insert_target(target)
 
         # insert instrument keyword values
-        instrument_keyword_values = observation_properties.instrument_keyword_values(observation_id)
+        instrument_keyword_values = observation_properties.instrument_keyword_values(
+            observation_id
+        )
         for instrument_keyword_value in instrument_keyword_values:
             database_service.insert_instrument_keyword_value(instrument_keyword_value)
 

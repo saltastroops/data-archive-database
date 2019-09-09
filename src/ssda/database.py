@@ -47,7 +47,9 @@ class DatabaseService:
 
         raise NotImplementedError
 
-    def find_proposal_id(self, proposal_code: str, institution: types.Institution) -> Optional[int]:
+    def find_proposal_id(
+        self, proposal_code: str, institution: types.Institution
+    ) -> Optional[int]:
         """
         Find the database id of a proposal.
 
@@ -107,7 +109,9 @@ class DatabaseService:
 
         raise NotImplementedError
 
-    def insert_instrument_keyword_value(self, instrument_keyword_value: types.InstrumentKeywordValue) -> int:
+    def insert_instrument_keyword_value(
+        self, instrument_keyword_value: types.InstrumentKeywordValue
+    ) -> int:
         """
         Insert an instrument keyword value.
 
@@ -231,7 +235,9 @@ class DatabaseService:
 
         raise NotImplementedError
 
-    def insert_proposal_investigator(self, proposal_investigator: types.ProposalInvestigator) -> int:
+    def insert_proposal_investigator(
+        self, proposal_investigator: types.ProposalInvestigator
+    ) -> int:
         """
         Insert a proposal investigator.
 
@@ -274,4 +280,3 @@ class DatabaseService:
         """
 
         raise NotImplementedError
-

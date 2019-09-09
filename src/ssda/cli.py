@@ -88,7 +88,9 @@ def validate_options(
 
     # Date ranges and the --file option are mutually exclusive
     if start and file:
-        raise click.UsageError("The --start/--end and --file options are mutually exclusive.")
+        raise click.UsageError(
+            "The --start/--end and --file options are mutually exclusive."
+        )
 
     # A date range requires at least one instrument
     if start and not len(instruments):
