@@ -703,6 +703,25 @@ def test_proposal_title_too_long():
     assert "title" in str(excinfo)
 
 
+# ProposalInvestigator
+
+
+def test_proposal_investigator_is_created_correctly():
+    proposal_investigator = types.ProposalInvestigator(proposal_id=532,
+                                                       investigator_id='j78b')
+
+    assert proposal_investigator.proposal_id == 532
+    assert proposal_investigator.investigator_id == 'j78b'
+
+
+def test_proposal_investigator_id_too_long():
+    with pytest.raises(ValueError) as excinfo:
+        types.ProposalInvestigator(proposal_id=532,
+                                   investigator_id='i' * 51)
+
+    assert 'investigator id' in str(excinfo)
+
+
 # Target
 
 

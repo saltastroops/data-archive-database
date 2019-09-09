@@ -873,6 +873,33 @@ class Proposal:
         return self._title
 
 
+class ProposalInvestigator:
+    """
+    An investigator on a proposal.
+
+    Parameters
+    ----------
+    proposal_id : int
+        Database id of the proposal.
+    investigator_id : str
+        The unique id of the investigator, as determined by the institution to which the
+        proposal was submitted.
+
+    """
+
+    def __init__(self, proposal_id: int, investigator_id: str):
+        if len(investigator_id) > 50:
+            raise ValueError('The investigator id must have at most 30 characters.')
+
+        self._proposal_id = proposal_id
+        self._investigator_id = investigator_id
+
+    def proposal_id(self) -> int:
+        return self._proposal_id
+
+    def investigator_id(self) -> str:
+        return self._investigator_id
+
 class Status(Enum):
     """
     Enumeration of the available status values.
