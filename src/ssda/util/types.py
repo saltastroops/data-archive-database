@@ -292,7 +292,7 @@ class Energy:
         Database id of the plane to which the spectral details refer.
     resolving_power : float
         Resolving power for the wavelength.
-    sample_size : float
+    sample_size : Quantity
         Size of the wavelength interval per pixel.
 
     """
@@ -304,7 +304,7 @@ class Energy:
         min_wavelength: Quantity,
         plane_id: int,
         resolving_power: float,
-        sample_size: float,
+        sample_size: Quantity,
     ):
         if dimension <= 0:
             raise ValueError("The dimension must be positive.")
@@ -326,6 +326,10 @@ class Energy:
             )
         if resolving_power < 0:
             raise ValueError("The resolving power must be non-negative.")
+        try:
+            sample_size.to(u.meter)
+        except u.UnitConversionError:
+            raise ValueError('The sample size must have a length unit.')
         if sample_size < 0:
             raise ValueError("The sample size must be non-negative.")
 
@@ -357,7 +361,7 @@ class Energy:
         return self._resolving_power
 
     @property
-    def sample_size(self) -> float:
+    def sample_size(self) -> Quantity:
         return self._sample_size
 
 
@@ -832,19 +836,24 @@ class Proposal:
         Institution.
     pi : str
         Principal Investigator.
+    proposal_code : str
+        Proposal identifier, which is unique within an institution.
     title : str
         Proposal title.
 
     """
 
-    def __init__(self, institution: Institution, pi: str, title: str):
+    def __init__(self, institution: Institution, pi: str, proposal_code: str, title: str):
         if len(pi) > 100:
             raise ValueError("The PI must have at most 100 characters.")
+        if len(proposal_code) > 50:
+            raise ValueError('The proposal code must have at most 50 characters.')
         if len(title) > 200:
             raise ValueError("The title must have at most 200 characters.")
 
         self._institution = institution
         self._pi = pi
+        self._proposal_code = proposal_code
         self._title = title
 
     @property
@@ -854,6 +863,10 @@ class Proposal:
     @property
     def pi(self) -> str:
         return self._pi
+
+    @property
+    def proposal_code(self):
+        return self._proposal_code
 
     @property
     def title(self) -> str:

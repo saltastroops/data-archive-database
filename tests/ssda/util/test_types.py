@@ -227,7 +227,7 @@ def test_energy_is_created_correctly():
         min_wavelength=5500 * u.nanometer,
         plane_id=83,
         resolving_power=1200,
-        sample_size=2.34,
+        sample_size=2.34 * u.nanometer,
     )
 
     assert energy.dimension == 512
@@ -235,7 +235,7 @@ def test_energy_is_created_correctly():
     assert energy.min_wavelength.to_value(u.nanometer) == 5500
     assert energy.plane_id == 83
     assert energy.resolving_power == 1200
-    assert energy.sample_size == 2.34
+    assert energy.sample_size.to_value(u.nanometer) == 2.34
 
 
 def test_energy_dimension_must_be_positive():
@@ -246,7 +246,7 @@ def test_energy_dimension_must_be_positive():
             min_wavelength=5500 * u.nanometer,
             plane_id=83,
             resolving_power=1200,
-            sample_size=2.34,
+            sample_size=2.34 * u.nanometer,
         )
 
     assert "dimension" in str(excinfo)
@@ -260,7 +260,7 @@ def test_energy_max_wavelength_must_be_positive():
             min_wavelength=5500 * u.nanometer,
             plane_id=83,
             resolving_power=1200,
-            sample_size=2.34,
+            sample_size=2.34 * u.nanometer,
         )
 
     assert "maximum wavelength" in str(excinfo) and "positive" in str(excinfo)
@@ -274,7 +274,7 @@ def test_energy_max_wavelength_must_have_a_length_unit():
             min_wavelength=5500 * u.nanometer,
             plane_id=83,
             resolving_power=1200,
-            sample_size=2.34,
+            sample_size=2.34 * u.nanometer,
         )
 
     assert "maximum wavelength" in str(excinfo) and "length" in str(excinfo)
@@ -288,7 +288,7 @@ def test_energy_min_wavelength_must_be_positive():
             min_wavelength=0 * u.nanometer,
             plane_id=83,
             resolving_power=1200,
-            sample_size=2.34,
+            sample_size=2.34 * u.nanometer,
         )
 
     assert "minimum wavelength" in str(excinfo) and "positive" in str(excinfo)
@@ -302,7 +302,7 @@ def test_energy_min_wavelength_must_have_a_length_unit():
             min_wavelength=5500 * u.second,
             plane_id=83,
             resolving_power=1200,
-            sample_size=2.34,
+            sample_size=2.34 * u.nanometer,
         )
 
     assert "minimum wavelength" in str(excinfo) and "length" in str(excinfo)
@@ -316,7 +316,7 @@ def test_energy_max_wavelength_must_not_be_less_than_min_wavelength():
             min_wavelength=7000.1 * u.nanometer,
             plane_id=83,
             resolving_power=1200,
-            sample_size=2.34,
+            sample_size=2.34 * u.nanometer
         )
 
     assert "minimum" in str(excinfo) and "maximum" in str(excinfo)
@@ -330,10 +330,24 @@ def test_energy_resolving_power_must_be_non_negative():
             min_wavelength=5500 * u.nanometer,
             plane_id=83,
             resolving_power=-1,
-            sample_size=2.34,
+            sample_size=2.34 * u.nanometer
         )
 
     assert "resolving power" in str(excinfo)
+
+
+def test_energy_sample_size_must_have_a_length_unit():
+    with pytest.raises(ValueError) as excinfo:
+        types.Energy(
+            dimension=512,
+            max_wavelength=7000 * u.nanometer,
+            min_wavelength=5500 * u.nanometer,
+            plane_id=83,
+            resolving_power=1200,
+            sample_size=2.34 * u.second
+        )
+
+    assert 'sample size' in str(excinfo) and 'length' in str(excinfo)
 
 
 def test_energy_sample_size_must_be_non_negative():
@@ -344,7 +358,7 @@ def test_energy_sample_size_must_be_non_negative():
             min_wavelength=5500 * u.nanometer,
             plane_id=83,
             resolving_power=1200,
-            sample_size=-1,
+            sample_size=-1 * u.nanometer
         )
 
     assert "sample size" in str(excinfo)
@@ -654,7 +668,7 @@ def test_position_declination_must_be_in_allowed_range(ra):
 
 def test_proposal_is_created_correctly():
     proposal = types.Proposal(
-        institution=types.Institution.SAAO, pi="John Doe", title="Some Proposal"
+        institution=types.Institution.SAAO, pi="John Doe", proposal_code='2019-1-SCI-042',  title="Some Proposal"
     )
 
     assert proposal.institution == types.Institution.SAAO
@@ -665,16 +679,25 @@ def test_proposal_is_created_correctly():
 def test_proposal_pi_too_long():
     with pytest.raises(ValueError) as excinfo:
         types.Proposal(
-            institution=types.Institution.SAAO, pi=101 * "a", title="Some Proposal"
+            institution=types.Institution.SAAO, pi=101 * "a", proposal_code='2019-1-SCI-042', title="Some Proposal"
         )
 
     assert "PI" in str(excinfo)
 
 
+def test_proposal_proposal_code_too_long():
+    with pytest.raises(ValueError) as excinfo:
+        types.Proposal(
+            institution=types.Institution.SAAO, pi='John Doe', proposal_code='p' * 51, title="Some Proposal"
+        )
+
+    assert "proposal code" in str(excinfo)
+
+
 def test_proposal_title_too_long():
     with pytest.raises(ValueError) as excinfo:
         types.Proposal(
-            institution=types.Institution.SALT, pi="John Doe", title=201 * "a"
+            institution=types.Institution.SALT, pi="John Doe", proposal_code='2019-1-SCI-042', title=201 * "a"
         )
 
     assert "title" in str(excinfo)
