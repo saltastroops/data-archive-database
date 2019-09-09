@@ -255,15 +255,3 @@ def test_the_start_date_must_be_earlier_than_the_end_date():
     )
     assert result.exit_code != 0
     assert "start" in str(result.exc_info) and "end" in str(result.exc_info)
-
-
-def test_a_date_range_or_a_file_must_be_supplied():
-    runner = CliRunner()
-    result = runner.invoke(
-        main, ["--instrument", "RSS", "--task", "insert", "--mode", "dummy"]
-    )
-    assert result.exit_code != 0
-    assert "date" in str(result.exc_info) and "file" in str(result.exc_info)
-
-
-# def test_main_calls_task_execute_correctly()

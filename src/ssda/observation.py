@@ -2,6 +2,7 @@ from abc import ABC
 from typing import List, Optional
 
 from ssda.util import types
+from ssda.util.fits import FitsFile
 
 
 class ObservationProperties(ABC):
@@ -50,7 +51,8 @@ class ObservationProperties(ABC):
 
 
 class StandardObservationProperties(ObservationProperties):
-    pass
+    def __init__(self, fits_file: FitsFile):
+        pass
 
 
 class DummyObservationProperties(ObservationProperties):
