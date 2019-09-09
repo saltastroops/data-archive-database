@@ -2,22 +2,25 @@ from ssda.database import DatabaseService
 from ssda.observation import ObservationProperties
 
 
-def insert(observation_properties: ObservationProperties, database_service: DatabaseService):
+def insert(observation_properties: ObservationProperties, database_service: DatabaseService) -> None:
     # start the transaction
     database_service.begin_transaction()
 
     try:
         # insert proposal (if need be)
         proposal = observation_properties.proposal()
-        proposal_id: int = database_service.find_proposal_id(proposal_code=proposal.proposal_code, institution=proposal.institution)
-        if proposal_id is None:
-            # insert proposal
-            proposal_id = database_service.insert_proposal(observation_properties.proposal())
+        if proposal:
+            proposal_id = database_service.find_proposal_id(proposal_code=proposal.proposal_code, institution=proposal.institution)
+            if proposal_id is None:
+                # insert proposal
+                proposal_id = database_service.insert_proposal(proposal)
 
-            # insert proposal investigators
-            proposal_investigators = observation_properties.proposal_investigators(proposal_id)
-            for proposal_investigator in proposal_investigators:
-                database_service.insert_proposal_investigator(proposal_investigator)
+                # insert proposal investigators
+                proposal_investigators = observation_properties.proposal_investigators(proposal_id)
+                for proposal_investigator in proposal_investigators:
+                    database_service.insert_proposal_investigator(proposal_investigator)
+        else:
+            proposal_id = None
 
         # insert observation (if need be)
         artifact_name = observation_properties.artifact(-1).name

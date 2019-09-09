@@ -17,7 +17,7 @@ class ObservationProperties(ABC):
     def artifact(self, plane_id: int) -> types.Artifact:
         raise NotImplementedError
 
-    def energy(self, plane_id: int) -> types.Energy:
+    def energy(self, plane_id: int) -> Optional[types.Energy]:
         raise NotImplementedError
 
     def instrument_keyword_values(

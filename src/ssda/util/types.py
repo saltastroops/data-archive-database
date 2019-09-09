@@ -865,7 +865,7 @@ class Proposal:
         return self._pi
 
     @property
-    def proposal_code(self):
+    def proposal_code(self) -> str:
         return self._proposal_code
 
     @property
