@@ -2,6 +2,7 @@ from datetime import date, datetime
 from typing import Any, Optional, List
 
 import astropy.units as u
+from dateutil import tz
 
 import ssda.database
 from ssda.observation import ObservationProperties
@@ -79,11 +80,15 @@ class ObservationPropertiesStub(ObservationProperties):
 
     def observation_time(self, plane_id: int) -> types.ObservationTime:
         return types.ObservationTime(
-            end_time=datetime(2019, 9, 7, 23, 10, 10),
+            end_time=datetime(
+                2019, 9, 7, 23, 10, 10, tzinfo=tz.gettz("Africa/Johannesburg")
+            ),
             exposure_time=40 * u.second,
             plane_id=plane_id,
             resolution=40 * u.second,
-            start_time=datetime(2019, 9, 7, 23, 9, 30),
+            start_time=datetime(
+                2019, 9, 7, 23, 9, 30, tzinfo=tz.gettz("Africa/Johannesburg")
+            ),
         )
 
     def plane(self, observation_id: int) -> types.Plane:

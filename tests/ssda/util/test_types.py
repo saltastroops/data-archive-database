@@ -3,6 +3,7 @@ import pytest
 from datetime import date, datetime
 
 from astropy import units as u
+from dateutil import tz
 from ssda.util import types
 
 
@@ -502,28 +503,70 @@ def test_observation_group_too_long():
 
 def test_observation_time_is_created_correctly():
     observation_time = types.ObservationTime(
-        end_time=datetime(2019, 9, 6, 1, 12, 7, 0),
+        end_time=datetime(
+            2019, 9, 6, 1, 12, 7, 0, tzinfo=tz.gettz("Africa/Johannesburg")
+        ),
         exposure_time=500 * u.second,
         plane_id=123456,
         resolution=470 * u.second,
-        start_time=datetime(2019, 9, 6, 1, 3, 47, 0),
+        start_time=datetime(
+            2019, 9, 6, 1, 3, 47, 0, tzinfo=tz.gettz("Africa/Johannesburg")
+        ),
     )
 
-    assert observation_time.end_time == datetime(2019, 9, 6, 1, 12, 7, 0)
+    assert observation_time.end_time == datetime(
+        2019, 9, 6, 1, 12, 7, 0, tzinfo=tz.gettz("Africa/Johannesburg")
+    )
     assert observation_time.exposure_time.to_value(u.second) == 500
     assert observation_time.plane_id == 123456
     assert observation_time.resolution.to_value(u.second) == 470
-    assert observation_time.start_time == datetime(2019, 9, 6, 1, 3, 47, 0)
+    assert observation_time.start_time == datetime(
+        2019, 9, 6, 1, 3, 47, 0, tzinfo=tz.gettz("Africa/Johannesburg")
+    )
 
 
-def test_observation_start_time_must_not_be_later_than_end_time():
+def test_observation_start_time_must_be_timezone_aware():
     with pytest.raises(ValueError) as excinfo:
-        observation_time = types.ObservationTime(
+        types.ObservationTime(
+            end_time=datetime(
+                2019, 9, 6, 1, 12, 7, 0, tzinfo=tz.gettz("Africa/Johannesburg")
+            ),
+            exposure_time=500 * u.second,
+            plane_id=123456,
+            resolution=470 * u.second,
+            start_time=datetime(2019, 9, 6, 1, 3, 47, 0),
+        )
+
+    assert "start" in str(excinfo) and "timezone" in str(excinfo)
+
+
+def test_observation_end_time_must_be_timezone_aware():
+    with pytest.raises(ValueError) as excinfo:
+        types.ObservationTime(
             end_time=datetime(2019, 9, 6, 1, 12, 7, 0),
             exposure_time=500 * u.second,
             plane_id=123456,
             resolution=470 * u.second,
-            start_time=datetime(2019, 9, 6, 1, 12, 8, 0),
+            start_time=datetime(
+                2019, 9, 6, 1, 3, 47, 0, tzinfo=tz.gettz("Africa/Johannesburg")
+            ),
+        )
+
+    assert "end" in str(excinfo) and "timezone" in str(excinfo)
+
+
+def test_observation_start_time_must_not_be_later_than_end_time():
+    with pytest.raises(ValueError) as excinfo:
+        types.ObservationTime(
+            end_time=datetime(
+                2019, 9, 6, 1, 12, 7, 0, tzinfo=tz.gettz("Africa/Johannesburg")
+            ),
+            exposure_time=500 * u.second,
+            plane_id=123456,
+            resolution=470 * u.second,
+            start_time=datetime(
+                2019, 9, 6, 1, 12, 8, 0, tzinfo=tz.gettz("Africa/Johannesburg")
+            ),
         )
 
     assert "start" in str(excinfo) and "end" in str(excinfo)
@@ -532,11 +575,15 @@ def test_observation_start_time_must_not_be_later_than_end_time():
 def test_observation_exposure_time_must_be_non_negative():
     with pytest.raises(ValueError) as excinfo:
         types.ObservationTime(
-            end_time=datetime(2019, 9, 6, 1, 12, 7, 0),
+            end_time=datetime(
+                2019, 9, 6, 1, 12, 7, 0, tzinfo=tz.gettz("Africa/Johannesburg")
+            ),
             exposure_time=-1 * u.second,
             plane_id=123456,
             resolution=470 * u.second,
-            start_time=datetime(2019, 9, 6, 1, 3, 47, 0),
+            start_time=datetime(
+                2019, 9, 6, 1, 3, 47, 0, tzinfo=tz.gettz("Africa/Johannesburg")
+            ),
         )
 
     assert "exposure time" in str(excinfo) and "non-negative" in str(excinfo)
@@ -545,11 +592,15 @@ def test_observation_exposure_time_must_be_non_negative():
 def test_observation_exposure_time_must_have_a_time_unit():
     with pytest.raises(ValueError) as excinfo:
         types.ObservationTime(
-            end_time=datetime(2019, 9, 6, 1, 12, 7, 0),
+            end_time=datetime(
+                2019, 9, 6, 1, 12, 7, 0, tzinfo=tz.gettz("Africa/Johannesburg")
+            ),
             exposure_time=500 * u.meter,
             plane_id=123456,
             resolution=470 * u.second,
-            start_time=datetime(2019, 9, 6, 1, 3, 47, 0),
+            start_time=datetime(
+                2019, 9, 6, 1, 3, 47, 0, tzinfo=tz.gettz("Africa/Johannesburg")
+            ),
         )
 
     assert "exposure time" in str(excinfo) and "unit" in str(excinfo)
@@ -558,11 +609,15 @@ def test_observation_exposure_time_must_have_a_time_unit():
 def test_observation_time_resolution_must_be_non_negative():
     with pytest.raises(ValueError) as excinfo:
         types.ObservationTime(
-            end_time=datetime(2019, 9, 6, 1, 12, 7, 0),
+            end_time=datetime(
+                2019, 9, 6, 1, 12, 7, 0, tzinfo=tz.gettz("Africa/Johannesburg")
+            ),
             exposure_time=500 * u.second,
             plane_id=123456,
             resolution=-470 * u.second,
-            start_time=datetime(2019, 9, 6, 1, 3, 47, 0),
+            start_time=datetime(
+                2019, 9, 6, 1, 3, 47, 0, tzinfo=tz.gettz("Africa/Johannesburg")
+            ),
         )
 
     assert "resolution" in str(excinfo) and "non-negative" in str(excinfo)
@@ -571,11 +626,15 @@ def test_observation_time_resolution_must_be_non_negative():
 def test_observation_time_resolution_must_have_a_time_unit():
     with pytest.raises(ValueError) as excinfo:
         types.ObservationTime(
-            end_time=datetime(2019, 9, 6, 1, 12, 7, 0),
+            end_time=datetime(
+                2019, 9, 6, 1, 12, 7, 0, tzinfo=tz.gettz("Africa/Johannesburg")
+            ),
             exposure_time=500 * u.second,
             plane_id=123456,
             resolution=470 * u.meter,
-            start_time=datetime(2019, 9, 6, 1, 3, 47, 0),
+            start_time=datetime(
+                2019, 9, 6, 1, 3, 47, 0, tzinfo=tz.gettz("Africa/Johannesburg")
+            ),
         )
 
     assert "time resolution" in str(excinfo) and "unit" in str(excinfo)

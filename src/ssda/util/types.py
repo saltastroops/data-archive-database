@@ -645,6 +645,10 @@ class ObservationTime:
         resolution: Quantity,
         start_time: datetime,
     ):
+        if start_time.tzinfo is None:
+            raise ValueError("The start time must be timezone-aware.")
+        if end_time.tzinfo is None:
+            raise ValueError("The end time must be timezone-aware.")
         if start_time > end_time:
             raise ValueError("The start time must not be later than the end time.")
         if exposure_time.value < 0:
