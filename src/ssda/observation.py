@@ -14,36 +14,36 @@ class ObservationProperties(ABC):
     """
 
     def artifact(self, plane_id: int) -> types.Artifact:
-        raise NotImplemented
+        raise NotImplementedError
 
     def energy(self, plane_id: int) -> types.Energy:
-        raise NotImplemented
+        raise NotImplementedError
 
     def instrument_keyword_values(
         self, observation_id: int
     ) -> List[types.InstrumentKeywordValue]:
-        raise NotImplemented
+        raise NotImplementedError
 
     def observation(self, proposal_id: Optional[int]) -> types.Observation:
-        raise NotImplemented
+        raise NotImplementedError
 
     def observation_time(self, plane_id: int) -> types.ObservationTime:
-        raise NotImplemented
+        raise NotImplementedError
 
     def plane(self, observation_id: int) -> types.Plane:
-        raise NotImplemented
+        raise NotImplementedError
 
     def polarizations(self, plane_id: int) -> List[types.Polarization]:
-        raise NotImplemented
+        raise NotImplementedError
 
     def position(self, plane_id: int) -> types.Position:
-        raise NotImplemented
+        raise NotImplementedError
 
     def proposal(self) -> Optional[types.Proposal]:
-        raise NotImplemented
+        raise NotImplementedError
 
     def target(self, observation_id: int) -> types.Target:
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class StandardObservationProperties(ObservationProperties):
