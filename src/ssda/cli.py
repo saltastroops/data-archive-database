@@ -36,7 +36,7 @@ def parse_date(value: str, now: Callable[[], datetime]) -> date:
     try:
         return datetime.strptime(value, "%Y-%m-%d").date()
     except ValueError:
-        raise ValueError(
+        raise click.UsageError(
             f"{value} is neither a valid date of the form yyyy-mm-dd, nor the string "
             f"yesterday, nor the string today."
         )
@@ -78,48 +78,48 @@ def validate_options(
 
     # A start date requires an end date, and vice versa
     if start and not end:
-        raise ValueError(
+        raise click.UsageError(
             "You must also use the --end option if you use the --start option."
         )
     if end and not start:
-        raise ValueError(
+        raise click.UsageError(
             "You must also use the --start option if you use the --end option."
         )
 
     # Date ranges and the --file option are mutually exclusive
     if start and file:
-        raise ValueError("The --start/--end and --file options are mutually exclusive.")
+        raise click.UsageError("The --start/--end and --file options are mutually exclusive.")
 
     # A date range requires at least one instrument
     if start and not len(instruments):
-        raise ValueError(
+        raise click.UsageError(
             "You must specify at least one instrument (with the "
             "--instrument option) if you specify a date range."
         )
 
     # Either a date range or a FITS file must be specified
     if not start and not end and not file:
-        raise ValueError(
+        raise click.UsageError(
             "You must either specify a date range (with the --start/--end options) or "
             "a FITS file (with the --file option)."
         )
 
     # A date range requires a base directory
     if start and not fits_base_dir:
-        raise ValueError(
+        raise click.UsageError(
             "You must specify the base directory for the FITS files (with the"
             "--fits-base-dir option) if you are using a date range."
         )
 
     # A base directory and a file are mutually exclusive
     if file and fits_base_dir:
-        raise ValueError(
+        raise click.UsageError(
             "The --file and --fits-base-dir options are mutually exclusive."
         )
 
     # The start date must be earlier than the end date
     if start and end and start >= end:
-        raise ValueError("The start date must be earlier than the end date.")
+        raise click.UsageError("The start date must be earlier than the end date.")
 
 
 @click.command()
@@ -188,7 +188,7 @@ def main(
     elif file:
         paths = iter([file])
     else:
-        raise ValueError(
+        raise click.UsageError(
             "The command line options do not allow the FITS file paths to be found."
         )
 
