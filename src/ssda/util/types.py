@@ -894,9 +894,11 @@ class ProposalInvestigator:
         self._proposal_id = proposal_id
         self._investigator_id = investigator_id
 
+    @property
     def proposal_id(self) -> int:
         return self._proposal_id
 
+    @property
     def investigator_id(self) -> str:
         return self._investigator_id
 
