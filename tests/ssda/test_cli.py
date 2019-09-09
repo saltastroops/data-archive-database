@@ -1,3 +1,4 @@
+from click import UsageError
 from click.testing import CliRunner
 from datetime import date, datetime
 from typing import NamedTuple, Optional, Set
@@ -59,7 +60,7 @@ def test_parse_date_parses_correctly():
 def test_parse_date_rejects_invalid_dates(invalid_date: str):
     now = lambda: datetime(2019, 8, 30, 5, 9, 13)
 
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(UsageError) as excinfo:
         parse_date(invalid_date, now)
     assert "date" in str(excinfo.value)
 
@@ -85,7 +86,7 @@ def test_a_start_date_requires_an_end_date():
         ],
     )
     assert result.exit_code != 0
-    assert "start" in str(result.exc_info)
+    assert "start" in str(result.output)
 
 
 def test_an_end_date_requires_a_start_date():
@@ -104,7 +105,7 @@ def test_an_end_date_requires_a_start_date():
         ],
     )
     assert result.exit_code != 0
-    assert "end" in str(result.exc_info)
+    assert "end" in str(result.output)
 
 
 def test_file_is_not_allowed_with_dates():
@@ -132,7 +133,7 @@ def test_file_is_not_allowed_with_dates():
             ],
         )
         assert result.exit_code != 0
-        assert "file" in str(result.exc_info)
+        assert "file" in str(result.output)
 
 
 def test_an_instrument_is_required_with_dates():
@@ -153,20 +154,7 @@ def test_an_instrument_is_required_with_dates():
         ],
     )
     assert result.exit_code != 0
-    assert "instrument" in str(result.exc_info)
-
-    options = _options(
-        start=date(2019, 4, 9), end=date(2019, 4, 15), instruments={}, fits_base_dir="/"
-    )
-    with pytest.raises(ValueError) as excinfo:
-        validate_options(
-            options.start,
-            options.end,
-            options.file,
-            options.instruments,
-            options.fits_base_dir,
-        )
-    assert "instrument" in str(excinfo.value)
+    assert "instrument" in str(result.output)
 
 
 def test_a_base_directory_is_required_with_dates():
@@ -187,7 +175,7 @@ def test_a_base_directory_is_required_with_dates():
         ],
     )
     assert result.exit_code != 0
-    assert "base directory" in str(result.exc_info)
+    assert "base directory" in str(result.output)
 
 
 def test_a_base_directory_is_not_allowed_with_a_file():
@@ -211,7 +199,7 @@ def test_a_base_directory_is_not_allowed_with_a_file():
             ],
         )
         assert result.exit_code != 0
-        assert "base" in str(result.exc_info) and "file" in str(result.exc_info)
+        assert "base" in str(result.output) and "file" in str(result.output)
 
 
 def test_the_start_date_must_be_earlier_than_the_end_date():
@@ -234,7 +222,7 @@ def test_the_start_date_must_be_earlier_than_the_end_date():
         ],
     )
     assert result.exit_code != 0
-    assert "start" in str(result.exc_info) and "end" in str(result.exc_info)
+    assert "start" in str(result.output) and "end" in str(result.output)
 
     result = runner.invoke(
         main,
@@ -254,4 +242,4 @@ def test_the_start_date_must_be_earlier_than_the_end_date():
         ],
     )
     assert result.exit_code != 0
-    assert "start" in str(result.exc_info) and "end" in str(result.exc_info)
+    assert "start" in str(result.output) and "end" in str(result.output)
