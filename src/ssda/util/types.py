@@ -2,6 +2,7 @@ from __future__ import annotations
 import os
 from datetime import date, datetime
 from enum import Enum
+from typing import Optional
 
 import astropy.units as u
 from astropy.units import def_unit, Quantity
@@ -473,7 +474,7 @@ class InstrumentKeywordValue:
         Instrument keyword.
     observation_id : int
         Database id of the observation to which the keyword value refers.
-    value : str
+    value : Optional[str]
         Value.
 
     """
@@ -485,7 +486,7 @@ class InstrumentKeywordValue:
         observation_id: int,
         value: str,
     ):
-        if len(value) > 200:
+        if value and len(value) > 200:
             raise ValueError("The values must have at most 200 characters.")
 
         self._instrument = instrument
@@ -506,7 +507,7 @@ class InstrumentKeywordValue:
         return self._observation_id
 
     @property
-    def value(self) -> str:
+    def value(self) -> Optional[str]:
         return self._value
 
 
@@ -539,7 +540,7 @@ class Observation:
         Intent of the observation.
     meta_release : date
         Date when the metadata for this observation becomes public.
-    observation_group : str
+    observation_group : Optional[str]
         Identifier of the observation group to which the observation belongs.
     observation_type : ObservationType
         Observation type.
@@ -558,7 +559,7 @@ class Observation:
         instrument: Instrument,
         intent: Intent,
         meta_release: date,
-        observation_group: str,
+        observation_group: Optional[str],
         observation_type: ObservationType,
         proposal_id: int,
         status: Status,
@@ -568,7 +569,7 @@ class Observation:
             raise ValueError(
                 "The data release cannot be earlier than the metadata " "release."
             )
-        if len(observation_group) > 40:
+        if observation_group and len(observation_group) > 40:
             raise ValueError("The observation group must have at most 40 characters.")
 
         self._data_release = data_release
@@ -598,7 +599,7 @@ class Observation:
         return self._meta_release
 
     @property
-    def observation_group(self) -> str:
+    def observation_group(self) -> Optional[str]:
         return self._observation_group
 
     @property

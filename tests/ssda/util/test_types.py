@@ -437,6 +437,17 @@ def test_instrument_keyword_value_too_long():
     assert "value" in str(excinfo)
 
 
+def test_instrument_keyword_value_may_be_none():
+    instrument_keyword_value = types.InstrumentKeywordValue(
+        instrument=types.Instrument.RSS,
+        instrument_keyword=types.InstrumentKeyword.GRATING,
+        observation_id=12,
+        value=None
+    )
+
+    assert instrument_keyword_value.value is None
+
+
 # Observation
 
 
@@ -496,6 +507,22 @@ def test_observation_group_too_long():
         )
 
     assert "observation group" in str(excinfo)
+
+
+def test_observation_group_may_be_none():
+    observation = types.Observation(
+        data_release=date(2020, 4, 7),
+        instrument=types.Instrument.RSS,
+        intent=types.Intent.SCIENCE,
+        meta_release=date(2019, 4, 7),
+        observation_group=None,
+        observation_type=types.ObservationType.OBJECT,
+        proposal_id=42,
+        status=types.Status.ACCEPTED,
+        telescope=types.Telescope.SALT
+    )
+
+    assert observation.observation_group is None
 
 
 # ObservationTime
