@@ -9,6 +9,7 @@ import ssda.cli
 import ssda.task
 import ssda.util.fits
 from ssda.cli import parse_date, validate_options, main
+from ssda.util.dummy import DummyObservationProperties
 from ssda.util.types import Instrument, DateRange
 
 

@@ -2,7 +2,6 @@ import click
 from datetime import date, datetime, timedelta
 from typing import Callable, Optional, Set, Tuple
 
-from ssda.observation import StandardObservationProperties, DummyObservationProperties
 from ssda.task import execute_task
 from ssda.util.fits import fits_file_paths
 from ssda.util.types import (

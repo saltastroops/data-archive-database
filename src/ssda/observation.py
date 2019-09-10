@@ -37,7 +37,7 @@ class ObservationProperties(ABC):
     def polarizations(self, plane_id: int) -> List[types.Polarization]:
         raise NotImplementedError
 
-    def position(self, plane_id: int) -> types.Position:
+    def position(self, plane_id: int) -> Optional[types.Position]:
         raise NotImplementedError
 
     def proposal(self) -> Optional[types.Proposal]:
@@ -48,14 +48,10 @@ class ObservationProperties(ABC):
     ) -> List[types.ProposalInvestigator]:
         raise NotImplementedError
 
-    def target(self, observation_id: int) -> types.Target:
+    def target(self, observation_id: int) -> Optional[types.Target]:
         raise NotImplementedError
 
 
 class StandardObservationProperties(ObservationProperties):
     def __init__(self, fits_file: FitsFile):
         pass
-
-
-class DummyObservationProperties(ObservationProperties):
-    pass

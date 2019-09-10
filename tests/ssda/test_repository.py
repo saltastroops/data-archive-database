@@ -104,7 +104,7 @@ class ObservationPropertiesStub(ObservationProperties):
             ),
         ]
 
-    def position(self, plane_id: int) -> types.Position:
+    def position(self, plane_id: int) -> Optional[types.Position]:
         return types.Position(
             dec=-23.7 * u.degree, equinox=2000, plane_id=plane_id, ra=245.9 * u.deg
         )
@@ -126,7 +126,7 @@ class ObservationPropertiesStub(ObservationProperties):
             types.ProposalInvestigator(proposal_id=proposal_id, investigator_id="c09"),
         ]
 
-    def target(self, observation_id: int) -> types.Target:
+    def target(self, observation_id: int) -> Optional[types.Target]:
         return types.Target(
             name="Some Interesting Target",
             observation_id=observation_id,

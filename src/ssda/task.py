@@ -3,9 +3,9 @@ from abc import ABC
 from ssda.database import DatabaseService
 from ssda.observation import (
     StandardObservationProperties,
-    DummyObservationProperties,
     ObservationProperties,
 )
+from ssda.util.dummy import DummyObservationProperties
 from ssda.repository import insert
 from ssda.util.fits import StandardFitsFile
 from ssda.util.types import TaskName, TaskExecutionMode
