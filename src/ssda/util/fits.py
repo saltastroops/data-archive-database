@@ -3,11 +3,12 @@ import glob
 import os
 import random
 import string
+
 from abc import ABC, abstractmethod
 from datetime import date, timedelta
 from typing import Iterator, Set
 from astropy.units import Quantity
-from ssda.util.types import DateRange, Instrument
+from ssda.util.types import byte, DateRange, Instrument
 
 
 class FitsFile(ABC):
@@ -66,6 +67,20 @@ class FitsFile(ABC):
         ------
         ValueError
             If the keyword does not exist in the header.
+
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def path(self) -> str:
+        """
+        The file path of the FITS file.
+
+        Returns
+        -------
+        str
+            The file path.
 
         """
 
@@ -145,7 +160,7 @@ def fits_file_dir(night: date, instrument: Instrument, base_dir: str) -> str:
 
 class StandardFitsFile(FitsFile):
     def __init__(self, path: str) -> None:
-        self.path = path
+        self._path = path
 
     def size(self) -> Quantity:
         return random.randint(1000, 100000000)
@@ -157,19 +172,25 @@ class StandardFitsFile(FitsFile):
     def header_value(self, keyword: str) -> str:
         letters = string.ascii_lowercase
         return "".join(random.choice(letters) for _ in range(random.randint(1, 10)))
+
+    def path(self) -> str:
+        return self._path
 
 
 class DummyFitsFile(FitsFile):
     def __init__(self, path: str) -> None:
-        self.path = path
+        self._path = path
 
     def size(self) -> Quantity:
-        return random.randint(1000, 100000000)
+        return random.randint(1000, 100000000) * byte
 
     def checksum(self) -> str:
-        letters = string.ascii_lowercase
-        return "".join(random.choice(letters) for _ in range(50))
+        characters = string.ascii_lowercase + string.digits
+        return ''.join(random.choices(characters, k=32))
 
     def header_value(self, keyword: str) -> str:
         letters = string.ascii_lowercase
         return "".join(random.choice(letters) for _ in range(random.randint(1, 10)))
+
+    def path(self) -> str:
+        return self._path
