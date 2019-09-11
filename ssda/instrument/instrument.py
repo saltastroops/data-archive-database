@@ -48,7 +48,9 @@ class Instrument(Enum):
         if self == Instrument.SALTICAM:
             return SalticamFitsData
         else:
-            raise ValueError('No InstrumentFitsData type found for {}'.format(self.value))
+            raise ValueError(
+                "No InstrumentFitsData type found for {}".format(self.value)
+            )
 
     def id(self) -> int:
         """
@@ -72,4 +74,6 @@ class Instrument(Enum):
         if len(df) > 0:
             return int(df["instrumentId"][0])
         else:
-            raise ValueError('There is no database entry for the instrument {}.'.format(self.value))
+            raise ValueError(
+                "There is no database entry for the instrument {}.".format(self.value)
+            )

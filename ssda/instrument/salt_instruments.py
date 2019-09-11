@@ -6,7 +6,7 @@ from datetime import date, datetime, timedelta
 from ssda.instrument.instrument_fits_data import (
     Target,
     PrincipalInvestigator,
-    DataCategory
+    DataCategory,
 )
 
 from ssda.observation_status import ObservationStatus
@@ -51,7 +51,7 @@ class SALTInstruments:
 
         """
 
-        if keyword.upper() == 'GAIN':
+        if keyword.upper() == "GAIN":
             return SALTInstruments.gain(value)
         else:
             return value
@@ -83,7 +83,7 @@ class SALTInstruments:
             return None
 
     @staticmethod
-    def investigator_ids(proposal_code):
+    def investigator_ids(proposal_code) -> List[str]:
         """
         The list of ids of users who are an investigator on the proposal for the FITS
         file.
@@ -106,7 +106,7 @@ class SALTInstruments:
 
         # Find the users
         salt_users_sql = """
-                SELECT Username
+                SELECT PiptUser.PiptUser_Id AS PiptUser_Id
                        FROM PiptUser
                        JOIN Investigator
                             ON PiptUser.Investigator_Id = Investigator.Investigator_Id
@@ -120,7 +120,7 @@ class SALTInstruments:
             salt_users_sql, con=sdb_connect(), params=(proposal_code,)
         )
 
-        return list(salt_users_df["Username"])
+        return [str(id) for id in salt_users_df["PiptUser_Id"]]
 
     @staticmethod
     def is_proprietary(proposal_code) -> bool:
@@ -272,7 +272,7 @@ class SALTInstruments:
     @staticmethod
     def public_from(telescope_observation_id) -> date:
         """
-        Indicate when the the became public.
+        Indicate when the data has or will become public.
 
         Returns
         -------
@@ -283,10 +283,11 @@ class SALTInstruments:
 
         # TODO: Will have to be updated
         sql = """
-            SELECT ReleaseDate FROM Block
+            SELECT ReleaseDate FROM BlockVisit
+                JOIN Block ON (BlockVisit.Block_Id=Block.Block_Id)
                 JOIN Proposal ON( Block.Proposal_Id = Proposal.Proposal_Id)
                 JOIN ProposalGeneralInfo ON (Proposal.ProposalCode_Id = ProposalGeneralInfo.ProposalCode_Id)
-            WHERE Block_Id=%s
+            WHERE BlockVisit_Id=%s
             """
         with sdb_connect().cursor() as cursor:
             cursor.execute(sql, (telescope_observation_id,))
@@ -298,10 +299,11 @@ class SALTInstruments:
 
     @staticmethod
     def target(
-            ra_header_value: Optional[str],
-            dec_header_value: Optional[str],
-            block_visit_id: Optional[int],
-            object_name: Optional[str]) -> Optional[Target]:
+        ra_header_value: Optional[str],
+        dec_header_value: Optional[str],
+        block_visit_id: Optional[int],
+        object_name: Optional[str],
+    ) -> Optional[Target]:
         """
         The target specified in the FITS file.
 
@@ -357,7 +359,7 @@ class SALTInstruments:
 
         # No target type can be determined if there is no observation linked to the
         # target
-        if block_visit_id is None or block_visit_id=='':
+        if block_visit_id is None or block_visit_id == "":
             return None
 
         # Get the target type from the SDB

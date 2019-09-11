@@ -4,7 +4,7 @@ from dateutil import parser
 import glob
 import os
 import pandas as pd
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from ssda.connection import sdb_connect
 from ssda.institution import Institution
@@ -13,7 +13,8 @@ from ssda.instrument.instrument_fits_data import (
     PrincipalInvestigator,
     Target,
     DataCategory,
-    DataPreviewType)
+    DataPreviewType,
+)
 from ssda.instrument.salt_instruments import SALTInstruments
 
 from ssda.observation_status import ObservationStatus
@@ -38,11 +39,13 @@ class HrsFitsData(InstrumentFitsData):
         """
 
         # Create the required directories
-        hrs_dir = os.path.join(os.environ["PREVIEW_BASE_DIR"],
-                               "salt",
-                               str(self.night().year),
-                               self.night().strftime("%m%d"),
-                               "hrs")
+        hrs_dir = os.path.join(
+            os.environ["PREVIEW_BASE_DIR"],
+            "salt",
+            str(self.night().year),
+            self.night().strftime("%m%d"),
+            "hrs",
+        )
         if not os.path.exists(hrs_dir):
             os.makedirs(hrs_dir)
 
@@ -72,6 +75,19 @@ class HrsFitsData(InstrumentFitsData):
         # TODO: What about standards?
 
         return SALTInstruments.data_category(self.header.get("OBJECT"))
+
+    def derived_values(self) -> Dict[str, Any]:
+        """
+        Key-value pairs that are not in FITS header but are derived from it and should
+        be included in the instrument table.
+
+        Returns
+        -------
+        values : Dict[str, any]
+            Key-value pairs derived from the FITS header.
+        """
+
+        return dict()
 
     @staticmethod
     def fits_files(night: date) -> List[str]:
@@ -373,7 +389,7 @@ class HrsFitsData(InstrumentFitsData):
             ra_header_value=self.header.get("RA"),
             dec_header_value=self.header.get("DEC"),
             block_visit_id=self.header.get("BVISITID"),
-            object_name=self.header.get("OBJECT", "")
+            object_name=self.header.get("OBJECT", ""),
         )
 
     def telescope(self) -> Telescope:

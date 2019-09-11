@@ -3,15 +3,19 @@ from datetime import date, datetime
 from dateutil import parser
 import glob
 import os
-from typing import Any, List, Optional, Tuple
+import pandas as pd
+from typing import Any, Dict, List, Optional, Tuple
 
+from ssda.connection import ssda_connect
 from ssda.images import save_image_data
 from ssda.institution import Institution
 from ssda.instrument.instrument_fits_data import (
     InstrumentFitsData,
     PrincipalInvestigator,
     DataCategory,
-    Target, DataPreviewType)
+    Target,
+    DataPreviewType,
+)
 from ssda.instrument.salt_instruments import SALTInstruments
 from ssda.observation_status import ObservationStatus
 from ssda.telescope import Telescope
@@ -33,11 +37,13 @@ class RssFitsData(InstrumentFitsData):
         """
 
         # Create the required directories
-        rss_dir = os.path.join(os.environ["PREVIEW_BASE_DIR"],
-                               "salt",
-                               str(self.night().year),
-                               self.night().strftime("%m%d"),
-                               "rss")
+        rss_dir = os.path.join(
+            os.environ["PREVIEW_BASE_DIR"],
+            "salt",
+            str(self.night().year),
+            self.night().strftime("%m%d"),
+            "rss",
+        )
         if not os.path.exists(rss_dir):
             os.makedirs(rss_dir)
 
@@ -65,6 +71,84 @@ class RssFitsData(InstrumentFitsData):
         """
 
         return SALTInstruments.data_category(object_name=self.header.get("OBJECT"))
+
+    def derived_values(self) -> Dict[str, Any]:
+        """
+        Key-value pairs that are not in FITS header but are derived from it and should
+        be included in the instrument table.
+
+        Returns
+        -------
+        values : Dict[str, any]
+            Key-value pairs derived from the FITS header.
+        """
+
+        # Figure out the RSS mode
+        observation_mode = self.header["OBSMODE"]
+        pfis_procedure = self.header["PROC"]
+        slitmask_type = self.header["MASKTYP"]
+        if observation_mode == "IMAGING":
+            if pfis_procedure == "Polarimatry":
+                rss_mode = "Polarimetric imaging"
+            else:
+                rss_mode = "Imaging"
+        elif observation_mode == "SPECTROSCOPY":
+            if slitmask_type == "MOS":
+                rss_mode = (
+                    "MOS polarimetry" if pfis_procedure == "Polarimetry" else "MOS"
+                )
+            else:
+                rss_mode = (
+                    "Spectropolarimetry"
+                    if pfis_procedure == "Polarimetry"
+                    else "Spectroscopy"
+                )
+        elif observation_mode == "FABRY PEROT":
+            if pfis_procedure == "Polarimetry":
+                rss_mode = "FP polarimetry"
+            else:
+                rss_mode = "Fabry Perot"
+        else:
+            raise ValueError(
+                "Unsupported observation mode: {}".format(observation_mode)
+            )
+
+        # Get the id for the RSS mode
+        rss_mode_sql = """
+        SELECT rssModeId FROM RssMode WHERE rssMode=%s
+        """
+        rss_mode_df = pd.read_sql(rss_mode_sql, con=ssda_connect(), params=(rss_mode,))
+        if len(rss_mode_df) == 0:
+            raise ValueError(
+                "There exists no database entry for the RSS mode {}.".format(rss_mode)
+            )
+        rss_mode_id = int(rss_mode_df["rssModeId"][0])
+
+        # Figure out the Fabry-Perot mode
+        if observation_mode == "FABRY PEROT":
+            fabry_perot_mode = self.header["ET1MODE"]
+        else:
+            fabry_perot_mode = None
+
+        # Get the id for the Fabry-Perot mode
+        if fabry_perot_mode:
+            fabry_perot_mode_sql = """
+            SELECT rssFabryPerotModeId FROM RssFabryPerotMode WHERE rssFabryPerotMode=?
+            """
+            fabry_perot_mode_df = pd.read_sql(
+                fabry_perot_mode_sql, con=ssda_connect(), params=(fabry_perot_mode,)
+            )
+            if len(fabry_perot_mode_df) == 0:
+                raise ValueError(
+                    "There exists no database entry for the Fabry-Perot mode {}.".format(
+                        fabry_perot_mode
+                    )
+                )
+            fabry_perot_mode_id = fabry_perot_mode_df["rssFabryPerotModeId"][0]
+        else:
+            fabry_perot_mode_id = None
+
+        return dict(rssModeId=rss_mode_id, rssFabryPerotModeId=fabry_perot_mode_id)
 
     @staticmethod
     def fits_files(night: date) -> List[str]:
@@ -322,7 +406,7 @@ class RssFitsData(InstrumentFitsData):
 
         """
 
-        return SALTInstruments.public_from(self.proposal_code())
+        return SALTInstruments.public_from(self.telescope_observation_id())
 
     def start_time(self) -> datetime:
         """
@@ -352,7 +436,7 @@ class RssFitsData(InstrumentFitsData):
             ra_header_value=self.header.get("RA"),
             dec_header_value=self.header.get("DEC"),
             block_visit_id=self.header.get("BVISITID"),
-            object_name=self.header.get("OBJECT", "")
+            object_name=self.header.get("OBJECT", ""),
         )
 
     def telescope(self) -> Telescope:
