@@ -6,7 +6,7 @@ from ssda.observation import (
     ObservationProperties,
 )
 from ssda.util.dummy import DummyObservationProperties
-from ssda.repository import insert
+from ssda.repository import delete, insert
 from ssda.util.fits import DummyFitsFile, StandardFitsFile
 from ssda.util.types import TaskName, TaskExecutionMode
 
@@ -20,7 +20,7 @@ def execute_task(
         observation_properties: ObservationProperties = StandardObservationProperties(
             fits_file
         )
-    elif task_name == TaskName.INSERT:
+    elif task_mode == TaskExecutionMode.DUMMY:
         fits_file = DummyFitsFile(fits_path)
         observation_properties = DummyObservationProperties(fits_file)
     else:
@@ -33,6 +33,9 @@ def execute_task(
             database_service=database_service,
         )
     elif task_name == TaskName.DELETE:
-        raise NotImplementedError
+        delete(
+            observation_properties=observation_properties,
+            database_service=database_service
+        )
     else:
         raise NotImplementedError

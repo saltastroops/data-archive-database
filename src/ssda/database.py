@@ -33,6 +33,24 @@ class DatabaseService:
 
         self._connection.commit()
 
+    def delete_observation(self, observation_id: int) -> None:
+        """
+        Delete an observation.
+
+        Parameters
+        ----------
+        observation_id : int
+            Database id of the observation to delete.
+
+        """
+
+        with self._connection.cursor() as cur:
+            sql = '''
+            DELETE FROM observation WHERE observation_id=%(observation_id)s
+            '''
+
+            cur.execute(sql, dict(observation_id=observation_id))
+
     def find_observation_id(self, artifact_name: str) -> Optional[int]:
         """
         Find the database id of an observation.

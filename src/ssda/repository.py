@@ -2,9 +2,63 @@ from ssda.database import DatabaseService
 from ssda.observation import ObservationProperties
 
 
+def delete(observation_properties: ObservationProperties, database_service: DatabaseService) -> None:
+    """
+    Delete an observation.
+
+    If the observation belongs to a proposal, the proposal is not deleted, irrespective
+    of whet
+
+    Parameters
+    ----------
+    observation_properties
+    database_service
+
+    """
+
+    # find the observation
+    # -1 is passed as plane id to the artifact method as the id is irrelevant
+    observation_id = database_service.find_observation_id(observation_properties.artifact(-1).name)
+
+    # only delete the observation if there actually is one
+    if observation_id:
+        # start the transaction
+        database_service.begin_transaction()
+
+        try:
+            # delete the observation
+            database_service.delete_observation(observation_id)
+
+            # persist the changes
+            database_service.commit_transaction()
+        except BaseException as e:
+            # undo any changes
+            database_service.rollback_transaction()
+            raise e
+
+
 def insert(
     observation_properties: ObservationProperties, database_service: DatabaseService
 ) -> None:
+    """
+    Insert an observation.
+
+    If the observation exists already, it is not inserted again, and it is not updated
+    either.
+
+    If the observation belongs to a proposal and that proposal is not in the database
+    already, the proposal is inserted as well. Existing proposals are not inserted
+    again, and they are not updated either.
+
+    Parameters
+    ----------
+    observation_properties : ObservationProperties
+        Observation properties.
+    database_service : DatabaseService
+        Database service for accessing the database.
+
+    """
+
     # start the transaction
     database_service.begin_transaction()
 
