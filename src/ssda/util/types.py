@@ -458,7 +458,7 @@ class InstrumentKeyword(Enum):
 
     """
 
-    BANDPASS = "Bandpass"
+    FILTER = "Filter"
     GRATING = "Grating"
 
 
@@ -712,16 +712,22 @@ class Plane:
     ----------
     observation_id : int
         Database id of the observation to which this plane belongs.
+    data_product_type : DataProductType
+        Data product type.
 
     """
 
-    def __init__(self, observation_id: int):
+    def __init__(self, observation_id: int, data_product_type: DataProductType):
         self._observation_id = observation_id
+        self._data_product_type = data_product_type
 
     @property
     def observation_id(self) -> int:
         return self._observation_id
 
+    @property
+    def data_product_type(self):
+        return self._data_product_type
 
 class Polarization:
     """

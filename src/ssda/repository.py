@@ -20,6 +20,7 @@ def insert(
                 proposal_id = database_service.insert_proposal(proposal)
 
                 # insert proposal investigators
+                database_service.commit_transaction()
                 proposal_investigators = observation_properties.proposal_investigators(
                     proposal_id
                 )
@@ -29,6 +30,7 @@ def insert(
             proposal_id = None
 
         # insert observation (if need be)
+        # -1 is passed as plane id to the artifact method as the id is irrelevant
         artifact_name = observation_properties.artifact(-1).name
         observation_id = database_service.find_observation_id(artifact_name)
         if observation_id is None:
@@ -41,7 +43,8 @@ def insert(
 
         # insert target
         target = observation_properties.target(observation_id)
-        database_service.insert_target(target)
+        if target:
+            database_service.insert_target(target)
 
         # insert instrument keyword values
         instrument_keyword_values = observation_properties.instrument_keyword_values(
@@ -56,7 +59,8 @@ def insert(
 
         # insert energy
         energy = observation_properties.energy(plane_id)
-        database_service.insert_energy(energy)
+        if energy:
+            database_service.insert_energy(energy)
 
         # insert polarizations
         polarizations = observation_properties.polarizations(plane_id)
@@ -69,7 +73,8 @@ def insert(
 
         # insert position
         position = observation_properties.position(plane_id)
-        database_service.insert_position(position)
+        if position:
+            database_service.insert_position(position)
 
         # insert artifact
         artifact = observation_properties.artifact(plane_id)

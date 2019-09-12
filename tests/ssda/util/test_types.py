@@ -671,9 +671,10 @@ def test_observation_time_resolution_must_have_a_time_unit():
 
 
 def test_plane_is_created_correctly():
-    plane = types.Plane(observation_id=67)
+    plane = types.Plane(observation_id=67, data_product_type=types.DataProductType.SCIENCE)
 
     assert plane.observation_id == 67
+    assert plane.data_product_type == types.DataProductType.SCIENCE
 
 
 # Polarization

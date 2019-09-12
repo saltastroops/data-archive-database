@@ -1,3 +1,4 @@
+import hashlib
 import os
 import random
 import string
@@ -15,19 +16,103 @@ from ssda.util.fits import FitsFile
 
 
 class DummyObservationProperties(ObservationProperties):
+    """
+    A class for generating fake observation properties.
+
+    See the ObservationProperties base class for documentation on the methods.
+
+    Parameters
+    ----------
+    fits_file : FitsFile
+        FITS file.
+
+    """
+
     def __init__(self, fits_file: FitsFile):
         self._fits_file = fits_file
         self._faker = Faker()
-        self._institution = random.choice([types.Institution.SAAO, types.Institution.SALT])
+
+        # If the script is run multiple times, proposals should not be reinserted. This
+        # means that for a given file the proposal code and institution must always be
+        # the same.
+        filename = os.path.basename(fits_file.path())
+        self._proposal_code = DummyObservationProperties._proposal_code_for_file(filename)
+        self._institution = DummyObservationProperties._institution_for_filename(filename)
+
         self._instrument = random.choice([types.Instrument.HRS, types.Instrument.RSS, types.Instrument.SALTICAM])
-        if random.random() > 0.05:
-            self._proposal_code = 'Proposal-{}'.format(random.randint(1, 2000))
-        else:
-            self._proposal_code = None
         if random.random() > 0.05:
             self._has_target = True
         else:
             self._has_target = False
+
+    @staticmethod
+    def _institution_for_filename(filename: str) -> types.Institution:
+        """
+        Institution for a filename.
+
+        The method is deterministic, i.e. it always returns the same institution for a
+        given filename. However, there is no obvious relation between the filename and
+        the corresponding proposal code.
+
+        Parameters
+        ----------
+        filename : str
+            Filename.
+
+        Returns
+        -------
+        Institution
+            Institution.
+        """
+
+        # We need a pseudo-random (but deterministic) string
+        md5_hash = hashlib.md5(filename.encode()).hexdigest()
+
+        characters = 'abcdef' + string.digits
+        random_number = characters.index(md5_hash[0])
+
+        institutions = [institution for institution in types.Institution]
+        index = min(random_number, len(institutions) - 1)
+
+        return institutions[index]
+
+    @staticmethod
+    def _proposal_code_for_file(filename: str) -> Optional[str]:
+        """
+        Proposal code for a filename.
+
+        The method is deterministic, i.e. it always returns the same proposal code for
+        a given filename. However, there is no obvious relation between the filename and
+        the corresponding proposal code.
+
+        The proposal code is of the form "Proposal-N" with a positive integer N.
+
+        Parameters
+        ----------
+        filename : str
+            Filename.
+
+        Returns
+        -------
+        str
+            Proposal code.
+
+        """
+
+        # We need a pseudo-random (but deterministic) string
+        md5_hash = hashlib.md5(filename.encode()).hexdigest()
+
+        characters = 'abcdef' + string.digits
+        index1 = characters.index(md5_hash[0])
+        index2 = characters.index(md5_hash[1])
+        index3 = characters.index(md5_hash[2])
+
+        random_number = (index1 + 1) * (index2 + 1) * (index3 + 1)
+
+        if random_number < 0.95 * len(characters)**3:
+            return f'Proposal-{random_number}'
+        else:
+            return None
 
     def artifact(self, plane_id: int) -> types.Artifact:
         def identifier(n: int) -> str:
@@ -68,17 +153,17 @@ class DummyObservationProperties(ObservationProperties):
         # RSS
         if self._instrument == types.Instrument.RSS:
             grating = random.choice(['pg0300', 'pg0900', 'pg1300', 'pg1800', 'pg2300', 'pg3000', None])
-            bandpass = random.choice(['pc00000', 'pc03200', 'pc03400', 'pc03850', 'pc04600', 'pi06530', 'pi08005', None])
+            filter = random.choice(['pc00000', 'pc03200', 'pc03400', 'pc03850', 'pc04600', 'pi06530', 'pi08005', None])
             if random.random() > 0.5:
-                values.append(types.InstrumentKeywordValue(instrument=types.Instrument.RSS, instrument_keyword=types.InstrumentKeyword.BANDPASS, observation_id=observation_id, value=bandpass))
+                values.append(types.InstrumentKeywordValue(instrument=types.Instrument.RSS, instrument_keyword=types.InstrumentKeyword.FILTER, observation_id=observation_id, value=filter))
             if random.random() > 0.5:
                 values.append(types.InstrumentKeywordValue(instrument=types.Instrument.RSS, instrument_keyword=types.InstrumentKeyword.GRATING, observation_id=observation_id, value=grating))
 
         # Salticam
         elif self._instrument == types.Instrument.SALTICAM:
-            bandpass = random.choice(['U-S1', 'B-S1', 'V-S1', 'R-S1', 'I-S1', 'Halpha-S1', None])
+            filter = random.choice(['U-S1', 'B-S1', 'V-S1', 'R-S1', 'I-S1', 'Halpha-S1', None])
             if random.random() > 0.5:
-                values.append(types.InstrumentKeywordValue(instrument=types.Instrument.SALTICAM, instrument_keyword=types.InstrumentKeyword.BANDPASS, observation_id=observation_id, value=bandpass))
+                values.append(types.InstrumentKeywordValue(instrument=types.Instrument.SALTICAM, instrument_keyword=types.InstrumentKeyword.FILTER, observation_id=observation_id, value=filter))
 
         return values
 
@@ -121,7 +206,10 @@ class DummyObservationProperties(ObservationProperties):
                                      start_time=start_time)
 
     def plane(self, observation_id: int) -> types.Plane:
-        return types.Plane(observation_id=observation_id)
+        data_product_types = [data_product_type for data_product_type in types.DataProductType]
+
+        return types.Plane(observation_id=observation_id,
+                           data_product_type=random.choice(data_product_types))
 
     def polarizations(self, plane_id: int) -> List[types.Polarization]:
         all_stokes_parameters = [parameter for parameter in types.StokesParameter]

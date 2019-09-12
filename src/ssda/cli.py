@@ -1,7 +1,10 @@
-import click
 from datetime import date, datetime, timedelta
 from typing import Callable, Optional, Set, Tuple
 
+import click
+from psycopg2 import connect
+
+from ssda.database import DatabaseService
 from ssda.task import execute_task
 from ssda.util.fits import fits_file_paths
 from ssda.util.types import (
@@ -42,11 +45,11 @@ def parse_date(value: str, now: Callable[[], datetime]) -> date:
 
 
 def validate_options(
-    start: Optional[date],
-    end: Optional[date],
-    file: Optional[str],
-    instruments: Set[Instrument],
-    fits_base_dir: Optional[str],
+        start: Optional[date],
+        end: Optional[date],
+        file: Optional[str],
+        instruments: Set[Instrument],
+        fits_base_dir: Optional[str],
 ) -> None:
     """
     Validate the command line options.
@@ -149,19 +152,23 @@ def validate_options(
     help="Task to perform.",
 )
 def main(
-    task: str,
-    start: Optional[str],
-    end: Optional[str],
-    instruments: Tuple[str],
-    file: Optional[str],
-    fits_base_dir: Optional[str],
-    mode: str,
+        task: str,
+        start: Optional[str],
+        end: Optional[str],
+        instruments: Tuple[str],
+        file: Optional[str],
+        fits_base_dir: Optional[str],
+        mode: str,
 ) -> None:
     # convert options as required and validate them
     now = datetime.now
     start_date = parse_date(start, now) if start else None
     end_date = parse_date(end, now) if end else None
-    instruments_set = set(Instrument.for_name(instrument) for instrument in instruments)
+    if len(instruments):
+        instruments_set = set(
+            Instrument.for_name(instrument) for instrument in instruments)
+    else:
+        instruments_set = set(instrument for instrument in Instrument)
     task_name = TaskName.for_name(task)
     task_mode = TaskExecutionMode.for_mode(mode)
     validate_options(
@@ -187,5 +194,12 @@ def main(
         )
 
     # execute the requested task
-    for path in paths:
-        execute_task(task_name=task_name, fits_path=path, task_mode=task_mode)
+    connection = connect(dbname='ssda', user='postgres')
+    try:
+        database_service = DatabaseService(connection)
+        for path in paths:
+            execute_task(task_name=task_name, fits_path=path, task_mode=task_mode,
+                         database_service=database_service)
+    except BaseException as e:
+        connection.close()
+        raise e
