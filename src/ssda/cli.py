@@ -91,13 +91,6 @@ def validate_options(
             "The --start/--end and --file options are mutually exclusive."
         )
 
-    # A date range requires at least one instrument
-    if start and not len(instruments):
-        raise click.UsageError(
-            "You must specify at least one instrument (with the "
-            "--instrument option) if you specify a date range."
-        )
-
     # Either a date range or a FITS file must be specified
     if not start and not end and not file:
         raise click.UsageError(

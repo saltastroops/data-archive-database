@@ -137,27 +137,6 @@ def test_file_is_not_allowed_with_dates():
         assert "file" in str(result.output)
 
 
-def test_an_instrument_is_required_with_dates():
-    runner = CliRunner()
-    result = runner.invoke(
-        main,
-        [
-            "--start",
-            "2019-04-08",
-            "--end",
-            "2019-04-09",
-            "--fits-base-dir",
-            "/tmp",
-            "--task",
-            "insert",
-            "--mode",
-            "dummy",
-        ],
-    )
-    assert result.exit_code != 0
-    assert "instrument" in str(result.output)
-
-
 def test_a_base_directory_is_required_with_dates():
     runner = CliRunner()
     result = runner.invoke(
