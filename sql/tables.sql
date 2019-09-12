@@ -88,6 +88,12 @@ CREATE TABLE intent
 
 COMMENT ON TABLE intent IS 'The intent of an observation, such as "Science" or "Arc".';
 
+INSERT INTO intent (intent)
+VALUES ('Arc'),
+       ('Bias'),
+       ('Flat'),
+       ('Science');
+
 -- observation_type
 
 CREATE TABLE observation_type
@@ -195,8 +201,11 @@ CREATE TABLE proposal
     proposal_id    bigserial PRIMARY KEY,
     institution_id int          NOT NULL REFERENCES institution (institution_id),
     pi             varchar(100) NOT NULL,
+    proposal_code  varchar(50)  NOT NULL,
     title          varchar(200) NOT NULL
 );
+
+CREATE UNIQUE INDEX proposal_code_institution_unique ON proposal (proposal_code, institution_id);
 
 CREATE INDEX proposal_institution_id ON Proposal (institution_id);
 
@@ -323,9 +332,9 @@ COMMENT ON TABLE polarization IS 'A junction table for linking planes and measur
 
 CREATE TABLE observation_time
 (
+    observation_time_id bigserial PRIMARY KEY,
     end_time            timestamp with time zone NOT NULL,
     exposure_time       double precision         NOT NULL CHECK (exposure_time >= 0),
-    observation_time_id bigserial PRIMARY KEY,
     plane_id            int                      NOT NULL REFERENCES Plane (plane_id) ON DELETE CASCADE,
     resolution          double precision         NOT NULL CHECK (resolution >= 0),
     start_time          timestamp with time zone NOT NULL,
