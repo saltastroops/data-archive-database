@@ -4,7 +4,7 @@ from ssda.database import DatabaseService
 from ssda.observation import StandardObservationProperties, ObservationProperties
 from ssda.util.dummy import DummyObservationProperties
 from ssda.repository import delete, insert
-from ssda.util.fits import DummyFitsFile, StandardFitsFile
+from ssda.util.fits import DummyFitsFile, FitsFile, StandardFitsFile
 from ssda.util.types import TaskName, TaskExecutionMode
 
 
@@ -16,7 +16,7 @@ def execute_task(
 ) -> None:
     # Get the observation properties.
     if task_mode == TaskExecutionMode.PRODUCTION:
-        fits_file = StandardFitsFile(fits_path)
+        fits_file: FitsFile = StandardFitsFile(fits_path)
         observation_properties: ObservationProperties = StandardObservationProperties(
             fits_file
         )

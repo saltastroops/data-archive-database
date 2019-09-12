@@ -3,7 +3,7 @@ import os
 import random
 import string
 from datetime import datetime, timedelta
-from typing import List, Optional, Set
+from typing import List, Optional, Tuple
 
 import astropy.units as u
 from astropy.units import Quantity
@@ -139,7 +139,10 @@ class DummyObservationProperties(ObservationProperties):
         )
 
     def energy(self, plane_id: int) -> Optional[types.Energy]:
-        def wavelengths() -> (Quantity, Quantity):
+        if random.random() < 0.05:
+            return None
+
+        def wavelengths() -> Tuple[Quantity, Quantity]:
             wavelength_interval = 5000 * random.random()
             min_wavelength = (
                 3000 + ((9000 - wavelength_interval) - 3000) * random.random()
@@ -224,7 +227,7 @@ class DummyObservationProperties(ObservationProperties):
             meta_release = data_release
         intent = random.choice([intent for intent in types.Intent])
         if self._proposal_code:
-            observation_group = "{proposal_code}-{index}".format(
+            observation_group: Optional[str] = "{proposal_code}-{index}".format(
                 proposal_code=self._proposal_code, index=random.randint(1, 10)
             )
         else:

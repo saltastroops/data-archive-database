@@ -167,7 +167,6 @@ def test_non_existing_observations_are_not_deleted(mocker):
     delete(observation_properties, ssda.database.DatabaseService(database_config))
 
     # no observation is deleted
-
     mock_database_service.return_value.delete_observation.assert_not_called()
 
 

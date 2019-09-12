@@ -484,7 +484,7 @@ class InstrumentKeywordValue:
         instrument: Instrument,
         instrument_keyword: InstrumentKeyword,
         observation_id: int,
-        value: str,
+        value: Optional[str],
     ):
         if value and len(value) > 200:
             raise ValueError("The values must have at most 200 characters.")
@@ -561,7 +561,7 @@ class Observation:
         meta_release: date,
         observation_group: Optional[str],
         observation_type: ObservationType,
-        proposal_id: int,
+        proposal_id: Optional[int],
         status: Status,
         telescope: Telescope,
     ):
@@ -607,7 +607,7 @@ class Observation:
         return self._observation_type
 
     @property
-    def proposal_id(self) -> int:
+    def proposal_id(self) -> Optional[int]:
         return self._proposal_id
 
     @property
@@ -726,7 +726,7 @@ class Plane:
         return self._observation_id
 
     @property
-    def data_product_type(self):
+    def data_product_type(self) -> DataProductType:
         return self._data_product_type
 
 

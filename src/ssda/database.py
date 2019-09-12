@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import cast, Optional
 
 import astropy.units as u
 import psycopg2
@@ -80,7 +80,7 @@ class DatabaseService:
 
             observation_id = cur.fetchone()
             if observation_id:
-                return observation_id[0]
+                return cast(int, observation_id[0])
             else:
                 return None
 
@@ -117,7 +117,7 @@ class DatabaseService:
             )
             result = cur.fetchone()
             if result:
-                return result[0]
+                return cast(int, result[0])
             else:
                 return None
 
@@ -174,6 +174,8 @@ class DatabaseService:
                 ),
             )
 
+            return cast(int, cur.fetchone()[0])
+
     def insert_energy(self, energy: Optional[types.Energy]) -> Optional[int]:
         """
         Insert spectral details.
@@ -225,7 +227,7 @@ class DatabaseService:
                 ),
             )
 
-            return cur.fetchone()[0]
+            return cast(int, cur.fetchone()[0])
 
     def insert_instrument_keyword_value(
         self, instrument_keyword_value: types.InstrumentKeywordValue
@@ -348,7 +350,7 @@ class DatabaseService:
                 ),
             )
 
-            return cur.fetchone()[0]
+            return cast(int, cur.fetchone()[0])
 
     def insert_observation_time(self, observation_time: types.ObservationTime) -> int:
         """
@@ -391,7 +393,7 @@ class DatabaseService:
                 ),
             )
 
-            return cur.fetchone()[0]
+            return cast(int, cur.fetchone()[0])
 
     def insert_plane(self, plane: types.Plane) -> int:
         """
@@ -430,7 +432,7 @@ class DatabaseService:
                 ),
             )
 
-            return cur.fetchone()[0]
+            return cast(int, cur.fetchone()[0])
 
     def insert_polarization(self, polarization: types.Polarization) -> int:
         """
@@ -467,7 +469,7 @@ class DatabaseService:
                 ),
             )
 
-            return cur.fetchone()[0]
+            return cast(int, cur.fetchone()[0])
 
     def insert_position(self, position: types.Position) -> int:
         """
@@ -502,7 +504,7 @@ class DatabaseService:
                 ),
             )
 
-            return cur.fetchone()[0]
+            return cast(int, cur.fetchone()[0])
 
     def insert_proposal(self, proposal: types.Proposal) -> int:
         """
@@ -544,7 +546,7 @@ class DatabaseService:
                 ),
             )
 
-            return cur.fetchone()[0]
+            return cast(int, cur.fetchone()[0])
 
     def insert_proposal_investigator(
         self, proposal_investigator: types.ProposalInvestigator
@@ -605,7 +607,7 @@ class DatabaseService:
                 ),
             )
 
-            return cur.fetchone()[0]
+            return cast(int, cur.fetchone()[0])
 
     def rollback_transaction(self) -> None:
         """
