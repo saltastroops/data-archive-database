@@ -74,7 +74,6 @@ def insert(
                 proposal_id = database_service.insert_proposal(proposal)
 
                 # insert proposal investigators
-                database_service.commit_transaction()
                 proposal_investigators = observation_properties.proposal_investigators(
                     proposal_id
                 )
@@ -91,7 +90,7 @@ def insert(
             observation = observation_properties.observation(proposal_id)
             observation_id = database_service.insert_observation(observation)
         else:
-            # nothing else to do, sp the changes can be committed
+            # nothing else to do, so the changes can be committed
             database_service.commit_transaction()
             return
 
