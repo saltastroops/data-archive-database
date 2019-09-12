@@ -1,16 +1,8 @@
-DROP DATABASE IF EXISTS ssda;
+DROP SCHEMA IF EXISTS observations CASCADE;
 
-CREATE DATABASE ssda;
+CREATE SCHEMA observations;
 
-\connect ssda;
-
--- USE PGSPHERE
-
-CREATE SCHEMA extensions;
-
-ALTER DATABASE ssda SET search_path = '$user', public, extensions;
-
-CREATE EXTENSION pg_sphere SCHEMA extensions;
+SET search_path TO observations, extensions;
 
 -- LOOKUP TABLES
 
