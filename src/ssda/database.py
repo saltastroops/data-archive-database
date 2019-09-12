@@ -193,6 +193,9 @@ class DatabaseService:
 
         """
 
+        if not energy:
+            return None
+
         with self._connection.cursor() as cur:
             sql = """
             INSERT INTO energy (dimension,
