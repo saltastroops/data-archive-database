@@ -225,7 +225,7 @@ CREATE TABLE observation
     meta_release        date NOT NULL,
     observation_group   varchar(40),
     observation_type_id int REFERENCES observation_type (observation_type_id),
-    proposal_id         int REFERENCES proposal (proposal_id),
+    proposal_id         int REFERENCES proposal (proposal_id) ON DELETE CASCADE,
     status_id           int  NOT NULL REFERENCES status (status_id),
     telescope_id        int  NOT NULL REFERENCES Telescope (telescope_id),
     CONSTRAINT meta_not_after_data_release_check CHECK (meta_release <= data_release)
@@ -357,7 +357,7 @@ CREATE TABLE position
     position_id bigserial PRIMARY KEY,
     dec         double precision NOT NULL CHECK (dec BETWEEN -90 AND 90),
     equinox     double precision NOT NULL CHECK (equinox >= 1900),
-    plane_id    int              NOT NULL REFERENCES plane (plane_id),
+    plane_id    int              NOT NULL REFERENCES plane (plane_id) ON DELETE CASCADE,
     ra          double precision NOT NULL CHECK (0 <= ra AND ra < 360)
 );
 
@@ -379,7 +379,7 @@ CREATE TABLE artifact
     identifier       varchar(50) UNIQUE  NOT NULL,
     name             varchar(200)        NOT NULL,
     path             varchar(255) UNIQUE NOT NULL,
-    plane_id         int                 NOT NULL REFERENCES Plane (plane_id),
+    plane_id         int                 NOT NULL REFERENCES Plane (plane_id) ON DELETE CASCADE,
     product_type_id  int REFERENCES product_type (product_type_id)
 );
 
