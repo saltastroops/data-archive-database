@@ -729,6 +729,7 @@ class Plane:
     def data_product_type(self):
         return self._data_product_type
 
+
 class Polarization:
     """
     Stokes parameter for an observation.

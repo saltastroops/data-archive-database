@@ -45,9 +45,9 @@ class DatabaseService:
         """
 
         with self._connection.cursor() as cur:
-            sql = '''
+            sql = """
             DELETE FROM observation WHERE observation_id=%(observation_id)s
-            '''
+            """
 
             cur.execute(sql, dict(observation_id=observation_id))
 
@@ -69,13 +69,13 @@ class DatabaseService:
         """
 
         with self._connection.cursor() as cur:
-            sql = '''
+            sql = """
             SELECT observation.observation_id
             FROM observation
             JOIN plane ON observation.observation_id = plane.observation_id
             JOIN artifact ON plane.plane_id = artifact.plane_id
             WHERE artifact.name=%(artifact_name)s
-            '''
+            """
             cur.execute(sql, dict(artifact_name=artifact_name))
 
             observation_id = cur.fetchone()
@@ -85,7 +85,7 @@ class DatabaseService:
                 return None
 
     def find_proposal_id(
-            self, proposal_code: str, institution: types.Institution
+        self, proposal_code: str, institution: types.Institution
     ) -> Optional[int]:
         """
         Find the database id of a proposal.
@@ -106,14 +106,15 @@ class DatabaseService:
         """
 
         with self._connection.cursor() as cur:
-            sql = '''
+            sql = """
             SELECT proposal_id
             FROM proposal
             JOIN institution ON proposal.institution_id = institution.institution_id
             WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
-            '''
-            cur.execute(sql, dict(proposal_code=proposal_code,
-                                  institution=institution.value))
+            """
+            cur.execute(
+                sql, dict(proposal_code=proposal_code, institution=institution.value)
+            )
             result = cur.fetchone()
             if result:
                 return result[0]
@@ -137,7 +138,7 @@ class DatabaseService:
         """
 
         with self._connection.cursor() as cur:
-            sql = '''
+            sql = """
             WITH pt (product_type_id) AS (
                 SELECT product_type_id
                 FROM product_type
@@ -158,15 +159,20 @@ class DatabaseService:
                     %(plane_id)s,
                     (SELECT product_type_id FROM pt))
             RETURNING artifact_id
-            '''
+            """
 
-            cur.execute(sql, dict(content_checksum=artifact.content_checksum,
-                                  content_length=artifact.content_length.to_value(types.byte),
-                                  identifier=artifact.identifier,
-                                  name=artifact.name,
-                                  path=artifact.path,
-                                  plane_id=artifact.plane_id,
-                                  product_type=artifact.product_type.value))
+            cur.execute(
+                sql,
+                dict(
+                    content_checksum=artifact.content_checksum,
+                    content_length=artifact.content_length.to_value(types.byte),
+                    identifier=artifact.identifier,
+                    name=artifact.name,
+                    path=artifact.path,
+                    plane_id=artifact.plane_id,
+                    product_type=artifact.product_type.value,
+                ),
+            )
 
     def insert_energy(self, energy: Optional[types.Energy]) -> Optional[int]:
         """
@@ -188,7 +194,7 @@ class DatabaseService:
         """
 
         with self._connection.cursor() as cur:
-            sql = '''
+            sql = """
             INSERT INTO energy (dimension,
                                 max_wavelength,
                                 min_wavelength,
@@ -202,21 +208,24 @@ class DatabaseService:
                    %(resolving_power)s,
                    %(sample_size)s)
             RETURNING energy_id
-            '''
+            """
 
-            cur.execute(sql, dict(dimension=energy.dimension,
-                                  max_wavelength=energy.max_wavelength.to_value(
-                                      u.meter),
-                                  min_wavelength=energy.min_wavelength.to_value(
-                                      u.meter),
-                                  plane_id=energy.plane_id,
-                                  resolving_power=energy.resolving_power,
-                                  sample_size=energy.sample_size.to_value(u.meter)))
+            cur.execute(
+                sql,
+                dict(
+                    dimension=energy.dimension,
+                    max_wavelength=energy.max_wavelength.to_value(u.meter),
+                    min_wavelength=energy.min_wavelength.to_value(u.meter),
+                    plane_id=energy.plane_id,
+                    resolving_power=energy.resolving_power,
+                    sample_size=energy.sample_size.to_value(u.meter),
+                ),
+            )
 
             return cur.fetchone()[0]
 
     def insert_instrument_keyword_value(
-            self, instrument_keyword_value: types.InstrumentKeywordValue
+        self, instrument_keyword_value: types.InstrumentKeywordValue
     ) -> None:
         """
         Insert an instrument keyword value.
@@ -234,7 +243,7 @@ class DatabaseService:
         """
 
         with self._connection.cursor() as cur:
-            sql = '''
+            sql = """
             WITH instr (instrument_id) AS (
                 SELECT instrument_id FROM instrument WHERE name=%(instrument)s
             ),
@@ -251,12 +260,17 @@ class DatabaseService:
                     (SELECT instrument_keyword_id FROM ik),
                     %(observation_id)s,
                     %(value)s)
-            '''
+            """
 
-            cur.execute(sql, dict(instrument=instrument_keyword_value.instrument.value,
-                                  keyword=instrument_keyword_value.instrument_keyword.value,
-                                  observation_id=instrument_keyword_value.observation_id,
-                                  value=instrument_keyword_value.value))
+            cur.execute(
+                sql,
+                dict(
+                    instrument=instrument_keyword_value.instrument.value,
+                    keyword=instrument_keyword_value.instrument_keyword.value,
+                    observation_id=instrument_keyword_value.observation_id,
+                    value=instrument_keyword_value.value,
+                ),
+            )
 
     def insert_observation(self, observation: types.Observation) -> int:
         """
@@ -275,7 +289,7 @@ class DatabaseService:
         """
 
         with self._connection.cursor() as cur:
-            sql = '''
+            sql = """
             WITH instr (instrument_id) AS (
                 SELECT instrument_id FROM instrument WHERE name=%(instrument)s
             ),
@@ -314,17 +328,22 @@ class DatabaseService:
                 (SELECT telescope_id FROM tel)
             )
             RETURNING observation.observation_id
-            '''
+            """
 
-            cur.execute(sql, dict(data_release=observation.data_release,
-                                  instrument=observation.instrument.value,
-                                  intent=observation.intent.value,
-                                  meta_release=observation.meta_release,
-                                  observation_group=observation.observation_group,
-                                  observation_type=observation.observation_type.value,
-                                  proposal_id=observation.proposal_id,
-                                  status=observation.status.value,
-                                  telescope=observation.telescope.value))
+            cur.execute(
+                sql,
+                dict(
+                    data_release=observation.data_release,
+                    instrument=observation.instrument.value,
+                    intent=observation.intent.value,
+                    meta_release=observation.meta_release,
+                    observation_group=observation.observation_group,
+                    observation_type=observation.observation_type.value,
+                    proposal_id=observation.proposal_id,
+                    status=observation.status.value,
+                    telescope=observation.telescope.value,
+                ),
+            )
 
             return cur.fetchone()[0]
 
@@ -344,7 +363,7 @@ class DatabaseService:
         """
 
         with self._connection.cursor() as cur:
-            sql = '''
+            sql = """
             INSERT INTO observation_time (end_time,
                                           exposure_time,
                                           plane_id,
@@ -356,16 +375,20 @@ class DatabaseService:
                     %(resolution)s,
                     %(start_time)s)    
             RETURNING observation_time_id                
-            '''
+            """
 
-            cur.execute(sql, dict(end_time=observation_time.end_time,
-                                  exposure_time=observation_time.exposure_time.to_value(u.second),
-                                  plane_id=observation_time.plane_id,
-                                  resolution=observation_time.resolution.to_value(u.second),
-                                  start_time=observation_time.start_time))
+            cur.execute(
+                sql,
+                dict(
+                    end_time=observation_time.end_time,
+                    exposure_time=observation_time.exposure_time.to_value(u.second),
+                    plane_id=observation_time.plane_id,
+                    resolution=observation_time.resolution.to_value(u.second),
+                    start_time=observation_time.start_time,
+                ),
+            )
 
             return cur.fetchone()[0]
-
 
     def insert_plane(self, plane: types.Plane) -> int:
         """
@@ -384,7 +407,7 @@ class DatabaseService:
         """
 
         with self._connection.cursor() as cur:
-            sql = '''
+            sql = """
             WITH dpt (data_product_type_id) AS (
                 SELECT data_product_type_id
                 FROM data_product_type
@@ -394,10 +417,15 @@ class DatabaseService:
             VALUES ((SELECT data_product_type_id FROM dpt),
                     %(observation_id)s)
             RETURNING plane_id
-            '''
+            """
 
-            cur.execute(sql, dict(observation_id=plane.observation_id,
-                                  data_product_type=plane.data_product_type.value))
+            cur.execute(
+                sql,
+                dict(
+                    observation_id=plane.observation_id,
+                    data_product_type=plane.data_product_type.value,
+                ),
+            )
 
             return cur.fetchone()[0]
 
@@ -417,7 +445,7 @@ class DatabaseService:
         """
 
         with self._connection.cursor() as cur:
-            sql = '''
+            sql = """
             WITH sp (stokes_parameter_id) AS (
                 SELECT stokes_parameter_id
                 FROM stokes_parameter
@@ -426,10 +454,15 @@ class DatabaseService:
             INSERT INTO polarization (plane_id, stokes_parameter_id)
             VALUES (%(plane_id)s, (SELECT stokes_parameter_id FROM sp))
             RETURNING polarization_id
-            '''
+            """
 
-            cur.execute(sql, dict(plane_id=polarization.plane_id,
-                                  stokes_parameter=polarization.stokes_parameter.value))
+            cur.execute(
+                sql,
+                dict(
+                    plane_id=polarization.plane_id,
+                    stokes_parameter=polarization.stokes_parameter.value,
+                ),
+            )
 
             return cur.fetchone()[0]
 
@@ -450,16 +483,21 @@ class DatabaseService:
         """
 
         with self._connection.cursor() as cur:
-            sql = '''
+            sql = """
             INSERT INTO position (dec, equinox, plane_id, ra)
             VALUES (%(dec)s, %(equinox)s, %(plane_id)s, %(ra)s)
             RETURNING position_id
-            '''
+            """
 
-            cur.execute(sql, dict(dec=position.dec.to_value(u.degree),
-                                  equinox=position.equinox,
-                                  plane_id=position.plane_id,
-                                  ra=position.ra.to_value(u.degree)))
+            cur.execute(
+                sql,
+                dict(
+                    dec=position.dec.to_value(u.degree),
+                    equinox=position.equinox,
+                    plane_id=position.plane_id,
+                    ra=position.ra.to_value(u.degree),
+                ),
+            )
 
             return cur.fetchone()[0]
 
@@ -480,7 +518,7 @@ class DatabaseService:
         """
 
         with self._connection.cursor() as cur:
-            sql = '''
+            sql = """
             WITH inst (institution_id) AS (
                 SELECT institution_id FROM institution WHERE name=%(institution)s
             )
@@ -492,15 +530,21 @@ class DatabaseService:
                 %(title)s
             )
             RETURNING proposal_id
-            '''
-            cur.execute(sql, dict(institution=proposal.institution.value,
-                                  pi=proposal.pi, proposal_code=proposal.proposal_code,
-                                  title=proposal.title))
+            """
+            cur.execute(
+                sql,
+                dict(
+                    institution=proposal.institution.value,
+                    pi=proposal.pi,
+                    proposal_code=proposal.proposal_code,
+                    title=proposal.title,
+                ),
+            )
 
             return cur.fetchone()[0]
 
     def insert_proposal_investigator(
-            self, proposal_investigator: types.ProposalInvestigator
+        self, proposal_investigator: types.ProposalInvestigator
     ) -> int:
         """
         Insert a proposal investigator.
@@ -536,7 +580,7 @@ class DatabaseService:
         """
 
         with self._connection.cursor() as cur:
-            sql = '''
+            sql = """
             WITH tt (target_type_id) AS (
                 SELECT target_type_id FROM target_type WHERE numeric_code=%(numeric_code)s
             )
@@ -546,11 +590,17 @@ class DatabaseService:
                     %(standard)s,
                     (SELECT tt.target_type_id FROM tt))
             RETURNING target_id
-            '''
+            """
 
-            cur.execute(sql,
-                        dict(name=target.name, observation_id=target.observation_id,
-                             standard=target.standard, numeric_code=target.target_type))
+            cur.execute(
+                sql,
+                dict(
+                    name=target.name,
+                    observation_id=target.observation_id,
+                    standard=target.standard,
+                    numeric_code=target.target_type,
+                ),
+            )
 
             return cur.fetchone()[0]
 

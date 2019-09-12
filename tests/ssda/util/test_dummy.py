@@ -10,7 +10,7 @@ def test_dummy_observation_properties():
     random.seed(42)
     Faker().seed(42)
 
-    fits_file = DummyFitsFile('/some/test/path.fits')
+    fits_file = DummyFitsFile("/some/test/path.fits")
     observation_properties = DummyObservationProperties(fits_file)
 
     for _ in range(100):

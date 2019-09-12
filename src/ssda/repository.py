@@ -2,7 +2,9 @@ from ssda.database import DatabaseService
 from ssda.observation import ObservationProperties
 
 
-def delete(observation_properties: ObservationProperties, database_service: DatabaseService) -> None:
+def delete(
+    observation_properties: ObservationProperties, database_service: DatabaseService
+) -> None:
     """
     Delete an observation.
 
@@ -18,7 +20,9 @@ def delete(observation_properties: ObservationProperties, database_service: Data
 
     # find the observation
     # -1 is passed as plane id to the artifact method as the id is irrelevant
-    observation_id = database_service.find_observation_id(observation_properties.artifact(-1).name)
+    observation_id = database_service.find_observation_id(
+        observation_properties.artifact(-1).name
+    )
 
     # only delete the observation if there actually is one
     if observation_id:

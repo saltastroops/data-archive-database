@@ -442,7 +442,7 @@ def test_instrument_keyword_value_may_be_none():
         instrument=types.Instrument.RSS,
         instrument_keyword=types.InstrumentKeyword.GRATING,
         observation_id=12,
-        value=None
+        value=None,
     )
 
     assert instrument_keyword_value.value is None
@@ -519,7 +519,7 @@ def test_observation_group_may_be_none():
         observation_type=types.ObservationType.OBJECT,
         proposal_id=42,
         status=types.Status.ACCEPTED,
-        telescope=types.Telescope.SALT
+        telescope=types.Telescope.SALT,
     )
 
     assert observation.observation_group is None
@@ -671,7 +671,9 @@ def test_observation_time_resolution_must_have_a_time_unit():
 
 
 def test_plane_is_created_correctly():
-    plane = types.Plane(observation_id=67, data_product_type=types.DataProductType.SCIENCE)
+    plane = types.Plane(
+        observation_id=67, data_product_type=types.DataProductType.SCIENCE
+    )
 
     assert plane.observation_id == 67
     assert plane.data_product_type == types.DataProductType.SCIENCE

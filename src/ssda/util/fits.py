@@ -186,7 +186,7 @@ class DummyFitsFile(FitsFile):
 
     def checksum(self) -> str:
         characters = string.ascii_lowercase + string.digits
-        return ''.join(random.choices(characters, k=32))
+        return "".join(random.choices(characters, k=32))
 
     def header_value(self, keyword: str) -> str:
         letters = string.ascii_lowercase

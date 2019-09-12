@@ -36,10 +36,16 @@ class DummyObservationProperties(ObservationProperties):
         # means that for a given file the proposal code and institution must always be
         # the same.
         filename = os.path.basename(fits_file.path())
-        self._proposal_code = DummyObservationProperties._proposal_code_for_file(filename)
-        self._institution = DummyObservationProperties._institution_for_filename(filename)
+        self._proposal_code = DummyObservationProperties._proposal_code_for_file(
+            filename
+        )
+        self._institution = DummyObservationProperties._institution_for_filename(
+            filename
+        )
 
-        self._instrument = random.choice([types.Instrument.HRS, types.Instrument.RSS, types.Instrument.SALTICAM])
+        self._instrument = random.choice(
+            [types.Instrument.HRS, types.Instrument.RSS, types.Instrument.SALTICAM]
+        )
         if random.random() > 0.05:
             self._has_target = True
         else:
@@ -68,7 +74,7 @@ class DummyObservationProperties(ObservationProperties):
         # We need a pseudo-random (but deterministic) string
         md5_hash = hashlib.md5(filename.encode()).hexdigest()
 
-        characters = 'abcdef' + string.digits
+        characters = "abcdef" + string.digits
         random_number = characters.index(md5_hash[0])
 
         institutions = [institution for institution in types.Institution]
@@ -102,114 +108,175 @@ class DummyObservationProperties(ObservationProperties):
         # We need a pseudo-random (but deterministic) string
         md5_hash = hashlib.md5(filename.encode()).hexdigest()
 
-        characters = 'abcdef' + string.digits
+        characters = "abcdef" + string.digits
         index1 = characters.index(md5_hash[0])
         index2 = characters.index(md5_hash[1])
         index3 = characters.index(md5_hash[2])
 
         random_number = (index1 + 1) * (index2 + 1) * (index3 + 1)
 
-        if random_number < 0.95 * len(characters)**3:
-            return f'Proposal-{random_number}'
+        if random_number < 0.95 * len(characters) ** 3:
+            return f"Proposal-{random_number}"
         else:
             return None
 
     def artifact(self, plane_id: int) -> types.Artifact:
         def identifier(n: int) -> str:
             characters = string.ascii_lowercase + string.digits
-            return ''.join(random.choices(characters, k=n))
+            return "".join(random.choices(characters, k=n))
 
         def product_type() -> types.ProductType:
             return random.choice(list(p for p in types.ProductType))
 
-        return types.Artifact(content_checksum=self._fits_file.checksum(),
-                              content_length=self._fits_file.size(),
-                              identifier=identifier(10),
-                              name=os.path.basename(self._fits_file.path()),
-                              plane_id=plane_id,
-                              path=self._fits_file.path(),
-                              product_type=product_type())
+        return types.Artifact(
+            content_checksum=self._fits_file.checksum(),
+            content_length=self._fits_file.size(),
+            identifier=identifier(10),
+            name=os.path.basename(self._fits_file.path()),
+            plane_id=plane_id,
+            path=self._fits_file.path(),
+            product_type=product_type(),
+        )
 
     def energy(self, plane_id: int) -> Optional[types.Energy]:
         def wavelengths() -> (Quantity, Quantity):
             wavelength_interval = 5000 * random.random()
-            min_wavelength = 3000 + ((9000 - wavelength_interval) - 3000) * random.random()
+            min_wavelength = (
+                3000 + ((9000 - wavelength_interval) - 3000) * random.random()
+            )
             max_wavelength = min_wavelength + wavelength_interval
             return min_wavelength, max_wavelength
 
         wavelength_values = wavelengths()
 
-        return types.Energy(dimension=random.randint(1, 1024),
-                            max_wavelength=wavelength_values[1] * u.angstrom,
-                            min_wavelength=wavelength_values[0] * u.angstrom,
-                            plane_id=plane_id,
-                            resolving_power=8000 * random.random(),
-                            sample_size=100 * random.random() * u.angstrom)
+        return types.Energy(
+            dimension=random.randint(1, 1024),
+            max_wavelength=wavelength_values[1] * u.angstrom,
+            min_wavelength=wavelength_values[0] * u.angstrom,
+            plane_id=plane_id,
+            resolving_power=8000 * random.random(),
+            sample_size=100 * random.random() * u.angstrom,
+        )
 
-    def instrument_keyword_values(self, observation_id: int) -> List[
-        types.InstrumentKeywordValue]:
+    def instrument_keyword_values(
+        self, observation_id: int
+    ) -> List[types.InstrumentKeywordValue]:
         values = []
 
         # RSS
         if self._instrument == types.Instrument.RSS:
-            grating = random.choice(['pg0300', 'pg0900', 'pg1300', 'pg1800', 'pg2300', 'pg3000', None])
-            filter = random.choice(['pc00000', 'pc03200', 'pc03400', 'pc03850', 'pc04600', 'pi06530', 'pi08005', None])
+            grating = random.choice(
+                ["pg0300", "pg0900", "pg1300", "pg1800", "pg2300", "pg3000", None]
+            )
+            filter = random.choice(
+                [
+                    "pc00000",
+                    "pc03200",
+                    "pc03400",
+                    "pc03850",
+                    "pc04600",
+                    "pi06530",
+                    "pi08005",
+                    None,
+                ]
+            )
             if random.random() > 0.5:
-                values.append(types.InstrumentKeywordValue(instrument=types.Instrument.RSS, instrument_keyword=types.InstrumentKeyword.FILTER, observation_id=observation_id, value=filter))
+                values.append(
+                    types.InstrumentKeywordValue(
+                        instrument=types.Instrument.RSS,
+                        instrument_keyword=types.InstrumentKeyword.FILTER,
+                        observation_id=observation_id,
+                        value=filter,
+                    )
+                )
             if random.random() > 0.5:
-                values.append(types.InstrumentKeywordValue(instrument=types.Instrument.RSS, instrument_keyword=types.InstrumentKeyword.GRATING, observation_id=observation_id, value=grating))
+                values.append(
+                    types.InstrumentKeywordValue(
+                        instrument=types.Instrument.RSS,
+                        instrument_keyword=types.InstrumentKeyword.GRATING,
+                        observation_id=observation_id,
+                        value=grating,
+                    )
+                )
 
         # Salticam
         elif self._instrument == types.Instrument.SALTICAM:
-            filter = random.choice(['U-S1', 'B-S1', 'V-S1', 'R-S1', 'I-S1', 'Halpha-S1', None])
+            filter = random.choice(
+                ["U-S1", "B-S1", "V-S1", "R-S1", "I-S1", "Halpha-S1", None]
+            )
             if random.random() > 0.5:
-                values.append(types.InstrumentKeywordValue(instrument=types.Instrument.SALTICAM, instrument_keyword=types.InstrumentKeyword.FILTER, observation_id=observation_id, value=filter))
+                values.append(
+                    types.InstrumentKeywordValue(
+                        instrument=types.Instrument.SALTICAM,
+                        instrument_keyword=types.InstrumentKeyword.FILTER,
+                        observation_id=observation_id,
+                        value=filter,
+                    )
+                )
 
         return values
 
     def observation(self, proposal_id: Optional[int]) -> types.Observation:
         now = datetime.now().date()
-        data_release = self._faker.date_between('-5y', now + timedelta(days=500))
-        meta_release = self._faker.date_between('-5y', now + timedelta(days=500))
+        data_release = self._faker.date_between("-5y", now + timedelta(days=500))
+        meta_release = self._faker.date_between("-5y", now + timedelta(days=500))
         if meta_release > data_release:
             meta_release = data_release
         intent = random.choice([intent for intent in types.Intent])
         if self._proposal_code:
-            observation_group = '{proposal_code}-{index}'.format(proposal_code=self._proposal_code, index=random.randint(1, 10))
+            observation_group = "{proposal_code}-{index}".format(
+                proposal_code=self._proposal_code, index=random.randint(1, 10)
+            )
         else:
             observation_group = None
-        observation_type = random.choice([observation_type for observation_type in types.ObservationType])
+        observation_type = random.choice(
+            [observation_type for observation_type in types.ObservationType]
+        )
         status = random.choice([status for status in types.Status])
-        if self._instrument in (types.Instrument.HRS, types.Instrument.RSS, types.Instrument.SALTICAM):
+        if self._instrument in (
+            types.Instrument.HRS,
+            types.Instrument.RSS,
+            types.Instrument.SALTICAM,
+        ):
             telescope = types.Telescope.SALT
         else:
-            telescope = random.choice([types.Telescope.LESEDI, types.Telescope.ONE_DOT_NINE])
+            telescope = random.choice(
+                [types.Telescope.LESEDI, types.Telescope.ONE_DOT_NINE]
+            )
 
-        return types.Observation(data_release=data_release,
-                                 instrument=self._instrument,
-                                 intent=intent,
-                                 meta_release=meta_release,
-                                 observation_group=observation_group,
-                                 observation_type=observation_type,
-                                 proposal_id=proposal_id,
-                                 status=status,
-                                 telescope=telescope)
+        return types.Observation(
+            data_release=data_release,
+            instrument=self._instrument,
+            intent=intent,
+            meta_release=meta_release,
+            observation_group=observation_group,
+            observation_type=observation_type,
+            proposal_id=proposal_id,
+            status=status,
+            telescope=telescope,
+        )
 
     def observation_time(self, plane_id: int) -> types.ObservationTime:
-        start_time = self._faker.date_time_between('-5y', tzinfo=tz.gettz('UTC'))
+        start_time = self._faker.date_time_between("-5y", tzinfo=tz.gettz("UTC"))
         exposure_time = 10 * u.second + 4000 * random.random() * u.second
         end_time = start_time + timedelta(seconds=exposure_time.to_value(u.second))
-        return types.ObservationTime(end_time=end_time,
-                                     exposure_time=exposure_time,
-                                     plane_id=plane_id,
-                                     resolution=exposure_time,
-                                     start_time=start_time)
+        return types.ObservationTime(
+            end_time=end_time,
+            exposure_time=exposure_time,
+            plane_id=plane_id,
+            resolution=exposure_time,
+            start_time=start_time,
+        )
 
     def plane(self, observation_id: int) -> types.Plane:
-        data_product_types = [data_product_type for data_product_type in types.DataProductType]
+        data_product_types = [
+            data_product_type for data_product_type in types.DataProductType
+        ]
 
-        return types.Plane(observation_id=observation_id,
-                           data_product_type=random.choice(data_product_types))
+        return types.Plane(
+            observation_id=observation_id,
+            data_product_type=random.choice(data_product_types),
+        )
 
     def polarizations(self, plane_id: int) -> List[types.Polarization]:
         all_stokes_parameters = [parameter for parameter in types.StokesParameter]
@@ -219,8 +286,10 @@ class DummyObservationProperties(ObservationProperties):
         else:
             stokes_parameters = []
 
-        return [types.Polarization(plane_id=plane_id, stokes_parameter=stokes_parameter)
-                for stokes_parameter in stokes_parameters]
+        return [
+            types.Polarization(plane_id=plane_id, stokes_parameter=stokes_parameter)
+            for stokes_parameter in stokes_parameters
+        ]
 
     def position(self, plane_id: int) -> Optional[types.Position]:
         if not self._has_target:
@@ -237,18 +306,28 @@ class DummyObservationProperties(ObservationProperties):
 
     def proposal(self) -> Optional[types.Proposal]:
         if self._proposal_code:
-            return types.Proposal(institution=self._institution,
-                                  pi=self._faker.name(),
-                                  proposal_code=self._proposal_code,
-                                  title=self._faker.text(max_nb_chars=100))
+            return types.Proposal(
+                institution=self._institution,
+                pi=self._faker.name(),
+                proposal_code=self._proposal_code,
+                title=self._faker.text(max_nb_chars=100),
+            )
         else:
             return None
 
-    def proposal_investigators(self, proposal_id: int) -> List[
-        types.ProposalInvestigator]:
+    def proposal_investigators(
+        self, proposal_id: int
+    ) -> List[types.ProposalInvestigator]:
         investigator_ids = list(range(1, 201))
 
-        return [types.ProposalInvestigator(proposal_id=proposal_id, investigator_id=str(investigator_id)) for investigator_id in random.sample(investigator_ids, k=random.randint(0, 10))]
+        return [
+            types.ProposalInvestigator(
+                proposal_id=proposal_id, investigator_id=str(investigator_id)
+            )
+            for investigator_id in random.sample(
+                investigator_ids, k=random.randint(0, 10)
+            )
+        ]
 
     def target(self, observation_id: int) -> Optional[types.Target]:
         if not self._has_target:
@@ -258,7 +337,17 @@ class DummyObservationProperties(ObservationProperties):
             standard = True
         else:
             standard = False
-        target_types = ['15.00.50.00', '50.02.01.00', '12.13.00.00', '51.02.00.00', '51.00.00.00']
+        target_types = [
+            "15.00.50.00",
+            "50.02.01.00",
+            "12.13.00.00",
+            "51.02.00.00",
+            "51.00.00.00",
+        ]
 
-        return types.Target(name=self._faker.text(max_nb_chars=20), observation_id=observation_id, standard=standard, target_type=random.choice(target_types))
-
+        return types.Target(
+            name=self._faker.text(max_nb_chars=20),
+            observation_id=observation_id,
+            standard=standard,
+            target_type=random.choice(target_types),
+        )

@@ -1,10 +1,7 @@
 from abc import ABC
 
 from ssda.database import DatabaseService
-from ssda.observation import (
-    StandardObservationProperties,
-    ObservationProperties,
-)
+from ssda.observation import StandardObservationProperties, ObservationProperties
 from ssda.util.dummy import DummyObservationProperties
 from ssda.repository import delete, insert
 from ssda.util.fits import DummyFitsFile, StandardFitsFile
@@ -12,7 +9,10 @@ from ssda.util.types import TaskName, TaskExecutionMode
 
 
 def execute_task(
-    task_name: TaskName, fits_path: str, task_mode: TaskExecutionMode, database_service: DatabaseService
+    task_name: TaskName,
+    fits_path: str,
+    task_mode: TaskExecutionMode,
+    database_service: DatabaseService,
 ) -> None:
     # Get the observation properties.
     if task_mode == TaskExecutionMode.PRODUCTION:
@@ -35,7 +35,7 @@ def execute_task(
     elif task_name == TaskName.DELETE:
         delete(
             observation_properties=observation_properties,
-            database_service=database_service
+            database_service=database_service,
         )
     else:
         raise NotImplementedError

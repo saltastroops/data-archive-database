@@ -45,11 +45,11 @@ def parse_date(value: str, now: Callable[[], datetime]) -> date:
 
 
 def validate_options(
-        start: Optional[date],
-        end: Optional[date],
-        file: Optional[str],
-        instruments: Set[Instrument],
-        fits_base_dir: Optional[str],
+    start: Optional[date],
+    end: Optional[date],
+    file: Optional[str],
+    instruments: Set[Instrument],
+    fits_base_dir: Optional[str],
 ) -> None:
     """
     Validate the command line options.
@@ -152,13 +152,13 @@ def validate_options(
     help="Task to perform.",
 )
 def main(
-        task: str,
-        start: Optional[str],
-        end: Optional[str],
-        instruments: Tuple[str],
-        file: Optional[str],
-        fits_base_dir: Optional[str],
-        mode: str,
+    task: str,
+    start: Optional[str],
+    end: Optional[str],
+    instruments: Tuple[str],
+    file: Optional[str],
+    fits_base_dir: Optional[str],
+    mode: str,
 ) -> None:
     # convert options as required and validate them
     now = datetime.now
@@ -166,7 +166,8 @@ def main(
     end_date = parse_date(end, now) if end else None
     if len(instruments):
         instruments_set = set(
-            Instrument.for_name(instrument) for instrument in instruments)
+            Instrument.for_name(instrument) for instrument in instruments
+        )
     else:
         instruments_set = set(instrument for instrument in Instrument)
     task_name = TaskName.for_name(task)
@@ -194,12 +195,16 @@ def main(
         )
 
     # execute the requested task
-    connection = connect(dbname='ssda', user='postgres')
+    connection = connect(dbname="ssda", user="postgres")
     try:
         database_service = DatabaseService(connection)
         for path in paths:
-            execute_task(task_name=task_name, fits_path=path, task_mode=task_mode,
-                         database_service=database_service)
+            execute_task(
+                task_name=task_name,
+                fits_path=path,
+                task_mode=task_mode,
+                database_service=database_service,
+            )
     except BaseException as e:
         connection.close()
         raise e

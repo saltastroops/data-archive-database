@@ -92,7 +92,10 @@ class ObservationPropertiesStub(ObservationProperties):
         )
 
     def plane(self, observation_id: int) -> types.Plane:
-        return types.Plane(data_product_type=types.DataProductType.SCIENCE, observation_id=observation_id)
+        return types.Plane(
+            data_product_type=types.DataProductType.SCIENCE,
+            observation_id=observation_id,
+        )
 
     def polarizations(self, plane_id: int) -> List[types.Polarization]:
         return [
