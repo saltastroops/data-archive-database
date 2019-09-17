@@ -173,7 +173,7 @@ DROP TABLE IF EXISTS proposal_investigator;
 
 CREATE TABLE proposal_investigator (
     institution_user_id varchar(50) NOT NULL,
-    proposal_id int NOT NULL REFERENCES observations.proposal (proposal_id)
+    proposal_id int NOT NULL REFERENCES observations.proposal (proposal_id) ON DELETE CASCADE
 );
 
 CREATE INDEX proposal_investigator_user_idx ON proposal_investigator (institution_user_id);
