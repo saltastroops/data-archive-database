@@ -550,7 +550,7 @@ class DatabaseService:
 
     def insert_proposal_investigator(
         self, proposal_investigator: types.ProposalInvestigator
-    ) -> int:
+    ) -> None:
         """
         Insert a proposal investigator.
 
@@ -559,14 +559,15 @@ class DatabaseService:
         proposal_investigator : ProposalInvestigator
             Proposal investigator.
 
-        Returns
-        -------
-        int
-            The database id of the inserted proposal investigator.
-
         """
 
-        pass
+        with self._connection.cursor() as cur:
+            sql = '''
+            INSERT INTO admin.proposal_investigator (institution_user_id, proposal_id)
+            VALUES (%(user_id)s, %(proposal_id)s)
+            '''
+
+            cur.execute(sql, dict(user_id=proposal_investigator.investigator_id, proposal_id=proposal_investigator.proposal_id))
 
     def insert_target(self, target: types.Target) -> int:
         """

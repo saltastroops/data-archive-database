@@ -2,11 +2,10 @@ from __future__ import annotations
 import os
 from datetime import date, datetime
 from enum import Enum
-from typing import Optional
+from typing import NamedTuple, Optional
 
 import astropy.units as u
 from astropy.units import def_unit, Quantity
-
 
 byte = def_unit("byte")
 
@@ -203,6 +202,9 @@ class DatabaseConfiguration:
             and self.port() == other.port()
         )
 
+
+class DatabaseServices(NamedTuple):
+    ssda: ssda.database.ssda.DatabaseService
 
 class DataProductType(Enum):
     """

@@ -2,16 +2,17 @@ from datetime import date, datetime, timedelta
 from typing import Callable, Optional, Set, Tuple
 
 import click
+import dsnparse
 from psycopg2 import connect
 
-from ssda.database import DatabaseService
+import ssda.database.ssda
+from ssda.database.services import DatabaseServices
 from ssda.task import execute_task
 from ssda.util.fits import fits_file_paths
 from ssda.util.types import (
     Instrument,
     DateRange,
     TaskName,
-    DatabaseConfiguration,
     TaskExecutionMode,
 )
 
@@ -92,6 +93,12 @@ def validate_options(
     if start and file:
         raise click.UsageError(
             "The --start/--end and --file options are mutually exclusive."
+        )
+
+    # The --instrument and the --file option are mutually exclusive
+    if len(instruments) and file:
+        raise click.UsageError(
+            "The --instrument and --file options are mutually exclusive."
         )
 
     # Either a date range or a FITS file must be specified
@@ -194,17 +201,22 @@ def main(
             "The command line options do not allow the FITS file paths to be found."
         )
 
+    # database access
+    ssda_db_config = dsnparse.parse_environ('SSDA_DSN')
+    ssda_connection = connect(user=ssda_db_config.user, password=ssda_db_config.secret, host=ssda_db_config.host, port=ssda_db_config.port, database=ssda_db_config.database)
+    ssda_database_service = ssda.database.ssda.DatabaseService(ssda_connection)
+
+    database_services = DatabaseServices(ssda=ssda_database_service)
+
     # execute the requested task
-    connection = connect(dbname="ssda", user="postgres")
     try:
-        database_service = DatabaseService(connection)
         for path in paths:
             execute_task(
                 task_name=task_name,
                 fits_path=path,
                 task_mode=task_mode,
-                database_service=database_service,
+                database_services=database_services
             )
     except BaseException as e:
-        connection.close()
+        ssda_connection.close()
         raise e

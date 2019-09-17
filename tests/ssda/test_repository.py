@@ -4,7 +4,7 @@ from typing import Any, Optional, List
 import astropy.units as u
 from dateutil import tz
 
-import ssda.database
+import ssda.database.ssda
 from ssda.observation import ObservationProperties
 from ssda.repository import delete, insert
 from ssda.util import types
@@ -140,12 +140,12 @@ class ObservationPropertiesStub(ObservationProperties):
 
 def test_observation_is_deleted(mocker):
     # mock the database access
-    mock_database_service = mocker.patch("ssda.database.DatabaseService")
+    mock_database_service = mocker.patch("ssda.database.ssda.DatabaseService")
     mock_database_service.return_value.find_observation_id.return_value = 584
 
     database_config: Any = None
     observation_properties = ObservationPropertiesStub()
-    delete(observation_properties, ssda.database.DatabaseService(database_config))
+    delete(observation_properties, ssda.database.ssda.DatabaseService(database_config))
 
     # a transaction is used
     mock_database_service.return_value.begin_transaction.assert_called_once()
@@ -159,12 +159,12 @@ def test_observation_is_deleted(mocker):
 
 def test_non_existing_observations_are_not_deleted(mocker):
     # mock the database access
-    mock_database_service = mocker.patch("ssda.database.DatabaseService")
+    mock_database_service = mocker.patch("ssda.database.ssda.DatabaseService")
     mock_database_service.return_value.find_observation_id.return_value = None
 
     database_config: Any = None
     observation_properties = ObservationPropertiesStub()
-    delete(observation_properties, ssda.database.DatabaseService(database_config))
+    delete(observation_properties, ssda.database.ssda.DatabaseService(database_config))
 
     # no observation is deleted
     mock_database_service.return_value.delete_observation.assert_not_called()
@@ -172,14 +172,14 @@ def test_non_existing_observations_are_not_deleted(mocker):
 
 def test_transactions_are_rolled_back_if_deleting_fails(mocker):
     # mock the database access
-    mock_database_service = mocker.patch("ssda.database.DatabaseService")
+    mock_database_service = mocker.patch("ssda.database.ssda.DatabaseService")
     mock_database_service.return_value.find_observation_id.return_value = 584
     mock_database_service.return_value.delete_observation.side_effect = ValueError()
 
     database_config: Any = None
     observation_properties = ObservationPropertiesStub()
     try:
-        delete(observation_properties, ssda.database.DatabaseService(database_config))
+        delete(observation_properties, ssda.database.ssda.DatabaseService(database_config))
     except:
         pass
 
@@ -191,7 +191,7 @@ def test_transactions_are_rolled_back_if_deleting_fails(mocker):
 
 def test_all_content_is_inserted(mocker):
     # mock the database access
-    mock_database_service = mocker.patch("ssda.database.DatabaseService")
+    mock_database_service = mocker.patch("ssda.database.ssda.DatabaseService")
     mock_database_service.return_value.find_observation_id.return_value = None
     mock_database_service.return_value.find_proposal_id.return_value = None
     mock_database_service.return_value.insert_artifact.return_value = 713
@@ -210,7 +210,7 @@ def test_all_content_is_inserted(mocker):
 
     database_config: Any = None
     observation_properties = ObservationPropertiesStub()
-    insert(observation_properties, ssda.database.DatabaseService(database_config))
+    insert(observation_properties, ssda.database.ssda.DatabaseService(database_config))
 
     # a transaction is used
     mock_database_service.return_value.begin_transaction.assert_called_once()
@@ -319,7 +319,7 @@ def test_all_content_is_inserted(mocker):
 
 def test_proposals_are_not_reinserted(mocker):
     # mock the database access
-    mock_database_service = mocker.patch("ssda.database.DatabaseService")
+    mock_database_service = mocker.patch("ssda.database.ssda.DatabaseService")
     mock_database_service.return_value.find_observation_id.return_value = None
     mock_database_service.return_value.find_proposal_id.return_value = PROPOSAL_ID
     mock_database_service.return_value.insert_artifact.return_value = 713
@@ -338,7 +338,7 @@ def test_proposals_are_not_reinserted(mocker):
 
     database_config: Any = None
     observation_properties = ObservationPropertiesStub()
-    insert(observation_properties, ssda.database.DatabaseService(database_config))
+    insert(observation_properties, ssda.database.ssda.DatabaseService(database_config))
 
     # a transaction is used
     mock_database_service.return_value.begin_transaction.assert_called_once()
@@ -432,7 +432,7 @@ def test_proposals_are_not_reinserted(mocker):
 
 def test_observations_are_not_reinserted(mocker):
     # mock the database access
-    mock_database_service = mocker.patch("ssda.database.DatabaseService")
+    mock_database_service = mocker.patch("ssda.database.ssda.DatabaseService")
     mock_database_service.return_value.find_observation_id.return_value = OBSERVATION_ID
     mock_database_service.return_value.find_proposal_id.return_value = None
     mock_database_service.return_value.insert_artifact.return_value = 713
@@ -451,7 +451,7 @@ def test_observations_are_not_reinserted(mocker):
 
     database_config: Any = None
     observation_properties = ObservationPropertiesStub()
-    insert(observation_properties, ssda.database.DatabaseService(database_config))
+    insert(observation_properties, ssda.database.ssda.DatabaseService(database_config))
 
     # a transaction is used
     mock_database_service.return_value.begin_transaction.assert_called_once()
@@ -495,7 +495,7 @@ def test_observations_are_not_reinserted(mocker):
 
 def test_transactions_are_rolled_back_if_inserting_fails(mocker):
     # mock the database access
-    mock_database_service = mocker.patch("ssda.database.DatabaseService")
+    mock_database_service = mocker.patch("ssda.database.ssda.DatabaseService")
     mock_database_service.return_value.find_observation_id.return_value = None
     mock_database_service.return_value.find_proposal_id.return_value = None
     mock_database_service.return_value.insert_artifact.return_value = 713
@@ -517,7 +517,7 @@ def test_transactions_are_rolled_back_if_inserting_fails(mocker):
     database_config: Any = None
     observation_properties = ObservationPropertiesStub()
     try:
-        insert(observation_properties, ssda.database.DatabaseService(database_config))
+        insert(observation_properties, ssda.database.ssda.DatabaseService(database_config))
     except ValueError:
         pass
 

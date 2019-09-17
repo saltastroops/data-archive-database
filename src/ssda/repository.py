@@ -1,4 +1,4 @@
-from ssda.database import DatabaseService
+from ssda.database.ssda import DatabaseService
 from ssda.observation import ObservationProperties
 
 
