@@ -137,6 +137,28 @@ def test_file_is_not_allowed_with_dates():
         assert "file" in str(result.output)
 
 
+def test_file_is_not_allowed_with_an_instrument():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open("whatever.fits", "w") as f:
+            f.write("Dummy FITS file")
+        result = runner.invoke(
+            main,
+            [
+                "--instrument",
+                "RSS",
+                "--task",
+                "insert",
+                "--mode",
+                "dummy",
+                "--file",
+                "whatever.fits",
+            ],
+        )
+        assert result.exit_code != 0
+        assert "file" in str(result.output) and "instrument" in str(result.output)
+
+
 def test_a_base_directory_is_required_with_dates():
     runner = CliRunner()
     result = runner.invoke(
