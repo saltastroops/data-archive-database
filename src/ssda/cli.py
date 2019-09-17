@@ -1,8 +1,11 @@
+import logging
+import os
 from datetime import date, datetime, timedelta
 from typing import Callable, Optional, Set, Tuple
 
 import click
 import dsnparse
+import sentry_sdk
 from psycopg2 import connect
 
 import ssda.database.ssda
@@ -15,6 +18,10 @@ from ssda.util.types import (
     TaskName,
     TaskExecutionMode,
 )
+
+# Log with Sentry
+if os.environ.get("SENTRY_DSN"):
+    sentry_sdk.init(os.environ.get("SENTRY_DSN"))
 
 
 def parse_date(value: str, now: Callable[[], datetime]) -> date:
@@ -96,7 +103,7 @@ def validate_options(
         )
 
     # The --instrument and the --file option are mutually exclusive
-    if len(instruments) and file:
+    if len(instruments) != len([instrument for instrument in Instrument]) and file:
         raise click.UsageError(
             "The --instrument and --file options are mutually exclusive."
         )
@@ -158,6 +165,7 @@ def validate_options(
     required=True,
     help="Task to perform.",
 )
+@click.option("--verbose", is_flag=True, help="Log more details.")
 def main(
     task: str,
     start: Optional[str],
@@ -166,7 +174,11 @@ def main(
     file: Optional[str],
     fits_base_dir: Optional[str],
     mode: str,
-) -> None:
+        verbose: bool
+) -> int:
+    if verbose:
+        logging.basicConfig(level=logging.INFO)
+
     # convert options as required and validate them
     now = datetime.now
     start_date = parse_date(start, now) if start else None
@@ -219,4 +231,10 @@ def main(
             )
     except BaseException as e:
         ssda_connection.close()
-        raise e
+        logging.critical("Exception occurred", exc_info=True)
+        click.echo(click.style(str(e), fg="red", blink=True, bold=True))
+
+        return -1
+
+    # Success!
+    return 0
