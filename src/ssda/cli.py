@@ -179,6 +179,10 @@ def main(
     if verbose:
         logging.basicConfig(level=logging.INFO)
 
+    if not os.environ.get("SENTRY_DSN"):
+        logging.warning('Environment variable SENTRY_DSN for logging with Sentry not '
+                        'set.')
+
     # convert options as required and validate them
     now = datetime.now
     start_date = parse_date(start, now) if start else None
@@ -223,6 +227,8 @@ def main(
     # execute the requested task
     try:
         for path in paths:
+            if verbose:
+                logging.info(f'{task_name.value}: {path}')
             execute_task(
                 task_name=task_name,
                 fits_path=path,
