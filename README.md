@@ -4,7 +4,7 @@ This application lets you populate (and update) the SAAO/SALT Data Archive datab
 
 ## Installation and configuration
 
-Ensure that Python 3.7 is running on your machine. You can check this with the `--version flag`.
+Ensure that Python 3.7 is running on your machine. You can check this with the `--version` flag.
 
 ```bash
 python3 --version
