@@ -6,7 +6,7 @@ setup(
     package_dir={'': 'src'},
     python_requires=">=3.7",
     setup_requires=['pytest-runner'],
-    install_requires=['astropy', 'python-dateutil', 'faker', 'psycopg2', 'sentry-sdk'],
+    install_requires=['astropy', 'click', 'dsnparse', 'python-dateutil', 'faker', 'psycopg2', 'sentry-sdk'],
     tests_require=['mypy', 'pytest', 'pytest-mock'],
     entry_points={"console_scripts": ["ssda = ssda.cli:main"]},
     version="0.1.0"
