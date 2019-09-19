@@ -51,19 +51,57 @@ See below for instructions on how to run the script as a cron job.
 
 ## Setting up the database
 
-[WILL HAVE TO BE UPDATED]
+Flyway is used for initialising and updating the database, so this needs to be installed first.
 
-If the database does not exist yet, you can create it with the SQL script in `sql/tables.sql`.
+### Installing Flyway on Ubuntu
+
+Follow the [installation instructions](https://flywaydb.org/documentation/commandline/#download-and-installation).
+
+### Installing Flyway on macOS
+
+You can follow the [installation instructions](https://flywaydb.org/documentation/commandline/#download-and-installation). However, it might be easier to just use brew:
 
 ```bash
-mysql -u <admin_user> -h <host> -p < sql/tables.sql
+brew install flyway 
 ```
 
-Be careful with running the script - if the database exists its tables will be dropped and recreated.
+### Creating and initialising the database
 
-## Upgrading
+Login to the PostgreSQL server and create the database.
 
-In order to upgrade the script, make sure you are in the master branch
+```postgresql
+CREATE DATABASE ssda;
+```
+
+Make sure you are in the root directory of the project and run Flyway:
+
+```bash
+flyway -url=jdbc:postgresql://your.host:5432/ssda -user=admin -locations=filesystem:sql migrate
+```
+
+This assumes that the PostgreSQL server is listening on port 5432 and that there is a user `admin` with all the necessary permissions.
+
+Once the database is initialised, there will be the following new roles:
+
+Role | Description
+--- | ---
+admin_editor | May insert, update and delete admin data.
+observations_editor | May insert, update and delete observation data.
+
+The permissions are limited to those necessary for the relevant tasks. For example, the observations_editor may only delete some of the observation data.
+
+While roles are created, users aren't. So for example, if you want to have a dedicated user for populating the observations database, you may run a SQL commands like the following.
+
+```postgresql
+CREATE USER obs PASSWORD 'secret' LOGIN INHERIT;
+GRANT observations_editor TO obs;
+```
+
+## Updating
+
+### Updating the script
+
+In order to update the script, make sure you are in the master branch
 
 ```bash
 git checkout master
@@ -81,6 +119,14 @@ Finally update the installed package.
 pipenv update ssda
 ```
 
+### Updating the database
+
+To update the database you execute Flyway the same way as for initialising it:
+
+```bash
+flyway -url=jdbc:postgresql://your.host:5432/ssda -user=admin -locations=filesystem:sql migrate
+```
+
 ## Usage
 
 The package provides a command `ssda` for inserting, updating and deleting entries in the Data Archive database. To run it, first open a new pipenv shell.
@@ -89,7 +135,7 @@ The package provides a command `ssda` for inserting, updating and deleting entri
 pipenv shell
 ```
 
-To find out about the available optrions you may use the `--help` option.
+To find out about the available options you may use the `--help` option.
 
 ```bash
 python ssda --help
