@@ -87,9 +87,9 @@ DROP TABLE IF EXISTS ssda_user_auth;
 
 CREATE TABLE ssda_user_auth (
     password varchar(255) NOT NULL,
-    password_reset_token varchar(255) UNIQUE NOT NULL,
-    password_reset_token_expiry timestamp with time zone NOT NULL,
-    user_id int NOT NULL REFERENCES ssda_user (ssda_user_id),
+    password_reset_token varchar(255) UNIQUE,
+    password_reset_token_expiry timestamp with time zone,
+    user_id int NOT NULL REFERENCES ssda_user (ssda_user_id) ON DELETE CASCADE,
     username varchar(255) UNIQUE NOT NULL
 );
 
