@@ -457,7 +457,8 @@ class InstrumentKeyword(Enum):
 
     """
 
-    BANDPASS = "Bandpass"
+    EXPOSURE_TIME = "Exposure time"
+    FILTER = "Filter"
     GRATING = "Grating"
 
 
@@ -519,9 +520,7 @@ class Intent(Enum):
 
     """
 
-    ARC = "Arc"
-    BIAS = "Bias"
-    FLAT = "Flat"
+    CALIBRATION = "Calibration"
     SCIENCE = "Science"
 
 
