@@ -65,13 +65,49 @@ You can follow the [installation instructions](https://flywaydb.org/documentatio
 brew install flyway 
 ```
 
+### Installing pgSphere
+
+The data archive database requires [pgSphere](https://pgsphere.github.io/doc/index.html), which provides various spherical data types, functions and operators.
+
+To install it, first make sure that pg_config is available on the server.
+
+```bash
+pgconfig --help
+```
+
+Then clone the pgSphere source code from [its GitHub repository](https://github.com/akorotkov/pgsphere),
+
+```bash
+git clone https://github.com/akorotkov/pgsphere
+```
+
+and change into the created directory,
+
+```bash
+cd pgsphere
+```
+
+Then execute
+
+```bash
+make USE_PGXS=1 PG_CONFIG=`which pg_config`
+```
+
+followed by
+
+```bash
+sudo make USE_PGXS=1 PG_CONFIG=`which pg_config` install
+```
+
 ### Creating and initialising the database
 
-Login to the PostgreSQL server and create the database.
+Login to the PostgreSQL server and create the database,
 
 ```postgresql
 CREATE DATABASE ssda;
 ```
+
+and exit PostgreSQL again.
 
 Make sure you are in the root directory of the project and run Flyway:
 
@@ -93,7 +129,7 @@ The permissions are limited to those necessary for the relevant tasks. For examp
 While roles are created, users aren't. So for example, if you want to have a dedicated user for populating the observations database, you may run a SQL commands like the following.
 
 ```postgresql
-CREATE USER obs PASSWORD 'secret' LOGIN INHERIT;
+CREATE ROLE obs PASSWORD 'secret' LOGIN INHERIT;
 GRANT observations_editor TO obs;
 ```
 
