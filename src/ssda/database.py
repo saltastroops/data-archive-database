@@ -1,4 +1,5 @@
-from typing import Optional
+import datetime
+from typing import Optional, List
 
 from ssda.util import types
 
@@ -69,6 +70,11 @@ class DatabaseService:
         """
 
         raise NotImplementedError
+
+    @staticmethod
+    def find_identifier(identifier: str) -> Optional[str]:
+        # Todo search data base if Identifier exist
+        return None
 
     def insert_artifact(self, artifact: types.Artifact) -> int:
         """
@@ -280,3 +286,37 @@ class DatabaseService:
         """
 
         raise NotImplementedError
+
+
+class SaltDatabaseService:
+    def __init__(self, database_config: types.DatabaseConfiguration):
+        pass
+
+    def find_pi(self, block_visit: str) -> Optional[str]:
+        return
+
+    def find_proposal_code(self, block_visit: str) -> Optional[str]:
+        return
+
+    def find_proposal_title(self, block_visit: str) -> Optional[str]:
+        return
+
+    def find_observation_status(self, block_visit_id: str) -> types.Status:
+        obs_status = block_visit_id
+
+        if obs_status == "":
+            return types.Status.ACCEPTED
+        else:
+            return types.Status.REJECTED
+
+    def find_release_date(self, block_visit_id: str) -> datetime.datetime:
+        # Todo search data base if Identifier exist
+        return datetime.datetime.now()
+
+    def find_meta_release_date(self, block_visit_id: str) -> datetime.datetime:
+        # Todo search data base if Identifier exist
+        return datetime.datetime.now()
+
+    def find_proposal_investigators(self, block_visit_id: str) -> List[int]:
+        # Todo search data base if Identifier exist
+        return [1]
