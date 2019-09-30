@@ -86,12 +86,23 @@ def insert(
         else:
             proposal_id = None
 
+        # insert observation group (if need be)
+        observation_group = observation_properties.observation_group()
+        if observation_group is not None:
+            group_identifier = observation_group.group_identifier
+            telescope = observation_properties.observation(-1, -1).telescope
+            observation_group_id = database_service.find_observation_group_id(group_identifier, telescope)
+            if observation_group_id is None:
+                observation_group_id = database_service.insert_observation_group(observation_group)
+        else:
+            observation_group_id = None
+
         # insert observation (if need be)
         # -1 is passed as plane id to the artifact method as the id is irrelevant
         artifact_name = observation_properties.artifact(-1).name
         observation_id = database_service.find_observation_id(artifact_name)
         if observation_id is None:
-            observation = observation_properties.observation(proposal_id)
+            observation = observation_properties.observation(observation_group_id=observation_group_id, proposal_id=proposal_id)
             observation_id = database_service.insert_observation(observation)
         else:
             # nothing else to do, so the changes can be committed

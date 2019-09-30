@@ -51,6 +51,41 @@ class DatabaseService:
 
             cur.execute(sql, dict(observation_id=observation_id))
 
+    def find_observation_group_id(self, group_identifier: str, telescope: types.Telescope) -> Optional[int]:
+        """
+        Find the database id of an observation group.
+
+        Parameters
+        ----------
+        group_identifier : str
+            Identifier for the observation group.
+        telescope : Telescope
+            Telescope used for the observations in the group.
+
+        Returns
+        -------
+        Optional[int]
+            The database id for the observation group, or None if there is observation
+            group in the database for the group identifier and telescope.
+
+        """
+
+        with self._connection.cursor() as cur:
+            sql = """
+            SELECT observation.observation_group_id
+            FROM observation_group
+            JOIN observation ON observation_group.observation_group_id=observation.observation_group_id
+            JOIN telescope ON observation.telescope_id = telescope.telescope_id
+            WHERE observation_group.group_identifier=%(group_identifier)s AND telescope.name=%(telescope)s
+            """
+            cur.execute(sql, dict(group_identifier=group_identifier, telescope=telescope.value))
+
+            observation_group_id = cur.fetchone()
+            if observation_group_id:
+                return cast(int, observation_group_id[0])
+            else:
+                return None
+
     def find_observation_id(self, artifact_name: str) -> Optional[int]:
         """
         Find the database id of an observation.
@@ -85,7 +120,7 @@ class DatabaseService:
                 return None
 
     def find_proposal_id(
-        self, proposal_code: str, institution: types.Institution
+            self, proposal_code: str, institution: types.Institution
     ) -> Optional[int]:
         """
         Find the database id of a proposal.
@@ -230,7 +265,7 @@ class DatabaseService:
             return cast(int, cur.fetchone()[0])
 
     def insert_instrument_keyword_value(
-        self, instrument_keyword_value: types.InstrumentKeywordValue
+            self, instrument_keyword_value: types.InstrumentKeywordValue
     ) -> None:
         """
         Insert an instrument keyword value.
@@ -316,7 +351,7 @@ class DatabaseService:
                                      instrument_id,
                                      intent_id,
                                      meta_release,
-                                     observation_group, 
+                                     observation_group_id, 
                                      observation_type_id,
                                      proposal_id,
                                      status_id,
@@ -326,7 +361,7 @@ class DatabaseService:
                 (SELECT instrument_id FROM instr),
                 (SELECT intent_id FROM i),
                 %(meta_release)s,
-                %(observation_group)s,
+                %(observation_group_id)s,
                 (SELECT observation_type_id FROM ot),
                 %(proposal_id)s,
                 (SELECT status_id FROM st),
@@ -342,13 +377,42 @@ class DatabaseService:
                     instrument=observation.instrument.value,
                     intent=observation.intent.value,
                     meta_release=observation.meta_release,
-                    observation_group=observation.observation_group,
+                    observation_group_id=observation.observation_group_id,
                     observation_type=observation.observation_type.value,
                     proposal_id=observation.proposal_id,
                     status=observation.status.value,
                     telescope=observation.telescope.value,
                 ),
             )
+
+            return cast(int, cur.fetchone()[0])
+
+    def insert_observation_group(self, observation_group: types.ObservationGroup):
+        """
+        Insert an observation group.
+
+        Parameters
+        ----------
+        observation_group : ObservationGroup
+            Observation group.
+
+        Returns
+        -------
+        The database id of the inserted observation group.
+
+        """
+
+        with self._connection.cursor() as cur:
+            sql = """
+            INSERT INTO observation_group (group_identifier,
+                                           name)
+            VALUES (%(group_identifier)s,
+                    %(name)s)
+            RETURNING observation_group_id
+            """
+
+            cur.execute(sql, dict(group_identifier=observation_group.group_identifier,
+                                  name=observation_group.name))
 
             return cast(int, cur.fetchone()[0])
 
@@ -549,7 +613,7 @@ class DatabaseService:
             return cast(int, cur.fetchone()[0])
 
     def insert_proposal_investigator(
-        self, proposal_investigator: types.ProposalInvestigator
+            self, proposal_investigator: types.ProposalInvestigator
     ) -> None:
         """
         Insert a proposal investigator.
@@ -567,7 +631,8 @@ class DatabaseService:
             VALUES (%(user_id)s, %(proposal_id)s)
             '''
 
-            cur.execute(sql, dict(user_id=proposal_investigator.investigator_id, proposal_id=proposal_investigator.proposal_id))
+            cur.execute(sql, dict(user_id=proposal_investigator.investigator_id,
+                                  proposal_id=proposal_investigator.proposal_id))
 
     def insert_target(self, target: types.Target) -> int:
         """

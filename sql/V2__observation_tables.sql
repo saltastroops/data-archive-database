@@ -206,23 +206,36 @@ COMMENT ON COLUMN proposal.institution_id IS 'The institution to which the propo
 COMMENT ON COLUMN proposal.pi IS 'The Principal Investigator of the proposal.';
 COMMENT ON COLUMN proposal.title IS 'The proposal title.';
 
+-- observation_group
+
+CREATE TABLE observation_group
+(
+    observation_group_id bigserial PRIMARY KEY,
+    group_identifier     varchar(40),
+    name                 varchar(100)
+);
+
+COMMENT ON TABLE observation_group IS 'Logical group of observations, such as a block visit for SALT.';
+COMMENT ON COLUMN observation_group.group_identifier IS 'Identifier for the group, which must be unique within the groups belonging to the same telescope.';
+
 -- observation
 
 CREATE TABLE observation
 (
-    observation_id      bigserial PRIMARY KEY,
-    data_release        date NOT NULL,
-    instrument_id       int  NOT NULL REFERENCES Instrument (instrument_id),
-    intent_id           int  NOT NULL REFERENCES Intent (intent_id),
-    meta_release        date NOT NULL,
-    observation_group   varchar(40),
-    observation_type_id int REFERENCES observation_type (observation_type_id),
-    proposal_id         int REFERENCES proposal (proposal_id) ON DELETE CASCADE,
-    status_id           int  NOT NULL REFERENCES status (status_id),
-    telescope_id        int  NOT NULL REFERENCES Telescope (telescope_id),
+    observation_id       bigserial PRIMARY KEY,
+    data_release         date NOT NULL,
+    instrument_id        int  NOT NULL REFERENCES Instrument (instrument_id),
+    intent_id            int  NOT NULL REFERENCES Intent (intent_id),
+    meta_release         date NOT NULL,
+    observation_group_id int REFERENCES observation_group.observation_group_id,
+    observation_type_id  int REFERENCES observation_type (observation_type_id),
+    proposal_id          int REFERENCES proposal (proposal_id) ON DELETE CASCADE,
+    status_id            int  NOT NULL REFERENCES status (status_id),
+    telescope_id         int  NOT NULL REFERENCES Telescope (telescope_id),
     CONSTRAINT meta_not_after_data_release_check CHECK (meta_release <= data_release)
 );
 
+CREATE INDEX observation_group_idx ON observation (observation_group_id);
 CREATE INDEX observation_type_idx ON observation (observation_type_id);
 CREATE INDEX observation_status_idx ON status (status_id);
 
@@ -230,7 +243,6 @@ COMMENT ON TABLE observation IS 'An observation in the sense of data taken for a
 COMMENT ON COLUMN observation.data_release IS 'Date when the data for this observation becomes public.';
 COMMENT ON COLUMN observation.instrument_id IS 'Instrument tha took the data for this observation.';
 COMMENT ON COLUMN observation.meta_release IS 'Date when the metadata for this observation becomes public.';
-COMMENT ON COLUMN observation.observation_group IS 'Identifier for the logical group to which this observation belongs';
 
 -- instrument_keyword_value
 

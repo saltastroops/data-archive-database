@@ -542,7 +542,7 @@ class Observation:
         Intent of the observation.
     meta_release : date
         Date when the metadata for this observation becomes public.
-    observation_group : Optional[str]
+    observation_group_id : Optional[int]
         Identifier of the observation group to which the observation belongs.
     observation_type : ObservationType
         Observation type.
@@ -561,7 +561,7 @@ class Observation:
         instrument: Instrument,
         intent: Intent,
         meta_release: date,
-        observation_group: Optional[str],
+        observation_group_id: Optional[int],
         observation_type: ObservationType,
         proposal_id: Optional[int],
         status: Status,
@@ -571,14 +571,12 @@ class Observation:
             raise ValueError(
                 "The data release cannot be earlier than the metadata " "release."
             )
-        if observation_group and len(observation_group) > 40:
-            raise ValueError("The observation group must have at most 40 characters.")
 
         self._data_release = data_release
         self._instrument = instrument
         self._intent = intent
         self._meta_release = meta_release
-        self._observation_group = observation_group
+        self._observation_group_id = observation_group_id
         self._observation_type = observation_type
         self._proposal_id = proposal_id
         self._status = status
@@ -601,8 +599,8 @@ class Observation:
         return self._meta_release
 
     @property
-    def observation_group(self) -> Optional[str]:
-        return self._observation_group
+    def observation_group_id(self) -> Optional[str]:
+        return self._observation_group_id
 
     @property
     def observation_type(self) -> ObservationType:
@@ -619,6 +617,38 @@ class Observation:
     @property
     def telescope(self) -> Telescope:
         return self._telescope
+
+
+class ObservationGroup:
+    """
+    A logical group of observations, such as a block visit for SALT.
+
+    Parameters
+    ----------
+    group_identifier : str
+        Identifier for the group, which must be unique within the groups belonging to
+        the same telescope.
+    name : str
+        Name of the observation group.
+
+    """
+
+    def __init__(self, group_identifier: str, name: str):
+        if group_identifier and len(group_identifier) > 40:
+            raise ValueError("The group identifier must have at most 40 characters.")
+        if name and len(name) > 40:
+            raise ValueError("The name must have at most 40 characters.")
+
+        self._group_identifier = group_identifier
+        self._name = name
+
+    @property
+    def group_identifier(self):
+        return self._group_identifier
+
+    @property
+    def name(self):
+        return self._name
 
 
 class ObservationTime:

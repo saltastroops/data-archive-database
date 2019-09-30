@@ -192,8 +192,6 @@ def test_a_base_directory_is_not_allowed_with_a_file():
                 "whatever.fits",
                 "--fits-base-dir",
                 "/tmp",
-                "--instrument",
-                "RSS",
                 "--task",
                 "insert",
                 "--mode",

@@ -10,6 +10,8 @@ from ssda.repository import delete, insert
 from ssda.util import types
 
 
+OBSERVATION_GROUP_ID = 513
+
 OBSERVATION_ID = 24
 
 PLANE_ID = 12346
@@ -65,18 +67,21 @@ class ObservationPropertiesStub(ObservationProperties):
             ),
         ]
 
-    def observation(self, proposal_id: int) -> types.Observation:
+    def observation(self, observation_group_id: int,  proposal_id: int) -> types.Observation:
         return types.Observation(
             data_release=date(2020, 1, 1),
             instrument=types.Instrument.RSS,
             intent=types.Intent.SCIENCE,
             meta_release=date(2019, 10, 14),
-            observation_group="Block-4567",
+            observation_group_id=observation_group_id,
             observation_type=types.ObservationType.OBJECT,
             proposal_id=proposal_id,
             status=types.Status.ACCEPTED,
             telescope=types.Telescope.SALT,
         )
+
+    def observation_group(self):
+        return types.ObservationGroup(group_identifier='B67', name='NGC 1234 Obs')
 
     def observation_time(self, plane_id: int) -> types.ObservationTime:
         return types.ObservationTime(
@@ -193,6 +198,7 @@ def test_all_content_is_inserted(mocker):
     # mock the database access
     mock_database_service = mocker.patch("ssda.database.ssda.DatabaseService")
     mock_database_service.return_value.find_observation_id.return_value = None
+    mock_database_service.return_value.find_observation_group_id.return_value = None
     mock_database_service.return_value.find_proposal_id.return_value = None
     mock_database_service.return_value.insert_artifact.return_value = 713
     mock_database_service.return_value.insert_energy.return_value = 92346
@@ -201,6 +207,7 @@ def test_all_content_is_inserted(mocker):
         1410,
     ]
     mock_database_service.return_value.insert_observation.return_value = OBSERVATION_ID
+    mock_database_service.return_value.insert_observation_group.return_value = OBSERVATION_GROUP_ID
     mock_database_service.return_value.insert_observation_time.return_value = 23011
     mock_database_service.return_value.insert_plane.return_value = PLANE_ID
     mock_database_service.return_value.insert_polarization.side_effect = [734, 735]
@@ -240,11 +247,130 @@ def test_all_content_is_inserted(mocker):
             observation_properties.proposal_investigators(PROPOSAL_ID)[i],
         )
 
+    # observation group inserted
+    mock_database_service.return_value.insert_observation_group.assert_called_once()
+    assert_equal_properties(
+        mock_database_service.return_value.insert_observation_group.call_args[0][0],
+        observation_properties.observation_group()
+    )
+
     # observation inserted
     mock_database_service.return_value.insert_observation.assert_called_once()
     assert_equal_properties(
         mock_database_service.return_value.insert_observation.call_args[0][0],
-        observation_properties.observation(PROPOSAL_ID),
+        observation_properties.observation(OBSERVATION_GROUP_ID, PROPOSAL_ID),
+    )
+
+    # target inserted
+    mock_database_service.return_value.insert_target.assert_called_once()
+    assert_equal_properties(
+        mock_database_service.return_value.insert_target.call_args[0][0],
+        observation_properties.target(OBSERVATION_ID)
+    )
+
+    # instrument keyword values inserted
+    assert (
+        mock_database_service.return_value.insert_instrument_keyword_value.call_count
+        == 2
+    )
+    for i in range(2):
+        assert_equal_properties(
+            mock_database_service.return_value.insert_instrument_keyword_value.call_args_list[
+                i
+            ][
+                0
+            ][
+                0
+            ],
+            observation_properties.instrument_keyword_values(OBSERVATION_ID)[i],
+        )
+
+    # plane inserted
+    mock_database_service.return_value.insert_plane.assert_called_once()
+    assert_equal_properties(
+        mock_database_service.return_value.insert_plane.call_args[0][0],
+        observation_properties.plane(OBSERVATION_ID),
+    )
+
+    # energy inserted
+    mock_database_service.return_value.insert_energy.assert_called_once()
+    assert_equal_properties(
+        mock_database_service.return_value.insert_energy.call_args[0][0],
+        observation_properties.energy(PLANE_ID),
+    )
+
+    # polarizations inserted
+    assert mock_database_service.return_value.insert_polarization.call_count == 2
+    for i in range(2):
+        assert_equal_properties(
+            mock_database_service.return_value.insert_polarization.call_args_list[i][0][
+                0
+            ],
+            observation_properties.polarizations(PLANE_ID)[i],
+        )
+
+    # observation time inserted
+    mock_database_service.return_value.insert_observation_time.assert_called_once()
+    assert_equal_properties(
+        mock_database_service.return_value.insert_observation_time.call_args[0][0],
+        observation_properties.observation_time(PLANE_ID),
+    )
+
+    # position inserted
+    mock_database_service.return_value.insert_position.assert_called_once()
+    assert_equal_properties(
+        mock_database_service.return_value.insert_position.call_args[0][0],
+        observation_properties.position(PLANE_ID),
+    )
+
+    # artifact inserted
+    mock_database_service.return_value.insert_artifact.assert_called_once()
+    assert_equal_properties(
+        mock_database_service.return_value.insert_artifact.call_args[0][0],
+        observation_properties.artifact(PLANE_ID),
+    )
+
+
+def test_proposals_are_not_reinserted(mocker):
+    # mock the database access
+    mock_database_service = mocker.patch("ssda.database.ssda.DatabaseService")
+    mock_database_service.return_value.find_observation_id.return_value = None
+    mock_database_service.return_value.find_observation_group_id.return_value = OBSERVATION_GROUP_ID
+    mock_database_service.return_value.find_proposal_id.return_value = PROPOSAL_ID
+    mock_database_service.return_value.insert_artifact.return_value = 713
+    mock_database_service.return_value.insert_energy.return_value = 92346
+    mock_database_service.return_value.insert_instrument_keyword_value.side_effect = [
+        1409,
+        1410,
+    ]
+    mock_database_service.return_value.insert_observation.return_value = OBSERVATION_ID
+    mock_database_service.return_value.insert_observation_time.return_value = 23011
+    mock_database_service.return_value.insert_plane.return_value = PLANE_ID
+    mock_database_service.return_value.insert_polarization.side_effect = [734, 735]
+    mock_database_service.return_value.insert_position.return_value = 4943
+    mock_database_service.return_value.insert_proposal.return_value = PROPOSAL_ID
+    mock_database_service.return_value.insert_target.return_value = 14054
+
+    database_config: Any = None
+    observation_properties = ObservationPropertiesStub()
+    insert(observation_properties, ssda.database.ssda.DatabaseService(database_config))
+
+    # a transaction is used
+    mock_database_service.return_value.begin_transaction.assert_called_once()
+    mock_database_service.return_value.commit_transaction.assert_called_once()
+    mock_database_service.return_value.rollback_transaction.assert_not_called()
+
+    # proposal not reinserted
+    mock_database_service.return_value.insert_proposal.assert_not_called()
+
+    # proposal investigators not reinserted
+    mock_database_service.return_value.insert_proposal_investigator.assert_not_called()
+
+    # observation inserted
+    mock_database_service.return_value.insert_observation.assert_called_once()
+    assert_equal_properties(
+        mock_database_service.return_value.insert_observation.call_args[0][0],
+        observation_properties.observation(OBSERVATION_GROUP_ID, PROPOSAL_ID),
     )
 
     # target inserted
@@ -317,10 +443,11 @@ def test_all_content_is_inserted(mocker):
     )
 
 
-def test_proposals_are_not_reinserted(mocker):
+def test_observation_groups_are_not_reinserted(mocker):
     # mock the database access
     mock_database_service = mocker.patch("ssda.database.ssda.DatabaseService")
     mock_database_service.return_value.find_observation_id.return_value = None
+    mock_database_service.return_value.find_observation_group_id.return_value = OBSERVATION_GROUP_ID
     mock_database_service.return_value.find_proposal_id.return_value = PROPOSAL_ID
     mock_database_service.return_value.insert_artifact.return_value = 713
     mock_database_service.return_value.insert_energy.return_value = 92346
@@ -345,8 +472,8 @@ def test_proposals_are_not_reinserted(mocker):
     mock_database_service.return_value.commit_transaction.assert_called_once()
     mock_database_service.return_value.rollback_transaction.assert_not_called()
 
-    # proposal not reinserted
-    mock_database_service.return_value.insert_proposal.assert_not_called()
+    # observation group not reinserted
+    mock_database_service.return_value.insert_observation_group.assert_not_called()
 
     # proposal investigators not reinserted
     assert (
@@ -357,7 +484,7 @@ def test_proposals_are_not_reinserted(mocker):
     mock_database_service.return_value.insert_observation.assert_called_once()
     assert_equal_properties(
         mock_database_service.return_value.insert_observation.call_args[0][0],
-        observation_properties.observation(PROPOSAL_ID),
+        observation_properties.observation(OBSERVATION_GROUP_ID, PROPOSAL_ID),
     )
 
     # target inserted
@@ -369,8 +496,8 @@ def test_proposals_are_not_reinserted(mocker):
 
     # instrument keyword values inserted
     assert (
-        mock_database_service.return_value.insert_instrument_keyword_value.call_count
-        == 2
+            mock_database_service.return_value.insert_instrument_keyword_value.call_count
+            == 2
     )
     for i in range(2):
         assert_equal_properties(

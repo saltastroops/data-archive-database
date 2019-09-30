@@ -1,9 +1,10 @@
 import hashlib
 import os
 import random
+import re
 import string
 from datetime import datetime, timedelta
-from typing import List, Optional, Tuple
+from typing import List, NamedTuple, Optional, Tuple
 
 import astropy.units as u
 from astropy.units import Quantity
@@ -13,6 +14,13 @@ from faker import Faker
 from ssda.observation import ObservationProperties
 from ssda.util import types
 from ssda.util.fits import FitsFile
+
+
+class FilenameDeterminedProperties(NamedTuple):
+    institution: types.Institution
+    observation_group_identifier: Optional[str]
+    proposal_code: Optional[str]
+    telescope: types.Telescope
 
 
 class DummyObservationProperties(ObservationProperties):
@@ -34,14 +42,16 @@ class DummyObservationProperties(ObservationProperties):
 
         # If the script is run multiple times, proposals should not be reinserted. This
         # means that for a given file the proposal code and institution must always be
-        # the same.
+        # the same. The same is true for observation groups, so that group identifiers
+        # and the telescope must always be the same as well.
         filename = os.path.basename(fits_file.path())
-        self._proposal_code = DummyObservationProperties._proposal_code_for_file(
+        filename_determined_properties = DummyObservationProperties.filename_determined_properties(
             filename
         )
-        self._institution = DummyObservationProperties._institution_for_filename(
-            filename
-        )
+        self._institution = filename_determined_properties.institution
+        self._observation_group_identifier = filename_determined_properties.observation_group_identifier
+        self._proposal_code = filename_determined_properties.proposal_code
+        self._telescope = filename_determined_properties.telescope
 
         self._instrument = random.choice(
             [types.Instrument.HRS, types.Instrument.RSS, types.Instrument.SALTICAM]
@@ -52,13 +62,9 @@ class DummyObservationProperties(ObservationProperties):
             self._has_target = False
 
     @staticmethod
-    def _institution_for_filename(filename: str) -> types.Institution:
+    def filename_determined_properties(filename: str) -> FilenameDeterminedProperties:
         """
-        Institution for a filename.
-
-        The method is deterministic, i.e. it always returns the same institution for a
-        given filename. However, there is no obvious relation between the filename and
-        the corresponding proposal code.
+        Generate values for parameters based on a filename.
 
         Parameters
         ----------
@@ -67,58 +73,49 @@ class DummyObservationProperties(ObservationProperties):
 
         Returns
         -------
-        Institution
-            Institution.
+        FilenameDeterminedProperties
+            Properties determined by the filename.
         """
 
-        # We need a pseudo-random (but deterministic) string
-        md5_hash = hashlib.md5(filename.encode()).hexdigest()
+        # Get the date and the running number per night from the filename
+        running_number = re.search(r'\d+', filename).group(0)
+        night = running_number[:8]
+        try:
+            file_in_night = int(running_number[8:])
+        except BaseException as e:
+            # some files don't follow the usual naming convention
+            file_in_night = 1000   # arbitrary value
 
+        # Get a "random" number based on the night and proposal number
+        md5_hash = hashlib.md5(filename.encode()).hexdigest()
         characters = "abcdef" + string.digits
         random_number = characters.index(md5_hash[0])
 
         institutions = [institution for institution in types.Institution]
-        index = min(random_number, len(institutions) - 1)
+        telescopes = [telescope for telescope in types.Telescope]
+        if random_number > 10:
+            institution_index = random_number % len(institutions)
+            institution = institutions[institution_index]
+            telescope_index = random_number % len(telescopes)
+            telescope = telescopes[telescope_index]
+            return FilenameDeterminedProperties(institution=institution, observation_group_identifier=None, proposal_code=None, telescope=telescope)
 
-        return institutions[index]
+        # Group observations in groups of up to 10
+        proposal_in_night = 1 + file_in_night // 10
+        proposal_code = f'Proposal-{night}-{proposal_in_night}'
 
-    @staticmethod
-    def _proposal_code_for_file(filename: str) -> Optional[str]:
-        """
-        Proposal code for a filename.
+        # Choose an institution based on the proposal number
+        institution_index = proposal_in_night % len(institutions)
+        institution = institutions[institution_index]
 
-        The method is deterministic, i.e. it always returns the same proposal code for
-        a given filename. However, there is no obvious relation between the filename and
-        the corresponding proposal code.
+        # Choose a telescope based on the proposal number
+        telescope_index = proposal_in_night % len(telescopes)
+        telescope = telescopes[telescope_index]
 
-        The proposal code is of the form "Proposal-N" with a positive integer N.
+        # Choose a group identifier based on the night abd the proposal number
+        observation_group_identifier = f'B-{night}-{proposal_in_night}'
 
-        Parameters
-        ----------
-        filename : str
-            Filename.
-
-        Returns
-        -------
-        str
-            Proposal code.
-
-        """
-
-        # We need a pseudo-random (but deterministic) string
-        md5_hash = hashlib.md5(filename.encode()).hexdigest()
-
-        characters = "abcdef" + string.digits
-        index1 = characters.index(md5_hash[0])
-        index2 = characters.index(md5_hash[1])
-        index3 = characters.index(md5_hash[2])
-
-        random_number = (index1 + 1) * (index2 + 1) * (index3 + 1)
-
-        if random_number < 0.95 * len(characters) ** 3:
-            return f"Proposal-{random_number}"
-        else:
-            return None
+        return FilenameDeterminedProperties(institution=institution, observation_group_identifier=observation_group_identifier, proposal_code=proposal_code, telescope=telescope)
 
     def artifact(self, plane_id: int) -> types.Artifact:
         def identifier(n: int) -> str:
@@ -219,19 +216,13 @@ class DummyObservationProperties(ObservationProperties):
 
         return values
 
-    def observation(self, proposal_id: Optional[int]) -> types.Observation:
+    def observation(self, observation_group_id: Optional[int], proposal_id: Optional[int]) -> types.Observation:
         now = datetime.now().date()
         data_release = self._faker.date_between("-5y", now + timedelta(days=500))
         meta_release = self._faker.date_between("-5y", now + timedelta(days=500))
         if meta_release > data_release:
             meta_release = data_release
         intent = random.choice([intent for intent in types.Intent])
-        if self._proposal_code:
-            observation_group: Optional[str] = "{proposal_code}-{index}".format(
-                proposal_code=self._proposal_code, index=random.randint(1, 10)
-            )
-        else:
-            observation_group = None
         observation_type = random.choice(
             [observation_type for observation_type in types.ObservationType]
         )
@@ -252,12 +243,19 @@ class DummyObservationProperties(ObservationProperties):
             instrument=self._instrument,
             intent=intent,
             meta_release=meta_release,
-            observation_group=observation_group,
+            observation_group_id=observation_group_id,
             observation_type=observation_type,
             proposal_id=proposal_id,
             status=status,
             telescope=telescope,
         )
+
+    def observation_group(self) -> Optional[types.ObservationGroup]:
+        if self._observation_group_identifier:
+            name = self._faker.text(max_nb_chars=20)
+            return types.ObservationGroup(group_identifier=self._observation_group_identifier, name=name)
+        else:
+            return None
 
     def observation_time(self, plane_id: int) -> types.ObservationTime:
         start_time = self._faker.date_time_between("-5y", tzinfo=tz.gettz("UTC"))

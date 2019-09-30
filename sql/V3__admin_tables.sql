@@ -125,6 +125,7 @@ CREATE TABLE data_request
     data_request_id        bigserial PRIMARY KEY,
     data_request_status_id int                      NOT NULL REFERENCES data_request_status (data_request_status_id),
     made_at                timestamp with time zone NOT NULL,
+    path                   varchar(200),
     ssda_user_id           int                      NOT NULL REFERENCES ssda_user (ssda_user_id)
 );
 
@@ -134,6 +135,7 @@ CREATE INDEX data_request_user_fk ON data_request (ssda_user_id);
 COMMENT ON TABLE data_request IS 'Request for a set of data files.';
 COMMENT ON COLUMN data_request.made_at IS 'Date and time when the request was made.';
 COMMENT ON COLUMN data_request.ssda_user_id IS 'User who made the request.';
+COMMENT ON COLUMN data_request.path IS 'Path to the file containing the requested data.';
 
 -- data_request_artifact
 
