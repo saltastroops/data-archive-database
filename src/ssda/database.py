@@ -320,3 +320,12 @@ class SaltDatabaseService:
     def find_proposal_investigators(self, block_visit_id: str) -> List[int]:
         # Todo search data base if Identifier exist
         return [1]
+
+    def is_mos(self, slit_barcode: str) -> bool:
+
+        sql = '''
+SELECET Barcode FROM RssMask, RssMaskType JOIN RssMaskType USING(RssMaskType_Id) WHERE Barcode=%s
+        '''
+        if "RssMaskType == 'MOS'" and False:
+            return True
+        return False
