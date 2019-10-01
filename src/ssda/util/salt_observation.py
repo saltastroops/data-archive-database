@@ -9,7 +9,7 @@ from astropy.coordinates import Angle
 import astropy.units as u
 from astropy.units import Quantity
 from ssda.database import SaltDatabaseService
-from ssda.filter_wavelength_files.reader import energy_calculation_image, fp_fwhm_cal, get_wavelength, \
+from ssda.filter_wavelength_files.reader import image_wavelength_intervals, fabry_perot_fwhm_calculation, get_wavelength, \
     get_grating_frequency, get_wavelength_resolution, slit_width_from_barcode, hrs_interval
 from ssda.util.fits import FitsFile
 from ssda.database import DatabaseService as SsdaDB
@@ -61,7 +61,7 @@ class SALTObservation:
         if instrument == types.Instrument.RSS or instrument == types.Instrument.SALTICAM:
             if obs_mode == "IMAGING" or instrument == types.Instrument.SALTICAM:
                 filter_name = self.header_value("FILTER").strip()
-                fwhm_points = energy_calculation_image(filter_name, instrument)
+                fwhm_points = image_wavelength_intervals(filter_name, instrument)
                 lambda1, lambda2 = fwhm_points["lambda1"], fwhm_points["lambda2"]
                 resolving_power = lambda1[1] * (lambda1[0] + lambda2[0]) / (lambda2[0] - lambda1[0])
                 return types.Energy(
@@ -131,7 +131,7 @@ class SALTObservation:
                 else:
                     raise ValueError("Unknown Etelo state for  FP")
 
-                fwhm = fp_fwhm_cal(resolution=resolution, wavelength=lambda1)
+                fwhm = fabry_perot_fwhm_calculation(resolution=resolution, wavelength=lambda1)
                 energy_intervals = ((lambda1 - fwhm) / 2, (lambda1 + fwhm) / 2)
                 return types.Energy(
                     dimension=1,

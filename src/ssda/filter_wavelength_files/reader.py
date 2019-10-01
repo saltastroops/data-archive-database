@@ -20,7 +20,23 @@ FOCAL_LENGTH_TELESCOPE = 46200
 FOCAL_LENGTH_RSS_COLLIMATOR = 630
 
 
-def energy_calculation_image(filter_name: str, instrument: types.Instrument) -> dict:
+def image_wavelength_intervals(filter_name: str, instrument: types.Instrument) -> dict:
+    """
+    It opens the file with the wavelength curve of the filter name and return the full width half max points of it
+
+    Parameter
+    ---------
+        filter_name: str
+            The name of the filter you need intervals of
+
+        instrument: types.Instrument
+            THe instrument used for the filter
+    Return
+    ------
+        points: Dict
+            The two points that that form fwhm on the curve where lambda1 being the small wavelength and lambda2 is
+            the larger wavelength
+    """
     unsorted_wavelength = []
     with open(f'{os.environ["PATH_TO_WAVELENGTH_FILES"]}/{instrument.lower()}/{filter_name}.txt', 'r') as file:
         for line in file.readlines():
@@ -45,6 +61,8 @@ def energy_calculation_image(filter_name: str, instrument: types.Instrument) -> 
             c = sorted_wavelength[::-1][i][1] - m * sorted_wavelength[::-1][i][0]
             lambda2 = (transmission_half - c)/m
             break
+    if not lambda1 or not lambda2:
+        raise ValueError(f"One or both wavelength are not found lambda1={lambda1} lambda2={lambda2}")
     return {
         "lambda1": (lambda1, transmission_half),
         "lambda2": (lambda2, transmission_half)
@@ -52,27 +70,48 @@ def energy_calculation_image(filter_name: str, instrument: types.Instrument) -> 
     }
 
 
-def fp_fwhm_cal(resolution: str, wavelength: float):
-    fp_mode = []
+def fabry_perot_fwhm_calculation(resolution: str, wavelength: float):
+    """
+    Calculates the full width half maximum of fabry perot for the given resolution and wavelength
+
+    Parameter
+    ---------
+    resolution: String
+        A full name of the resolution like
+    wavelength: float
+
+    Return
+    ------
+    Full width half maximum
+    """
+    fp_modes = []
     fwhm = None
     with open(f'{os.environ["PATH_TO_WAVELENGTH_FILES"]}/rss/properties_of_fp_modes.txt', 'r') as file:
         for line in file.readlines():
             fp = line.split()
             if len(fp) > 7 and fp[0] in ["TF", "LR", "MR", "HR"]:
-                fp_mode.append(
+                fp_modes.append(
                     (
                         fp[0],          # Mode
                         float(fp[2]),   # wavelength,
                         float(fp[3])    # fwhm,
                     )
                 )
+    reso = 'lr' if (resolution.lower() == "low resolution") else \
+        'mr' if (resolution.lower() == "medium resolution") else \
+        'hr' if (resolution.lower() == "high resolution") else \
+        'tf' if (resolution.lower() == "frame transfer") else None
 
-    res_fp_mode = [x for x in fp_mode if x[0].upper() == resolution]
-    sorted_wavelength = sorted(res_fp_mode, key=lambda element: element[1])
+    if not reso:
+        raise ValueError("Resolution not found for fabry perot")
+
+    resolution_fp_modes = [x for x in fp_modes if x[0].upper() == reso]
+    sorted_wavelength = sorted(resolution_fp_modes, key=lambda element: element[1])
 
     for i, w in enumerate(sorted_wavelength):
         if w[1] > wavelength:
-            m = (sorted_wavelength[i][2] - sorted_wavelength[i - 1][2])/(sorted_wavelength[i][1] - sorted_wavelength[i - 1][1])
+            m = (sorted_wavelength[i][2] - sorted_wavelength[i - 1][2])/(
+                    sorted_wavelength[i][1] - sorted_wavelength[i - 1][1])
             c = sorted_wavelength[i][2] - m * sorted_wavelength[i][1]
             fwhm = wavelength * m + c
             break
@@ -204,6 +243,17 @@ def slit_width_from_barcode(barcode: str) -> float:
 
 
 def get_grating_frequency(grating: str) -> float:
+    """
+    Returns a grating frequency
+
+    Parameter
+    ---------
+        grating: str
+            Grating name
+    Return
+    ------
+        Grating frequency
+    """
     grating_table = {
         "pg0300": 300,
         "pg0900": 903.89,
@@ -218,7 +268,24 @@ def get_grating_frequency(grating: str) -> float:
     return grating_table[grating]
 
 
-def hrs_interval(arm: str, resolution: str):
+def hrs_interval(arm: str, resolution: str) -> dict:
+    """
+    Dictionary with wavelength interval (interval) as a 2D tuple where first entry being lower bound and second is the
+    maximum  bound and resolving power (power)
+
+    Parameter
+    ---------
+        arm: String
+            HRS arm that is either red or blue
+        resolution: String
+            A full name of  the resolution like Low Resolution
+    Return
+    ------
+        dict like {
+            "interval": (370, 555),
+             "power": 15000
+         }
+    """
     if arm.lower() not in ['red', 'blue']:
         raise ValueError('Arm not known')
 
