@@ -46,7 +46,60 @@ class FitsFile(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def instrument(self) -> str:
+        """
+        The instrument a file belongs too.
+
+        Returns
+        -------
+        str :
+            The Instrument.
+
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def headers(self) -> dict:
+        """
+        The FITS header value for a keyword.
+
+        Returns
+        -------
+        dict
+            FITS headers key value pair.
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
     def header_value(self, keyword: str) -> str:
+        """
+        The FITS header value for a keyword.
+
+        A ValueError is raised if the keyword does not exist in the FITS header.
+
+        Parameters
+        ----------
+        keyword : str
+            Header keyword.
+
+        Returns
+        -------
+        str
+            The value for the keyword.
+
+        Raises
+        ------
+        ValueError
+            If the keyword does not exist in the header.
+
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def file_path(self) -> str:
         """
         The FITS header value for a keyword.
 
@@ -148,11 +201,32 @@ class StandardFitsFile(FitsFile):
         self.path = path
 
     def size(self) -> Quantity:
-        return random.randint(1000, 100000000)
+        return random.randint(1000, 1000000000)
 
+    def instrument(self) -> Instrument:
+        dirs = self.path.split("/")
+        instrument_dir = None
+        for i, d in enumerate(dirs):
+            if d.lower() == "data" and dirs[i - 1].lower() == "salt":
+                instrument_dir = dirs[i + 4]
+                break
+
+        return Instrument.RSS if instrument_dir.lower() == "rss" else \
+            Instrument.HRS if instrument_dir.lower() == "hrs" else \
+            Instrument.SALTICAM if instrument_dir.lower() == "scam" else None
+
+    @property
+    def file_path(self) -> str:
+        return self.path
+
+    @property
     def checksum(self) -> str:
         letters = string.ascii_lowercase
         return "".join(random.choice(letters) for _ in range(50))
+
+    def headers(self) -> dict:
+        #  TODO get FITS headers
+        return {}
 
     def header_value(self, keyword: str) -> str:
         letters = string.ascii_lowercase
