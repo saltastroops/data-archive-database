@@ -1,5 +1,3 @@
-from abc import ABC
-
 from ssda.database import DatabaseService
 from ssda.observation import (
     StandardObservationProperties,
