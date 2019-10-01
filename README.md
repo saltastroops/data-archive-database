@@ -378,9 +378,9 @@ from enum import Enum
 from typing import Type
 
 from instrument_fits_data import InstrumentFitsData
-from ssda.instrument.hrs_fits_data import HrsFitsData
-from ssda.instrument.isibane_fits_data import IsidibaneFitsData
-from ssda.instrument.rss_fits_data import RssFitsData
+from ssda.instrument.instrument import HrsFitsData
+from ssda.instrument.instrument import IsidibaneFitsData
+from ssda.instrument.instrument import RssFitsData
 # ... other imports ...
 
 class Instrument(Enum):

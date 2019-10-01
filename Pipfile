@@ -21,6 +21,9 @@ python-dateutil = "*"
 sentry-sdk = "*"
 cryptography = "*"
 ssda = {editable = true,path = "."}
+mypy = "*"
+pytest-mock = "*"
+mock = "*"
 
 [requires]
 python_version = "3.7"
