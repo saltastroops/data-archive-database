@@ -1,5 +1,7 @@
+from astropy.units import Quantity
 from ssda.database import SaltDatabaseService
 from ssda.util import types
+from ssda.util.energy_cal import hrs_interval, hrs_energy_cal
 from ssda.util.salt_observation import SALTObservation
 from ssda.util.fits import FitsFile
 from typing import Optional, List
@@ -23,7 +25,13 @@ class HrsObservationProperties:
         return self.salt_observation.artifact(plane_id)
 
     def energy(self, plane_id: int) -> Optional[types.Energy]:
-        return self.salt_observation.energy(plane_id)
+        if "CAL_" in self.header_value("PROPID"):
+            return
+
+        filename = str(self.file_path.split()[-1])
+        arm = "red" if filename[0] == "R" else "blue" if filename[0] == "H" else None
+        resolution = self.header_value("OBSMODE")
+        return hrs_energy_cal(plane_id, arm, resolution)
 
     def instrument_keyword_values(self, observation_id: int) -> List[types.InstrumentKeywordValue]:
         return [

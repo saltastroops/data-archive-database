@@ -1,4 +1,3 @@
-import os
 import random
 import string
 from typing import Optional, List
@@ -7,14 +6,10 @@ from datetime import timedelta
 from astropy.coordinates import Angle
 
 import astropy.units as u
-from astropy.units import Quantity
 from ssda.database import SaltDatabaseService
-from ssda.filter_wavelength_files.reader import image_wavelength_intervals, fabry_perot_fwhm_calculation, get_wavelength, \
-    get_grating_frequency, get_wavelength_resolution, slit_width_from_barcode, hrs_interval
 from ssda.util.fits import FitsFile
 from ssda.database import DatabaseService as SsdaDB
 
-from ssda.util.types import Proposal, Institution, Energy
 from ssda.util import types
 
 
@@ -46,134 +41,8 @@ class SALTObservation:
             name=path.split("/")[-1],
             plane_id=plane_id,
             path=path,
-            product_type=self.__product_type(),
+            product_type=self.__product_type()
         )
-
-    def energy(self, plane_id: int, instrument: types.Instrument) -> Optional[types.Energy]:
-
-        proposal_id = self.header_value("PROPID")
-        obs_mode = self.header_value("OBSMODE").strip().upper()
-        slit_barcode = self.header_value("MASKID").strip()
-        if "CAL_" in proposal_id.upper():
-            return
-        if instrument == types.Instrument.RSS and self.database_service.is_mos(slit_barcode=slit_barcode):  # TODO know MOS Fits
-            return
-        if instrument == types.Instrument.RSS or instrument == types.Instrument.SALTICAM:
-            if obs_mode == "IMAGING" or instrument == types.Instrument.SALTICAM:
-                filter_name = self.header_value("FILTER").strip()
-                fwhm_points = image_wavelength_intervals(filter_name, instrument)
-                lambda1, lambda2 = fwhm_points["lambda1"], fwhm_points["lambda2"]
-                resolving_power = lambda1[1] * (lambda1[0] + lambda2[0]) / (lambda2[0] - lambda1[0])
-                return types.Energy(
-                    dimension=1,
-                    max_wavelength=Quantity(
-                        value=lambda2[0],
-                        unit=types.meter
-                    ),
-                    min_wavelength=Quantity(
-                        value=lambda1[0],
-                        unit=types.meter
-                    ),
-                    plane_id=plane_id,
-                    resolving_power=resolving_power,
-                    sample_size=Quantity(
-                        value=abs(lambda2[0]-lambda1[0]),
-                        unit=types.meter
-                    )
-                )
-
-            if obs_mode == "SPECTROSCOPY":
-                grating_angle = float(self.header_value("GR-ANGLE").strip())
-                camera_angle = float(self.header_value("AR-ANGLE").strip())
-                slit_barcode = self.header_value("MASKID").strip()
-                spectral_binning = int(self.header_value("CCDSUM").strip().split()[0])
-                grating_frequency = get_grating_frequency(self.header_value("GRATING").strip())
-                energy_interval = (
-                    get_wavelength(3162, grating_angle, camera_angle, grating_frequency=grating_frequency),
-                    get_wavelength(-3162, grating_angle, camera_angle, grating_frequency=grating_frequency)
-                )
-                dimension = 6096 / spectral_binning  # TODO this is a float
-                sample_size = get_wavelength(spectral_binning, grating_angle, camera_angle, grating_frequency) - \
-                    get_wavelength(0, grating_angle, camera_angle, grating_frequency)
-                return types.Energy(
-                    dimension=dimension,
-                    max_wavelength=Quantity(
-                        value=energy_interval[0],
-                        unit=types.meter
-                    ),
-                    min_wavelength=Quantity(
-                        value=energy_interval[1],
-                        unit=types.meter
-                    ),
-                    plane_id=plane_id,
-                    resolving_power=get_wavelength_resolution(
-                        grating_angle,
-                        camera_angle,
-                        grating_frequency,
-                        slit_width=slit_width_from_barcode(slit_barcode)),
-                    sample_size=Quantity(
-                        value=abs(sample_size),
-                        unit=types.meter
-                    )
-                )
-
-            if obs_mode == "FABRY-PEROT":
-                etalon_state = self.header_value("ET-STATE")
-                if etalon_state.strip().lower() == "s1 - etalon open":
-                    return
-
-                if etalon_state.strip().lower() == "s3 - etalon 2":
-                    resolution = self.header_value("ET2MODE").strip().upper()  # TODO CHECK with encarni which one use ET2/1
-                    lambda1 = float(self.header_value("ET2WAVE0"))
-                elif etalon_state.strip().lower() == "s2 - etalon 1" or etalon_state.strip().lower() == "s4 - etalon 1 & 2":
-                    resolution = self.header_value("ET1MODE").strip().upper()  # TODO CHECK with encarni which one use ET2/1
-                    lambda1 = float(self.header_value("ET1WAVE0"))
-                else:
-                    raise ValueError("Unknown Etelo state for  FP")
-
-                fwhm = fabry_perot_fwhm_calculation(resolution=resolution, wavelength=lambda1)
-                energy_intervals = ((lambda1 - fwhm) / 2, (lambda1 + fwhm) / 2)
-                return types.Energy(
-                    dimension=1,
-                    max_wavelength=Quantity(
-                        value=energy_intervals[1],
-                        unit=types.meter
-                    ),
-                    min_wavelength=Quantity(
-                        value=energy_intervals[0],
-                        unit=types.meter
-                    ),
-                    plane_id=plane_id,
-                    resolving_power=lambda1/fwhm,
-                    sample_size=Quantity(
-                        value=fwhm,
-                        unit=types.meter
-                    )
-                )
-
-        if instrument == types.Instrument.HRS:
-            filename = str(self.file_path.split()[-1])
-            arm = "red" if filename[0] == "R" else "blue" if filename[0] == "H" else None
-            resolution = self.header_value("OBSMODE")
-
-            interval = hrs_interval(arm, resolution)
-            return types.Energy(
-                dimension=1,
-                max_wavelength=Quantity(
-                    value=max(interval["interval"]),
-                    unit=types.meter
-                ),
-                min_wavelength=Quantity(
-                    value=min(interval["interval"]),
-                    unit=types.meter
-                ),
-                plane_id=plane_id,
-                resolving_power=interval["power"],
-                sample_size=Quantity(
-                    value=abs(interval["interval"][0]-interval["interval"][1]),
-                    unit=types.meter
-                )
-            )
 
     def observation(self, proposal_id: int, instrument: types.Instrument) -> types.Observation:
         return types.Observation(
@@ -224,8 +93,8 @@ class SALTObservation:
         )
 
     def proposal(self) -> Optional[types.Proposal]:
-        return Proposal(
-            institution=Institution.SALT,
+        return types.Proposal(
+            institution=types.Institution.SALT,
             pi=self.database_service.find_pi(self.fits_file.header_value("BVISITID")),
             proposal_code=self.database_service.find_proposal_code(self.header_value("BVISITID")),
             title=self.database_service.find_proposal_title(self.header_value("BVISITID"))

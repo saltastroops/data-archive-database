@@ -1,5 +1,6 @@
 from ssda.database import SaltDatabaseService
 from ssda.util import types
+from ssda.util.energy_cal import rss_energy_cal, get_grating_frequency
 from ssda.util.salt_observation import SALTObservation
 from ssda.util.fits import FitsFile
 from typing import Optional, List
@@ -23,7 +24,13 @@ class RssObservationProperties:
         return self.salt_observation.artifact(plane_id)
 
     def energy(self, plane_id: int) -> Optional[types.Energy]:
-        return self.salt_observation.energy(plane_id)
+        if "CAL_" in self.header_value("PROPID"):
+            return
+        slit_barcode = self.header_value("MASKID").strip()
+
+        if self.database_service.is_mos(slit_barcode=slit_barcode):
+            return
+        return rss_energy_cal(header_value=self.header_value, plane_id=plane_id)
 
     def instrument_keyword_values(self, observation_id: int) -> List[types.InstrumentKeywordValue]:
         return [

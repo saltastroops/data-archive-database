@@ -23,6 +23,8 @@ class SalticamObservationProperties:
         return self.salt_observation.artifact(plane_id)
 
     def energy(self, plane_id: int) -> Optional[types.Energy]:
+        if "CAL_" in self.header_value("PROPID"):
+            return
         return self.salt_observation.energy(plane_id)
 
     def instrument_keyword_values(self, observation_id: int) -> List[types.InstrumentKeywordValue]:
