@@ -21,12 +21,16 @@ class ObservationProperties(ABC):
         raise NotImplementedError
 
     def instrument_keyword_values(
-            self, observation_id: int
+        self, observation_id: int
     ) -> List[types.InstrumentKeywordValue]:
         raise NotImplementedError
 
-    def observation(self, observation_group_id: Optional[int],
-                    proposal_id: Optional[int]) -> types.Observation:
+    def instrument_setup(self, observation_id: int) -> types.InstrumentSetup:
+        raise NotImplementedError
+
+    def observation(
+        self, observation_group_id: Optional[int], proposal_id: Optional[int]
+    ) -> types.Observation:
         raise NotImplementedError
 
     def observation_group(self) -> Optional[types.ObservationGroup]:
@@ -48,7 +52,7 @@ class ObservationProperties(ABC):
         raise NotImplementedError
 
     def proposal_investigators(
-            self, proposal_id: int
+        self, proposal_id: int
     ) -> List[types.ProposalInvestigator]:
         raise NotImplementedError
 

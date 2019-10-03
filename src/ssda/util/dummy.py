@@ -49,7 +49,9 @@ class DummyObservationProperties(ObservationProperties):
             filename
         )
         self._institution = filename_determined_properties.institution
-        self._observation_group_identifier = filename_determined_properties.observation_group_identifier
+        self._observation_group_identifier = (
+            filename_determined_properties.observation_group_identifier
+        )
         self._proposal_code = filename_determined_properties.proposal_code
         self._telescope = filename_determined_properties.telescope
 
@@ -78,13 +80,16 @@ class DummyObservationProperties(ObservationProperties):
         """
 
         # Get the date and the running number per night from the filename
-        running_number = re.search(r'\d+', filename).group(0)
+        number_search = re.search(r"\d+", filename)
+        if not number_search:
+            raise ValueError(f"Filename unsupported: {filename}")
+        running_number = number_search.group(0)
         night = running_number[:8]
         try:
             file_in_night = int(running_number[8:])
         except BaseException as e:
             # some files don't follow the usual naming convention
-            file_in_night = 1000   # arbitrary value
+            file_in_night = 1000  # arbitrary value
 
         # Get a "random" number based on the night and proposal number
         md5_hash = hashlib.md5(filename.encode()).hexdigest()
@@ -98,11 +103,16 @@ class DummyObservationProperties(ObservationProperties):
             institution = institutions[institution_index]
             telescope_index = random_number % len(telescopes)
             telescope = telescopes[telescope_index]
-            return FilenameDeterminedProperties(institution=institution, observation_group_identifier=None, proposal_code=None, telescope=telescope)
+            return FilenameDeterminedProperties(
+                institution=institution,
+                observation_group_identifier=None,
+                proposal_code=None,
+                telescope=telescope,
+            )
 
         # Group observations in groups of up to 10
         proposal_in_night = 1 + file_in_night // 10
-        proposal_code = f'Proposal-{night}-{proposal_in_night}'
+        proposal_code = f"Proposal-{night}-{proposal_in_night}"
 
         # Choose an institution based on the proposal number
         institution_index = proposal_in_night % len(institutions)
@@ -113,9 +123,14 @@ class DummyObservationProperties(ObservationProperties):
         telescope = telescopes[telescope_index]
 
         # Choose a group identifier based on the night abd the proposal number
-        observation_group_identifier = f'B-{night}-{proposal_in_night}'
+        observation_group_identifier = f"B-{night}-{proposal_in_night}"
 
-        return FilenameDeterminedProperties(institution=institution, observation_group_identifier=observation_group_identifier, proposal_code=proposal_code, telescope=telescope)
+        return FilenameDeterminedProperties(
+            institution=institution,
+            observation_group_identifier=observation_group_identifier,
+            proposal_code=proposal_code,
+            telescope=telescope,
+        )
 
     def artifact(self, plane_id: int) -> types.Artifact:
         def identifier(n: int) -> str:
@@ -142,7 +157,7 @@ class DummyObservationProperties(ObservationProperties):
         def wavelengths() -> Tuple[Quantity, Quantity]:
             wavelength_interval = 5000 * random.random()
             min_wavelength = (
-                3000 + ((9000 - wavelength_interval) - 3000) * random.random()
+                    3000 + ((9000 - wavelength_interval) - 3000) * random.random()
             )
             max_wavelength = min_wavelength + wavelength_interval
             return min_wavelength, max_wavelength
@@ -159,64 +174,56 @@ class DummyObservationProperties(ObservationProperties):
         )
 
     def instrument_keyword_values(
-        self, observation_id: int
+            self, observation_id: int
     ) -> List[types.InstrumentKeywordValue]:
         values = []
 
-        # RSS
-        if self._instrument == types.Instrument.RSS:
-            grating = random.choice(
-                ["pg0300", "pg0900", "pg1300", "pg1800", "pg2300", "pg3000", None]
-            )
-            filter = random.choice(
-                [
-                    "pc00000",
-                    "pc03200",
-                    "pc03400",
-                    "pc03850",
-                    "pc04600",
-                    "pi06530",
-                    "pi08005",
-                    None,
-                ]
-            )
-            if random.random() > 0.5:
-                values.append(
-                    types.InstrumentKeywordValue(
-                        instrument=types.Instrument.RSS,
-                        instrument_keyword=types.InstrumentKeyword.FILTER,
-                        observation_id=observation_id,
-                        value=filter,
-                    )
-                )
-            if random.random() > 0.5:
-                values.append(
-                    types.InstrumentKeywordValue(
-                        instrument=types.Instrument.RSS,
-                        instrument_keyword=types.InstrumentKeyword.GRATING,
-                        observation_id=observation_id,
-                        value=grating,
-                    )
-                )
-
-        # Salticam
-        elif self._instrument == types.Instrument.SALTICAM:
-            filter = random.choice(
-                ["U-S1", "B-S1", "V-S1", "R-S1", "I-S1", "Halpha-S1", None]
-            )
-            if random.random() > 0.5:
-                values.append(
-                    types.InstrumentKeywordValue(
-                        instrument=types.Instrument.SALTICAM,
-                        instrument_keyword=types.InstrumentKeyword.FILTER,
-                        observation_id=observation_id,
-                        value=filter,
-                    )
-                )
-
         return values
 
-    def observation(self, observation_group_id: Optional[int], proposal_id: Optional[int]) -> types.Observation:
+    def instrument_setup(self, observation_id: int) -> types.InstrumentSetup:
+        if self._instrument == types.Instrument.RSS:
+            sql = """
+            WITH fpm (id) AS (
+                SELECT rss_fabry_perot_mode_id FROM rss_fabry_perot_mode WHERE fabry_perot_mode=%(fabry_perot_mode)s
+            ),
+                 rg (id) AS (
+                     SELECT rss_grating_id FROM rss_grating WHERE grating=%(grating)s
+                 )
+            INSERT INTO rss_setup (instrument_setup_id, rss_fabry_perot_mode_id, rss_grating_id)
+            VALUES (%(instrument_setup_id)s, (SELECT id FROM fpm), (SELECT id FROM rg))
+            """
+
+            fabry_perot_modes = [fpm for fpm in types.RSSFabryPerotMode]
+            fabry_perot_mode = random.choice(fabry_perot_modes)
+            gratings = [g for g in types.RSSGrating]
+            grating = random.choice(gratings)
+            parameters = dict(fabry_perot_mode=fabry_perot_mode.value, grating=grating.value)
+            queries = [types.SQLQuery(sql=sql, parameters=parameters)]
+        elif self._instrument == types.Instrument.HRS:
+            hrs_modes = [hm for hm in types.HRSMode]
+            hrs_mode = random.choice(hrs_modes)
+            sql = """
+            WITH hm (id) AS (
+                SELECT hrs_mode_id FROM hrs_mode WHERE hrs_mode.hrs_mode=%(hrs_mode)s
+            )
+            INSERT INTO hrs_setup (instrument_setup_id, hrs_mode_id)
+            VALUES (%(instrument_setup_id)s, (SELECT id FROM hm))
+            """
+            parameters = dict(hrs_mode=hrs_mode.value)
+            queries = [types.SQLQuery(sql=sql, parameters=parameters)]
+        else:
+            queries = []
+
+        filters = [f for f in types.Filter]
+        filter = random.choice(filters)
+        instrument_modes = [im for im in types.InstrumentMode]
+        instrument_mode = random.choice(instrument_modes)
+
+        return types.InstrumentSetup(additional_queries=queries, filter=filter, instrument_mode=instrument_mode, observation_id=observation_id)
+
+    def observation(
+            self, observation_group_id: Optional[int], proposal_id: Optional[int]
+    ) -> types.Observation:
         now = datetime.now().date()
         data_release = self._faker.date_between("-5y", now + timedelta(days=500))
         meta_release = self._faker.date_between("-5y", now + timedelta(days=500))
@@ -228,9 +235,9 @@ class DummyObservationProperties(ObservationProperties):
         )
         status = random.choice([status for status in types.Status])
         if self._instrument in (
-            types.Instrument.HRS,
-            types.Instrument.RSS,
-            types.Instrument.SALTICAM,
+                types.Instrument.HRS,
+                types.Instrument.RSS,
+                types.Instrument.SALTICAM,
         ):
             telescope = types.Telescope.SALT
         else:
@@ -253,7 +260,9 @@ class DummyObservationProperties(ObservationProperties):
     def observation_group(self) -> Optional[types.ObservationGroup]:
         if self._observation_group_identifier:
             name = self._faker.text(max_nb_chars=20)
-            return types.ObservationGroup(group_identifier=self._observation_group_identifier, name=name)
+            return types.ObservationGroup(
+                group_identifier=self._observation_group_identifier, name=name
+            )
         else:
             return None
 
@@ -317,7 +326,7 @@ class DummyObservationProperties(ObservationProperties):
             return None
 
     def proposal_investigators(
-        self, proposal_id: int
+            self, proposal_id: int
     ) -> List[types.ProposalInvestigator]:
         investigator_ids = list(range(1, 201))
 
