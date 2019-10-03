@@ -224,10 +224,10 @@ CREATE TABLE observation
 (
     observation_id       bigserial PRIMARY KEY,
     data_release         date NOT NULL,
-    instrument_id        int  NOT NULL REFERENCES Instrument (instrument_id),
-    intent_id            int  NOT NULL REFERENCES Intent (intent_id),
+    instrument_id        int  NOT NULL REFERENCES instrument (instrument_id),
+    intent_id            int  NOT NULL REFERENCES intent (intent_id),
     meta_release         date NOT NULL,
-    observation_group_id int REFERENCES observation_group.observation_group_id,
+    observation_group_id int REFERENCES observation_group (observation_group_id),
     observation_type_id  int REFERENCES observation_type (observation_type_id),
     proposal_id          int REFERENCES proposal (proposal_id) ON DELETE CASCADE,
     status_id            int  NOT NULL REFERENCES status (status_id),
