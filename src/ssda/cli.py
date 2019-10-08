@@ -1,17 +1,27 @@
-import click
+import logging
+import os
 from datetime import date, datetime, timedelta
 from typing import Callable, Optional, Set, Tuple
 
-from ssda.observation import StandardObservationProperties, DummyObservationProperties
+import click
+import dsnparse
+import sentry_sdk
+from psycopg2 import connect
+
+import ssda.database.ssda
+from ssda.database.services import DatabaseServices
 from ssda.task import execute_task
 from ssda.util.fits import fits_file_paths
 from ssda.util.types import (
     Instrument,
     DateRange,
     TaskName,
-    DatabaseConfiguration,
     TaskExecutionMode,
 )
+
+# Log with Sentry
+if os.environ.get("SENTRY_DSN"):
+    sentry_sdk.init(os.environ.get("SENTRY_DSN"))
 
 
 def parse_date(value: str, now: Callable[[], datetime]) -> date:
@@ -92,11 +102,10 @@ def validate_options(
             "The --start/--end and --file options are mutually exclusive."
         )
 
-    # A date range requires at least one instrument
-    if start and not len(instruments):
+    # The --instrument and the --file option are mutually exclusive
+    if len(instruments) != len([instrument for instrument in Instrument]) and file:
         raise click.UsageError(
-            "You must specify at least one instrument (with the "
-            "--instrument option) if you specify a date range."
+            "The --instrument and --file options are mutually exclusive."
         )
 
     # Either a date range or a FITS file must be specified
@@ -156,6 +165,7 @@ def validate_options(
     required=True,
     help="Task to perform.",
 )
+@click.option("--verbose", is_flag=True, help="Log more details.")
 def main(
     task: str,
     start: Optional[str],
@@ -164,12 +174,25 @@ def main(
     file: Optional[str],
     fits_base_dir: Optional[str],
     mode: str,
-) -> None:
+        verbose: bool
+) -> int:
+    if verbose:
+        logging.basicConfig(level=logging.INFO)
+
+    if not os.environ.get("SENTRY_DSN"):
+        logging.warning('Environment variable SENTRY_DSN for logging with Sentry not '
+                        'set.')
+
     # convert options as required and validate them
     now = datetime.now
     start_date = parse_date(start, now) if start else None
     end_date = parse_date(end, now) if end else None
-    instruments_set = set(Instrument.for_name(instrument) for instrument in instruments)
+    if len(instruments):
+        instruments_set = set(
+            Instrument.for_name(instrument) for instrument in instruments
+        )
+    else:
+        instruments_set = set(instrument for instrument in Instrument)
     task_name = TaskName.for_name(task)
     task_mode = TaskExecutionMode.for_mode(mode)
     validate_options(
@@ -194,6 +217,30 @@ def main(
             "The command line options do not allow the FITS file paths to be found."
         )
 
+    # database access
+    ssda_db_config = dsnparse.parse_environ('SSDA_DSN')
+    ssda_connection = connect(user=ssda_db_config.user, password=ssda_db_config.secret, host=ssda_db_config.host, port=ssda_db_config.port, database=ssda_db_config.database)
+    ssda_database_service = ssda.database.ssda.DatabaseService(ssda_connection)
+
+    database_services = DatabaseServices(ssda=ssda_database_service)
+
     # execute the requested task
-    for path in paths:
-        execute_task(task_name=task_name, fits_path=path, task_mode=task_mode)
+    try:
+        for path in paths:
+            if verbose:
+                logging.info(f'{task_name.value}: {path}')
+            execute_task(
+                task_name=task_name,
+                fits_path=path,
+                task_mode=task_mode,
+                database_services=database_services
+            )
+    except BaseException as e:
+        ssda_connection.close()
+        logging.critical("Exception occurred", exc_info=True)
+        click.echo(click.style(str(e), fg="red", blink=True, bold=True))
+
+        return -1
+
+    # Success!
+    return 0

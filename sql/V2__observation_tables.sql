@@ -1,16 +1,8 @@
-DROP DATABASE IF EXISTS ssda;
+DROP SCHEMA IF EXISTS observations CASCADE;
 
-CREATE DATABASE ssda;
+CREATE SCHEMA observations;
 
-\connect ssda;
-
--- USE PGSPHERE
-
-CREATE SCHEMA extensions;
-
-ALTER DATABASE ssda SET search_path = '$user', public, extensions;
-
-CREATE EXTENSION pg_sphere SCHEMA extensions;
+SET search_path TO observations, extensions;
 
 -- LOOKUP TABLES
 
@@ -87,6 +79,12 @@ CREATE TABLE intent
 );
 
 COMMENT ON TABLE intent IS 'The intent of an observation, such as "Science" or "Arc".';
+
+INSERT INTO intent (intent)
+VALUES ('Arc'),
+       ('Bias'),
+       ('Flat'),
+       ('Science');
 
 -- observation_type
 
@@ -195,8 +193,11 @@ CREATE TABLE proposal
     proposal_id    bigserial PRIMARY KEY,
     institution_id int          NOT NULL REFERENCES institution (institution_id),
     pi             varchar(100) NOT NULL,
+    proposal_code  varchar(50)  NOT NULL,
     title          varchar(200) NOT NULL
 );
+
+CREATE UNIQUE INDEX proposal_code_institution_unique ON proposal (proposal_code, institution_id);
 
 CREATE INDEX proposal_institution_id ON Proposal (institution_id);
 
@@ -205,23 +206,36 @@ COMMENT ON COLUMN proposal.institution_id IS 'The institution to which the propo
 COMMENT ON COLUMN proposal.pi IS 'The Principal Investigator of the proposal.';
 COMMENT ON COLUMN proposal.title IS 'The proposal title.';
 
+-- observation_group
+
+CREATE TABLE observation_group
+(
+    observation_group_id bigserial PRIMARY KEY,
+    group_identifier     varchar(40),
+    name                 varchar(100)
+);
+
+COMMENT ON TABLE observation_group IS 'Logical group of observations, such as a block visit for SALT.';
+COMMENT ON COLUMN observation_group.group_identifier IS 'Identifier for the group, which must be unique within the groups belonging to the same telescope.';
+
 -- observation
 
 CREATE TABLE observation
 (
-    observation_id      bigserial PRIMARY KEY,
-    data_release        date NOT NULL,
-    instrument_id       int  NOT NULL REFERENCES Instrument (instrument_id),
-    intent_id           int  NOT NULL REFERENCES Intent (intent_id),
-    meta_release        date NOT NULL,
-    observation_group   varchar(40),
-    observation_type_id int REFERENCES observation_type (observation_type_id),
-    proposal_id         int REFERENCES proposal (proposal_id),
-    status_id           int  NOT NULL REFERENCES status (status_id),
-    telescope_id        int  NOT NULL REFERENCES Telescope (telescope_id),
+    observation_id       bigserial PRIMARY KEY,
+    data_release         date NOT NULL,
+    instrument_id        int  NOT NULL REFERENCES instrument (instrument_id),
+    intent_id            int  NOT NULL REFERENCES intent (intent_id),
+    meta_release         date NOT NULL,
+    observation_group_id int REFERENCES observation_group (observation_group_id),
+    observation_type_id  int REFERENCES observation_type (observation_type_id),
+    proposal_id          int REFERENCES proposal (proposal_id) ON DELETE CASCADE,
+    status_id            int  NOT NULL REFERENCES status (status_id),
+    telescope_id         int  NOT NULL REFERENCES Telescope (telescope_id),
     CONSTRAINT meta_not_after_data_release_check CHECK (meta_release <= data_release)
 );
 
+CREATE INDEX observation_group_idx ON observation (observation_group_id);
 CREATE INDEX observation_type_idx ON observation (observation_type_id);
 CREATE INDEX observation_status_idx ON status (status_id);
 
@@ -229,7 +243,6 @@ COMMENT ON TABLE observation IS 'An observation in the sense of data taken for a
 COMMENT ON COLUMN observation.data_release IS 'Date when the data for this observation becomes public.';
 COMMENT ON COLUMN observation.instrument_id IS 'Instrument tha took the data for this observation.';
 COMMENT ON COLUMN observation.meta_release IS 'Date when the metadata for this observation becomes public.';
-COMMENT ON COLUMN observation.observation_group IS 'Identifier for the logical group to which this observation belongs';
 
 -- instrument_keyword_value
 
@@ -323,9 +336,9 @@ COMMENT ON TABLE polarization IS 'A junction table for linking planes and measur
 
 CREATE TABLE observation_time
 (
+    observation_time_id bigserial PRIMARY KEY,
     end_time            timestamp with time zone NOT NULL,
     exposure_time       double precision         NOT NULL CHECK (exposure_time >= 0),
-    observation_time_id bigserial PRIMARY KEY,
     plane_id            int                      NOT NULL REFERENCES Plane (plane_id) ON DELETE CASCADE,
     resolution          double precision         NOT NULL CHECK (resolution >= 0),
     start_time          timestamp with time zone NOT NULL,
@@ -348,7 +361,7 @@ CREATE TABLE position
     position_id bigserial PRIMARY KEY,
     dec         double precision NOT NULL CHECK (dec BETWEEN -90 AND 90),
     equinox     double precision NOT NULL CHECK (equinox >= 1900),
-    plane_id    int              NOT NULL REFERENCES plane (plane_id),
+    plane_id    int              NOT NULL REFERENCES plane (plane_id) ON DELETE CASCADE,
     ra          double precision NOT NULL CHECK (0 <= ra AND ra < 360)
 );
 
@@ -370,7 +383,7 @@ CREATE TABLE artifact
     identifier       varchar(50) UNIQUE  NOT NULL,
     name             varchar(200)        NOT NULL,
     path             varchar(255) UNIQUE NOT NULL,
-    plane_id         int                 NOT NULL REFERENCES Plane (plane_id),
+    plane_id         int                 NOT NULL REFERENCES Plane (plane_id) ON DELETE CASCADE,
     product_type_id  int REFERENCES product_type (product_type_id)
 );
 

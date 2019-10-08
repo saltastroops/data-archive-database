@@ -437,6 +437,17 @@ def test_instrument_keyword_value_too_long():
     assert "value" in str(excinfo)
 
 
+def test_instrument_keyword_value_may_be_none():
+    instrument_keyword_value = types.InstrumentKeywordValue(
+        instrument=types.Instrument.RSS,
+        instrument_keyword=types.InstrumentKeyword.GRATING,
+        observation_id=12,
+        value=None,
+    )
+
+    assert instrument_keyword_value.value is None
+
+
 # Observation
 
 
@@ -446,7 +457,7 @@ def test_observation_is_created_correctly():
         instrument=types.Instrument.RSS,
         intent=types.Intent.SCIENCE,
         meta_release=date(2019, 9, 5),
-        observation_group="ABC",
+        observation_group_id=8,
         observation_type=types.ObservationType.OBJECT,
         proposal_id=42,
         status=types.Status.ACCEPTED,
@@ -457,7 +468,7 @@ def test_observation_is_created_correctly():
     assert observation.instrument == types.Instrument.RSS
     assert observation.intent == types.Intent.SCIENCE
     assert observation.meta_release == date(2019, 9, 5)
-    assert observation.observation_group == "ABC"
+    assert observation.observation_group_id == 8
     assert observation.observation_type == types.ObservationType.OBJECT
     assert observation.proposal_id == 42
     assert observation.status == types.Status.ACCEPTED
@@ -471,7 +482,7 @@ def test_data_release_earlier_than_meta_release():
             instrument=types.Instrument.RSS,
             intent=types.Intent.SCIENCE,
             meta_release=date(2020, 4, 8),
-            observation_group="ABC",
+            observation_group_id=8,
             observation_type=types.ObservationType.OBJECT,
             proposal_id=42,
             status=types.Status.ACCEPTED,
@@ -481,21 +492,50 @@ def test_data_release_earlier_than_meta_release():
     assert "data release" in str(excinfo)
 
 
-def test_observation_group_too_long():
+def test_observation_group_id_may_be_none():
+    observation = types.Observation(
+        data_release=date(2020, 4, 7),
+        instrument=types.Instrument.RSS,
+        intent=types.Intent.SCIENCE,
+        meta_release=date(2019, 4, 7),
+        observation_group_id=None,
+        observation_type=types.ObservationType.OBJECT,
+        proposal_id=42,
+        status=types.Status.ACCEPTED,
+        telescope=types.Telescope.SALT,
+    )
+
+    assert observation.observation_group_id is None
+
+
+# ObservationGroup
+
+
+def test_observation_group_is_created_correctly():
+    observation_group = types.ObservationGroup(group_identifier="B15", name='ABC')
+
+    assert observation_group.group_identifier == 'B15'
+    assert observation_group.name == 'ABC'
+
+
+def test_observation_group_identifier_too_long():
     with pytest.raises(ValueError) as excinfo:
-        types.Observation(
-            data_release=date(2020, 4, 7),
-            instrument=types.Instrument.RSS,
-            intent=types.Intent.SCIENCE,
-            meta_release=date(2019, 4, 7),
-            observation_group="A" * 41,
-            observation_type=types.ObservationType.OBJECT,
-            proposal_id=42,
-            status=types.Status.ACCEPTED,
-            telescope=types.Telescope.SALT,
+        types.ObservationGroup(
+            group_identifier='B' * 41,
+            name='ABC'
         )
 
-    assert "observation group" in str(excinfo)
+    assert "group identifier" in str(excinfo)
+
+
+def test_observation_group_name_too_long():
+    with pytest.raises(ValueError) as excinfo:
+        types.ObservationGroup(
+            group_identifier='B15',
+            name='N' * 41
+        )
+
+    assert "name" in str(excinfo)
 
 
 # ObservationTime
@@ -644,9 +684,12 @@ def test_observation_time_resolution_must_have_a_time_unit():
 
 
 def test_plane_is_created_correctly():
-    plane = types.Plane(observation_id=67)
+    plane = types.Plane(
+        observation_id=67, data_product_type=types.DataProductType.SCIENCE
+    )
 
     assert plane.observation_id == 67
+    assert plane.data_product_type == types.DataProductType.SCIENCE
 
 
 # Polarization

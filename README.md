@@ -4,7 +4,7 @@ This application lets you populate (and update) the SAAO/SALT Data Archive datab
 
 ## Installation and configuration
 
-Ensure that Python 3.7 is running on your machine. You can check this with the `--version flag`.
+Ensure that Python 3.7 is running on your machine. You can check this with the `--version` flag.
 
 ```bash
 python3 --version
@@ -34,42 +34,110 @@ and make sure you are in the master branch,
 git checkout master
 ```
 
-You can then install all requirements with pipenv,
+You can then install the package and its requirements with pipenv,
 
 ```bash
-pipenv install --ignore-pipfile
+pipenv install -e .
 ```
 
 Before using the package you need to define the following environment variables.
 
 Variable name | Explanation | Example
 --- | --- | ---
-FITS_BASE_DIR | Base directory for the FITS files | /home/ssda/fits
-PREVIEW_BASE_DIR | Base directory for the preview files | /home/ssda/preview
-SDB_DATABASE | Name of SALT's science database | sdb
-SDB_HOST | Host of SALT's science database | sdb.your.host
-SDB_PASSWORD | Password for SALT's science database | secret
-SDB_USER | Username for SALT science database | sdb_user
-SSDA_DATABASE | Name of the Data Archive database | ssda
-SSDA_HOST | Host of the Data Archive database | ssda.your.host
-SSDA_PASSWORD | Password for the Data Archive database | also_secret
-SSDA_USER | Password for the Data Archive database | ssda_user
+SSDA_DSN | Data source name of the data archive database | postgresql://ssda:secret@example.host.za/ssda
+SDB_DSN | Data source name of the SALT science database | mysql://salt:secret@example.host.za/sdb
 
 See below for instructions on how to run the script as a cron job.
 
 ## Setting up the database
 
-If the database does not exist yet, you can create it with the SQL script in `sql/tables.sql`.
+Flyway is used for initialising and updating the database, so this needs to be installed first.
+
+### Installing Flyway on Ubuntu
+
+Follow the [installation instructions](https://flywaydb.org/documentation/commandline/#download-and-installation).
+
+### Installing Flyway on macOS
+
+You can follow the [installation instructions](https://flywaydb.org/documentation/commandline/#download-and-installation). However, it might be easier to just use brew:
 
 ```bash
-mysql -u <admin_user> -h <host> -p < sql/tables.sql
+brew install flyway 
 ```
 
-Be careful with running the script - if the database exists its tables will be dropped and recreated.
+### Installing pgSphere
 
-## Upgrading
+The data archive database requires [pgSphere](https://pgsphere.github.io/doc/index.html), which provides various spherical data types, functions and operators.
 
-In order to upgrade the script, make sure you are in the master branch
+To install it, first make sure that pg_config is available on the server.
+
+```bash
+pgconfig --help
+```
+
+Then clone the pgSphere source code from [its GitHub repository](https://github.com/akorotkov/pgsphere),
+
+```bash
+git clone https://github.com/akorotkov/pgsphere
+```
+
+and change into the created directory,
+
+```bash
+cd pgsphere
+```
+
+Then execute
+
+```bash
+make USE_PGXS=1 PG_CONFIG=`which pg_config`
+```
+
+followed by
+
+```bash
+sudo make USE_PGXS=1 PG_CONFIG=`which pg_config` install
+```
+
+### Creating and initialising the database
+
+Login to the PostgreSQL server and create the database,
+
+```postgresql
+CREATE DATABASE ssda;
+```
+
+and exit PostgreSQL again.
+
+Make sure you are in the root directory of the project and run Flyway:
+
+```bash
+flyway -url=jdbc:postgresql://your.host:5432/ssda -user=admin -locations=filesystem:sql migrate
+```
+
+This assumes that the PostgreSQL server is listening on port 5432 and that there is a user `admin` with all the necessary permissions.
+
+Once the database is initialised, there will be the following new roles:
+
+Role | Description
+--- | ---
+admin_editor | May insert, update and delete admin data.
+observations_editor | May insert, update and delete observation data.
+
+The permissions are limited to those necessary for the relevant tasks. For example, the observations_editor may only delete some of the observation data.
+
+While roles are created, users aren't. So for example, if you want to have a dedicated user for populating the observations database, you may run a SQL commands like the following.
+
+```postgresql
+CREATE ROLE obs PASSWORD 'secret' LOGIN INHERIT;
+GRANT observations_editor TO obs;
+```
+
+## Updating
+
+### Updating the script
+
+In order to update the script, make sure you are in the master branch
 
 ```bash
 git checkout master
@@ -81,147 +149,112 @@ and pull the changes from the remote repository,
 git pull
 ```
 
-As requirements may have changed, you should upgrade the installed packages afterwards.
+Finally update the installed package.
 
 ```bash
-pipenv install
+pipenv update ssda
+```
+
+### Updating the database
+
+To update the database you execute Flyway the same way as for initialising it:
+
+```bash
+flyway -url=jdbc:postgresql://your.host:5432/ssda -user=admin -locations=filesystem:sql migrate
 ```
 
 ## Usage
 
-The package provides a script `cli.py` for inserting, updating and deleting entries in the Data Archive database. To run this script, first open a new pipenv shell.
+The package provides a command `ssda` for inserting, updating and deleting entries in the Data Archive database. To run it, first open a new pipenv shell.
 
 ```bash
 pipenv shell
 ```
 
-To find out about the available subcommands you may use the `--help` option.
+To find out about the available options you may use the `--help` option.
 
 ```bash
-python cli.py --help
+python ssda --help
 ``` 
 
-The various subcommands for modifying the database are explained in the following sections.
+The various tasks for modifying the database are explained in the following sections.
 
 If you don't want ro open a new shell you may also execute the script with pipenv's `run` command.
 
 ```bash
-pipenv run python cli.py --help
+pipenv run ssda --help
 ```
 
-### The insert subcommand
+### Inserting observations
 
-The `insert` subcommand allows you to create new database entries from FITS files. This includes corresponding preview files. Typically you use it to create entries for a range of dates.
+The `insert` task allows you to create new database entries from FITS files. Typically you use it to create entries for a range of dates.
 
 ```bash
-python cli.py insert --start 2019-06-25 --end 2019-06-27
+ssda --task insert --mode production --fits-base-dir /path/to/fits/files --start 2019-06-25 --end 2019-06-27
 ```
 
-Both start and end date must be given, and they must be of the format `yyyy-mm-dd`. Both the start and end date are inclusive, and they refer to the beginning of the night. So in the above example FITS files would be considered for the time between noon of 25 June and noon of 28 June 2019. If you want to insert entries for one night, the start and end date must be the same.
+Both start and end date must be given, and they must be of the format `yyyy-mm-dd`. The start date is inclusive, the end date inclusive. Both refer to the beginning of the night. So in the above example FITS files would be considered for the time between noon of 25 June and noon of 27 June 2019.
+
+For convenience, you may use the keyword 'yesterday', which will be replaced with (gasp!) yesterday's date. Another choice is the keyword `today`, which means, well, today's date. So if you want to insert last night's data, you can run
 
 ```bash
-python cli.py insert --start 2019-07-03 --end 2019-07-03
+ssda --task insert --mode production --fits-base-dir /path/to/fits/files --start yesterday --end today
 ```
 
-For convenience, you may use the keyword 'yesterday', which will be replaced with (gasp!) yesterday's date.
-
-```bash
-python cli.py insert --start yesterday --end yesterday
-```
-
-Another choice is the keyword `last-year`, which means 365 days ago, irrespective of whether the year had 365 or 366 days.
-
-```bash
-python cli.py insert --start last-year --end yesterday
-```
-
-This keyword is mostly intended for updating obsercvation status values and proposal investigators.
-
-Existing database content is not changed by this subcommand; use the `update` subcommand to make changes. This implies that it is safe to re-run the command as often as you like.
+Existing database content is not changed when inserting. This implies that it is safe to re-run the command as often as you like.
 
 By default FITS files for all instruments are considered. However, you can limit insertions to a single instrument by adding the `--instrument` option.
 
 ```bash
-python cli.py insert --start 2019-06-29 --end 2019-07-02 --instrument RSS
+ssda --task insert --mode production --fits-base-dir /path/to/fits/files --start yesterday --end today --instrument RSS
 ```
 
-The spelling of the instrument name is case-insensitive. Hence you might also have riun the command as
+The spelling of the instrument name is case-insensitive. Hence you might also have run the command as
 
 ```bash
-python cli.py insert --start 2019-06-29 --end 2019-07-02 --instrument rss
+ssda --task insert --mode production --fits-base-dir /path/to/fits/files --start yesterday --end today --instrument rss
 ```
 
 You can limit insertion to a set of instruments by using the `--instrument` option more than once.
 
 ```bash
-python cli.py insert --start 2019-06-29 --end 2019-07-02 --instrument RSS --instrument Salticam
+ssda --task insert --mode production --fits-base-dir /path/to/fits/files --start yesterday --end today --instrument RSS --instrument Salticam
 ```
 
-If you want to create an entry for a single FITS file, you can use the `--file` option. You then need to also specify the instrument for the FITS file with the `--instrument` option. *It is up to you to ensure that the specified instrument is correct; doom and disaster may strike if you get this wrong.* You have been warned.
+If you want to create an entry for a single FITS file, you can use the `--file` option.
+
+```bash
+ssda --task insert --mode production --file /path/to/fits/files --instrument RSS
+```
 
 The `--start/--end` and `--file` option are mutually exclusive.
 
-While by default the subcommand does its job in absolute silence (unless there is an error), you can make the script morec talkative by adding the `--verbose` flag.
+### Updating observation data
 
-You can remind yourself about the usage of the subcommand by running it with the `--help` flag.
+[TBD]
 
-```bash
-ssda insert --help
-```
+### Deleting observations
 
-### The update subcommand
-
-The `update` subcommand updates existing database entries and any corresponding preview files from FITS files. The usage is the same as that for the `insert` subcommand. For example, you would update all the database entries for HRS from the nights of 5 July to 10 July 2019 by running
+You can use the `delete` task to delete database entries and their corresponding preview files. The usage is the same as for the `insert` task. For example, the following command will delete all observation entries for the night starting on 8 June 2019.
 
 ```bash
-python cli.py update --start 2019-07-05 --end 2019-07-10 --instrument HRS
-```
-
-The subcommand does not create entries for files not covered by the database yet. Instead it will abort with an error if it encounters such a file.
-
-By default all information related to a FITS file is updated. However, this can be limited with the `--scope` option to the observations,
-
-```bash
-python cli.py update --start 2019-07-05 --end 2019-07-10 --table Observation
-```
-
-or the proposals,
-
-```bash
-python cli.py update --start 2019-07-05 --end 2019-07-10 --table Proposal
-```
-
-You can include the `--table` option twice to update both observation and proposal entries (but nothing else),
-
-```bash
-python cli.py update --start 2019-07-05 --end 2019-07-10 --table Observation --table Proposal
-```
-
-### The delete subcommand
-
-You can use the `delete` subcommand to delete database entries and their corresponding preview files. The usage is the same as for the `insert` subcommand. For example, the following command will delete all database entries for the night starting on 8 June 2019.
-
-```bash
-python cli.py delete --start 2019-06-08 --end 2019-06-08
+ssda --task delete --mode production --fits-base-dir /Users/christian/Desktop/FITS_FILES --start 2019-06-08 --end 2019-06-09
 ``` 
 
-The subcommand prompts you for a confirmation that you really want to delete database entries (and preview files). You can use the `--force` flag to skip this.
+Note that no proposal entries are deleted, even if none of their associated observations are left.
 
-### Subcommand options
+### Options
 
-As explained in the previous subsections, the `ssda` subcommands accept the following options.
+As explained in the previous subsections, the `ssda` command accepts the following options.
 
 Option | Explanation
 --- | ---
---end | Start date of the last night for which data is considered.
+--end | End date (exclusive) of the date range to consider.
 --file | Use this FITS file.
---force | Don't ask for confirmation before running the `delete` subcommand.
+--fits-base-dir | Base directory containing all the FITS files.
 --instrument | Instrument whose FITS files shall be considered. This option may be used multiple times unless the `--file` flag is used.
 -h / --help | Display a help message.
---start | Start date of the first night for which data is considered.
---table | Table whose entries shall be updated. This option may be used multiple times. The available values are `Observation` and `Proposal`.
-
-Generally these options are available for all the subcommands. The only exceptions are `--force` (only used with `delete`) and `--table` (only used with `update`).
+--start | Start date (inclusive) of the date range to consider.
 
 ## Logging in verbose mode
 
