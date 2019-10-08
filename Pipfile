@@ -24,6 +24,7 @@ ssda = {editable = true,path = "."}
 mypy = "*"
 pytest-mock = "*"
 mock = "*"
+numpy = "*"
 
 [requires]
 python_version = "3.7"

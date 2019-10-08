@@ -9,11 +9,10 @@ class ReadInstrumentWavelength:
         self._instrument = instrument
         self._resolution = resolution
 
-    @property
     def wavelengths_and_transmissions(self) -> list:
         wavelength = []
         if not self._instrument.lower() or not self._filter_name:
-            raise ValueError("filter name and instrument must be provided to use this method")
+            raise ValueError("Filter name and instrument must be provided to use this method")
         with open(f'{os.environ["PATH_TO_WAVELENGTH_FILES"]}/{self._instrument.lower()}/{self._filter_name}.txt', 'r') \
                 as file:
             for line in file.readlines():
@@ -21,4 +20,29 @@ class ReadInstrumentWavelength:
                 if len(la) and not (la[0] == "!" or la[0] == "#"):
                     wavelength.append((float(la[0]), float(la[1])))
         return wavelength
+
+    def fp_hwfm(self):
+        if not self._resolution:
+            raise ValueError("Resolution must be provided to use this method")
+        fp_modes = []
+        with open(f'{os.environ["PATH_TO_WAVELENGTH_FILES"]}/rss/properties_of_fp_modes.txt', 'r') as file:
+            for line in file.readlines():
+                fp = line.split()
+                if len(fp) > 7 and fp[0] in ["TF", "LR", "MR", "HR"]:
+                    fp_modes.append(
+                        (
+                            fp[0],          # Mode
+                            float(fp[2]),   # wavelength,
+                            float(fp[3])    # fwhm,
+                        )
+                    )
+        reso = 'LR' if (self._resolution.lower() == "low resolution") else \
+            'MR' if (self._resolution.lower() == "medium resolution") else \
+            'HR' if (self._resolution.lower() == "high resolution") else \
+            'TF' if (self._resolution.lower() == "frame transfer") else None
+
+        if not reso:
+            raise ValueError("Resolution not found for fabry perot")
+
+        return [x for x in fp_modes if x[0].upper() == reso]
 

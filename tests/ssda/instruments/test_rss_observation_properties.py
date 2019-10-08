@@ -68,19 +68,14 @@ def fake_proposal(pi: str, title: str, proposal_code: str) -> Any:
 
 
 class FakeFitsFile(object):
-    def __init__(self):
-        self._header_value = {
-            "OBJECT": "arc",
-            "BVISITID": "visit id 1",
-            "POLCONF": "open",
-            "WPPATERN": "Linear"
-        }
+    def __init__(self, headers):
+        self._headers=headers
         self._size = {"OBJECT": "arc"}
         self._file_path = "path"
 
     @property
-    def header_value(self) -> Any:
-        return self._header_value
+    def header_value(self, key_word) -> Any:
+        return self._headers.get(key_word)
 
     @property
     def headers(self) -> Any:

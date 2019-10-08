@@ -1,4 +1,6 @@
+from typing import Any
 from astropy.units import Quantity
+from astropy import units as u
 import os
 import math
 
@@ -29,6 +31,8 @@ def linear_pol(list_of_tuple: list) -> tuple:
 
     for i, t in enumerate(list_of_tuple):
         if t[1] > half_y:
+            if i == 0:
+                raise ValueError("Half width full maximum of give array does not compute make sure list is sorted")
             m = (list_of_tuple[i][1] - list_of_tuple[i - 1][1])/(
                     list_of_tuple[i][0] - list_of_tuple[i - 1][0])
             c = list_of_tuple[i][1] - m * list_of_tuple[i][0]
@@ -37,11 +41,15 @@ def linear_pol(list_of_tuple: list) -> tuple:
 
     for i, t in enumerate(list_of_tuple[::-1]):
         if t[1] > half_y:
+            if i == 0:
+                raise ValueError("Half width full maximum of give array does not compute make sure list is sorted")
             m = (list_of_tuple[::-1][i][1] - list_of_tuple[::-1][i - 1][1])/(
                     list_of_tuple[::-1][i][0] - list_of_tuple[::-1][i - 1][0])
             c = list_of_tuple[::-1][i][1] - m * list_of_tuple[::-1][i][0]
             x_2_at_half_y = (half_y - c)/m
             break
+    if not x_1_at_half_y or not x_2_at_half_y or not half_y:
+        raise ValueError("Half width full maximum of give array does not compute make sure list is sorted")
     return (x_1_at_half_y, half_y), (x_2_at_half_y, half_y)
 
 
@@ -68,8 +76,6 @@ def image_wavelength_intervals(filter_name: str, instrument: types.Instrument) -
     sorted_wavelength = sorted(unsorted_wavelength, key=lambda element: element[0])
     lambda1, lambda2 = linear_pol(sorted_wavelength)
 
-    if not lambda1[0] or not lambda1[1] or not lambda2:
-        raise ValueError(f"One or both wavelength are not found lambda1={lambda1} lambda2={lambda2}")
     return {
         "lambda1": lambda1,
         "lambda2": lambda2
@@ -90,28 +96,14 @@ def fabry_perot_fwhm_calculation(resolution: str, wavelength: float):
     ------
     Full width half maximum
     """
-    fp_modes = []
+    if wavelength :
+        pass
+
     fwhm = None
-    with open(f'{os.environ["PATH_TO_WAVELENGTH_FILES"]}/rss/properties_of_fp_modes.txt', 'r') as file:
-        for line in file.readlines():
-            fp = line.split()
-            if len(fp) > 7 and fp[0] in ["TF", "LR", "MR", "HR"]:
-                fp_modes.append(
-                    (
-                        fp[0],          # Mode
-                        float(fp[2]),   # wavelength,
-                        float(fp[3])    # fwhm,
-                    )
-                )
-    reso = 'lr' if (resolution.lower() == "low resolution") else \
-        'mr' if (resolution.lower() == "medium resolution") else \
-            'hr' if (resolution.lower() == "high resolution") else \
-                'tf' if (resolution.lower() == "frame transfer") else None
-
-    if not reso:
-        raise ValueError("Resolution not found for fabry perot")
-
-    resolution_fp_modes = [x for x in fp_modes if x[0].upper() == reso]
+    resolution_fp_modes = ReadInstrumentWavelength(resolution=resolution).fp_hwfm()
+    if wavelength < min(resolution_fp_modes, key=lambda item: item[1])[1] or \
+            wavelength > max(resolution_fp_modes, key=lambda item: item[1])[1]:
+        raise ValueError("Wavelength is out of range")
     sorted_wavelength = sorted(resolution_fp_modes, key=lambda element: element[1])
 
     for i, w in enumerate(sorted_wavelength):
@@ -195,7 +187,7 @@ def get_resolution_element(grating_frequency,  grating_angle,  slit_width):
 
     """
 
-    Lambda = 1**7 / grating_frequency
+    Lambda = 1e7 / grating_frequency
     return math.radians(slit_width / 3600) * Lambda * math.cos(math.radians(grating_angle)) * (
             FOCAL_LENGTH_TELESCOPE / FOCAL_LENGTH_RSS_COLLIMATOR)
 
@@ -300,7 +292,7 @@ def hrs_interval(arm: str, resolution: str) -> dict:
             'hr' if (resolution.lower() == "high resolution") else \
                 'hs-p' if (resolution.lower() == "high stability (p)") else \
                     'hs-o' if (resolution.lower() == "high stability (o)") else None
-    if not resolution:
+    if not reso:
         raise ValueError("Resolution not found")
 
     interval_table = {
@@ -353,6 +345,22 @@ def hrs_interval(arm: str, resolution: str) -> dict:
 
 
 def imaging_mode_cal(plane_id: int, filter_name: str, instrument: types.Instrument) -> types.Energy:
+    """
+    Method to calculate an energy from an image
+
+    Parameter
+    ----------
+        plane_id: Integer
+            Plane id of of this file
+        filter_name: String
+            Filter name used for this file
+        instrument: Instrument
+            Instrument used for this file
+    Return
+    ------
+        Energy
+            Calculated energy
+    """
 
     fwhm_points = image_wavelength_intervals(filter_name, instrument)
     lambda1, lambda2 = fwhm_points["lambda1"], fwhm_points["lambda2"]
@@ -361,29 +369,43 @@ def imaging_mode_cal(plane_id: int, filter_name: str, instrument: types.Instrume
         dimension=1,
         max_wavelength=Quantity(
             value=lambda2[0],
-            unit=types.meter
+            unit=u.meter
         ),
         min_wavelength=Quantity(
             value=lambda1[0],
-            unit=types.meter
+            unit=u.meter
         ),
         plane_id=plane_id,
         resolving_power=resolving_power,
         sample_size=Quantity(
             value=abs(lambda2[0]-lambda1[0]),
-            unit=types.meter
+            unit=u.meter
         )
     )
 
 
-def rss_energy_cal(header_value, plane_id):
+def rss_energy_cal(header_value: Any, plane_id: int) -> types.Energy:
+    """
+     Method to calculate an energy of RSS instrument
+
+    Parameter
+    ----------
+        header_value: Function
+            Observation method to get FITS header value using key
+        plane_id: Integer
+            Plane id of of this file
+    Return
+    ------
+        Energy
+            RSS energy
+    """
     observation_mode = header_value("OBSMODE").strip().upper()
     if observation_mode.upper() == "IMAGING":
         return imaging_mode_cal(plane_id=plane_id,
                                 filter_name=header_value("FILTER").strip(),
                                 instrument=types.Instrument.RSS)
 
-    if observation_mode == "SPECTROSCOPY":
+    if observation_mode.upper() == "SPECTROSCOPY":
         grating_angle = float(header_value("GR-ANGLE").strip())
         camera_angle = float(header_value("AR-ANGLE").strip())
         slit_barcode = header_value("MASKID").strip()
@@ -400,11 +422,11 @@ def rss_energy_cal(header_value, plane_id):
             dimension=dimension,
             max_wavelength=Quantity(
                 value=energy_interval[0],
-                unit=types.meter
+                unit=u.meter
             ),
             min_wavelength=Quantity(
                 value=energy_interval[1],
-                unit=types.meter
+                unit=u.meter
             ),
             plane_id=plane_id,
             resolving_power=get_wavelength_resolution(
@@ -414,7 +436,7 @@ def rss_energy_cal(header_value, plane_id):
                 slit_width=slit_width_from_barcode(slit_barcode)),
             sample_size=Quantity(
                 value=abs(sample_size),
-                unit=types.meter
+                unit=u.meter
             )
         )
 
@@ -438,17 +460,17 @@ def rss_energy_cal(header_value, plane_id):
             dimension=1,
             max_wavelength=Quantity(
                 value=energy_intervals[1],
-                unit=types.meter
+                unit=u.meter
             ),
             min_wavelength=Quantity(
                 value=energy_intervals[0],
-                unit=types.meter
+                unit=u.meter
             ),
             plane_id=plane_id,
             resolving_power=lambda1/fwhm,
             sample_size=Quantity(
                 value=fwhm,
-                unit=types.meter
+                unit=u.meter
             )
         )
 
@@ -456,26 +478,59 @@ def rss_energy_cal(header_value, plane_id):
 
 
 def hrs_energy_cal(plane_id, arm, resolution):
+    """
+     Method to calculate an energy of HRS instrument
+
+    Parameter
+    ----------
+        plane_id: Integer
+            Plane id of of this file
+        arm: String
+            HRS arm either red or blue
+        resolution: String
+            HRS resolution (Low, Medium, ...) Resolution
+
+    Return
+    ------
+        Energy
+            HRS energy
+    """
 
     interval = hrs_interval(arm=arm, resolution=resolution)
     return types.Energy(
         dimension=1,
         max_wavelength=Quantity(
             value=max(interval["interval"]),
-            unit=types.meter
+            unit=u.meter
         ),
         min_wavelength=Quantity(
             value=min(interval["interval"]),
-            unit=types.meter
+            unit=u.meter
         ),
         plane_id=plane_id,
         resolving_power=interval["power"],
         sample_size=Quantity(
             value=abs(interval["interval"][0]-interval["interval"][1]),
-            unit=types.meter
+            unit=u.meter
         )
     )
 
 
-def scam_energy_cal(plane_id: int, filter_name: str,):
+def scam_energy_cal(plane_id: int, filter_name: str):
+    """
+
+    Method to calculate an energy of SALTICAM instrument
+
+    Parameter
+    ----------
+        plane_id: Integer
+            Plane id of of this file
+        filter_name: String
+            filter user for this file
+
+    Return
+    ------
+        Energy
+           SALTICAM energy
+    """
     return imaging_mode_cal(plane_id=plane_id, filter_name=filter_name, instrument=types.Instrument.SALTICAM)
