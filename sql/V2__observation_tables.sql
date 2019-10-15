@@ -133,8 +133,10 @@ COMMENT ON TABLE instrument_mode IS 'Instrument mode, such as imaging or spectro
 
 INSERT INTO instrument_mode (instrument_mode)
 VALUES ('Fabry Perot'),
+       ('FP Polarimetry'),
        ('Imaging'),
        ('MOS'),
+       ('MOS Polarimetry'),
        ('Polarimetric Imaging'),
        ('Spectropolarimetry'),
        ('Spectroscopy'),
