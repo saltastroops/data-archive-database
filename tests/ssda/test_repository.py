@@ -130,7 +130,7 @@ class ObservationPropertiesStub(ObservationProperties):
 
     def polarization(self, plane_id: int) -> types.Polarization:
         return types.Polarization(
-            plane_id=plane_id, polarization_pattern=types.PolarizationPattern.CIRCULAR
+            plane_id=plane_id, polarization_mode=types.PolarizationMode.CIRCULAR
         )
 
     def position(self, plane_id: int) -> Optional[types.Position]:

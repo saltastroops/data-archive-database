@@ -724,11 +724,11 @@ def test_plane_is_created_correctly():
 
 def test_polarization_is_created_correctly():
     polarization = types.Polarization(
-        plane_id=956, polarization_pattern=types.PolarizationPattern.LINEAR
+        plane_id=956, polarization_mode=types.PolarizationMode.LINEAR
     )
 
     assert polarization.plane_id == 956
-    assert polarization.polarization_pattern == types.PolarizationPattern.LINEAR
+    assert polarization.polarization_mode == types.PolarizationMode.LINEAR
 
 
 # Position

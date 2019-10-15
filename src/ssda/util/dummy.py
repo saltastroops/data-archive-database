@@ -138,7 +138,8 @@ class DummyObservationProperties(ObservationProperties):
             return "".join(random.choices(characters, k=n))
 
         def product_type() -> types.ProductType:
-            return random.choice(list(p for p in types.ProductType))
+            product_types = [types.ProductType.ARC, types.ProductType.BIAS, types.ProductType.FLAT, types.ProductType.SCIENCE]
+            return random.choice(product_types)
 
         return types.Artifact(
             content_checksum=self._fits_file.checksum(),
@@ -299,11 +300,11 @@ class DummyObservationProperties(ObservationProperties):
         )
 
     def polarization(self, plane_id: int) -> Optional[types.Polarization]:
-        all_polarization_patterns = [pattern for pattern in types.PolarizationPattern]
+        all_polarization_modes = [mode for mode in types.PolarizationMode]
         if random.random() > 0.9:
-            polarization_pattern = random.choice(all_polarization_patterns)
+            polarization_mode = random.choice(all_polarization_modes)
             return types.Polarization(
-                plane_id=plane_id, polarization_pattern=polarization_pattern
+                plane_id=plane_id, polarization_mode=polarization_mode
             )
         else:
             return None

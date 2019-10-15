@@ -919,12 +919,12 @@ class Plane:
         return self._data_product_type
 
 
-class PolarizationPattern(Enum):
+class PolarizationMode(Enum):
     """
-    Enumeration of the available polarization patterns.
+    Enumeration of the available polarization modes.
 
     The enum values must be the same as the values of the name column in the
-    polarization_pattern table.
+    polarization_mode table.
 
     """
 
@@ -942,22 +942,22 @@ class Polarization:
     ----------
     plane_id : int
         Database id of the plane with the polarization.
-    polarization_pattern : PolarizationPattern
-        Polarization pattern.
+    polarization_mode : PolarizationMode
+        Polarization mode.
 
     """
 
-    def __init__(self, plane_id: int, polarization_pattern: PolarizationPattern):
+    def __init__(self, plane_id: int, polarization_mode: PolarizationMode):
         self._plane_id = plane_id
-        self._polarization_pattern = polarization_pattern
+        self._polarization_mode = polarization_mode
 
     @property
     def plane_id(self) -> int:
         return self._plane_id
 
     @property
-    def polarization_pattern(self) -> PolarizationPattern:
-        return self._polarization_pattern
+    def polarization_mode(self) -> PolarizationMode:
+        return self._polarization_mode
 
 
 class Position:

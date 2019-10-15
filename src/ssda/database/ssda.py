@@ -603,20 +603,20 @@ class DatabaseService:
 
         with self._connection.cursor() as cur:
             sql = """
-            WITH pp (polarization_pattern_id) AS (
-                SELECT polarization_pattern_id
-                FROM polarization_pattern
-                WHERE polarization_pattern.name=%(pattern)s
+            WITH pp (polarization_mode_id) AS (
+                SELECT polarization_mode_id
+                FROM polarization_mode
+                WHERE polarization_mode.name=%(pattern)s
             )
-            INSERT INTO polarization (plane_id, polarization_pattern_id)
-            VALUES (%(plane_id)s, (SELECT polarization_pattern_id FROM pp))
+            INSERT INTO polarization (plane_id, polarization_mode_id)
+            VALUES (%(plane_id)s, (SELECT polarization_mode_id FROM pp))
             """
 
             cur.execute(
                 sql,
                 dict(
                     plane_id=polarization.plane_id,
-                    pattern=polarization.polarization_pattern.value,
+                    pattern=polarization.polarization_mode.value,
                 ),
             )
 

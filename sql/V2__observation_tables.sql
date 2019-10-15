@@ -169,18 +169,18 @@ COMMENT ON TABLE observation_type IS 'An observation type, as given by the value
 INSERT INTO observation_type (observation_type)
 VALUES ('Object');
 
--- polarization_pattern
+-- polarization_mode
 
-CREATE TABLE polarization_pattern
+CREATE TABLE polarization_mode
 (
-    polarization_pattern_id serial PRIMARY KEY,
+    polarization_mode_id serial PRIMARY KEY,
     name                    varchar(50) UNIQUE NOT NULL,
     stokes_parameters       stokes_parameter[] NOT NULL
 );
 
-COMMENT ON TABLE polarization_pattern IS 'A polarization pattern, i.e. a set of Stokes parameters.';
+COMMENT ON TABLE polarization_mode IS 'A polarization mode, i.e. a set of Stokes parameters.';
 
-INSERT INTO polarization_pattern (name, stokes_parameters)
+INSERT INTO polarization_mode (name, stokes_parameters)
 VALUES ('Linear', '{Q, U}'),
        ('Linear Hi', '{Q, U}'),
        ('Circular', '{V}'),
@@ -472,11 +472,11 @@ COMMENT ON COLUMN Energy.sample_size IS 'The size of the wavelength dispersion p
 CREATE TABLE polarization
 (
     plane_id                int NOT NULL REFERENCES plane (plane_id) ON DELETE CASCADE,
-    polarization_pattern_id int NOT NULL REFERENCES polarization_pattern (polarization_pattern_id)
+    polarization_mode_id int NOT NULL REFERENCES polarization_mode (polarization_mode_id)
 );
 
 CREATE INDEX polarization_plane_idx ON polarization (plane_id);
-CREATE INDEX polarization_polarization_pattern_idx ON polarization_pattern (polarization_pattern_id);
+CREATE INDEX polarization_polarization_mode_idx ON polarization_mode (polarization_mode_id);
 
 COMMENT ON TABLE polarization IS 'A junction table for linking planes and polarization patterns.';
 
