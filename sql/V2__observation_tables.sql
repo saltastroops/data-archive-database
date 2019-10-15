@@ -4,6 +4,14 @@ CREATE SCHEMA observations;
 
 SET search_path TO observations, extensions;
 
+-- ENUM TYPES
+
+-- stokes_parameter
+
+CREATE TYPE stokes_parameter AS ENUM ('I', 'Q', 'U', 'V');
+
+COMMENT ON TYPE stokes_parameter IS 'A Stokes psarameter for describing polarization.';
+
 -- LOOKUP TABLES
 
 -- data_product_type
@@ -161,6 +169,23 @@ COMMENT ON TABLE observation_type IS 'An observation type, as given by the value
 INSERT INTO observation_type (observation_type)
 VALUES ('Object');
 
+-- polarization_pattern
+
+CREATE TABLE polarization_pattern
+(
+    polarization_pattern_id serial PRIMARY KEY,
+    name                    varchar(50) UNIQUE NOT NULL,
+    stokes_parameters       stokes_parameter[] NOT NULL
+);
+
+COMMENT ON TABLE polarization_pattern IS 'A polarization pattern, i.e. a set of Stokes parameters.';
+
+INSERT INTO polarization_pattern (name, stokes_parameters)
+VALUES ('Linear', '{Q, U}'),
+       ('Linear Hi', '{Q, U}'),
+       ('Circular', '{V}'),
+       ('All Stokes', '{Q, U, V}');
+
 -- product_type
 
 CREATE TABLE product_type
@@ -233,22 +258,6 @@ COMMENT ON TABLE status IS 'An observation status, i.e. whether the observation 
 INSERT INTO status (status)
 VALUES ('Accepted'),
        ('Rejected');
-
--- stokes_parameters
-
-CREATE TABLE stokes_parameter
-(
-    stokes_parameter_id serial PRIMARY KEY,
-    stokes_parameter    varchar(5) UNIQUE NOT NULL
-);
-
-COMMENT ON TABLE stokes_parameter IS 'A Stokes parameter for describing polarization.';
-
-INSERT INTO stokes_parameter (stokes_parameter)
-VALUES ('I'),
-       ('Q'),
-       ('U'),
-       ('V');
 
 -- target_type
 
@@ -407,7 +416,7 @@ COMMENT ON TABLE hrs_setup IS 'Additional details about an HRS setup.';
 
 CREATE TABLE rss_setup
 (
-    instrument_setup_id     int PRIMARY KEY REFERENCES instrument_setup (instrument_setup_id) ON DELETE CASCADE ,
+    instrument_setup_id     int PRIMARY KEY REFERENCES instrument_setup (instrument_setup_id) ON DELETE CASCADE,
     rss_fabry_perot_mode_id int REFERENCES rss_fabry_perot_mode (rss_fabry_perot_mode_id),
     rss_grating_id          int REFERENCES rss_grating (rss_grating_id)
 );
@@ -460,15 +469,14 @@ COMMENT ON COLUMN Energy.sample_size IS 'The size of the wavelength dispersion p
 
 CREATE TABLE polarization
 (
-    polarization_id     bigserial PRIMARY KEY,
-    plane_id            int NOT NULL REFERENCES Plane (plane_id) ON DELETE CASCADE,
-    stokes_parameter_id int NOT NULL REFERENCES stokes_parameter (stokes_parameter_id)
+    plane_id                int NOT NULL REFERENCES plane (plane_id) ON DELETE CASCADE,
+    polarization_pattern_id int NOT NULL REFERENCES polarization_pattern (polarization_pattern_id)
 );
 
 CREATE INDEX polarization_plane_idx ON polarization (plane_id);
-CREATE INDEX polarization_stokes_idx ON polarization (stokes_parameter_id);
+CREATE INDEX polarization_polarization_pattern_idx ON polarization_pattern (polarization_pattern_id);
 
-COMMENT ON TABLE polarization IS 'A junction table for linking planes and measured Stokes parameters.';
+COMMENT ON TABLE polarization IS 'A junction table for linking planes and polarization patterns.';
 
 -- observation_time
 

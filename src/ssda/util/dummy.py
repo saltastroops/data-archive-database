@@ -157,7 +157,7 @@ class DummyObservationProperties(ObservationProperties):
         def wavelengths() -> Tuple[Quantity, Quantity]:
             wavelength_interval = 5000 * random.random()
             min_wavelength = (
-                    3000 + ((9000 - wavelength_interval) - 3000) * random.random()
+                3000 + ((9000 - wavelength_interval) - 3000) * random.random()
             )
             max_wavelength = min_wavelength + wavelength_interval
             return min_wavelength, max_wavelength
@@ -174,9 +174,9 @@ class DummyObservationProperties(ObservationProperties):
         )
 
     def instrument_keyword_values(
-            self, observation_id: int
+        self, observation_id: int
     ) -> List[types.InstrumentKeywordValue]:
-        values = []
+        values: List[types.InstrumentKeywordValue] = []
 
         return values
 
@@ -197,7 +197,9 @@ class DummyObservationProperties(ObservationProperties):
             fabry_perot_mode = random.choice(fabry_perot_modes)
             gratings = [g for g in types.RSSGrating]
             grating = random.choice(gratings)
-            parameters = dict(fabry_perot_mode=fabry_perot_mode.value, grating=grating.value)
+            parameters = dict(
+                fabry_perot_mode=fabry_perot_mode.value, grating=grating.value
+            )
             queries = [types.SQLQuery(sql=sql, parameters=parameters)]
         elif self._instrument == types.Instrument.HRS:
             hrs_modes = [hm for hm in types.HRSMode]
@@ -219,10 +221,15 @@ class DummyObservationProperties(ObservationProperties):
         instrument_modes = [im for im in types.InstrumentMode]
         instrument_mode = random.choice(instrument_modes)
 
-        return types.InstrumentSetup(additional_queries=queries, filter=filter, instrument_mode=instrument_mode, observation_id=observation_id)
+        return types.InstrumentSetup(
+            additional_queries=queries,
+            filter=filter,
+            instrument_mode=instrument_mode,
+            observation_id=observation_id,
+        )
 
     def observation(
-            self, observation_group_id: Optional[int], proposal_id: Optional[int]
+        self, observation_group_id: Optional[int], proposal_id: Optional[int]
     ) -> types.Observation:
         now = datetime.now().date()
         data_release = self._faker.date_between("-5y", now + timedelta(days=500))
@@ -235,9 +242,9 @@ class DummyObservationProperties(ObservationProperties):
         )
         status = random.choice([status for status in types.Status])
         if self._instrument in (
-                types.Instrument.HRS,
-                types.Instrument.RSS,
-                types.Instrument.SALTICAM,
+            types.Instrument.HRS,
+            types.Instrument.RSS,
+            types.Instrument.SALTICAM,
         ):
             telescope = types.Telescope.SALT
         else:
@@ -288,18 +295,15 @@ class DummyObservationProperties(ObservationProperties):
             data_product_type=random.choice(data_product_types),
         )
 
-    def polarizations(self, plane_id: int) -> List[types.Polarization]:
-        all_stokes_parameters = [parameter for parameter in types.StokesParameter]
+    def polarization(self, plane_id: int) -> Optional[types.Polarization]:
+        all_polarization_patterns = [pattern for pattern in types.PolarizationPattern]
         if random.random() > 0.9:
-            parameter_count = random.randint(1, len(all_stokes_parameters))
-            stokes_parameters = random.sample(all_stokes_parameters, k=parameter_count)
+            polarization_pattern = random.choice(all_polarization_patterns)
+            return types.Polarization(
+                plane_id=plane_id, polarization_pattern=polarization_pattern
+            )
         else:
-            stokes_parameters = []
-
-        return [
-            types.Polarization(plane_id=plane_id, stokes_parameter=stokes_parameter)
-            for stokes_parameter in stokes_parameters
-        ]
+            return None
 
     def position(self, plane_id: int) -> Optional[types.Position]:
         if not self._has_target:
@@ -326,7 +330,7 @@ class DummyObservationProperties(ObservationProperties):
             return None
 
     def proposal_investigators(
-            self, proposal_id: int
+        self, proposal_id: int
     ) -> List[types.ProposalInvestigator]:
         investigator_ids = list(range(1, 201))
 

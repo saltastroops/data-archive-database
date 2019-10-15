@@ -42,7 +42,7 @@ class ObservationProperties(ABC):
     def plane(self, observation_id: int) -> types.Plane:
         raise NotImplementedError
 
-    def polarizations(self, plane_id: int) -> List[types.Polarization]:
+    def polarization(self, plane_id: int) -> Optional[types.Polarization]:
         raise NotImplementedError
 
     def position(self, plane_id: int) -> Optional[types.Position]:

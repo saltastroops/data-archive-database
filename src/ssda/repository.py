@@ -149,9 +149,9 @@ def insert(
         if energy:
             database_service.insert_energy(energy)
 
-        # insert polarizations
-        polarizations = observation_properties.polarizations(plane_id)
-        for polarization in polarizations:
+        # insert polarization
+        polarization = observation_properties.polarization(plane_id)
+        if polarization:
             database_service.insert_polarization(polarization)
 
         # insert observation time

@@ -127,15 +127,10 @@ class ObservationPropertiesStub(ObservationProperties):
             observation_id=observation_id,
         )
 
-    def polarizations(self, plane_id: int) -> List[types.Polarization]:
-        return [
-            types.Polarization(
-                plane_id=plane_id, stokes_parameter=types.StokesParameter.Q
-            ),
-            types.Polarization(
-                plane_id=plane_id, stokes_parameter=types.StokesParameter.U
-            ),
-        ]
+    def polarization(self, plane_id: int) -> types.Polarization:
+        return types.Polarization(
+            plane_id=plane_id, polarization_pattern=types.PolarizationPattern.CIRCULAR
+        )
 
     def position(self, plane_id: int) -> Optional[types.Position]:
         return types.Position(
@@ -245,7 +240,7 @@ def test_all_content_is_inserted(mocker):
     )
     mock_database_service.return_value.insert_observation_time.return_value = 23011
     mock_database_service.return_value.insert_plane.return_value = PLANE_ID
-    mock_database_service.return_value.insert_polarization.side_effect = [734, 735]
+    mock_database_service.return_value.insert_polarization.return_value = None
     mock_database_service.return_value.insert_position.return_value = 4943
     mock_database_service.return_value.insert_proposal.return_value = PROPOSAL_ID
     mock_database_service.return_value.insert_target.return_value = 14054
@@ -375,15 +370,12 @@ def test_all_content_is_inserted(mocker):
         observation_properties.energy(PLANE_ID),
     )
 
-    # polarizations inserted
-    assert mock_database_service.return_value.insert_polarization.call_count == 2
-    for i in range(2):
-        assert_equal_properties(
-            mock_database_service.return_value.insert_polarization.call_args_list[i][0][
-                0
-            ],
-            observation_properties.polarizations(PLANE_ID)[i],
-        )
+    # polarization inserted
+    mock_database_service.return_value.insert_polarization.assert_called_once()
+    assert_equal_properties(
+        mock_database_service.return_value.insert_polarization.call_args[0][0],
+        observation_properties.polarization(PLANE_ID),
+    )
 
     # observation time inserted
     mock_database_service.return_value.insert_observation_time.assert_called_once()
@@ -430,7 +422,7 @@ def test_proposals_are_not_reinserted(mocker):
     mock_database_service.return_value.insert_observation.return_value = OBSERVATION_ID
     mock_database_service.return_value.insert_observation_time.return_value = 23011
     mock_database_service.return_value.insert_plane.return_value = PLANE_ID
-    mock_database_service.return_value.insert_polarization.side_effect = [734, 735]
+    mock_database_service.return_value.insert_polarization.return_value = None
     mock_database_service.return_value.insert_position.return_value = 4943
     mock_database_service.return_value.insert_proposal.return_value = PROPOSAL_ID
     mock_database_service.return_value.insert_target.return_value = 14054
@@ -536,15 +528,12 @@ def test_proposals_are_not_reinserted(mocker):
         observation_properties.energy(PLANE_ID),
     )
 
-    # polarizations inserted
-    assert mock_database_service.return_value.insert_polarization.call_count == 2
-    for i in range(2):
-        assert_equal_properties(
-            mock_database_service.return_value.insert_polarization.call_args_list[i][0][
-                0
-            ],
-            observation_properties.polarizations(PLANE_ID)[i],
-        )
+    # polarization inserted
+    mock_database_service.return_value.insert_polarization.assert_called_once()
+    assert_equal_properties(
+        mock_database_service.return_value.insert_polarization.call_args[0][0],
+        observation_properties.polarization(PLANE_ID),
+    )
 
     # observation time inserted
     mock_database_service.return_value.insert_observation_time.assert_called_once()
@@ -591,7 +580,7 @@ def test_observation_groups_are_not_reinserted(mocker):
     mock_database_service.return_value.insert_observation.return_value = OBSERVATION_ID
     mock_database_service.return_value.insert_observation_time.return_value = 23011
     mock_database_service.return_value.insert_plane.return_value = PLANE_ID
-    mock_database_service.return_value.insert_polarization.side_effect = [734, 735]
+    mock_database_service.return_value.insert_polarization.return_value = None
     mock_database_service.return_value.insert_position.return_value = 4943
     mock_database_service.return_value.insert_proposal.return_value = PROPOSAL_ID
     mock_database_service.return_value.insert_target.return_value = 14054
@@ -699,15 +688,12 @@ def test_observation_groups_are_not_reinserted(mocker):
         observation_properties.energy(PLANE_ID),
     )
 
-    # polarizations inserted
-    assert mock_database_service.return_value.insert_polarization.call_count == 2
-    for i in range(2):
-        assert_equal_properties(
-            mock_database_service.return_value.insert_polarization.call_args_list[i][0][
-                0
-            ],
-            observation_properties.polarizations(PLANE_ID)[i],
-        )
+    # polarization inserted
+    mock_database_service.return_value.insert_polarization.assert_called_once()
+    assert_equal_properties(
+        mock_database_service.return_value.insert_polarization.call_args[0][0],
+        observation_properties.polarization(PLANE_ID),
+    )
 
     # observation time inserted
     mock_database_service.return_value.insert_observation_time.assert_called_once()
@@ -751,7 +737,7 @@ def test_observations_are_not_reinserted(mocker):
     mock_database_service.return_value.insert_observation.return_value = OBSERVATION_ID
     mock_database_service.return_value.insert_observation_time.return_value = 23011
     mock_database_service.return_value.insert_plane.return_value = PLANE_ID
-    mock_database_service.return_value.insert_polarization.side_effect = [734, 735]
+    mock_database_service.return_value.insert_polarization.return_value = None
     mock_database_service.return_value.insert_position.return_value = 4943
     mock_database_service.return_value.insert_proposal.return_value = PROPOSAL_ID
     mock_database_service.return_value.insert_target.return_value = 14054
@@ -822,7 +808,7 @@ def test_transactions_are_rolled_back_if_inserting_fails(mocker):
     mock_database_service.return_value.insert_observation.return_value = OBSERVATION_ID
     mock_database_service.return_value.insert_observation_time.return_value = 23011
     mock_database_service.return_value.insert_plane.return_value = PLANE_ID
-    mock_database_service.return_value.insert_polarization.side_effect = [734, 735]
+    mock_database_service.return_value.insert_polarization.return_value = None
     mock_database_service.return_value.insert_position.return_value = 4943
     mock_database_service.return_value.insert_proposal.return_value = PROPOSAL_ID
     mock_database_service.return_value.insert_target.return_value = 14054

@@ -338,7 +338,8 @@ class DatabaseService:
                 SELECT filter_id FROM filter WHERE name=%(filter)s
             ),
             im (id) AS (
-                SELECT instrument_mode_id FROM instrument_mode WHERE instrument_mode.instrument_mode=%(instrument_mode)s
+                SELECT instrument_mode_id FROM instrument_mode
+                WHERE instrument_mode.instrument_mode=%(instrument_mode)s
             )
             INSERT INTO instrument_setup (filter_id, instrument_mode_id, observation_id)
             VALUES ((SELECT id FROM f), (SELECT id FROM im), %(observation_id)s)
@@ -348,7 +349,9 @@ class DatabaseService:
             cur.execute(
                 sql,
                 dict(
-                    filter=instrument_setup.filter.value,
+                    filter=instrument_setup.filter.value
+                    if instrument_setup.filter
+                    else None,
                     instrument_mode=instrument_setup.instrument_mode.value,
                     observation_id=instrument_setup.observation_id,
                 ),
@@ -572,7 +575,7 @@ class DatabaseService:
 
             return cast(int, cur.fetchone()[0])
 
-    def insert_polarization(self, polarization: types.Polarization) -> int:
+    def insert_polarization(self, polarization: types.Polarization) -> None:
         """
         Insert a polarization.
 
@@ -589,25 +592,22 @@ class DatabaseService:
 
         with self._connection.cursor() as cur:
             sql = """
-            WITH sp (stokes_parameter_id) AS (
-                SELECT stokes_parameter_id
-                FROM stokes_parameter
-                WHERE stokes_parameter.stokes_parameter=%(stokes_parameter)s
+            WITH pp (polarization_pattern_id) AS (
+                SELECT polarization_pattern_id
+                FROM polarization_pattern
+                WHERE polarization_pattern.name=%(pattern)s
             )
-            INSERT INTO polarization (plane_id, stokes_parameter_id)
-            VALUES (%(plane_id)s, (SELECT stokes_parameter_id FROM sp))
-            RETURNING polarization_id
+            INSERT INTO polarization (plane_id, polarization_pattern_id)
+            VALUES (%(plane_id)s, (SELECT polarization_pattern_id FROM pp))
             """
 
             cur.execute(
                 sql,
                 dict(
                     plane_id=polarization.plane_id,
-                    stokes_parameter=polarization.stokes_parameter.value,
+                    pattern=polarization.polarization_pattern.value,
                 ),
             )
-
-            return cast(int, cur.fetchone()[0])
 
     def insert_position(self, position: types.Position) -> int:
         """

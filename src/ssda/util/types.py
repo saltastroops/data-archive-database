@@ -465,6 +465,7 @@ class HRSMode(Enum):
     LOW_RESOLUTION = "Low Resolution"
     MEDIUM_RESOLUTION = "Medium Resolution"
 
+
 class Institution(Enum):
     """
     Enumeration of the institutions.
@@ -894,30 +895,45 @@ class Plane:
         return self._data_product_type
 
 
+class PolarizationPattern(Enum):
+    """
+    Enumeration of the available polarization patterns.
+
+    The enum values must be the same as the values of the name column in the
+    polarization_pattern table.
+
+    """
+
+    ALL_STOKES = "All Stokes"
+    CIRCULAR = "Circular"
+    LINEAR = "Linear"
+    LINEAR_HI = "Linear Hi"
+
+
 class Polarization:
     """
-    Stokes parameter for an observation.
+    Polarization for an observation.
 
     Parameters
     ----------
     plane_id : int
-        Database id of the plane with the Stokes parameter.
-    stokes_parameter : StokesParameter
-        Stokes parameter.
+        Database id of the plane with the polarization.
+    polarization_pattern : PolarizationPattern
+        Polarization pattern.
 
     """
 
-    def __init__(self, plane_id: int, stokes_parameter: StokesParameter):
+    def __init__(self, plane_id: int, polarization_pattern: PolarizationPattern):
         self._plane_id = plane_id
-        self._stokes_parameter = stokes_parameter
+        self._polarization_pattern = polarization_pattern
 
     @property
     def plane_id(self) -> int:
         return self._plane_id
 
     @property
-    def stokes_parameter(self) -> StokesParameter:
-        return self._stokes_parameter
+    def polarization_pattern(self) -> PolarizationPattern:
+        return self._polarization_pattern
 
 
 class Position:
