@@ -25,6 +25,9 @@ mypy = "*"
 pytest-mock = "*"
 mock = "*"
 numpy = "*"
+dsnparse = "*"
+psycopg2 = "*"
+mysql = "*"
 
 [requires]
 python_version = "3.7"

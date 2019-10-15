@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Tuple, Dict, List, Optional
 from astropy.units import Quantity
 from astropy import units as u
 import os
@@ -24,7 +24,7 @@ FOCAL_LENGTH_TELESCOPE = 46200
 FOCAL_LENGTH_RSS_COLLIMATOR = 630
 
 
-def linear_pol(list_of_tuple: list) -> tuple:
+def linear_pol(list_of_tuple: List[Any]) -> Tuple[Tuple[float, float], Tuple[float, float]]:
     half_y = max(list_of_tuple, key=lambda item: item[1])[1]/2
     x_1_at_half_y = None
     x_2_at_half_y = None
@@ -53,7 +53,7 @@ def linear_pol(list_of_tuple: list) -> tuple:
     return (x_1_at_half_y, half_y), (x_2_at_half_y, half_y)
 
 
-def image_wavelength_intervals(filter_name: str, instrument: types.Instrument) -> dict:
+def image_wavelength_intervals(filter_name: str, instrument: types.Instrument) -> Dict[str, Tuple[float, float]]:
     """
     It opens the file with the wavelength curve of the filter name and return the full width half max points of it
 
@@ -71,7 +71,7 @@ def image_wavelength_intervals(filter_name: str, instrument: types.Instrument) -
             the larger wavelength
     """
     unsorted_wavelength = ReadInstrumentWavelength(instrument=instrument,
-                                                   filter_name=filter_name).wavelengths_and_transmissions
+                                                   filter_name=filter_name).wavelengths_and_transmissions()
 
     sorted_wavelength = sorted(unsorted_wavelength, key=lambda element: element[0])
     lambda1, lambda2 = linear_pol(sorted_wavelength)
@@ -82,7 +82,7 @@ def image_wavelength_intervals(filter_name: str, instrument: types.Instrument) -
     }
 
 
-def fabry_perot_fwhm_calculation(resolution: str, wavelength: float):
+def fabry_perot_fwhm_calculation(resolution: str, wavelength: float) -> float:
     """
     Calculates the full width half maximum of fabry perot for the given resolution and wavelength
 
@@ -118,7 +118,7 @@ def fabry_perot_fwhm_calculation(resolution: str, wavelength: float):
     return fwhm
 
 
-def get_wavelength(x, grating_angle, camera_angle, grating_frequency):
+def get_wavelength(x: float, grating_angle: float, camera_angle: float, grating_frequency: float) -> float:
     """
     Returns the wavelength at the specified distance {@code x}
     from the center of the middle CCD.
@@ -167,7 +167,7 @@ def get_wavelength(x, grating_angle, camera_angle, grating_frequency):
     return wavelength / 1e10
 
 
-def get_resolution_element(grating_frequency,  grating_angle,  slit_width):
+def get_resolution_element(grating_frequency: float,  grating_angle: float,  slit_width: float) -> float:
     """
     Returns the resolution element for the given grating frequency, grating angle and slit width.
 
@@ -192,7 +192,8 @@ def get_resolution_element(grating_frequency,  grating_angle,  slit_width):
             FOCAL_LENGTH_TELESCOPE / FOCAL_LENGTH_RSS_COLLIMATOR)
 
 
-def get_wavelength_resolution(grating_angle, camera_angle, grating_frequency, slit_width):
+def get_wavelength_resolution(grating_angle: float, camera_angle: float, grating_frequency: float,
+                              slit_width: float) -> float:
     """
     Returns the resolution at the center of the middle CCD. This is the ratio of the resolution element and
     the wavelength at the CD's center.
@@ -266,7 +267,7 @@ def get_grating_frequency(grating: str) -> float:
     return grating_table[grating]
 
 
-def hrs_interval(arm: str, resolution: str) -> dict:
+def hrs_interval(arm: str, resolution: str) -> Dict[str, Any]:
     """
     Dictionary with wavelength interval (interval) as a 2D tuple where first entry being lower bound and second is the
     maximum  bound and resolving power (power)
@@ -384,7 +385,7 @@ def imaging_mode_cal(plane_id: int, filter_name: str, instrument: types.Instrume
     )
 
 
-def rss_energy_cal(header_value: Any, plane_id: int) -> types.Energy:
+def rss_energy_cal(header_value: Any, plane_id: int) -> Optional[types.Energy]:
     """
      Method to calculate an energy of RSS instrument
 
@@ -443,7 +444,7 @@ def rss_energy_cal(header_value: Any, plane_id: int) -> types.Energy:
     if observation_mode == "FABRY-PEROT":
         etalon_state = header_value("ET-STATE")
         if etalon_state.strip().lower() == "s1 - etalon open":
-            return
+            return None
 
         if etalon_state.strip().lower() == "s3 - etalon 2":
             resolution = header_value("ET2MODE").strip().upper()  # TODO CHECK with encarni which one use ET2/1
@@ -477,7 +478,7 @@ def rss_energy_cal(header_value: Any, plane_id: int) -> types.Energy:
     raise ValueError("RSS energy not calculated")
 
 
-def hrs_energy_cal(plane_id, arm, resolution):
+def hrs_energy_cal(plane_id: int, arm: str, resolution: str) -> types.Energy:
     """
      Method to calculate an energy of HRS instrument
 
@@ -516,7 +517,7 @@ def hrs_energy_cal(plane_id, arm, resolution):
     )
 
 
-def scam_energy_cal(plane_id: int, filter_name: str):
+def scam_energy_cal(plane_id: int, filter_name: str) -> types.Energy:
     """
 
     Method to calculate an energy of SALTICAM instrument

@@ -1,14 +1,14 @@
 import random
 import string
-from typing import Optional, List
+from typing import Optional, List, Iterable
 from dateutil.parser import parse
 from datetime import timedelta
 from astropy.coordinates import Angle
 
 import astropy.units as u
-from ssda.database import SaltDatabaseService
+from ssda.database.sdb import SaltDatabaseService
 from ssda.util.fits import FitsFile
-from ssda.database import DatabaseService as SsdaDB
+from ssda.database.ssda import DatabaseService as SsdaDB
 
 from ssda.util import types
 
@@ -44,16 +44,16 @@ class SALTObservation:
             product_type=self.__product_type()
         )
 
-    def observation(self, proposal_id: int, instrument: types.Instrument) -> types.Observation:
+    def observation(self, proposal_id: Optional[int], instrument: types.Instrument) -> types.Observation:
         return types.Observation(
-            data_release=self.database_service.find_release_date(self.header_value("BVISITID")),
+            data_release=self.database_service.find_release_date(int(self.header_value("BVISITID"))),
             instrument=instrument,
             intent=self.__intent(),
-            meta_release=self.database_service.find_meta_release_date(self.header_value("BVISITID")),
-            observation_group=self.header_value("BVISITID"),
+            meta_release=self.database_service.find_meta_release_date(int(self.header_value("BVISITID"))),
+            observation_group=int(self.header_value("BVISITID")),  # TODO parse a group ot just an id
             observation_type=types.ObservationType.OBJECT,
             proposal_id=proposal_id,
-            status=self.database_service.find_observation_status(self.header_value("BVISITID")),
+            status=self.database_service.find_observation_status(int(self.header_value("BVISITID"))),
             telescope=types.Telescope.SALT
         )
 
@@ -64,11 +64,11 @@ class SALTObservation:
             end_time=start_time + timedelta(seconds=exposure_time),
             exposure_time=exposure_time * u.second,
             plane_id=plane_id,
-            resolution=exposure_time * u.pixel,
+            resolution=exposure_time * u.second,
             start_time=start_time
         )
 
-    def position(self, plane_id: int) -> types.Position:
+    def position(self, plane_id: int) -> Optional[types.Position]:
         ra_header_value = self.header_value("RA")
         dec_header_value = self.header_value("DEC")
         equinox = float(self.header_value("EQUINOX"))
@@ -109,10 +109,13 @@ class SALTObservation:
             ) for investigator in investigators
         ]
 
-    def target(self, observation_id: int) -> Optional[types.Target]:
+    def target(self, observation_id: int) -> types.Target:
         proposal_id = self.header_value("PROPID")
-        object_name = self.header_value("OBJECT")
-        name = object_name if self.__product_type().isinstance(types.ProductType.SCIENCE) else None
+        object_name = self.header_value("OBJECT").strip()
+        if object_name == types.ProductType.ARC or \
+           object_name == types.ProductType.BIAS or \
+           object_name == types.ProductType.FLAT:
+            raise ValueError("Calibrations (Arcs, Bias and Flats) doesn't have a target")
         is_standard = False
         if proposal_id.upper() == "CAL_SPST" or \
                 proposal_id.upper() == "CAL_LICKST" or\
@@ -120,7 +123,7 @@ class SALTObservation:
                 proposal_id.upper() == "CAL_SPST":
             is_standard = True
         return types.Target(
-            name=name,
+            name=object_name,
             observation_id=observation_id,
             standard=is_standard,
             target_type=""  # TODO how to get target type
@@ -151,13 +154,14 @@ class SALTObservation:
         elif product_type.upper() =="OBJECT" or product_type.upper() == "SCIENCE":
             # TODO Check if there is any other product type for SALT instruments
             return types.Intent.SCIENCE
+        raise ValueError(f"unknown intent for file {self.file_path}")
 
     @property
-    def stokes_parameter(self) -> Optional[List[types.StokesParameter]]:
+    def stokes_parameter(self) -> Iterable[types.StokesParameter]:
         pattern: str = self.header_value("WPPATERN")
 
         if pattern.upper() == "NONE" or not pattern:
-            return None
+            return []
         elif pattern.upper() == "LINEAR":
             return [types.StokesParameter.Q, types.StokesParameter.U]
         elif pattern.upper() == "LINEAR-HI":

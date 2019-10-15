@@ -5,7 +5,7 @@ import random
 import string
 from abc import ABC, abstractmethod
 from datetime import date, timedelta
-from typing import Iterator, Set
+from typing import Iterator, Set, Dict, Any
 from astropy.units import Quantity
 from ssda.util.types import DateRange, Instrument
 
@@ -46,7 +46,7 @@ class FitsFile(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def instrument(self) -> str:
+    def instrument(self) -> Instrument:
         """
         The instrument a file belongs too.
 
@@ -60,7 +60,7 @@ class FitsFile(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def headers(self) -> dict:
+    def headers(self) -> Dict[str, Any]:
         """
         The FITS header value for a keyword.
 
@@ -210,10 +210,16 @@ class StandardFitsFile(FitsFile):
             if d.lower() == "data" and dirs[i - 1].lower() == "salt":
                 instrument_dir = dirs[i + 4]
                 break
+        if not instrument_dir:
+            raise ValueError("No selected instrument")
 
-        return Instrument.RSS if instrument_dir.lower() == "rss" else \
+        inst = Instrument.RSS if instrument_dir.lower() == "rss" else \
             Instrument.HRS if instrument_dir.lower() == "hrs" else \
             Instrument.SALTICAM if instrument_dir.lower() == "scam" else None
+        if not inst:
+            raise ValueError("Unknown instrument")
+
+        return inst
 
     @property
     def file_path(self) -> str:
@@ -224,7 +230,7 @@ class StandardFitsFile(FitsFile):
         letters = string.ascii_lowercase
         return "".join(random.choice(letters) for _ in range(50))
 
-    def headers(self) -> dict:
+    def headers(self) -> Dict[str, Any]:
         #  TODO get FITS headers
         return {}
 

@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import List, Optional
+from typing import List, Optional, Any
 
 from ssda.instrument.hrs_observation_properties import HrsObservationProperties
 from ssda.instrument.instrument import Instrument
@@ -30,7 +30,7 @@ class ObservationProperties(ABC):
     ) -> List[types.InstrumentKeywordValue]:
         raise NotImplementedError
 
-    def observation(self, proposal_id: Optional[int]):
+    def observation(self, proposal_id: Optional[int]) -> types.Observation:
         raise NotImplementedError
 
     def observation_time(self, plane_id: int) -> types.ObservationTime:
@@ -42,7 +42,7 @@ class ObservationProperties(ABC):
     def polarizations(self, plane_id: int) -> List[types.Polarization]:
         raise NotImplementedError
 
-    def position(self, plane_id: int) -> types.Position:
+    def position(self, plane_id: int) -> Optional[types.Position]:
         raise NotImplementedError
 
     def proposal(self) -> Optional[types.Proposal]:
@@ -53,23 +53,30 @@ class ObservationProperties(ABC):
     ) -> List[types.ProposalInvestigator]:
         raise NotImplementedError
 
-    def target(self, observation_id: int) -> types.Target:
+    def target(self, observation_id: int) -> Optional[types.Target]:
         raise NotImplementedError
+
+
+def instrument_observation_properties(fits_file: FitsFile,
+                                      database_service: SaltDatabaseService) -> ObservationProperties:
+    o_p: Optional[ObservationProperties] = None
+    if fits_file.instrument() == Instrument.RSS:
+        o_p = RssObservationProperties(fits_file, database_service)
+
+    if fits_file.instrument() == Instrument.HRS:
+        o_p = HrsObservationProperties(fits_file, database_service)
+
+    if fits_file.instrument() == Instrument.SALTICAM:
+        o_p = SalticamObservationProperties(fits_file, database_service)
+    if not o_p:
+        raise ValueError(f"Observation properties could not be defined for file {fits_file.file_path()}")
+    return o_p
 
 
 class StandardObservationProperties(ObservationProperties):
     def __init__(self, fits_file: FitsFile):
-        if fits_file.instrument() == Instrument.RSS:
-            self.salt_database_service = SaltDatabaseService(None)
-            self._observation_properties = RssObservationProperties(fits_file, self.salt_database_service)
-
-        if fits_file.instrument() == Instrument.HRS:
-            self.salt_database_service = SaltDatabaseService(None)
-            self._observation_properties = HrsObservationProperties(fits_file, self.salt_database_service)
-
-        if fits_file.instrument() == Instrument.SALTICAM:
-            self.salt_database_service = SaltDatabaseService(None)
-            self._observation_properties = SalticamObservationProperties(fits_file, self.salt_database_service)
+        self._observation_properties: ObservationProperties = \
+            instrument_observation_properties(fits_file, SaltDatabaseService(None))
 
     def artifact(self, plane_id: int) -> types.Artifact:
         return self._observation_properties.artifact(plane_id)
@@ -82,7 +89,7 @@ class StandardObservationProperties(ObservationProperties):
     ) -> List[types.InstrumentKeywordValue]:
         return self._observation_properties.instrument_keyword_values(observation_id)
 
-    def observation(self, proposal_id: Optional[int]):
+    def observation(self, proposal_id: Optional[int]) -> types.Observation:
         return self._observation_properties.observation(proposal_id)
 
     def observation_time(self, plane_id: int) -> types.ObservationTime:
@@ -94,7 +101,7 @@ class StandardObservationProperties(ObservationProperties):
     def polarizations(self, plane_id: int) -> List[types.Polarization]:
         return self._observation_properties.polarizations(plane_id)
 
-    def position(self, plane_id: int) -> types.Position:
+    def position(self, plane_id: int) -> Optional[types.Position]:
         return self._observation_properties.position(plane_id)
 
     def proposal(self) -> Optional[types.Proposal]:
@@ -105,7 +112,7 @@ class StandardObservationProperties(ObservationProperties):
     ) -> List[types.ProposalInvestigator]:
         return self._observation_properties.proposal_investigators(proposal_id)
 
-    def target(self, observation_id: int) -> types.Target:
+    def target(self, observation_id: int) -> Optional[types.Target]:
         return self._observation_properties.target(observation_id)
 
 

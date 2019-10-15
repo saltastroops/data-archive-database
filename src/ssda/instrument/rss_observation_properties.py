@@ -1,4 +1,5 @@
-from ssda.database import SaltDatabaseService
+from ssda.database.sdb import SaltDatabaseService
+from ssda.observation import ObservationProperties
 from ssda.util import types
 from ssda.util.energy_cal import rss_energy_cal, get_grating_frequency
 from ssda.util.salt_observation import SALTObservation
@@ -6,7 +7,7 @@ from ssda.util.fits import FitsFile
 from typing import Optional, List
 
 
-class RssObservationProperties:
+class RssObservationProperties(ObservationProperties):
 
     def __init__(self, fits_file: FitsFile, database_service: SaltDatabaseService):
         """
@@ -25,11 +26,11 @@ class RssObservationProperties:
 
     def energy(self, plane_id: int) -> Optional[types.Energy]:
         if "CAL_" in self.header_value("PROPID"):
-            return
+            return None
         slit_barcode = self.header_value("MASKID").strip()
 
         if self.database_service.is_mos(slit_barcode=slit_barcode):
-            return
+            return None
         return rss_energy_cal(header_value=self.header_value, plane_id=plane_id)
 
     def instrument_keyword_values(self, observation_id: int) -> List[types.InstrumentKeywordValue]:
@@ -61,7 +62,7 @@ class RssObservationProperties:
         return self.salt_observation.observation_time(plane_id)
 
     @staticmethod
-    def plane(observation_id) -> types.Plane:
+    def plane(observation_id: int) -> types.Plane:
         return types.Plane(observation_id)
 
     def polarizations(self, plane_id: int) -> List[types.Polarization]:  # TODO find out why is this an array
@@ -77,7 +78,7 @@ class RssObservationProperties:
             for stoke in self.salt_observation.stokes_parameter
         ]
 
-    def position(self, plane_id: int) -> types.Position:
+    def position(self, plane_id: int) -> Optional[types.Position]:
         return self.salt_observation.position(plane_id=plane_id)
 
     def proposal(self) -> Optional[types.Proposal]:
@@ -99,5 +100,10 @@ class RssObservationProperties:
     ) -> List[types.ProposalInvestigator]:
         return self.salt_observation.proposal_investigators(proposal_id=proposal_id)
 
-    def target(self, observation_id: int) -> types.Target:
+    def target(self, observation_id: int) -> Optional[types.Target]:
+        proposal_id = self.header_value("PROPID")
+        if proposal_id.upper() == "CAL_BIAS" or \
+                proposal_id.upper() == "CAL_FLAT" or \
+                proposal_id.upper() == "CAL_ARC":
+            return None
         return self.salt_observation.target(observation_id=observation_id)

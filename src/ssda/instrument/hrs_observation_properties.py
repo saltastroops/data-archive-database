@@ -1,5 +1,6 @@
 from astropy.units import Quantity
-from ssda.database import SaltDatabaseService
+from ssda.database.sdb import SaltDatabaseService
+from ssda.observation import ObservationProperties
 from ssda.util import types
 from ssda.util.energy_cal import hrs_interval, hrs_energy_cal
 from ssda.util.salt_observation import SALTObservation
@@ -7,7 +8,7 @@ from ssda.util.fits import FitsFile
 from typing import Optional, List
 
 
-class HrsObservationProperties:
+class HrsObservationProperties(ObservationProperties):
 
     def __init__(self, fits_file: FitsFile, database_service: SaltDatabaseService):
         """
@@ -26,10 +27,12 @@ class HrsObservationProperties:
 
     def energy(self, plane_id: int) -> Optional[types.Energy]:
         if "CAL_" in self.header_value("PROPID"):
-            return
+            return None
 
         filename = str(self.file_path.split()[-1])
         arm = "red" if filename[0] == "R" else "blue" if filename[0] == "H" else None
+        if not arm:
+            raise ValueError("Unknown arm.")
         resolution = self.header_value("OBSMODE")
         return hrs_energy_cal(plane_id, arm, resolution)
 
@@ -56,7 +59,7 @@ class HrsObservationProperties:
         return self.salt_observation.observation_time(plane_id)
 
     @staticmethod
-    def plane(observation_id) -> types.Plane:
+    def plane(observation_id: int) -> types.Plane:
         return types.Plane(observation_id)
 
     def polarizations(self, plane_id: int) -> List[types.Polarization]:  # TODO find out why is this an array
@@ -72,7 +75,7 @@ class HrsObservationProperties:
             for stoke in self.salt_observation.stokes_parameter
         ]
 
-    def position(self, plane_id: int) -> types.Position:
+    def position(self, plane_id: int) -> Optional[types.Position]:
         return self.salt_observation.position(plane_id=plane_id)
 
     def proposal(self) -> Optional[types.Proposal]:
@@ -94,5 +97,10 @@ class HrsObservationProperties:
     ) -> List[types.ProposalInvestigator]:
         return self.salt_observation.proposal_investigators(proposal_id=proposal_id)
 
-    def target(self, observation_id: int) -> types.Target:
+    def target(self, observation_id: int) -> Optional[types.Target]:
+        proposal_id = self.header_value("PROPID")
+        if proposal_id.upper() == "CAL_BIAS" or \
+                proposal_id.upper() == "CAL_FLAT" or \
+                proposal_id.upper() == "CAL_ARC":
+            return None
         return self.salt_observation.target(observation_id=observation_id)

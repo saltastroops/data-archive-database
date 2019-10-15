@@ -2,10 +2,10 @@ from __future__ import annotations
 import os
 from datetime import date, datetime
 from enum import Enum
+from typing import Optional
 
 import astropy.units as u
 from astropy.units import def_unit, Quantity
-
 
 byte = def_unit("byte")
 
@@ -557,9 +557,9 @@ class Observation:
         instrument: Instrument,
         intent: Intent,
         meta_release: date,
-        observation_group: str,
+        observation_group_id: int,
         observation_type: ObservationType,
-        proposal_id: int,
+        proposal_id: Optional[int],
         status: Status,
         telescope: Telescope,
     ):
@@ -567,14 +567,12 @@ class Observation:
             raise ValueError(
                 "The data release cannot be earlier than the metadata " "release."
             )
-        if len(observation_group) > 40:
-            raise ValueError("The observation group must have at most 40 characters.")
 
         self._data_release = data_release
         self._instrument = instrument
         self._intent = intent
         self._meta_release = meta_release
-        self._observation_group = observation_group
+        self._observation_group_id = observation_group_id
         self._observation_type = observation_type
         self._proposal_id = proposal_id
         self._status = status
@@ -597,15 +595,15 @@ class Observation:
         return self._meta_release
 
     @property
-    def observation_group(self) -> str:
-        return self._observation_group
+    def observation_group(self) -> int:
+        return self._observation_group_id
 
     @property
     def observation_type(self) -> ObservationType:
         return self._observation_type
 
     @property
-    def proposal_id(self) -> int:
+    def proposal_id(self) -> Optional[int]:
         return self._proposal_id
 
     @property
@@ -615,6 +613,33 @@ class Observation:
     @property
     def telescope(self) -> Telescope:
         return self._telescope
+
+
+class ObservationGroup:
+    """
+    An observation group
+
+    Parameter
+    ---------
+    identifier: str,
+        # TODO identifier has to be unique
+        A unique identifier for the observation group.
+        For SALT this can be the the block visit ID.
+    name: str
+        A name for the Observation group.
+        For SALT this can be the the block name.
+    """
+    def __init__(self, identifier: str, name: str):
+        self._identifier = identifier
+        self._name = name
+
+    @property
+    def identifier(self) -> str:
+        return self._identifier
+
+    @property
+    def name(self) -> str:
+        return self._name
 
 
 class ObservationTime:

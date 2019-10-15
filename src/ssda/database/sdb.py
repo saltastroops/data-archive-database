@@ -1,14 +1,14 @@
 import datetime
 from dateutil.parser import parse
 from typing import Optional, List
-from mysql.connector import connect
+import mysql.connector
 
 from ssda.util import types
 
 
 class SaltDatabaseService:
     def __init__(self, database_config: types.DatabaseConfiguration):
-        self._connection = connect(
+        self._connection = mysql.connector.connect(
             database=database_config.database(),
             host=database_config.host(),
             user=database_config.username(),
