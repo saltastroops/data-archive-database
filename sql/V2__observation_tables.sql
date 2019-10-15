@@ -390,13 +390,15 @@ COMMENT ON TABLE instrument_keyword_value IS 'Value for an instrument keyword fo
 CREATE TABLE instrument_setup
 (
     instrument_setup_id bigserial PRIMARY KEY,
+    detector_mode_id    int REFERENCES detector_mode (detector_mode_id),
     filter_id           int REFERENCES filter (filter_id),
     instrument_mode_id  int NOT NULL REFERENCES instrument_mode (instrument_mode_id),
     observation_id      int NOT NULL REFERENCES observation (observation_id) ON DELETE CASCADE
 );
 
-CREATE INDEX instrument_setup_filter_id ON instrument_setup (filter_id);
-CREATE INDEX instrument_setup_instrument_mode_id ON instrument_setup (instrument_setup_id);
+CREATE INDEX instrument_setup_detector_mode_idx ON instrument_setup (detector_mode_id);
+CREATE INDEX instrument_setup_filter_idx ON instrument_setup (filter_id);
+CREATE INDEX instrument_setup_instrument_mode_idx ON instrument_setup (instrument_setup_id);
 
 COMMENT ON TABLE instrument_setup IS 'Additional details about an instrument setup.';
 

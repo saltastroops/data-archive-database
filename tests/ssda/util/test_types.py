@@ -462,17 +462,20 @@ def test_instrument_setup_is_created_correctly():
             parameters=dict(group_id="147", type_id="56"),
         ),
     ]
+    detector_mode = types.DetectorMode.DRIFT_SCAN
     filter = types.Filter.JOHNSON_U
     instrument_mode = types.InstrumentMode.IMAGING
     observation_id = 734
     instrument_setup = types.InstrumentSetup(
         additional_queries=queries,
+        detector_mode=detector_mode,
         filter=filter,
         instrument_mode=instrument_mode,
         observation_id=observation_id,
     )
 
     assert instrument_setup.additional_queries == queries
+    assert instrument_setup.detector_mode == detector_mode
     assert instrument_setup.filter == filter
     assert instrument_setup.instrument_mode == instrument_mode
     assert instrument_setup.observation_id == observation_id

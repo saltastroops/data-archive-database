@@ -216,6 +216,8 @@ class DummyObservationProperties(ObservationProperties):
         else:
             queries = []
 
+        detector_modes = [d for d in types.DetectorMode]
+        detector_mode = random.choice(detector_modes)
         filters = [f for f in types.Filter]
         filter = random.choice(filters)
         instrument_modes = [im for im in types.InstrumentMode]
@@ -223,6 +225,7 @@ class DummyObservationProperties(ObservationProperties):
 
         return types.InstrumentSetup(
             additional_queries=queries,
+            detector_mode=detector_mode,
             filter=filter,
             instrument_mode=instrument_mode,
             observation_id=observation_id,

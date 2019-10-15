@@ -334,21 +334,32 @@ class DatabaseService:
 
         with self._connection.cursor() as cur:
             sql = """
-            WITH f (id) AS (
+            WITH d (id) AS (
+                SELECT detector_mode_id FROM detector_mode
+                WHERE detector_mode.detector_mode=%(detector_mode)s
+            ),
+            f (id) AS (
                 SELECT filter_id FROM filter WHERE name=%(filter)s
             ),
             im (id) AS (
                 SELECT instrument_mode_id FROM instrument_mode
                 WHERE instrument_mode.instrument_mode=%(instrument_mode)s
             )
-            INSERT INTO instrument_setup (filter_id, instrument_mode_id, observation_id)
-            VALUES ((SELECT id FROM f), (SELECT id FROM im), %(observation_id)s)
+            INSERT INTO instrument_setup (detector_mode_id,
+                                          filter_id,
+                                          instrument_mode_id,
+                                          observation_id)
+            VALUES ((SELECT id FROM d), 
+                   (SELECT id FROM f),
+                   (SELECT id FROM im),
+                   %(observation_id)s)
             RETURNING instrument_setup_id
             """
 
             cur.execute(
                 sql,
                 dict(
+                    detector_mode=instrument_setup.detector_mode.value,
                     filter=instrument_setup.filter.value
                     if instrument_setup.filter
                     else None,
