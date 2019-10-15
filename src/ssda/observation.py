@@ -30,7 +30,15 @@ class ObservationProperties(ABC):
     ) -> List[types.InstrumentKeywordValue]:
         raise NotImplementedError
 
-    def observation(self, proposal_id: Optional[int]) -> types.Observation:
+    def instrument_setup(self, observation_id: int) -> types.InstrumentSetup:
+        raise NotImplementedError
+
+    def observation(
+        self, observation_group_id: Optional[int], proposal_id: Optional[int]
+    ) -> types.Observation:
+        raise NotImplementedError
+
+    def observation_group(self) -> Optional[types.ObservationGroup]:
         raise NotImplementedError
 
     def observation_time(self, plane_id: int) -> types.ObservationTime:
@@ -39,7 +47,7 @@ class ObservationProperties(ABC):
     def plane(self, observation_id: int) -> types.Plane:
         raise NotImplementedError
 
-    def polarizations(self, plane_id: int) -> List[types.Polarization]:
+    def polarization(self, plane_id: int) -> Optional[types.Polarization]:
         raise NotImplementedError
 
     def position(self, plane_id: int) -> Optional[types.Position]:

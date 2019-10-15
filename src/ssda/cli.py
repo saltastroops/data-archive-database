@@ -12,16 +12,11 @@ import ssda.database.ssda
 from ssda.database.services import DatabaseServices
 from ssda.task import execute_task
 from ssda.util.fits import fits_file_paths
-from ssda.util.types import (
-    Instrument,
-    DateRange,
-    TaskName,
-    TaskExecutionMode,
-)
+from ssda.util.types import Instrument, DateRange, TaskName, TaskExecutionMode
 
 # Log with Sentry
 if os.environ.get("SENTRY_DSN"):
-    sentry_sdk.init(os.environ.get("SENTRY_DSN"))
+    sentry_sdk.init(os.environ.get("SENTRY_DSN"))  # type: ignore
 
 
 def parse_date(value: str, now: Callable[[], datetime]) -> date:
@@ -174,14 +169,15 @@ def main(
     file: Optional[str],
     fits_base_dir: Optional[str],
     mode: str,
-        verbose: bool
+    verbose: bool,
 ) -> int:
     if verbose:
         logging.basicConfig(level=logging.INFO)
 
     if not os.environ.get("SENTRY_DSN"):
-        logging.warning('Environment variable SENTRY_DSN for logging with Sentry not '
-                        'set.')
+        logging.warning(
+            "Environment variable SENTRY_DSN for logging with Sentry not " "set."
+        )
 
     # convert options as required and validate them
     now = datetime.now
@@ -218,8 +214,14 @@ def main(
         )
 
     # database access
-    ssda_db_config = dsnparse.parse_environ('SSDA_DSN')
-    ssda_connection = connect(user=ssda_db_config.user, password=ssda_db_config.secret, host=ssda_db_config.host, port=ssda_db_config.port, database=ssda_db_config.database)
+    ssda_db_config = dsnparse.parse_environ("SSDA_DSN")
+    ssda_connection = connect(
+        user=ssda_db_config.user,
+        password=ssda_db_config.secret,
+        host=ssda_db_config.host,
+        port=ssda_db_config.port,
+        database=ssda_db_config.database,
+    )
     ssda_database_service = ssda.database.ssda.DatabaseService(ssda_connection)
 
     database_services = DatabaseServices(ssda=ssda_database_service)
@@ -228,12 +230,12 @@ def main(
     try:
         for path in paths:
             if verbose:
-                logging.info(f'{task_name.value}: {path}')
+                logging.info(f"{task_name.value}: {path}")
             execute_task(
                 task_name=task_name,
                 fits_path=path,
                 task_mode=task_mode,
-                database_services=database_services
+                database_services=database_services,
             )
     except BaseException as e:
         ssda_connection.close()

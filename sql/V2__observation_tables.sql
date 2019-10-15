@@ -4,6 +4,14 @@ CREATE SCHEMA observations;
 
 SET search_path TO observations, extensions;
 
+-- ENUM TYPES
+
+-- stokes_parameter
+
+CREATE TYPE stokes_parameter AS ENUM ('I', 'Q', 'U', 'V');
+
+COMMENT ON TYPE stokes_parameter IS 'A Stokes psarameter for describing polarization.';
+
 -- LOOKUP TABLES
 
 -- data_product_type
@@ -19,6 +27,53 @@ COMMENT ON TABLE data_product_type IS 'Type of data product, such as image or sp
 INSERT INTO data_product_type (product_type)
 VALUES ('Image'),
        ('Science');
+
+-- detector_mode
+
+CREATE TABLE detector_mode
+(
+    detector_mode_id serial PRIMARY KEY,
+    detector_mode    varchar(50) UNIQUE NOT NULL
+);
+
+COMMENT ON TABLE detector_mode IS 'Detector readout mode.';
+
+INSERT INTO detector_mode (detector_mode)
+VALUES ('Drift Scan'),
+       ('Frame Transfer'),
+       ('Normal'),
+       ('Shuffle'),
+       ('Slot Mode');
+
+-- filter
+
+CREATE TABLE filter
+(
+    filter_id serial PRIMARY KEY,
+    name      varchar(50) UNIQUE NOT NULL
+);
+
+COMMENT ON TABLE filter IS 'A bandpass filter.';
+COMMENT ON COLUMN filter.name IS 'Human-friendly name of the filter.';
+
+-- The filters are added at the bottom of this file.
+
+-- hrs_mode
+
+CREATE TABLE hrs_mode
+(
+    hrs_mode_id serial PRIMARY KEY,
+    hrs_mode    varchar(50) UNIQUE NOT NULL
+);
+
+COMMENT ON TABLE hrs_mode IS 'HRS (resolution) mode.';
+
+INSERT INTO hrs_mode (hrs_mode)
+VALUES ('High Resolution'),
+       ('High Stability'),
+       ('Int Cal Fibre'),
+       ('Low Resolution'),
+       ('Medium Resolution');
 
 -- institution
 
@@ -66,9 +121,24 @@ CREATE TABLE instrument_keyword
 
 COMMENT ON TABLE instrument_keyword IS 'A keyword describing an instrument setup property.';
 
-INSERT INTO instrument_keyword (keyword)
-VALUES ('Filter'),
-       ('Grating');
+-- instrument_mode
+
+CREATE TABLE instrument_mode
+(
+    instrument_mode_id serial PRIMARY KEY,
+    instrument_mode    varchar(50) UNIQUE NOT NULL
+);
+
+COMMENT ON TABLE instrument_mode IS 'Instrument mode, such as imaging or spectroscopy.';
+
+INSERT INTO instrument_mode (instrument_mode)
+VALUES ('Fabry Perot'),
+       ('Imaging'),
+       ('MOS'),
+       ('Polarimetric Imaging'),
+       ('Spectropolarimetry'),
+       ('Spectroscopy'),
+       ('Streaming');
 
 -- intent
 
@@ -99,6 +169,23 @@ COMMENT ON TABLE observation_type IS 'An observation type, as given by the value
 INSERT INTO observation_type (observation_type)
 VALUES ('Object');
 
+-- polarization_pattern
+
+CREATE TABLE polarization_pattern
+(
+    polarization_pattern_id serial PRIMARY KEY,
+    name                    varchar(50) UNIQUE NOT NULL,
+    stokes_parameters       stokes_parameter[] NOT NULL
+);
+
+COMMENT ON TABLE polarization_pattern IS 'A polarization pattern, i.e. a set of Stokes parameters.';
+
+INSERT INTO polarization_pattern (name, stokes_parameters)
+VALUES ('Linear', '{Q, U}'),
+       ('Linear Hi', '{Q, U}'),
+       ('Circular', '{V}'),
+       ('All Stokes', '{Q, U, V}');
+
 -- product_type
 
 CREATE TABLE product_type
@@ -123,6 +210,41 @@ VALUES ('Arc'),
        ('Thumbnail'),
        ('Weight');
 
+-- rss_fabry_perot_mode
+
+CREATE TABLE rss_fabry_perot_mode
+(
+    rss_fabry_perot_mode_id serial PRIMARY KEY,
+    fabry_perot_mode        varchar(50) UNIQUE NOT NULL
+);
+
+COMMENT ON TABLE rss_fabry_perot_mode IS 'Fabry-Perot (resolution) mode.';
+
+INSERT INTO rss_fabry_perot_mode (fabry_perot_mode)
+VALUES ('High Resolution'),
+       ('Low Resolution'),
+       ('Medium Resolution'),
+       ('Tunable Filter');
+
+-- rss_grating
+
+CREATE TABLE rss_grating
+(
+    rss_grating_id serial PRIMARY KEY,
+    grating        varchar(50) UNIQUE NOT NULL
+);
+
+COMMENT ON TABLE rss_grating IS 'An RSS grating.';
+
+INSERT INTO rss_grating (grating)
+VALUES ('Open'),
+       ('PG0300'),
+       ('PG0900'),
+       ('PG1300'),
+       ('PG1800'),
+       ('PG2300'),
+       ('PG3000');
+
 -- status
 
 CREATE TABLE status
@@ -136,22 +258,6 @@ COMMENT ON TABLE status IS 'An observation status, i.e. whether the observation 
 INSERT INTO status (status)
 VALUES ('Accepted'),
        ('Rejected');
-
--- stokes_parameters
-
-CREATE TABLE stokes_parameter
-(
-    stokes_parameter_id serial PRIMARY KEY,
-    stokes_parameter    varchar(5) UNIQUE NOT NULL
-);
-
-COMMENT ON TABLE stokes_parameter IS 'A Stokes parameter for describing polarization.';
-
-INSERT INTO stokes_parameter (stokes_parameter)
-VALUES ('I'),
-       ('Q'),
-       ('U'),
-       ('V');
 
 -- target_type
 
@@ -244,36 +350,6 @@ COMMENT ON COLUMN observation.data_release IS 'Date when the data for this obser
 COMMENT ON COLUMN observation.instrument_id IS 'Instrument tha took the data for this observation.';
 COMMENT ON COLUMN observation.meta_release IS 'Date when the metadata for this observation becomes public.';
 
--- instrument_keyword_value
-
-CREATE TABLE instrument_keyword_value
-(
-    instrument_id         int NOT NULL REFERENCES instrument (instrument_id),
-    instrument_keyword_id int NOT NULL REFERENCES instrument_keyword (instrument_keyword_id),
-    observation_id        int NOT NULL REFERENCES observation (observation_id) ON DELETE CASCADE,
-    value                 varchar(200)
-);
-
-CREATE INDEX instrument_keyword_value_instrument_idx ON instrument_keyword_value (instrument_id);
-CREATE INDEX instrument_keyword_value_instrument_keyword_idx ON instrument_keyword_value (instrument_keyword_id);
-CREATE INDEX instrument_keyword_value_observation_id ON instrument_keyword_value (observation_id);
-
-COMMENT ON TABLE instrument_keyword_value IS 'Value for an instrument keyword for an observation.';
-
--- plane
-
-CREATE TABLE plane
-(
-    plane_id             bigserial PRIMARY KEY,
-    data_product_type_id int NOT NULL REFERENCES data_product_type (data_product_type_id),
-    observation_id       int NOT NULL REFERENCES observation (observation_id) ON DELETE CASCADE
-);
-
-CREATE INDEX plane_data_product_type_idx ON plane (data_product_type_id);
-CREATE INDEX plane_observation_idx ON plane (observation_id);
-
-COMMENT ON TABLE plane IS 'A component of an observation that describes one product of the observation';
-
 -- target
 
 CREATE TABLE target
@@ -292,6 +368,77 @@ COMMENT ON TABLE target IS 'An observed target.';
 COMMENT ON COLUMN target.name IS 'The target name.';
 COMMENT ON COLUMN target.observation_id IS 'The observation during which the target was observed.';
 COMMENT ON COLUMN target.standard IS 'Whether the target is typically used as a standard (astrometric, photometric, etc';
+
+-- instrument_keyword_value
+
+CREATE TABLE instrument_keyword_value
+(
+    instrument_id         int NOT NULL REFERENCES instrument (instrument_id),
+    instrument_keyword_id int NOT NULL REFERENCES instrument_keyword (instrument_keyword_id),
+    observation_id        int NOT NULL REFERENCES observation (observation_id) ON DELETE CASCADE,
+    value                 varchar(200)
+);
+
+CREATE INDEX instrument_keyword_value_instrument_idx ON instrument_keyword_value (instrument_id);
+CREATE INDEX instrument_keyword_value_instrument_keyword_idx ON instrument_keyword_value (instrument_keyword_id);
+CREATE INDEX instrument_keyword_value_observation_id ON instrument_keyword_value (observation_id);
+
+COMMENT ON TABLE instrument_keyword_value IS 'Value for an instrument keyword for an observation.';
+
+-- instrument_setup
+
+CREATE TABLE instrument_setup
+(
+    instrument_setup_id bigserial PRIMARY KEY,
+    filter_id           int REFERENCES filter (filter_id),
+    instrument_mode_id  int NOT NULL REFERENCES instrument_mode (instrument_mode_id),
+    observation_id      int NOT NULL REFERENCES observation (observation_id) ON DELETE CASCADE
+);
+
+CREATE INDEX instrument_setup_filter_id ON instrument_setup (filter_id);
+CREATE INDEX instrument_setup_instrument_mode_id ON instrument_setup (instrument_setup_id);
+
+COMMENT ON TABLE instrument_setup IS 'Additional details about an instrument setup.';
+
+-- hrs_setup
+
+CREATE TABLE hrs_setup
+(
+    instrument_setup_id int PRIMARY KEY REFERENCES instrument_setup (instrument_setup_id) ON DELETE CASCADE,
+    hrs_mode_id         int NOT NULL REFERENCES hrs_mode (hrs_mode_id)
+);
+
+CREATE INDEX hrs_setup_hrs_mode_id ON hrs_setup (hrs_mode_id);
+
+COMMENT ON TABLE hrs_setup IS 'Additional details about an HRS setup.';
+
+-- rss_setup
+
+CREATE TABLE rss_setup
+(
+    instrument_setup_id     int PRIMARY KEY REFERENCES instrument_setup (instrument_setup_id) ON DELETE CASCADE,
+    rss_fabry_perot_mode_id int REFERENCES rss_fabry_perot_mode (rss_fabry_perot_mode_id),
+    rss_grating_id          int REFERENCES rss_grating (rss_grating_id)
+);
+
+CREATE INDEX rss_setup_rss_fabry_perot_mode_id ON rss_setup (rss_fabry_perot_mode_id);
+CREATE INDEX rss_setup_rss_grating_id ON rss_setup (rss_grating_id);
+
+COMMENT ON TABLE rss_setup IS 'Additional details about an RSS setup.';
+
+-- plane
+
+CREATE TABLE plane
+(
+    plane_id             bigserial PRIMARY KEY,
+    data_product_type_id int NOT NULL REFERENCES data_product_type (data_product_type_id),
+    observation_id       int NOT NULL REFERENCES observation (observation_id) ON DELETE CASCADE
+);
+
+CREATE INDEX plane_data_product_type_idx ON plane (data_product_type_id);
+CREATE INDEX plane_observation_idx ON plane (observation_id);
+
+COMMENT ON TABLE plane IS 'A component of an observation that describes one product of the observation';
 
 -- energy
 
@@ -322,15 +469,14 @@ COMMENT ON COLUMN Energy.sample_size IS 'The size of the wavelength dispersion p
 
 CREATE TABLE polarization
 (
-    polarization_id     bigserial PRIMARY KEY,
-    plane_id            int NOT NULL REFERENCES Plane (plane_id) ON DELETE CASCADE,
-    stokes_parameter_id int NOT NULL REFERENCES stokes_parameter (stokes_parameter_id)
+    plane_id                int NOT NULL REFERENCES plane (plane_id) ON DELETE CASCADE,
+    polarization_pattern_id int NOT NULL REFERENCES polarization_pattern (polarization_pattern_id)
 );
 
 CREATE INDEX polarization_plane_idx ON polarization (plane_id);
-CREATE INDEX polarization_stokes_idx ON polarization (stokes_parameter_id);
+CREATE INDEX polarization_polarization_pattern_idx ON polarization_pattern (polarization_pattern_id);
 
-COMMENT ON TABLE polarization IS 'A junction table for linking planes and measured Stokes parameters.';
+COMMENT ON TABLE polarization IS 'A junction table for linking planes and polarization patterns.';
 
 -- observation_time
 
@@ -339,18 +485,21 @@ CREATE TABLE observation_time
     observation_time_id bigserial PRIMARY KEY,
     end_time            timestamp with time zone NOT NULL,
     exposure_time       double precision         NOT NULL CHECK (exposure_time >= 0),
+    night               date                     NOT NULL,
     plane_id            int                      NOT NULL REFERENCES Plane (plane_id) ON DELETE CASCADE,
     resolution          double precision         NOT NULL CHECK (resolution >= 0),
     start_time          timestamp with time zone NOT NULL,
     CONSTRAINT start_not_after_end_time_check CHECK (start_time <= end_time)
 );
 
+CREATE INDEX observation_time_night_idx ON observation_time (night);
 CREATE INDEX observation_time_plane_idx ON Plane (plane_id);
 CREATE INDEX observation_time_start_time_idx ON observation_time (start_time);
 
 COMMENT ON TABLE observation_time IS 'The time when the observation data were taken.';
 COMMENT ON COLUMN observation_time.end_time IS 'The time when the observation finished.';
 COMMENT ON COLUMN observation_time.exposure_time IS 'The exposure time for the observation, in seconds.';
+COMMENT ON COLUMN observation_time.night IS 'The start date of the night in which the observation was taken.';
 COMMENT ON COLUMN observation_time.resolution IS 'The time resolution of the observation, in seconds.';
 COMMENT ON COLUMN observation_time.start_time IS 'The time when the observation started. ';
 
@@ -394,6 +543,15 @@ COMMENT ON TABLE artifact IS 'A data product, such as a FITS file.';
 COMMENT ON COLUMN artifact.identifier IS 'Unique identifier string for this artifact.';
 COMMENT ON COLUMN artifact.name IS 'The name of the artifact.';
 COMMENT ON COLUMN artifact.path IS 'String indicating where the artifact is stored.';
+
+-- Insert filters
+
+INSERT INTO filter (name)
+VALUES ('Johnson U'),
+       ('Johnson B'),
+       ('Johnson V'),
+       ('Cousins R'),
+       ('Cousins I');
 
 -- Insert target types
 

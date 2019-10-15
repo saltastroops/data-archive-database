@@ -1,4 +1,4 @@
-from typing import cast, Optional
+from typing import cast, Any, Dict, Optional
 
 import astropy.units as u
 import psycopg2
@@ -51,7 +51,9 @@ class DatabaseService:
 
             cur.execute(sql, dict(observation_id=observation_id))
 
-    def find_observation_group_id(self, group_identifier: str, telescope: types.Telescope) -> Optional[int]:
+    def find_observation_group_id(
+        self, group_identifier: str, telescope: types.Telescope
+    ) -> Optional[int]:
         """
         Find the database id of an observation group.
 
@@ -78,7 +80,9 @@ class DatabaseService:
             JOIN telescope ON observation.telescope_id = telescope.telescope_id
             WHERE observation_group.group_identifier=%(group_identifier)s AND telescope.name=%(telescope)s
             """
-            cur.execute(sql, dict(group_identifier=group_identifier, telescope=telescope.value))
+            cur.execute(
+                sql, dict(group_identifier=group_identifier, telescope=telescope.value)
+            )
 
             observation_group_id = cur.fetchone()
             if observation_group_id:
@@ -120,7 +124,7 @@ class DatabaseService:
                 return None
 
     def find_proposal_id(
-            self, proposal_code: str, institution: types.Institution
+        self, proposal_code: str, institution: types.Institution
     ) -> Optional[int]:
         """
         Find the database id of a proposal.
@@ -265,7 +269,7 @@ class DatabaseService:
             return cast(int, cur.fetchone()[0])
 
     def insert_instrument_keyword_value(
-            self, instrument_keyword_value: types.InstrumentKeywordValue
+        self, instrument_keyword_value: types.InstrumentKeywordValue
     ) -> None:
         """
         Insert an instrument keyword value.
@@ -311,6 +315,69 @@ class DatabaseService:
                     value=instrument_keyword_value.value,
                 ),
             )
+
+    def insert_instrument_setup(self, instrument_setup: types.InstrumentSetup) -> int:
+        """
+        Insert an instrument setup.
+
+        Parameters
+        ----------
+        instrument_setup : InstrumentSetup
+            Instrument setup.
+
+        Returns
+        -------
+        int
+            The database id of the inserted instrument setup.
+
+        """
+
+        with self._connection.cursor() as cur:
+            sql = """
+            WITH f (id) AS (
+                SELECT filter_id FROM filter WHERE name=%(filter)s
+            ),
+            im (id) AS (
+                SELECT instrument_mode_id FROM instrument_mode
+                WHERE instrument_mode.instrument_mode=%(instrument_mode)s
+            )
+            INSERT INTO instrument_setup (filter_id, instrument_mode_id, observation_id)
+            VALUES ((SELECT id FROM f), (SELECT id FROM im), %(observation_id)s)
+            RETURNING instrument_setup_id
+            """
+
+            cur.execute(
+                sql,
+                dict(
+                    filter=instrument_setup.filter.value
+                    if instrument_setup.filter
+                    else None,
+                    instrument_mode=instrument_setup.instrument_mode.value,
+                    observation_id=instrument_setup.observation_id,
+                ),
+            )
+
+            return cast(int, cur.fetchone()[0])
+
+    def insert_instrument_specific_content(
+        self, sql: str, parameters: Dict[str, Any]
+    ) -> None:
+        """
+        Insert instrument-specific content.
+
+        The method executes the given SQL statement with the supplied query parameters.
+
+        Parameters
+        ----------
+        sql : str
+            SQL statement to execute.
+        parameters : Dict[str, any]
+            Query parameters.
+
+        """
+
+        with self._connection.cursor() as cur:
+            cur.execute(sql, parameters)
 
     def insert_observation(self, observation: types.Observation) -> int:
         """
@@ -387,7 +454,9 @@ class DatabaseService:
 
             return cast(int, cur.fetchone()[0])
 
-    def insert_observation_group(self, observation_group: types.ObservationGroup):
+    def insert_observation_group(
+        self, observation_group: types.ObservationGroup
+    ) -> int:
         """
         Insert an observation group.
 
@@ -411,8 +480,13 @@ class DatabaseService:
             RETURNING observation_group_id
             """
 
-            cur.execute(sql, dict(group_identifier=observation_group.group_identifier,
-                                  name=observation_group.name))
+            cur.execute(
+                sql,
+                dict(
+                    group_identifier=observation_group.group_identifier,
+                    name=observation_group.name,
+                ),
+            )
 
             return cast(int, cur.fetchone()[0])
 
@@ -435,11 +509,13 @@ class DatabaseService:
             sql = """
             INSERT INTO observation_time (end_time,
                                           exposure_time,
+                                          night,
                                           plane_id,
                                           resolution,
                                           start_time)
             VALUES (%(end_time)s,
                     %(exposure_time)s,
+                    %(night)s,
                     %(plane_id)s,
                     %(resolution)s,
                     %(start_time)s)    
@@ -451,6 +527,7 @@ class DatabaseService:
                 dict(
                     end_time=observation_time.end_time,
                     exposure_time=observation_time.exposure_time.to_value(u.second),
+                    night=observation_time.start_time.date(),
                     plane_id=observation_time.plane_id,
                     resolution=observation_time.resolution.to_value(u.second),
                     start_time=observation_time.start_time,
@@ -498,7 +575,7 @@ class DatabaseService:
 
             return cast(int, cur.fetchone()[0])
 
-    def insert_polarization(self, polarization: types.Polarization) -> int:
+    def insert_polarization(self, polarization: types.Polarization) -> None:
         """
         Insert a polarization.
 
@@ -515,25 +592,22 @@ class DatabaseService:
 
         with self._connection.cursor() as cur:
             sql = """
-            WITH sp (stokes_parameter_id) AS (
-                SELECT stokes_parameter_id
-                FROM stokes_parameter
-                WHERE stokes_parameter.stokes_parameter=%(stokes_parameter)s
+            WITH pp (polarization_pattern_id) AS (
+                SELECT polarization_pattern_id
+                FROM polarization_pattern
+                WHERE polarization_pattern.name=%(pattern)s
             )
-            INSERT INTO polarization (plane_id, stokes_parameter_id)
-            VALUES (%(plane_id)s, (SELECT stokes_parameter_id FROM sp))
-            RETURNING polarization_id
+            INSERT INTO polarization (plane_id, polarization_pattern_id)
+            VALUES (%(plane_id)s, (SELECT polarization_pattern_id FROM pp))
             """
 
             cur.execute(
                 sql,
                 dict(
                     plane_id=polarization.plane_id,
-                    stokes_parameter=polarization.stokes_parameter.value,
+                    pattern=polarization.polarization_pattern.value,
                 ),
             )
-
-            return cast(int, cur.fetchone()[0])
 
     def insert_position(self, position: types.Position) -> int:
         """
@@ -613,7 +687,7 @@ class DatabaseService:
             return cast(int, cur.fetchone()[0])
 
     def insert_proposal_investigator(
-            self, proposal_investigator: types.ProposalInvestigator
+        self, proposal_investigator: types.ProposalInvestigator
     ) -> None:
         """
         Insert a proposal investigator.
@@ -626,13 +700,18 @@ class DatabaseService:
         """
 
         with self._connection.cursor() as cur:
-            sql = '''
+            sql = """
             INSERT INTO admin.proposal_investigator (institution_user_id, proposal_id)
             VALUES (%(user_id)s, %(proposal_id)s)
-            '''
+            """
 
-            cur.execute(sql, dict(user_id=proposal_investigator.investigator_id,
-                                  proposal_id=proposal_investigator.proposal_id))
+            cur.execute(
+                sql,
+                dict(
+                    user_id=proposal_investigator.investigator_id,
+                    proposal_id=proposal_investigator.proposal_id,
+                ),
+            )
 
     def insert_target(self, target: types.Target) -> int:
         """

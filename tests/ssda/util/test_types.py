@@ -448,6 +448,36 @@ def test_instrument_keyword_value_may_be_none():
     assert instrument_keyword_value.value is None
 
 
+# InstrumentSetup
+
+
+def test_instrument_setup_is_created_correctly():
+    queries = [
+        types.SQLQuery(
+            sql="INSERT INTO proposal (proposal_id) VALUES (%(id)s)",
+            parameters=dict(id="5783"),
+        ),
+        types.SQLQuery(
+            sql="INSERT INTO observation (observation_group_id, observation_type_id) VALUES (%(group_id)s, %(type_id)s)",
+            parameters=dict(group_id="147", type_id="56"),
+        ),
+    ]
+    filter = types.Filter.JOHNSON_U
+    instrument_mode = types.InstrumentMode.IMAGING
+    observation_id = 734
+    instrument_setup = types.InstrumentSetup(
+        additional_queries=queries,
+        filter=filter,
+        instrument_mode=instrument_mode,
+        observation_id=observation_id,
+    )
+
+    assert instrument_setup.additional_queries == queries
+    assert instrument_setup.filter == filter
+    assert instrument_setup.instrument_mode == instrument_mode
+    assert instrument_setup.observation_id == observation_id
+
+
 # Observation
 
 
@@ -512,28 +542,22 @@ def test_observation_group_id_may_be_none():
 
 
 def test_observation_group_is_created_correctly():
-    observation_group = types.ObservationGroup(group_identifier="B15", name='ABC')
+    observation_group = types.ObservationGroup(group_identifier="B15", name="ABC")
 
-    assert observation_group.group_identifier == 'B15'
-    assert observation_group.name == 'ABC'
+    assert observation_group.group_identifier == "B15"
+    assert observation_group.name == "ABC"
 
 
 def test_observation_group_identifier_too_long():
     with pytest.raises(ValueError) as excinfo:
-        types.ObservationGroup(
-            group_identifier='B' * 41,
-            name='ABC'
-        )
+        types.ObservationGroup(group_identifier="B" * 41, name="ABC")
 
     assert "group identifier" in str(excinfo)
 
 
 def test_observation_group_name_too_long():
     with pytest.raises(ValueError) as excinfo:
-        types.ObservationGroup(
-            group_identifier='B15',
-            name='N' * 41
-        )
+        types.ObservationGroup(group_identifier="B15", name="N" * 41)
 
     assert "name" in str(excinfo)
 
@@ -697,11 +721,11 @@ def test_plane_is_created_correctly():
 
 def test_polarization_is_created_correctly():
     polarization = types.Polarization(
-        plane_id=956, stokes_parameter=types.StokesParameter.U
+        plane_id=956, polarization_pattern=types.PolarizationPattern.LINEAR
     )
 
     assert polarization.plane_id == 956
-    assert polarization.stokes_parameter == types.StokesParameter.U
+    assert polarization.polarization_pattern == types.PolarizationPattern.LINEAR
 
 
 # Position

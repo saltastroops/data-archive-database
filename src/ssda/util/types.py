@@ -2,12 +2,44 @@ from __future__ import annotations
 import os
 from datetime import date, datetime
 from enum import Enum
-from typing import Optional
+from typing import Any, Dict, List, NamedTuple, Optional
 
 import astropy.units as u
 from astropy.units import def_unit, Quantity
 
 byte = def_unit("byte")
+
+
+class SQLQuery(NamedTuple):
+    """
+    An SQL query.
+
+    Query parameters must be included in the form %(name)s in SQL statement, and their
+    value must be provided in the parameters dictionary.
+
+    For example, the query
+
+    INSERT INTO target (ra, dec) VALUES (42.8, -16.4)
+
+    would be represented by
+
+    sql = "INSERT INTO target (ra, dec) VALUES (%(ra)s, %(dec)s)
+
+    and
+
+    parameters = dict(ra=42.8, dec=-16.4)
+
+    Parameters
+    ----------
+    parameters : Dict[str, any]
+        Query parameters and their values.
+    sql : str
+        SQL statement. Query parameters must be included in the form $(name)s.
+
+    """
+
+    parameters: Dict[str, Any]
+    sql: str
 
 
 class Artifact:
@@ -402,6 +434,38 @@ class FilePath:
         return self._path
 
 
+class Filter(Enum):
+    """
+    Enumeration of the filters.
+
+    The enum values must be the same as the values of the name column in the filter
+    table.
+
+    """
+
+    JOHNSON_U = "Johnson U"
+    JOHNSON_V = "Johnson V"
+    JOHNSON_B = "Johnson B"
+    JOHNSON_R = "Johnson R"
+    JOHNSON_I = "Johnson I"
+
+
+class HRSMode(Enum):
+    """
+    Enumeration of the HRS (resolution) modes.
+
+    The enum values must be the same as the values of the hrs_mode column in the
+    hrs_mode table.
+
+    """
+
+    HIGH_RESOLUTION = "High Resolution"
+    HIGH_STABILITY = "High Stability"
+    INT_CAL_FIBRE = "Int Cal Fibre"
+    LOW_RESOLUTION = "Low Resolution"
+    MEDIUM_RESOLUTION = "Medium Resolution"
+
+
 class Institution(Enum):
     """
     Enumeration of the institutions.
@@ -511,6 +575,78 @@ class InstrumentKeywordValue:
         return self._value
 
 
+class InstrumentMode(Enum):
+    """
+    An enumeration of the instrument modes such as "Imaging" or "Spectroscopy".
+
+    The enum values must be the same as the values of the instrument_mode column in the
+    instrument table.
+
+    """
+
+    FABRY_PEROT = "Fabry Perot"
+    IMAGING = "Imaging"
+    MOS = "MOS"
+    POLARIMETRIC_IMAGING = "Polarimetric Imaging"
+    SPECTROPOLARIMETRY = "Spectropolarimetry"
+    SPECTROSCOPY = "Spectroscopy"
+    STREAMING = "Streaming"
+
+
+class InstrumentSetup:
+    """
+    Additional details about an instrument setup.
+
+    The additional_queries allows the insertion of instrument-specific content, such as
+    a grating or a resolution mode. Each query consists of the SQL (with parameters of
+    the form %(name)s) and a dictionary of parameter names and values.
+
+    If an additional query requires the instrument setup id as a parameter, it should be
+    included as %(instrument_setup_id)s. The id will automatically be included in the
+    dictionary of parameters.
+
+    Parameters
+    ----------
+    additional_queries: List[SQLQuery]
+        Additional queries for instrument specific content.
+    filter : Optional[Filter]
+        Bandpass filter
+    instrument_mode : InstrumentMode
+        Instrument mode, such imaging or spectroscopy.
+    observation_id : int
+        Database id of the observation to which this instrument setup belongs.
+
+    """
+
+    def __init__(
+        self,
+        additional_queries: List[SQLQuery],
+        filter: Optional[Filter],
+        instrument_mode: InstrumentMode,
+        observation_id: int,
+    ):
+        self._additional_queries = additional_queries
+        self._filter = filter
+        self._instrument_mode = instrument_mode
+        self._observation_id = observation_id
+
+    @property
+    def additional_queries(self) -> List[SQLQuery]:
+        return self._additional_queries
+
+    @property
+    def filter(self) -> Optional[Filter]:
+        return self._filter
+
+    @property
+    def instrument_mode(self) -> InstrumentMode:
+        return self._instrument_mode
+
+    @property
+    def observation_id(self) -> int:
+        return self._observation_id
+
+
 class Intent(Enum):
     """
     Enumeration of the available intent values.
@@ -595,7 +731,7 @@ class Observation:
         return self._meta_release
 
     @property
-    def observation_group(self) -> int:
+    def observation_group_id(self) -> Optional[int]:
         return self._observation_group_id
 
     @property
@@ -617,25 +753,30 @@ class Observation:
 
 class ObservationGroup:
     """
-    An observation group
+    A logical group of observations, such as a block visit for SALT.
 
-    Parameter
-    ---------
-    identifier: str,
-        # TODO identifier has to be unique
-        A unique identifier for the observation group.
-        For SALT this can be the the block visit ID.
-    name: str
-        A name for the Observation group.
-        For SALT this can be the the block name.
+    Parameters
+    ----------
+    group_identifier : str
+        Identifier for the group, which must be unique within the groups belonging to
+        the same telescope.
+    name : str
+        Name of the observation group.
+
     """
-    def __init__(self, identifier: str, name: str):
-        self._identifier = identifier
+
+    def __init__(self, group_identifier: str, name: str):
+        if group_identifier and len(group_identifier) > 40:
+            raise ValueError("The group identifier must have at most 40 characters.")
+        if name and len(name) > 40:
+            raise ValueError("The name must have at most 40 characters.")
+
+        self._group_identifier = group_identifier
         self._name = name
 
     @property
-    def identifier(self) -> str:
-        return self._identifier
+    def group_identifier(self) -> Optional[str]:
+        return self._group_identifier
 
     @property
     def name(self) -> str:
@@ -735,41 +876,63 @@ class Plane:
     ----------
     observation_id : int
         Database id of the observation to which this plane belongs.
+    data_product_type : DataProductType
+        Data product type.
 
     """
 
-    def __init__(self, observation_id: int):
+    def __init__(self, observation_id: int, data_product_type: DataProductType):
         self._observation_id = observation_id
+        self._data_product_type = data_product_type
 
     @property
     def observation_id(self) -> int:
         return self._observation_id
 
+    @property
+    def data_product_type(self) -> DataProductType:
+        return self._data_product_type
+
+
+class PolarizationPattern(Enum):
+    """
+    Enumeration of the available polarization patterns.
+
+    The enum values must be the same as the values of the name column in the
+    polarization_pattern table.
+
+    """
+
+    ALL_STOKES = "All Stokes"
+    CIRCULAR = "Circular"
+    LINEAR = "Linear"
+    LINEAR_HI = "Linear Hi"
+
 
 class Polarization:
     """
-    Stokes parameter for an observation.
+    Polarization for an observation.
 
     Parameters
     ----------
     plane_id : int
-        Database id of the plane with the Stokes parameter.
-    stokes_parameter : StokesParameter
-        Stokes parameter.
+        Database id of the plane with the polarization.
+    polarization_pattern : PolarizationPattern
+        Polarization pattern.
 
     """
 
-    def __init__(self, plane_id: int, stokes_parameter: StokesParameter):
+    def __init__(self, plane_id: int, polarization_pattern: PolarizationPattern):
         self._plane_id = plane_id
-        self._stokes_parameter = stokes_parameter
+        self._polarization_pattern = polarization_pattern
 
     @property
     def plane_id(self) -> int:
         return self._plane_id
 
     @property
-    def stokes_parameter(self) -> StokesParameter:
-        return self._stokes_parameter
+    def polarization_pattern(self) -> PolarizationPattern:
+        return self._polarization_pattern
 
 
 class Position:
@@ -931,6 +1094,39 @@ class ProposalInvestigator:
     @property
     def investigator_id(self) -> str:
         return self._investigator_id
+
+
+class RSSFabryPerotMode(Enum):
+    """
+    Enumeration of the RSS Fabry-Perot modes.
+
+    The enum values must be the same as the values of the fabry_perot_mode column in the
+    rss_fabry_perot_mode table.
+
+    """
+
+    HIGH_RESOLUTION = "High Resolution"
+    LOW_RESOLUTION = "Low Resolution"
+    MEDIUM_RESOLUTION = "Medium Resolution"
+    TUNABLE_FILTER = "Tunable Filter"
+
+
+class RSSGrating(Enum):
+    """
+    Enumeration of the RSS gratings.
+
+    The enum values must be the same as the values of the grating column in the
+    rss_grating table.
+
+    """
+
+    OPEN = "Open"
+    PG0300 = "PG0300"
+    PG0900 = "PG0900"
+    PG1300 = "PG1300"
+    PG1800 = "PG1800"
+    PG2300 = "PG2300"
+    PG3000 = "PG3000"
 
 
 class Status(Enum):

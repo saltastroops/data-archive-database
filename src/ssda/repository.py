@@ -1,3 +1,5 @@
+from typing import cast
+
 from ssda.database.ssda import DatabaseService
 from ssda.observation import ObservationProperties
 
@@ -91,9 +93,13 @@ def insert(
         if observation_group is not None:
             group_identifier = observation_group.group_identifier
             telescope = observation_properties.observation(-1, -1).telescope
-            observation_group_id = database_service.find_observation_group_id(group_identifier, telescope)
+            observation_group_id = database_service.find_observation_group_id(
+                cast(str, group_identifier), telescope
+            )
             if observation_group_id is None:
-                observation_group_id = database_service.insert_observation_group(observation_group)
+                observation_group_id = database_service.insert_observation_group(
+                    observation_group
+                )
         else:
             observation_group_id = None
 
@@ -102,7 +108,9 @@ def insert(
         artifact_name = observation_properties.artifact(-1).name
         observation_id = database_service.find_observation_id(artifact_name)
         if observation_id is None:
-            observation = observation_properties.observation(observation_group_id=observation_group_id, proposal_id=proposal_id)
+            observation = observation_properties.observation(
+                observation_group_id=observation_group_id, proposal_id=proposal_id
+            )
             observation_id = database_service.insert_observation(observation)
         else:
             # nothing else to do, so the changes can be committed
@@ -121,6 +129,17 @@ def insert(
         for instrument_keyword_value in instrument_keyword_values:
             database_service.insert_instrument_keyword_value(instrument_keyword_value)
 
+        # insert instrument setup
+        instrument_setup = observation_properties.instrument_setup(observation_id)
+        instrument_setup_id = database_service.insert_instrument_setup(instrument_setup)
+
+        # insert instrument-specific content
+        for query in instrument_setup.additional_queries:
+            sql = query.sql
+            parameters = {key: value for key, value in query.parameters.items()}
+            parameters["instrument_setup_id"] = instrument_setup_id
+            database_service.insert_instrument_specific_content(sql, parameters)
+
         # insert plane
         plane = observation_properties.plane(observation_id)
         plane_id = database_service.insert_plane(plane)
@@ -130,9 +149,9 @@ def insert(
         if energy:
             database_service.insert_energy(energy)
 
-        # insert polarizations
-        polarizations = observation_properties.polarizations(plane_id)
-        for polarization in polarizations:
+        # insert polarization
+        polarization = observation_properties.polarization(plane_id)
+        if polarization:
             database_service.insert_polarization(polarization)
 
         # insert observation time

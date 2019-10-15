@@ -20,7 +20,8 @@ def test_dummy_observation_properties():
         observation_properties.observation(24, 42)
         observation_properties.observation_time(42)
         observation_properties.plane(42)
-        observation_properties.polarizations(42)
+
+        observation_properties.polarization(42)
         observation_properties.position(42)
         observation_properties.proposal()
         observation_properties.proposal_investigators(42)
