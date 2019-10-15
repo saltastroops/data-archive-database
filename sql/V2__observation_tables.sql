@@ -238,12 +238,12 @@ COMMENT ON TABLE rss_grating IS 'An RSS grating.';
 
 INSERT INTO rss_grating (grating)
 VALUES ('Open'),
-       ('PG0300'),
-       ('PG0900'),
-       ('PG1300'),
-       ('PG1800'),
-       ('PG2300'),
-       ('PG3000');
+       ('pg0300'),
+       ('pg0900'),
+       ('pg1300'),
+       ('pg1800'),
+       ('pg2300'),
+       ('pg3000');
 
 -- status
 
