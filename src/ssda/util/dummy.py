@@ -3,6 +3,7 @@ import os
 import random
 import re
 import string
+import uuid
 from datetime import datetime, timedelta
 from typing import List, NamedTuple, Optional, Tuple
 
@@ -133,10 +134,6 @@ class DummyObservationProperties(ObservationProperties):
         )
 
     def artifact(self, plane_id: int) -> types.Artifact:
-        def identifier(n: int) -> str:
-            characters = string.ascii_lowercase + string.digits
-            return "".join(random.choices(characters, k=n))
-
         def product_type() -> types.ProductType:
             product_types = [types.ProductType.ARC, types.ProductType.BIAS, types.ProductType.FLAT, types.ProductType.SCIENCE]
             return random.choice(product_types)
@@ -144,7 +141,7 @@ class DummyObservationProperties(ObservationProperties):
         return types.Artifact(
             content_checksum=self._fits_file.checksum(),
             content_length=self._fits_file.size(),
-            identifier=identifier(10),
+            identifier=str(uuid.uuid4()),
             name=os.path.basename(self._fits_file.path()),
             plane_id=plane_id,
             path=self._fits_file.path(),
