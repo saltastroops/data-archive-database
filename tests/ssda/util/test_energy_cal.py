@@ -1,3 +1,5 @@
+import math
+
 import pytest
 from astropy import units as u
 from unittest import mock
@@ -5,7 +7,7 @@ from unittest import mock
 from ssda.filter_wavelength_files.reader import ReadInstrumentWavelength
 from ssda.util import types
 from ssda.util.energy_cal import linear_pol, image_wavelength_intervals, fabry_perot_fwhm_calculation, \
-    hrs_interval, imaging_mode_cal, rss_energy_cal, slit_width_from_barcode
+    hrs_interval, imaging_mode_cal, rss_energy_cal, slit_width_from_barcode, get_resolution_element
 
 
 def test_linear_pol():
@@ -193,11 +195,21 @@ def test_slit_width_from_barcode():
     """
     Test Slit width from barcode can calculate.
     """
-    assert slit_width_from_barcode("P000000N02") == 0.333333
-    assert slit_width_from_barcode("P000000P09") == 1.5
-    assert slit_width_from_barcode("P000000P08") == 1.5
-    assert slit_width_from_barcode("P001000P08") == 1.0
+    assert slit_width_from_barcode("P000000N02") == 0.333333 * u.arcsec
+    assert slit_width_from_barcode("P000000P09") == 1.5 * u.arcsec
+    assert slit_width_from_barcode("P000000P08") == 1.5 * u.arcsec
+    assert slit_width_from_barcode("P001000P08") == 1.0 * u.arcsec
     with pytest.raises(TypeError) as exc_info:
         slit_width_from_barcode(None)
     assert exc_info.type is TypeError
     assert "'NoneType' object is not subscriptable" in exc_info.value.args[0]
+
+
+def test_get_resolution_element():
+    assert get_resolution_element(grating_angle=30 * u.deg, grating_frequency=1 * 1/u.mm, slit_width=5 * u.arcsec) \
+        == 15394.902011247219
+    assert get_resolution_element(grating_angle=30 * u.deg, grating_frequency=1 * 1/u.mm, slit_width=.5 * u.arcsec) \
+        == 1539.4902011247218
+    assert get_resolution_element(grating_angle=((30*math.pi)/180) * u.rad, grating_frequency=1 * 1/u.mm,
+                                  slit_width=5 * u.arcsec) \
+        == 15394.902011247219

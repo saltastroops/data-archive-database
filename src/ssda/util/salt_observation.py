@@ -95,13 +95,13 @@ class SALTObservation:
     def proposal(self) -> Optional[types.Proposal]:
         return types.Proposal(
             institution=types.Institution.SALT,
-            pi=self.database_service.find_pi(self.fits_file.header_value("BVISITID")),
-            proposal_code=self.database_service.find_proposal_code(self.header_value("BVISITID")),
-            title=self.database_service.find_proposal_title(self.header_value("BVISITID"))
+            pi=self.database_service.find_pi(int(self.fits_file.header_value("BVISITID"))),
+            proposal_code=self.database_service.find_proposal_code(int(self.header_value("BVISITID"))),
+            title=self.database_service.find_proposal_title(int(self.header_value("BVISITID")))
         )
 
     def proposal_investigators(self, proposal_id: int) -> List[types.ProposalInvestigator]:
-        investigators = self.database_service.find_proposal_investigators(self.header_value("BVISITID"))
+        investigators = self.database_service.find_proposal_investigators(int(self.header_value("BVISITID")))
         return [
             types.ProposalInvestigator(
                 proposal_id=proposal_id,
