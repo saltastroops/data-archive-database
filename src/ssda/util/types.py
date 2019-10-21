@@ -1,11 +1,13 @@
 from __future__ import annotations
 import os
+import uuid
 from datetime import date, datetime
 from enum import Enum
 from typing import Any, Dict, List, NamedTuple, Optional
 
 import astropy.units as u
 from astropy.units import def_unit, Quantity
+from click import UUID
 
 byte = def_unit("byte")
 
@@ -69,7 +71,7 @@ class Artifact:
         self,
         content_checksum: str,
         content_length: Quantity,
-        identifier: str,
+        identifier: uuid.UUID,
         name: str,
         plane_id: int,
         path: str,
@@ -83,8 +85,6 @@ class Artifact:
             raise ValueError("The content length must have a file size unit.")
         if content_length.to_value(byte) <= 0:
             raise ValueError("The content length must be positive.")
-        if len(identifier) > 50:
-            raise ValueError("The artifact identifier must have at most 50 characters.")
         if len(name) > 200:
             raise ValueError("The artifact name must have at most 200 characters.")
         if len(path) > 200:
@@ -107,7 +107,7 @@ class Artifact:
         return self._content_length
 
     @property
-    def identifier(self) -> str:
+    def identifier(self) -> uuid.UUID:
         return self._identifier
 
     @property

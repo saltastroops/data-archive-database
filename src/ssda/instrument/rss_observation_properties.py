@@ -55,8 +55,10 @@ class RssObservationProperties(ObservationProperties):
             )
         ]  # TODO check if there is more keywords
 
-    def observation(self, proposal_id: Optional[int]) -> types.Observation:
-        return self.salt_observation.observation(proposal_id, types.Instrument.RSS)
+    def observation(self, observation_group_id: Optional[int], proposal_id: Optional[int]) -> types.Observation:
+        return self.salt_observation.observation(observation_group_id=observation_group_id,
+                                                 proposal_id=proposal_id,
+                                                 instrument=types.Instrument.RSS)
 
     def observation_time(self, plane_id: int) -> types.ObservationTime:
         return self.salt_observation.observation_time(plane_id)

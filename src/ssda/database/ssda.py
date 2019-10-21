@@ -160,6 +160,48 @@ class DatabaseService:
             else:
                 return None
 
+    def find_artifact(
+            self, identifier: str
+    ) -> Optional[types.Artifact]:
+        """
+        Find artifact .
+
+        Parameters
+        ----------
+        identifier : str
+            Artifact Identifier.
+
+        Returns
+        -------
+        Optional[artifact]
+            The database id of the proposal, or None if there is no proposal for the
+            proposal code abd institution.
+
+        """
+
+        with self._connection.cursor() as cur:
+            sql = """
+            SELECT content_checksum, content_length, identifier, name, path, plane_id, product_type_id
+            FROM Artifact
+            WHERE identifier=%(identifier)s
+            """
+            cur.execute(
+                sql, dict(identifier=identifier)
+            )
+            result = cur.fetchone()
+            if result:
+                return types.Artifact(
+                    content_checksum=result[0],
+                    content_length=result[1],
+                    identifier=result[2],
+                    name=result[3],
+                    plane_id=result[4],
+                    path=result[5],
+                    product_type=result[6]
+                )
+            else:
+                return None
+
     def insert_artifact(self, artifact: types.Artifact) -> int:
         """
         Insert an artifact.

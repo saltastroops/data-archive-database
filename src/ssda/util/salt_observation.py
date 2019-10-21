@@ -1,5 +1,6 @@
 import random
 import string
+import uuid
 from typing import Optional, List, Iterable
 from dateutil.parser import parse
 from datetime import timedelta
@@ -8,7 +9,6 @@ from astropy.coordinates import Angle
 import astropy.units as u
 from ssda.database.sdb import SaltDatabaseService
 from ssda.util.fits import FitsFile
-from ssda.database.ssda import DatabaseService as SsdaDB
 
 from ssda.util import types
 
@@ -29,10 +29,7 @@ class SALTObservation:
     def artifact(self, plane_id: int) -> types.Artifact:
 
         path = self.fits_file.file_path()
-        letters = string.ascii_lowercase
-        identifier = "".join(random.choice(letters) for _ in range(10))
-        while SsdaDB.find_identifier(identifier) is not None:
-            identifier = "".join(random.choice(letters) for _ in range(10))
+        identifier = uuid.uuid4()
 
         return types.Artifact(
             content_checksum=self.fits_file.checksum(),
@@ -44,13 +41,17 @@ class SALTObservation:
             product_type=self.__product_type()
         )
 
-    def observation(self, proposal_id: Optional[int], instrument: types.Instrument) -> types.Observation:
+    def observation(self,
+                    observation_group_id: Optional[int],
+                    proposal_id: Optional[int],
+                    instrument: types.Instrument
+                    ) -> types.Observation:
         return types.Observation(
             data_release=self.database_service.find_release_date(int(self.header_value("BVISITID"))),
             instrument=instrument,
             intent=self.__intent(),
             meta_release=self.database_service.find_meta_release_date(int(self.header_value("BVISITID"))),
-            observation_group=int(self.header_value("BVISITID")),  # TODO parse a group ot just an id
+            observation_group_id=int(self.header_value("BVISITID")),  # TODO parse a group ot just an id
             observation_type=types.ObservationType.OBJECT,
             proposal_id=proposal_id,
             status=self.database_service.find_observation_status(int(self.header_value("BVISITID"))),

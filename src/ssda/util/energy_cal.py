@@ -165,7 +165,7 @@ def get_wavelength(x: float, grating_angle: Quantity, camera_angle: Quantity, gr
     wavelength = lambda1 * (math.sin(alpha) + math.sin(beta))
 
     # The CAOM expects the wavelength to be in metres, not Angstroms.
-    return wavelength / 1e10
+    return float(wavelength / 1e10)
 
 
 def get_resolution_element(grating_frequency: Quantity,  grating_angle: Quantity,  slit_width: Quantity) -> float:
@@ -189,8 +189,8 @@ def get_resolution_element(grating_frequency: Quantity,  grating_angle: Quantity
     """
 
     Lambda = 1e7 / grating_frequency.to_value(unit=1/u.mm)
-    return slit_width.to_value(unit=u.rad) * Lambda * math.cos(grating_angle.to_value(unit=u.rad)) * (
-            FOCAL_LENGTH_TELESCOPE / FOCAL_LENGTH_RSS_COLLIMATOR)
+    return float(slit_width.to_value(unit=u.rad) * Lambda * math.cos(grating_angle.to_value(unit=u.rad)) * (
+            FOCAL_LENGTH_TELESCOPE / FOCAL_LENGTH_RSS_COLLIMATOR))
 
 
 def get_wavelength_resolution(grating_angle: Quantity, camera_angle: Quantity, grating_frequency: Quantity,

@@ -97,8 +97,9 @@ class StandardObservationProperties(ObservationProperties):
     ) -> List[types.InstrumentKeywordValue]:
         return self._observation_properties.instrument_keyword_values(observation_id)
 
-    def observation(self, proposal_id: Optional[int]) -> types.Observation:
-        return self._observation_properties.observation(proposal_id)
+    def observation(self, observation_group_id: Optional[int], proposal_id: Optional[int]) -> types.Observation:
+        return self._observation_properties.observation(observation_group_id=observation_group_id,
+                                                        proposal_id=proposal_id)
 
     def observation_time(self, plane_id: int) -> types.ObservationTime:
         return self._observation_properties.observation_time(plane_id)
