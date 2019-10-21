@@ -85,6 +85,7 @@ class ObservationPropertiesStub(ObservationProperties):
     def instrument_setup(self, observation_id: int) -> types.InstrumentSetup:
         return types.InstrumentSetup(
             additional_queries=QUERIES,
+            detector_mode=types.DetectorMode.NORMAL,
             filter=types.Filter.JOHNSON_U,
             instrument_mode=types.InstrumentMode.IMAGING,
             observation_id=observation_id,
@@ -129,7 +130,7 @@ class ObservationPropertiesStub(ObservationProperties):
 
     def polarization(self, plane_id: int) -> types.Polarization:
         return types.Polarization(
-            plane_id=plane_id, polarization_pattern=types.PolarizationPattern.CIRCULAR
+            plane_id=plane_id, polarization_mode=types.PolarizationMode.CIRCULAR
         )
 
     def position(self, plane_id: int) -> Optional[types.Position]:

@@ -308,6 +308,22 @@ class DateRange:
         return self._end
 
 
+class DetectorMode(Enum):
+    """
+    Enumeration of the available detector (readout) modes.
+
+    The enum values must be the same as the values of the detector_mode column in the
+    detector_mode table.
+
+    """
+
+    DRIFT_SCAN = "Drift Scan"
+    FRAME_TRANSFER = "Frame Transfer"
+    NORMAL = "Normal"
+    SHUFFLE = "Shuffle"
+    SLOT_MODE = "Slot Mode"
+
+
 class Energy:
     """
     Spectral details for a plane.
@@ -607,8 +623,10 @@ class InstrumentSetup:
 
     Parameters
     ----------
-    additional_queries: List[SQLQuery]
+    additional_queries : List[SQLQuery]
         Additional queries for instrument specific content.
+    detector_mode : DetectorMode
+        Detector (readout) mode.
     filter : Optional[Filter]
         Bandpass filter
     instrument_mode : InstrumentMode
@@ -621,11 +639,13 @@ class InstrumentSetup:
     def __init__(
         self,
         additional_queries: List[SQLQuery],
+        detector_mode: DetectorMode,
         filter: Optional[Filter],
         instrument_mode: InstrumentMode,
         observation_id: int,
     ):
         self._additional_queries = additional_queries
+        self._detector_mode = detector_mode
         self._filter = filter
         self._instrument_mode = instrument_mode
         self._observation_id = observation_id
@@ -633,6 +653,10 @@ class InstrumentSetup:
     @property
     def additional_queries(self) -> List[SQLQuery]:
         return self._additional_queries
+
+    @property
+    def detector_mode(self) -> DetectorMode:
+        return self._detector_mode
 
     @property
     def filter(self) -> Optional[Filter]:
@@ -894,12 +918,12 @@ class Plane:
         return self._data_product_type
 
 
-class PolarizationPattern(Enum):
+class PolarizationMode(Enum):
     """
-    Enumeration of the available polarization patterns.
+    Enumeration of the available polarization modes.
 
     The enum values must be the same as the values of the name column in the
-    polarization_pattern table.
+    polarization_mode table.
 
     """
 
@@ -917,22 +941,22 @@ class Polarization:
     ----------
     plane_id : int
         Database id of the plane with the polarization.
-    polarization_pattern : PolarizationPattern
-        Polarization pattern.
+    polarization_mode : PolarizationMode
+        Polarization mode.
 
     """
 
-    def __init__(self, plane_id: int, polarization_pattern: PolarizationPattern):
+    def __init__(self, plane_id: int, polarization_mode: PolarizationMode):
         self._plane_id = plane_id
-        self._polarization_pattern = polarization_pattern
+        self._polarization_mode = polarization_mode
 
     @property
     def plane_id(self) -> int:
         return self._plane_id
 
     @property
-    def polarization_pattern(self) -> PolarizationPattern:
-        return self._polarization_pattern
+    def polarization_mode(self) -> PolarizationMode:
+        return self._polarization_mode
 
 
 class Position:

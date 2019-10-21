@@ -133,8 +133,10 @@ COMMENT ON TABLE instrument_mode IS 'Instrument mode, such as imaging or spectro
 
 INSERT INTO instrument_mode (instrument_mode)
 VALUES ('Fabry Perot'),
+       ('FP Polarimetry'),
        ('Imaging'),
        ('MOS'),
+       ('MOS Polarimetry'),
        ('Polarimetric Imaging'),
        ('Spectropolarimetry'),
        ('Spectroscopy'),
@@ -169,18 +171,18 @@ COMMENT ON TABLE observation_type IS 'An observation type, as given by the value
 INSERT INTO observation_type (observation_type)
 VALUES ('Object');
 
--- polarization_pattern
+-- polarization_mode
 
-CREATE TABLE polarization_pattern
+CREATE TABLE polarization_mode
 (
-    polarization_pattern_id serial PRIMARY KEY,
+    polarization_mode_id serial PRIMARY KEY,
     name                    varchar(50) UNIQUE NOT NULL,
     stokes_parameters       stokes_parameter[] NOT NULL
 );
 
-COMMENT ON TABLE polarization_pattern IS 'A polarization pattern, i.e. a set of Stokes parameters.';
+COMMENT ON TABLE polarization_mode IS 'A polarization mode, i.e. a set of Stokes parameters.';
 
-INSERT INTO polarization_pattern (name, stokes_parameters)
+INSERT INTO polarization_mode (name, stokes_parameters)
 VALUES ('Linear', '{Q, U}'),
        ('Linear Hi', '{Q, U}'),
        ('Circular', '{V}'),
@@ -238,12 +240,12 @@ COMMENT ON TABLE rss_grating IS 'An RSS grating.';
 
 INSERT INTO rss_grating (grating)
 VALUES ('Open'),
-       ('PG0300'),
-       ('PG0900'),
-       ('PG1300'),
-       ('PG1800'),
-       ('PG2300'),
-       ('PG3000');
+       ('pg0300'),
+       ('pg0900'),
+       ('pg1300'),
+       ('pg1800'),
+       ('pg2300'),
+       ('pg3000');
 
 -- status
 
@@ -390,13 +392,15 @@ COMMENT ON TABLE instrument_keyword_value IS 'Value for an instrument keyword fo
 CREATE TABLE instrument_setup
 (
     instrument_setup_id bigserial PRIMARY KEY,
+    detector_mode_id    int REFERENCES detector_mode (detector_mode_id),
     filter_id           int REFERENCES filter (filter_id),
     instrument_mode_id  int NOT NULL REFERENCES instrument_mode (instrument_mode_id),
     observation_id      int NOT NULL REFERENCES observation (observation_id) ON DELETE CASCADE
 );
 
-CREATE INDEX instrument_setup_filter_id ON instrument_setup (filter_id);
-CREATE INDEX instrument_setup_instrument_mode_id ON instrument_setup (instrument_setup_id);
+CREATE INDEX instrument_setup_detector_mode_idx ON instrument_setup (detector_mode_id);
+CREATE INDEX instrument_setup_filter_idx ON instrument_setup (filter_id);
+CREATE INDEX instrument_setup_instrument_mode_idx ON instrument_setup (instrument_setup_id);
 
 COMMENT ON TABLE instrument_setup IS 'Additional details about an instrument setup.';
 
@@ -470,11 +474,11 @@ COMMENT ON COLUMN Energy.sample_size IS 'The size of the wavelength dispersion p
 CREATE TABLE polarization
 (
     plane_id                int NOT NULL REFERENCES plane (plane_id) ON DELETE CASCADE,
-    polarization_pattern_id int NOT NULL REFERENCES polarization_pattern (polarization_pattern_id)
+    polarization_mode_id int NOT NULL REFERENCES polarization_mode (polarization_mode_id)
 );
 
 CREATE INDEX polarization_plane_idx ON polarization (plane_id);
-CREATE INDEX polarization_polarization_pattern_idx ON polarization_pattern (polarization_pattern_id);
+CREATE INDEX polarization_polarization_mode_idx ON polarization_mode (polarization_mode_id);
 
 COMMENT ON TABLE polarization IS 'A junction table for linking planes and polarization patterns.';
 
@@ -547,11 +551,75 @@ COMMENT ON COLUMN artifact.path IS 'String indicating where the artifact is stor
 -- Insert filters
 
 INSERT INTO filter (name)
-VALUES ('Johnson U'),
-       ('Johnson B'),
-       ('Johnson V'),
+VALUES ('340nm 35nm FWHM'),
+       ('380nm 40nm FWHM'),
+       ('Cousins I'),
        ('Cousins R'),
-       ('Cousins I');
+       ('Fused silica clear'),
+       ('H-alpha'),
+       ('H-beta narrow'),
+       ('H-beta wide'),
+       ('Johnson B'),
+       ('Johnson U'),
+       ('Johnson V'),
+       ('SDSS g'''),
+       ('SDSS i'''),
+       ('SDSS r'''),
+       ('SDSS u'''),
+       ('SDSS z'''),
+       ('SRE 1'),
+       ('SRE 2'),
+       ('SRE 3'),
+       ('SRE 4'),
+       ('Stroemgren b'),
+       ('Stroemgren u'),
+       ('Stroemgren v'),
+       ('Stroemgren y'),
+       ('pc00000'),
+       ('pc03200'),
+       ('pc03400'),
+       ('pc03850'),
+       ('pc04600'),
+       ('pi04340'),
+       ('pi04400'),
+       ('pi04465'),
+       ('pi04530'),
+       ('pi04600'),
+       ('pi04670'),
+       ('pi04740'),
+       ('pi04820'),
+       ('pi04895'),
+       ('pi04975'),
+       ('pi05060'),
+       ('pi05145'),
+       ('pi05235'),
+       ('pi05325'),
+       ('pi05420'),
+       ('pi05520'),
+       ('pi05620'),
+       ('pi05725'),
+       ('pi05830'),
+       ('pi05945'),
+       ('pi06055'),
+       ('pi06170'),
+       ('pi06290'),
+       ('pi06410'),
+       ('pi06530'),
+       ('pi06645'),
+       ('pi06765'),
+       ('pi06885'),
+       ('pi07005'),
+       ('pi07130'),
+       ('pi07260'),
+       ('pi07390'),
+       ('pi07535'),
+       ('pi07685'),
+       ('pi07840'),
+       ('pi08005'),
+       ('pi08175'),
+       ('pi08350'),
+       ('pi08535'),
+       ('pi08730');
 
 -- Insert target types
 

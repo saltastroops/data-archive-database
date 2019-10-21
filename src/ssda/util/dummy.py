@@ -3,6 +3,7 @@ import os
 import random
 import re
 import string
+import uuid
 from datetime import datetime, timedelta
 from typing import List, NamedTuple, Optional, Tuple
 
@@ -133,17 +134,14 @@ class DummyObservationProperties(ObservationProperties):
         )
 
     def artifact(self, plane_id: int) -> types.Artifact:
-        def identifier(n: int) -> str:
-            characters = string.ascii_lowercase + string.digits
-            return "".join(random.choices(characters, k=n))
-
         def product_type() -> types.ProductType:
-            return random.choice(list(p for p in types.ProductType))
+            product_types = [types.ProductType.ARC, types.ProductType.BIAS, types.ProductType.FLAT, types.ProductType.SCIENCE]
+            return random.choice(product_types)
 
         return types.Artifact(
             content_checksum=self._fits_file.checksum(),
             content_length=self._fits_file.size(),
-            identifier=identifier(10),
+            identifier=str(uuid.uuid4()),
             name=os.path.basename(self._fits_file.path()),
             plane_id=plane_id,
             path=self._fits_file.path(),
@@ -216,6 +214,8 @@ class DummyObservationProperties(ObservationProperties):
         else:
             queries = []
 
+        detector_modes = [d for d in types.DetectorMode]
+        detector_mode = random.choice(detector_modes)
         filters = [f for f in types.Filter]
         filter = random.choice(filters)
         instrument_modes = [im for im in types.InstrumentMode]
@@ -223,6 +223,7 @@ class DummyObservationProperties(ObservationProperties):
 
         return types.InstrumentSetup(
             additional_queries=queries,
+            detector_mode=detector_mode,
             filter=filter,
             instrument_mode=instrument_mode,
             observation_id=observation_id,
@@ -296,11 +297,11 @@ class DummyObservationProperties(ObservationProperties):
         )
 
     def polarization(self, plane_id: int) -> Optional[types.Polarization]:
-        all_polarization_patterns = [pattern for pattern in types.PolarizationPattern]
+        all_polarization_modes = [mode for mode in types.PolarizationMode]
         if random.random() > 0.9:
-            polarization_pattern = random.choice(all_polarization_patterns)
+            polarization_mode = random.choice(all_polarization_modes)
             return types.Polarization(
-                plane_id=plane_id, polarization_pattern=polarization_pattern
+                plane_id=plane_id, polarization_mode=polarization_mode
             )
         else:
             return None
