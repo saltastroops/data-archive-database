@@ -26,7 +26,7 @@ COMMENT ON TABLE data_product_type IS 'Type of data product, such as image or sp
 
 INSERT INTO data_product_type (product_type)
 VALUES ('Image'),
-       ('Science');
+       ('Spectrum');
 
 -- detector_mode
 
