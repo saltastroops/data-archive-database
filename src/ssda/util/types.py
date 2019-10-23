@@ -245,7 +245,7 @@ class DataProductType(Enum):
     """
 
     IMAGE = "Image"
-    SCIENCE = "Science"
+    SPECTRUM = "Spectrum"
 
 
 class DateRange:
