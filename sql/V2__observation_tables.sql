@@ -520,6 +520,7 @@ CREATE TABLE position
 
 CREATE INDEX position_dec_idx ON position (dec);
 CREATE INDEX position_plane_idx ON position (plane_id);
+CREATE INDEX position_point_idx ON position USING GIST(spoint(radians(ra), radians(dec)));
 CREATE INDEX position_ra_idx ON position (ra);
 
 COMMENT ON TABLE position IS 'The target position.';
