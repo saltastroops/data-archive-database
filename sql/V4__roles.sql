@@ -28,7 +28,7 @@ GRANT DELETE, INSERT ON TABLE observations.target TO observations_editor;
 
 CREATE ROLE admin_editor;
 
-GRANT USAGE ON SCHEMA observations, admin TO admin_editor;
+GRANT USAGE ON SCHEMA observations, admin, extensions TO admin_editor;
 GRANT SELECT, USAGE ON ALL SEQUENCES IN SCHEMA admin TO admin_editor;
 GRANT SELECT, USAGE ON ALL SEQUENCES IN SCHEMA observations TO admin_editor;
 
