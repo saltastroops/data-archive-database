@@ -245,7 +245,7 @@ class DataProductType(Enum):
     """
 
     IMAGE = "Image"
-    SCIENCE = "Science"
+    SPECTRUM = "Spectrum"
 
 
 class DateRange:
@@ -931,6 +931,7 @@ class PolarizationMode(Enum):
     CIRCULAR = "Circular"
     LINEAR = "Linear"
     LINEAR_HI = "Linear Hi"
+    OTHER = "Other"
 
 
 class Polarization:

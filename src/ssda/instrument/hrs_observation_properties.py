@@ -60,22 +60,11 @@ class HrsObservationProperties(ObservationProperties):
     def observation_time(self, plane_id: int) -> types.ObservationTime:
         return self.salt_observation.observation_time(plane_id)
 
-    @staticmethod
-    def plane(observation_id: int) -> types.Plane:
-        return types.Plane(observation_id)
+    def plane(self, observation_id: int) -> types.Plane:
+        return types.Plane(observation_id, data_product_type=types.DataProductType.SPECTRUM)
 
-    def polarizations(self, plane_id: int) -> List[types.Polarization]:  # TODO find out why is this an array
-        polarization_config = self.header_value("POLCONF").strip()
-        if polarization_config.upper() == "OPEN":
-            return []
-
-        return [
-            types.Polarization(
-                plane_id=plane_id,
-                stokes_parameter=stoke
-            )
-            for stoke in self.salt_observation.stokes_parameter
-        ]
+    def polarization(self, plane_id: int) -> Optional[types.Polarization]:  # TODO find out why is this an array
+        return self.salt_observation.polarizations(plane_id=plane_id)
 
     def position(self, plane_id: int) -> Optional[types.Position]:
         return self.salt_observation.position(plane_id=plane_id)

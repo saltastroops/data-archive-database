@@ -107,8 +107,8 @@ class StandardObservationProperties(ObservationProperties):
     def plane(self, observation_id: int) -> types.Plane:
         return self._observation_properties.plane(observation_id)
 
-    def polarizations(self, plane_id: int) -> List[types.Polarization]:
-        return self._observation_properties.polarizations(plane_id)
+    def polarization(self, plane_id: int) -> Optional[types.Polarization]:
+        return self._observation_properties.polarization(plane_id)
 
     def position(self, plane_id: int) -> Optional[types.Position]:
         return self._observation_properties.position(plane_id)

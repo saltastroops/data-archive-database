@@ -159,7 +159,7 @@ class SALTObservation:
 
     @property
     def stokes_parameter(self) -> Iterable[types.StokesParameter]:
-        pattern: str = self.header_value("WPPATERN")
+        pattern: str = self.header_value("WPPATERN").upper()
 
         if pattern.upper() == "NONE" or not pattern:
             return []
@@ -179,4 +179,30 @@ class SALTObservation:
             raise ValueError(f"Strokes for filename ${self.file_path} are USER-DEFINED don't know what to return")
         else:
             raise ValueError(f"Strokes for filename ${self.file_path} not found")
+
+    @staticmethod
+    def get_pattern(pattern: str) -> types.PolarizationMode:
+        # if pattern.upper() == "NONE" or not pattern:  # TODO can we have a None if polarization_config is NOT Open
+        #     return None
+        if pattern.upper() == "LINEAR":
+            return types.PolarizationMode.LINEAR
+        elif pattern.upper() == "LINEAR-HI":
+            return types.PolarizationMode.LINEAR_HI
+        elif pattern.upper() == "CIRCULAR":
+            return types.PolarizationMode.CIRCULAR
+        elif pattern.upper() == "ALL-STOKES":
+            return types.PolarizationMode.ALL_STOKES
+        else:
+            return types.PolarizationMode.OTHER
+
+    def polarizations(self, plane_id: int) -> Optional[types.Polarization]:
+        polarization_config = self.header_value("POLCONF").strip()
+        pattern: str = self.header_value("WPPATERN").strip().upper()
+        if polarization_config.upper() == "OPEN":
+            return None
+
+        return types.Polarization(
+            plane_id=plane_id,
+            polarization_mode=self.get_pattern(pattern=pattern)
+        )
 
