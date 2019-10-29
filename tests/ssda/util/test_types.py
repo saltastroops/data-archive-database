@@ -42,7 +42,7 @@ def test_artifact_checksum_must_have_at_most_32_characters():
             product_type=types.ProductType.SCIENCE,
         )
 
-    assert "checksum" in str(excinfo)
+    assert "checksum" in str(excinfo.value)
 
 
 def test_artifact_content_length_must_be_positive():
@@ -57,7 +57,7 @@ def test_artifact_content_length_must_be_positive():
             product_type=types.ProductType.SCIENCE,
         )
 
-    assert "content length" in str(excinfo) and "positive" in str(excinfo)
+    assert "content length" in str(excinfo.value) and "positive" in str(excinfo.value)
 
 
 def test_artifact_content_length_must_have_a_file_size_unit():
@@ -72,7 +72,7 @@ def test_artifact_content_length_must_have_a_file_size_unit():
             product_type=types.ProductType.SCIENCE,
         )
 
-    assert "content length" in str(excinfo) and "unit" in str(excinfo)
+    assert "content length" in str(excinfo.value) and "unit" in str(excinfo.value)
 
 
 def test_artifact_identifier_must_have_at_most_50_characters():
@@ -87,7 +87,7 @@ def test_artifact_identifier_must_have_at_most_50_characters():
             product_type=types.ProductType.SCIENCE,
         )
 
-    assert "identifier" in str(excinfo)
+    assert "identifier" in str(excinfo.value)
 
 
 def test_artifact_name_must_have_at_most_200_characters():
@@ -102,7 +102,7 @@ def test_artifact_name_must_have_at_most_200_characters():
             product_type=types.ProductType.SCIENCE,
         )
 
-    assert "name" in str(excinfo)
+    assert "name" in str(excinfo.value)
 
 
 def test_artifact_path_must_have_at_most_200_characters():
@@ -117,7 +117,7 @@ def test_artifact_path_must_have_at_most_200_characters():
             product_type=types.ProductType.SCIENCE,
         )
 
-    assert "path" in str(excinfo)
+    assert "path" in str(excinfo.value)
 
 
 # DatabaseConfiguration
@@ -250,7 +250,7 @@ def test_energy_dimension_must_be_positive():
             sample_size=2.34 * u.nanometer,
         )
 
-    assert "dimension" in str(excinfo)
+    assert "dimension" in str(excinfo.value)
 
 
 def test_energy_max_wavelength_must_be_positive():
@@ -264,7 +264,7 @@ def test_energy_max_wavelength_must_be_positive():
             sample_size=2.34 * u.nanometer,
         )
 
-    assert "maximum wavelength" in str(excinfo) and "positive" in str(excinfo)
+    assert "maximum wavelength" in str(excinfo.value) and "positive" in str(excinfo.value)
 
 
 def test_energy_max_wavelength_must_have_a_length_unit():
@@ -278,7 +278,7 @@ def test_energy_max_wavelength_must_have_a_length_unit():
             sample_size=2.34 * u.nanometer,
         )
 
-    assert "maximum wavelength" in str(excinfo) and "length" in str(excinfo)
+    assert "maximum wavelength" in str(excinfo.value) and "length" in str(excinfo.value)
 
 
 def test_energy_min_wavelength_must_be_positive():
@@ -292,7 +292,7 @@ def test_energy_min_wavelength_must_be_positive():
             sample_size=2.34 * u.nanometer,
         )
 
-    assert "minimum wavelength" in str(excinfo) and "positive" in str(excinfo)
+    assert "minimum wavelength" in str(excinfo.value) and "positive" in str(excinfo.value)
 
 
 def test_energy_min_wavelength_must_have_a_length_unit():
@@ -306,7 +306,7 @@ def test_energy_min_wavelength_must_have_a_length_unit():
             sample_size=2.34 * u.nanometer,
         )
 
-    assert "minimum wavelength" in str(excinfo) and "length" in str(excinfo)
+    assert "minimum wavelength" in str(excinfo.value) and "length" in str(excinfo.value)
 
 
 def test_energy_max_wavelength_must_not_be_less_than_min_wavelength():
@@ -320,7 +320,7 @@ def test_energy_max_wavelength_must_not_be_less_than_min_wavelength():
             sample_size=2.34 * u.nanometer,
         )
 
-    assert "minimum" in str(excinfo) and "maximum" in str(excinfo)
+    assert "minimum" in str(excinfo.value) and "maximum" in str(excinfo.value)
 
 
 def test_energy_resolving_power_must_be_non_negative():
@@ -334,7 +334,7 @@ def test_energy_resolving_power_must_be_non_negative():
             sample_size=2.34 * u.nanometer,
         )
 
-    assert "resolving power" in str(excinfo)
+    assert "resolving power" in str(excinfo.value)
 
 
 def test_energy_sample_size_must_have_a_length_unit():
@@ -348,7 +348,7 @@ def test_energy_sample_size_must_have_a_length_unit():
             sample_size=2.34 * u.second,
         )
 
-    assert "sample size" in str(excinfo) and "length" in str(excinfo)
+    assert "sample size" in str(excinfo.value) and "length" in str(excinfo.value)
 
 
 def test_energy_sample_size_must_be_non_negative():
@@ -362,7 +362,7 @@ def test_energy_sample_size_must_be_non_negative():
             sample_size=-1 * u.nanometer,
         )
 
-    assert "sample size" in str(excinfo)
+    assert "sample size" in str(excinfo.value)
 
 
 # FilePath
@@ -434,7 +434,7 @@ def test_instrument_keyword_value_too_long():
             value="a" * 201,
         )
 
-    assert "value" in str(excinfo)
+    assert "value" in str(excinfo.value)
 
 
 def test_instrument_keyword_value_may_be_none():
@@ -522,7 +522,7 @@ def test_data_release_earlier_than_meta_release():
             telescope=types.Telescope.SALT,
         )
 
-    assert "data release" in str(excinfo)
+    assert "data release" in str(excinfo.value)
 
 
 def test_observation_group_id_may_be_none():
@@ -555,14 +555,14 @@ def test_observation_group_identifier_too_long():
     with pytest.raises(ValueError) as excinfo:
         types.ObservationGroup(group_identifier="B" * 41, name="ABC")
 
-    assert "group identifier" in str(excinfo)
+    assert "group identifier" in str(excinfo.value)
 
 
 def test_observation_group_name_too_long():
     with pytest.raises(ValueError) as excinfo:
         types.ObservationGroup(group_identifier="B15", name="N" * 41)
 
-    assert "name" in str(excinfo)
+    assert "name" in str(excinfo.value)
 
 
 # ObservationTime
@@ -604,7 +604,7 @@ def test_observation_start_time_must_be_timezone_aware():
             start_time=datetime(2019, 9, 6, 1, 3, 47, 0),
         )
 
-    assert "start" in str(excinfo) and "timezone" in str(excinfo)
+    assert "start" in str(excinfo.value) and "timezone" in str(excinfo.value)
 
 
 def test_observation_end_time_must_be_timezone_aware():
@@ -619,7 +619,7 @@ def test_observation_end_time_must_be_timezone_aware():
             ),
         )
 
-    assert "end" in str(excinfo) and "timezone" in str(excinfo)
+    assert "end" in str(excinfo.value) and "timezone" in str(excinfo.value)
 
 
 def test_observation_start_time_must_not_be_later_than_end_time():
@@ -636,7 +636,7 @@ def test_observation_start_time_must_not_be_later_than_end_time():
             ),
         )
 
-    assert "start" in str(excinfo) and "end" in str(excinfo)
+    assert "start" in str(excinfo.value) and "end" in str(excinfo.value)
 
 
 def test_observation_exposure_time_must_be_non_negative():
@@ -653,7 +653,7 @@ def test_observation_exposure_time_must_be_non_negative():
             ),
         )
 
-    assert "exposure time" in str(excinfo) and "non-negative" in str(excinfo)
+    assert "exposure time" in str(excinfo.value) and "non-negative" in str(excinfo.value)
 
 
 def test_observation_exposure_time_must_have_a_time_unit():
@@ -670,7 +670,7 @@ def test_observation_exposure_time_must_have_a_time_unit():
             ),
         )
 
-    assert "exposure time" in str(excinfo) and "unit" in str(excinfo)
+    assert "exposure time" in str(excinfo.value) and "unit" in str(excinfo.value)
 
 
 def test_observation_time_resolution_must_be_non_negative():
@@ -687,7 +687,7 @@ def test_observation_time_resolution_must_be_non_negative():
             ),
         )
 
-    assert "resolution" in str(excinfo) and "non-negative" in str(excinfo)
+    assert "resolution" in str(excinfo.value) and "non-negative" in str(excinfo.value)
 
 
 def test_observation_time_resolution_must_have_a_time_unit():
@@ -704,7 +704,7 @@ def test_observation_time_resolution_must_have_a_time_unit():
             ),
         )
 
-    assert "time resolution" in str(excinfo) and "unit" in str(excinfo)
+    assert "time resolution" in str(excinfo.value) and "unit" in str(excinfo.value)
 
 
 # Plane
@@ -751,7 +751,7 @@ def test_position_declination_must_have_an_angular_unit():
             dec=-42.9 * u.meter, equinox=2000, plane_id=515, ra=128.9 * u.degree
         )
 
-    assert "declination" in str(excinfo) and "angular" in str(excinfo)
+    assert "declination" in str(excinfo.value) and "angular" in str(excinfo.value)
 
 
 @pytest.mark.parametrize("dec", [-180, -90.0001, 90.00001, 180])
@@ -761,7 +761,7 @@ def test_position_declination_must_be_in_allowed_range(dec):
             dec=dec * u.degree, equinox=2000, plane_id=515, ra=128.9 * u.degree
         )
 
-    assert "declination" in str(excinfo) and "-90" in str(excinfo)
+    assert "declination" in str(excinfo.value) and "-90" in str(excinfo.value)
 
 
 def test_position_equinox_must_not_be_earlier_than_1900():
@@ -770,7 +770,7 @@ def test_position_equinox_must_not_be_earlier_than_1900():
             dec=12 * u.degree, equinox=1899.999, plane_id=515, ra=128.9 * u.degree
         )
 
-    assert "equinox" in str(excinfo)
+    assert "equinox" in str(excinfo.value)
 
 
 def test_position_right_ascension_must_have_an_angular_unit():
@@ -779,7 +779,7 @@ def test_position_right_ascension_must_have_an_angular_unit():
             dec=-42.9 * u.degree, equinox=2000, plane_id=515, ra=128.9 * u.meter
         )
 
-    assert "right ascension" in str(excinfo) and "angular" in str(excinfo)
+    assert "right ascension" in str(excinfo.value) and "angular" in str(excinfo.value)
 
 
 @pytest.mark.parametrize("ra", [-90, -0.0001, 360, 413.5])
@@ -789,7 +789,7 @@ def test_position_declination_must_be_in_allowed_range(ra):
             dec=-23.9 * u.degree, equinox=2000, plane_id=515, ra=ra * u.degree
         )
 
-    assert "right ascension" in str(excinfo) and "360" in str(excinfo)
+    assert "right ascension" in str(excinfo.value) and "360" in str(excinfo.value)
 
 
 # Proposal
@@ -817,7 +817,7 @@ def test_proposal_pi_too_long():
             title="Some Proposal",
         )
 
-    assert "PI" in str(excinfo)
+    assert "PI" in str(excinfo.value)
 
 
 def test_proposal_proposal_code_too_long():
@@ -829,7 +829,7 @@ def test_proposal_proposal_code_too_long():
             title="Some Proposal",
         )
 
-    assert "proposal code" in str(excinfo)
+    assert "proposal code" in str(excinfo.value)
 
 
 def test_proposal_title_too_long():
@@ -841,7 +841,7 @@ def test_proposal_title_too_long():
             title=201 * "a",
         )
 
-    assert "title" in str(excinfo)
+    assert "title" in str(excinfo.value)
 
 
 # ProposalInvestigator
@@ -860,7 +860,7 @@ def test_proposal_investigator_id_too_long():
     with pytest.raises(ValueError) as excinfo:
         types.ProposalInvestigator(proposal_id=532, investigator_id="i" * 51)
 
-    assert "investigator id" in str(excinfo)
+    assert "investigator id" in str(excinfo.value)
 
 
 # Target
@@ -883,7 +883,7 @@ def test_target_name_too_long():
             name="T" * 51, observation_id=1015, standard=False, target_type="10.1.9.4"
         )
 
-    assert "target name" in str(excinfo)
+    assert "target name" in str(excinfo.value)
 
 
 # TaskExecutionMode
