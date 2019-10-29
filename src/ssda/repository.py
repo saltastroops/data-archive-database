@@ -11,12 +11,14 @@ def delete(
     Delete an observation.
 
     If the observation belongs to a proposal, the proposal is not deleted, irrespective
-    of whet
+    of whether there are still observations for the proposal in the database.
 
     Parameters
     ----------
-    observation_properties
-    database_service
+    observation_properties : ObservationProperties
+        Observation properties.
+    database_service : DatabaseService
+        Database service.
 
     """
 
