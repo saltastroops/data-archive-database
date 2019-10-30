@@ -11,7 +11,7 @@ from psycopg2 import connect
 import ssda.database.ssda
 from ssda.database.services import DatabaseServices
 from ssda.task import execute_task
-from ssda.util.fits import fits_file_paths
+from ssda.util.fits import fits_file_paths, set_fits_base_dir
 from ssda.util.types import Instrument, DateRange, TaskName, TaskExecutionMode
 
 # Log with Sentry
@@ -200,6 +200,9 @@ def main(
         instruments=instruments_set,
         fits_base_dir=fits_base_dir,
     )
+
+    # store the base directory
+    set_fits_base_dir(fits_base_dir)
 
     # get the FITS file paths
     if start_date and end_date and fits_base_dir:

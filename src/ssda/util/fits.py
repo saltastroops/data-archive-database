@@ -6,15 +6,46 @@ import string
 
 from abc import ABC, abstractmethod
 from datetime import date, timedelta
-from typing import Iterator, Set
+from typing import Iterator, NamedTuple, Set
 from astropy.units import Quantity
 from ssda.util.types import byte, DateRange, Instrument
+
+
+# The path of the base directory where all FITS files are stored.
+_fits_base_dir: str = ''
+
+
+def set_fits_base_dir(path: str) -> None:
+    """
+    Set the path of the base directory where all FITS files are stored.
+
+    Parameters
+    ----------
+    path : str
+        Path of the base directory.
+
+    """
+    global _base_path
+    _base_path = path
+
+
+def get_fits_base_dir():
+    """
+    Get the path of the base directory where all FITS files are stored.
+
+    Returns
+    -------
+    str
+        The path of the base directory.
+
+    """
+
+    return _base_path
 
 
 class FitsFile(ABC):
     """
     A FITS file interface.
-
 
     """
 
