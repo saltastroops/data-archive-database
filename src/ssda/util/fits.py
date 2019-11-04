@@ -6,7 +6,7 @@ import string
 
 from abc import ABC, abstractmethod
 from datetime import date, timedelta
-from typing import Iterator, NamedTuple, Set
+from typing import Iterator, Set
 from astropy.units import Quantity
 from ssda.util.types import byte, DateRange, Instrument
 
