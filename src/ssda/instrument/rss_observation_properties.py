@@ -1,5 +1,5 @@
 from ssda.database.sdb import SaltDatabaseService
-from ssda.observation import ObservationProperties
+# from ssda.observation import ObservationProperties
 from ssda.util import types
 from ssda.util.energy_cal import rss_energy_cal, get_grating_frequency
 from ssda.util.salt_observation import SALTObservation
@@ -7,18 +7,18 @@ from ssda.util.fits import FitsFile
 from typing import Optional, List
 
 
-class RssObservationProperties(ObservationProperties):
+class RssObservationProperties:
 
-    def __init__(self, fits_file: FitsFile, database_service: SaltDatabaseService):
+    def __init__(self, fits_file: FitsFile, salt_database_service: SaltDatabaseService):
         """
         :param fits_file:
         """
         self.header_value = fits_file.header_value
-        self.file_path = fits_file.file_path()
-        self.database_service = database_service
+        self.file_path = fits_file.file_path
+        self.database_service = salt_database_service
         self.salt_observation = SALTObservation(
             fits_file=fits_file,
-            database_service=database_service
+            database_service=salt_database_service
         )
 
     def artifact(self, plane_id: int) -> types.Artifact:

@@ -1,6 +1,5 @@
 from astropy.units import Quantity
 from ssda.database.sdb import SaltDatabaseService
-from ssda.observation import ObservationProperties
 from ssda.util import types
 from ssda.util.energy_cal import hrs_interval, hrs_energy_cal
 from ssda.util.salt_observation import SALTObservation
@@ -8,7 +7,7 @@ from ssda.util.fits import FitsFile
 from typing import Optional, List
 
 
-class HrsObservationProperties(ObservationProperties):
+class HrsObservationProperties:
 
     def __init__(self, fits_file: FitsFile, database_service: SaltDatabaseService):
         """

@@ -1,4 +1,5 @@
-from ssda.database import DatabaseService
+from ssda.database.services import DatabaseServices
+from ssda.database.ssda import DatabaseService
 from ssda.observation import (
     StandardObservationProperties,
     DummyObservationProperties,
@@ -10,7 +11,7 @@ from ssda.util.types import TaskName, TaskExecutionMode
 
 
 def execute_task(
-    task_name: TaskName, fits_path: str, task_mode: TaskExecutionMode
+    task_name: TaskName, fits_path: str, task_mode: TaskExecutionMode, database_services: DatabaseServices
 ) -> None:
     # Get the database service.
     database_service = DatabaseService(None)
@@ -19,7 +20,8 @@ def execute_task(
     if task_mode == TaskExecutionMode.PRODUCTION:
         fits_file = StandardFitsFile(fits_path)
         observation_properties: ObservationProperties = StandardObservationProperties(
-            fits_file
+            fits_file,
+            database_services
         )
     elif task_name == TaskName.INSERT:
         observation_properties = DummyObservationProperties()
@@ -30,7 +32,7 @@ def execute_task(
     if task_name == TaskName.INSERT:
         insert(
             observation_properties=observation_properties,
-            database_service=database_service,
+            ssda_database_service=database_services.ssda,
         )
     elif task_name == TaskName.DELETE:
         raise NotImplementedError

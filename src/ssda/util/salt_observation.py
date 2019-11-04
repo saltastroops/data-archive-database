@@ -21,9 +21,9 @@ class SALTObservation:
         self.headers = fits_file.headers
         self.header_value = fits_file.header_value
         self.size = fits_file.size()
-        self.checksum = fits_file.checksum()
+        self.checksum = fits_file.checksum
         self.fits_file = fits_file
-        self.file_path = fits_file.file_path()
+        self.file_path = fits_file.file_path
         self.database_service = database_service
 
     def artifact(self, plane_id: int) -> types.Artifact:

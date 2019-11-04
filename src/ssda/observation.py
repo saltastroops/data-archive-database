@@ -1,6 +1,7 @@
 from abc import ABC
 from typing import List, Optional, Any
 
+from ssda.database.services import DatabaseServices
 from ssda.instrument.hrs_observation_properties import HrsObservationProperties
 from ssda.instrument.instrument import Instrument
 from ssda.instrument.rss_observation_properties import RssObservationProperties
@@ -66,25 +67,25 @@ class ObservationProperties(ABC):
 
 
 def instrument_observation_properties(fits_file: FitsFile,
-                                      database_service: SaltDatabaseService) -> ObservationProperties:
+                                      salt_database_service: SaltDatabaseService) -> ObservationProperties:
     o_p: Optional[ObservationProperties] = None
-    if fits_file.instrument() == Instrument.RSS:
-        o_p = RssObservationProperties(fits_file, database_service)
+    if fits_file.instrument().value.upper() == "RSS":
+        o_p = RssObservationProperties(fits_file, salt_database_service)
 
-    if fits_file.instrument() == Instrument.HRS:
-        o_p = HrsObservationProperties(fits_file, database_service)
+    if fits_file.instrument().value.upper() == "HRS":
+        o_p = HrsObservationProperties(fits_file, salt_database_service)
 
-    if fits_file.instrument() == Instrument.SALTICAM:
-        o_p = SalticamObservationProperties(fits_file, database_service)
+    if fits_file.instrument().value.upper() == "SALTICAM":
+        o_p = SalticamObservationProperties(fits_file, salt_database_service)
     if not o_p:
-        raise ValueError(f"Observation properties could not be defined for file {fits_file.file_path()}")
+        raise ValueError(f"Observation properties could not be defined for file {fits_file.file_path}")
     return o_p
 
 
 class StandardObservationProperties(ObservationProperties):
-    def __init__(self, fits_file: FitsFile):
+    def __init__(self, fits_file: FitsFile, database_services: DatabaseServices):
         self._observation_properties: ObservationProperties = \
-            instrument_observation_properties(fits_file, SaltDatabaseService(None))
+            instrument_observation_properties(fits_file, database_services.sdb)
 
     def artifact(self, plane_id: int) -> types.Artifact:
         return self._observation_properties.artifact(plane_id)

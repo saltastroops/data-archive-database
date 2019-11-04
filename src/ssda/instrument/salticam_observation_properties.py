@@ -1,5 +1,5 @@
 from ssda.database.sdb import SaltDatabaseService
-from ssda.observation import ObservationProperties
+# from ssda.observation import ObservationProperties
 from ssda.util import types
 from ssda.util.energy_cal import scam_energy_cal
 from ssda.util.salt_observation import SALTObservation
@@ -7,7 +7,7 @@ from ssda.util.fits import FitsFile
 from typing import Optional, List
 
 
-class SalticamObservationProperties(ObservationProperties):
+class SalticamObservationProperties:
 
     def __init__(self, fits_file: FitsFile, database_service: SaltDatabaseService):
         """

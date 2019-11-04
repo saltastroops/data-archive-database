@@ -208,11 +208,10 @@ class StandardFitsFile(FitsFile):
         instrument_dir = None
         for i, d in enumerate(dirs):
             if d.lower() == "data" and dirs[i - 1].lower() == "salt":
-                instrument_dir = dirs[i + 4]
+                instrument_dir = dirs[i + 3]
                 break
         if not instrument_dir:
             raise ValueError("No selected instrument")
-
         inst = Instrument.RSS if instrument_dir.lower() == "rss" else \
             Instrument.HRS if instrument_dir.lower() == "hrs" else \
             Instrument.SALTICAM if instrument_dir.lower() == "scam" else None
@@ -236,6 +235,8 @@ class StandardFitsFile(FitsFile):
 
     def header_value(self, keyword: str) -> str:
         letters = string.ascii_lowercase
+        if (keyword == "BVISITID"):
+            return "1000"
         return "".join(random.choice(letters) for _ in range(random.randint(1, 10)))
 
 

@@ -1,14 +1,16 @@
 import datetime
+import pandas as pd
 from dateutil.parser import parse
 from typing import Optional, List
-import mysql.connector
+# import mysql.connector
+from pymysql import connect
 
 from ssda.util import types
 
 
 class SaltDatabaseService:
     def __init__(self, database_config: types.DatabaseConfiguration):
-        self._connection = mysql.connector.connect(
+        self._connection = connect(
             database=database_config.database(),
             host=database_config.host(),
             user=database_config.username(),
@@ -19,29 +21,30 @@ class SaltDatabaseService:
     def find_pi(self, block_visit_id: int) -> str:
         sql = """
 SELECT FirstName, Surname FROM  BlockVisit
-	JOIN `Block` USING(Block_Id)
+    JOIN `Block` USING(Block_Id)
     JOIN Proposal ON `Block`.Proposal_Id = Proposal.Proposal_Id
     JOIN ProposalCode ON Proposal.ProposalCode_Id = ProposalCode.ProposalCode_Id
     JOIN ProposalContact ON ProposalCode.ProposalCode_Id = ProposalContact.ProposalCode_Id
     JOIN Investigator ON ProposalContact.Leader_Id = Investigator.Investigator_Id
 WHERE BlockVisit_Id = %s;
         """
-        pi = self._cursor.execute(sql, params=(block_visit_id,)).fetchone()
-        if len(pi):
-            return f"{pi[1]} {pi[0]}"
+        pi = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
+        print(pi['Surname'])
+        if pi['Surname']:
+            return f"{pi['Surname']} {pi['FirstName']}"
         raise ValueError("Observation have no Principal investigator")
 
     def find_proposal_code(self, block_visit_id: int) -> str:
         sql = """
 SELECT Proposal_Code FROM  BlockVisit
-	JOIN `Block` USING(Block_Id)
+    JOIN `Block` USING(Block_Id)
     JOIN Proposal ON `Block`.Proposal_Id = Proposal.Proposal_Id
     JOIN ProposalCode ON Proposal.ProposalCode_Id = ProposalCode.ProposalCode_Id
 WHERE BlockVisit_Id = %s;
         """
-        pc = self._cursor.execute(sql, params=(block_visit_id,)).fetchone()
-        if len(pc):
-            return f"{pc[0]}"
+        pc = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
+        if pc['Proposal_Code']:
+            return f"{pc['Proposal_Code']}"
         raise ValueError("Observation have proposal/program code")
 
     def find_proposal_title(self, block_visit_id: int) -> str:
@@ -53,20 +56,20 @@ SELECT Title FROM  BlockVisit
 		AND Proposal.Semester_Id = ProposalText.Semester_Id
 WHERE BlockVisit_Id = %s;
         """
-        pt = self._cursor.execute(sql, params=(block_visit_id,)).fetchone()
-        if len(pt):
-            return f"{pt[0]}"
+        pt = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
+        if pt['Title']:
+            return f"{pt['Title']}"
         raise ValueError("Observation have no title")
 
     def find_observation_status(self, block_visit_id: int) -> types.Status:
         sql = '''
 SELECT BlockVisitStatus FROM BlockVisit JOIN BlockVisitStatus USING(BlockVisitStatus_Id) WHERE BlockVisit_Id =%s
         '''
-        status = self._cursor.execute(sql, params=(block_visit_id,)).fetchone()
+        status = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
 
-        if status[0].lower() == "accepted":
+        if status['BlockVisitStatus'].lower() == "accepted":
             return types.Status.ACCEPTED
-        if status[0].lower() == "rejected":
+        if status['BlockVisitStatus'].lower() == "rejected":
             return types.Status.REJECTED
         raise ValueError("Observation have unknown status.")
 
@@ -78,9 +81,9 @@ SELECT ReleaseDate FROM  BlockVisit
     JOIN ProposalGeneralInfo ON Proposal.ProposalCode_Id = ProposalGeneralInfo.ProposalCode_Id
 WHERE BlockVisit_Id = %s;
         """
-        release_date = self._cursor.execute(sql, params=(block_visit_id,)).fetchone()
-        if len(release_date):
-            return parse(release_date[0])
+        release_date = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
+        if release_date['ReleaseDate']:
+            return parse(release_date['ReleaseDate'])
         raise ValueError("Observation have no release date.")
 
     def find_meta_release_date(self, block_visit_id: int) -> datetime.datetime:
@@ -89,13 +92,13 @@ WHERE BlockVisit_Id = %s;
     def find_proposal_investigators(self, block_visit_id: int) -> List[str]:
         sql = """
 SELECT FirstName, Surname FROM  BlockVisit
-	JOIN `Block` USING(Block_Id)
+    JOIN `Block` USING(Block_Id)
     JOIN Proposal ON `Block`.Proposal_Id = Proposal.Proposal_Id
     JOIN ProposalInvestigator ON Proposal.ProposalCode_Id = ProposalInvestigator.ProposalCode_Id
     JOIN Investigator ON ProposalInvestigator.Investigator_Id = Investigator.Investigator_I
 WHERE BlockVisit_Id = %s;
         """
-        pis = self._cursor.execute(sql, params=(block_visit_id,)).fetchall()
+        pis = pd.read_sql(sql, self._connection, params=(block_visit_id,)).fetchall()
         if len(pis):
             ps = []
             for pi in pis:
@@ -108,8 +111,8 @@ WHERE BlockVisit_Id = %s;
         sql = '''
 SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Barcode=%s
         '''
-        mos = self._cursor.execute(sql, params=(slit_barcode,)).fetchone()
-        if len(mos):
-            if mos[0] == 'MOS':
+        mos = pd.read_sql(sql, self._connection, params=(slit_barcode,)).iloc[0]
+        if mos['RssMaskType']:
+            if mos['RssMaskType'] == 'MOS':
                 return True
         return False

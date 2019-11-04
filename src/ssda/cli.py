@@ -9,14 +9,16 @@ import sentry_sdk
 from psycopg2 import connect
 
 import ssda.database.ssda
+from ssda.database.sdb import SaltDatabaseService
 from ssda.database.services import DatabaseServices
 from ssda.task import execute_task
+from ssda.util import types
 from ssda.util.fits import fits_file_paths
 from ssda.util.types import Instrument, DateRange, TaskName, TaskExecutionMode
 
-# Log with Sentry
-if os.environ.get("SENTRY_DSN"):
-    sentry_sdk.init(os.environ.get("SENTRY_DSN"))  # type: ignore
+# # Log with Sentry
+# if os.environ.get("SENTRY_DSN"):
+#     sentry_sdk.init(os.environ.get("SENTRY_DSN"))  # type: ignore
 
 
 def parse_date(value: str, now: Callable[[], datetime]) -> date:
@@ -222,9 +224,18 @@ def main(
         port=ssda_db_config.port,
         database=ssda_db_config.database,
     )
+    sdb_db_config = dsnparse.parse_environ("SDB_DSN")
+    sdb_db_config = types.DatabaseConfiguration(
+        username=sdb_db_config.user,
+        password=sdb_db_config.secret,
+        host=sdb_db_config.host,
+        port=3306,
+        database=sdb_db_config.database
+    )
     ssda_database_service = ssda.database.ssda.DatabaseService(ssda_connection)
+    sdb_database_service = SaltDatabaseService(sdb_db_config)
 
-    database_services = DatabaseServices(ssda=ssda_database_service)
+    database_services = DatabaseServices(ssda=ssda_database_service, sdb=sdb_database_service)
 
     # execute the requested task
     try:
@@ -235,7 +246,7 @@ def main(
                 task_name=task_name,
                 fits_path=path,
                 task_mode=task_mode,
-                database_services=database_services,
+                database_services=database_services
             )
     except BaseException as e:
         ssda_connection.close()
