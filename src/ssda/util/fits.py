@@ -25,8 +25,8 @@ def set_fits_base_dir(path: str) -> None:
         Path of the base directory.
 
     """
-    global _base_path
-    _base_path = path
+    global _fits_base_dir
+    _fits_base_dir = path
 
 
 def get_fits_base_dir():
@@ -40,7 +40,7 @@ def get_fits_base_dir():
 
     """
 
-    return _base_path
+    return _fits_base_dir
 
 
 class FitsFile(ABC):
