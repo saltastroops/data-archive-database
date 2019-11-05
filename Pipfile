@@ -20,6 +20,8 @@ PyMySQL = "*"
 python-dateutil = "*"
 sentry-sdk = "*"
 cryptography = "*"
+ssda = {editable = true,path = "."}
+faker = "*"
 
 [requires]
 python_version = "3.7"
