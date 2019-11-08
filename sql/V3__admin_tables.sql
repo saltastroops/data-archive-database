@@ -57,15 +57,29 @@ VALUES ('Administrator');
 
 -- OTHER TABLES
 
+-- ssda_session
+
+DROP TABLE IF EXISTS ssda_session;
+
+CREATE TABLE "ssda_session" (
+  "sid" varchar NOT NULL COLLATE "default",
+  "sess" json NOT NULL,
+  "expire" timestamp(6) NOT NULL
+)
+WITH (OIDS=FALSE);
+ALTER TABLE "ssda_session" ADD CONSTRAINT "session_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE;
+
+COMMENT ON TABLE ssda_session IS 'A data archive cookie session store. This create table is taken from https://github.com/voxpelli/node-connect-pg-simple/blob/master/table.sql';
+
 -- ssda_user
 
 DROP TABLE IF EXISTS ssda_user;
 
 CREATE TABLE ssda_user (
-                           ssda_user_id serial PRIMARY KEY,
-                           affiliation varchar(255) NOT NULL,
-                           auth_provider_id int NOT NULL REFERENCES auth_provider (auth_provider_id),
-                           auth_provider_user_id varchar(50) NOT NULL,
+  ssda_user_id serial PRIMARY KEY,
+  affiliation varchar(255) NOT NULL,
+  auth_provider_id int NOT NULL REFERENCES auth_provider (auth_provider_id),
+  auth_provider_user_id varchar(50) NOT NULL,
   email varchar(255) NOT NULL,
   family_name varchar(255) NOT NULL,
   given_name varchar(255) NOT NULL
