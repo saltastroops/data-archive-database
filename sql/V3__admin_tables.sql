@@ -67,9 +67,11 @@ CREATE TABLE "ssda_session" (
   "expire" timestamp(6) NOT NULL
 )
 WITH (OIDS=FALSE);
+
 ALTER TABLE "ssda_session" ADD CONSTRAINT "session_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE;
 
-COMMENT ON TABLE ssda_session IS 'A data archive cookie session store. This create table is taken from https://github.com/voxpelli/node-connect-pg-simple/blob/master/table.sql';
+COMMENT ON TABLE ssda_session IS 'A session cookie for the Data Archive.';
+-- See https://github.com/voxpelli/node-connect-pg-simple/blob/master/table.sql
 
 -- ssda_user
 
