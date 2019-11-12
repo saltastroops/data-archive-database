@@ -3,7 +3,6 @@ from typing import List, Optional, Any
 
 from ssda.database.services import DatabaseServices
 from ssda.instrument.hrs_observation_properties import HrsObservationProperties
-from ssda.instrument.instrument import Instrument
 from ssda.instrument.rss_observation_properties import RssObservationProperties
 from ssda.instrument.salticam_observation_properties import SalticamObservationProperties
 from ssda.util import types
@@ -98,9 +97,15 @@ class StandardObservationProperties(ObservationProperties):
     ) -> List[types.InstrumentKeywordValue]:
         return self._observation_properties.instrument_keyword_values(observation_id)
 
+    def instrument_setup(self):
+        return
+
     def observation(self, observation_group_id: Optional[int], proposal_id: Optional[int]) -> types.Observation:
         return self._observation_properties.observation(observation_group_id=observation_group_id,
                                                         proposal_id=proposal_id)
+
+    def observation_group(self) -> Optional[types.ObservationGroup]:
+        return self._observation_properties.observation_group()
 
     def observation_time(self, plane_id: int) -> types.ObservationTime:
         return self._observation_properties.observation_time(plane_id)

@@ -52,6 +52,9 @@ class SalticamObservationProperties:
             proposal_id=proposal_id,
             instrument=types.Instrument.SALTICAM)
 
+    def observation_group(self) -> Optional[types.ObservationGroup]:
+        return self.salt_observation.observation_group()
+
     def observation_time(self, plane_id: int) -> types.ObservationTime:
         return self.salt_observation.observation_time(plane_id)
 

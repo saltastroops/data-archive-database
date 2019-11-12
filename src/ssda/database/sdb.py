@@ -83,7 +83,7 @@ WHERE BlockVisit_Id = %s;
         """
         release_date = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
         if release_date['ReleaseDate']:
-            return parse(release_date['ReleaseDate'])
+            return release_date['ReleaseDate']
         raise ValueError("Observation have no release date.")
 
     def find_meta_release_date(self, block_visit_id: int) -> datetime.datetime:
@@ -95,14 +95,14 @@ SELECT FirstName, Surname FROM  BlockVisit
     JOIN `Block` USING(Block_Id)
     JOIN Proposal ON `Block`.Proposal_Id = Proposal.Proposal_Id
     JOIN ProposalInvestigator ON Proposal.ProposalCode_Id = ProposalInvestigator.ProposalCode_Id
-    JOIN Investigator ON ProposalInvestigator.Investigator_Id = Investigator.Investigator_I
+    JOIN Investigator ON ProposalInvestigator.Investigator_Id = Investigator.Investigator_Id
 WHERE BlockVisit_Id = %s;
         """
-        pis = pd.read_sql(sql, self._connection, params=(block_visit_id,)).fetchall()
+        pis = pd.read_sql(sql, self._connection, params=(block_visit_id,))
         if len(pis):
             ps = []
-            for pi in pis:
-                ps.append(f"{pis[1]} {pi[0]}")
+            for index, row in pis.iterrows():
+                ps.append(f"{row['Surname']} {row['FirstName']}")
             return ps
         raise ValueError("Observation have no Investigators")
 
@@ -116,3 +116,15 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
             if mos['RssMaskType'] == 'MOS':
                 return True
         return False
+
+    def find_block_code(self, block_visit_id) -> Optional[str]:
+        sql = """
+SELECT BlockCode FROM  BlockCode
+    JOIN `Block` USING(BlockCode_Id)
+    JOIN BlockVisit ON `Block`.Block_Id = BlockVisit.Block_Id
+WHERE BlockVisit_Id = %s;
+        """
+        block_code = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
+        if block_code['BlockCode']:
+            return block_code['BlockCode']
+        return None

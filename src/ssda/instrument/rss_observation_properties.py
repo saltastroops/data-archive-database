@@ -1,3 +1,5 @@
+import random
+
 from ssda.database.sdb import SaltDatabaseService
 # from ssda.observation import ObservationProperties
 from ssda.util import types
@@ -34,31 +36,74 @@ class RssObservationProperties:
         return rss_energy_cal(header_value=self.header_value, plane_id=plane_id)
 
     def instrument_keyword_values(self, observation_id: int) -> List[types.InstrumentKeywordValue]:
-        return [
-            types.InstrumentKeywordValue(
-                instrument=types.Instrument.RSS,
-                instrument_keyword=types.InstrumentKeyword.GRATING,
-                observation_id=observation_id,
-                value=self.header_value("GRATING")
-            ),
-            types.InstrumentKeywordValue(
-                instrument=types.Instrument.RSS,
-                instrument_keyword=types.InstrumentKeyword.FILTER,
-                observation_id=observation_id,
-                value=self.header_value("FILTER")
-            ),
-            types.InstrumentKeywordValue(
-                instrument=types.Instrument.RSS,
-                instrument_keyword=types.InstrumentKeyword.EXPOSURE_TIME,
-                observation_id=observation_id,
-                value=self.header_value("EXPTIME")
-            )
-        ]  # TODO check if there is more keywords
+        return []
+        # return [
+        #     types.InstrumentKeywordValue(
+        #         instrument=types.Instrument.RSS,
+        #         instrument_keyword=types.InstrumentKeyword.GRATING,
+        #         observation_id=observation_id,
+        #         value=self.header_value("GRATING")
+        #     ),
+        #     types.InstrumentKeywordValue(
+        #         instrument=types.Instrument.RSS,
+        #         instrument_keyword=types.InstrumentKeyword.FILTER,
+        #         observation_id=observation_id,
+        #         value=self.header_value("FILTER")
+        #     ),
+        #     types.InstrumentKeywordValue(
+        #         instrument=types.Instrument.RSS,
+        #         instrument_keyword=types.InstrumentKeyword.EXPOSURE_TIME,
+        #         observation_id=observation_id,
+        #         value=self.header_value("EXPTIME")
+        #     )
+        # ]  # TODO check if there is more keywords
+
+    def instrument_setup(self,  observation_id: int) -> types.InstrumentSetup:
+        sql = """
+        WITH fpm (id) AS (
+            SELECT rss_fabry_perot_mode_id FROM rss_fabry_perot_mode WHERE fabry_perot_mode=%(fabry_perot_mode)s
+        ),
+             rg (id) AS (
+                 SELECT rss_grating_id FROM rss_grating WHERE grating=%(grating)s
+             )
+        INSERT INTO rss_setup (instrument_setup_id, rss_fabry_perot_mode_id, rss_grating_id)
+        VALUES (%(instrument_setup_id)s, (SELECT id FROM fpm), (SELECT id FROM rg))
+        """
+
+        fabry_perot_mode = self.header_value("OBSMODE").strip()
+
+        gratings = [g for g in types.RSSGrating]
+        grating = random.choice(gratings)
+
+        parameters = dict(
+            fabry_perot_mode=fabry_perot_mode.value, grating=grating.value
+        )
+        queries = [types.SQLQuery(sql=sql, parameters=parameters)]
+
+        detector_modes = [d for d in types.DetectorMode]
+
+        detector_mode = random.choice(detector_modes)
+        filters = [f for f in types.Filter]
+        filter = random.choice(filters)
+        instrument_modes = [im for im in types.InstrumentMode]
+        instrument_mode = random.choice(instrument_modes)
+
+
+        return types.InstrumentSetup(
+            additional_queries=queries,
+            detector_mode=detector_mode,
+            filter=filter,
+            instrument_mode=instrument_mode,
+            observation_id=observation_id,
+        )
 
     def observation(self, observation_group_id: Optional[int], proposal_id: Optional[int]) -> types.Observation:
         return self.salt_observation.observation(observation_group_id=observation_group_id,
                                                  proposal_id=proposal_id,
                                                  instrument=types.Instrument.RSS)
+
+    def observation_group(self) -> Optional[types.ObservationGroup]:
+        return self.salt_observation.observation_group()
 
     def observation_time(self, plane_id: int) -> types.ObservationTime:
         return self.salt_observation.observation_time(plane_id)

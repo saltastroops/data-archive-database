@@ -46,16 +46,25 @@ class SALTObservation:
                     proposal_id: Optional[int],
                     instrument: types.Instrument
                     ) -> types.Observation:
+
+        if not self.header_value("BVISITID"):
+            pass
         return types.Observation(
             data_release=self.database_service.find_release_date(int(self.header_value("BVISITID"))),
             instrument=instrument,
             intent=self.__intent(),
             meta_release=self.database_service.find_meta_release_date(int(self.header_value("BVISITID"))),
-            observation_group_id=int(self.header_value("BVISITID")),  # TODO parse a group ot just an id
+            observation_group_id=observation_group_id,
             observation_type=types.ObservationType.OBJECT,
             proposal_id=proposal_id,
             status=self.database_service.find_observation_status(int(self.header_value("BVISITID"))),
             telescope=types.Telescope.SALT
+        )
+
+    def observation_group(self) -> Optional[types.ObservationGroup]:
+        return types.ObservationGroup(
+            group_identifier=self.header_value("BVISITID"),
+            name=self.header_value("BVISITID")  # Todo block name
         )
 
     def observation_time(self, plane_id: int) -> types.ObservationTime:
@@ -94,6 +103,9 @@ class SALTObservation:
         )
 
     def proposal(self) -> Optional[types.Proposal]:
+        if not self.fits_file.header_value("BVISITID"):
+            return None
+
         return types.Proposal(
             institution=types.Institution.SALT,
             pi=self.database_service.find_pi(int(self.fits_file.header_value("BVISITID"))),
@@ -152,8 +164,7 @@ class SALTObservation:
                 observation_object.upper() == "BIAS" or \
                 observation_object.upper() == "FLAT":
             return types.Intent.CALIBRATION
-        elif product_type.upper() =="OBJECT" or product_type.upper() == "SCIENCE":
-            # TODO Check if there is any other product type for SALT instruments
+        elif product_type.upper() == "OBJECT" or product_type.upper() == "SCIENCE":
             return types.Intent.SCIENCE
         raise ValueError(f"unknown intent for file {self.file_path}")
 

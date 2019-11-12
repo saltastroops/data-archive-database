@@ -803,7 +803,7 @@ class ObservationGroup:
         return self._group_identifier
 
     @property
-    def name(self) -> str:
+    def name(self) -> Optional[str]:
         return self._name
 
 

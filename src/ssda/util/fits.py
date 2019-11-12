@@ -7,6 +7,8 @@ from abc import ABC, abstractmethod
 from datetime import date, timedelta
 from typing import Iterator, Set, Dict, Any
 from astropy.units import Quantity
+from astropy.io import fits
+from ssda.util import types
 from ssda.util.types import DateRange, Instrument
 
 
@@ -201,7 +203,7 @@ class StandardFitsFile(FitsFile):
         self.path = path
 
     def size(self) -> Quantity:
-        return random.randint(1000, 1000000000)
+        return random.randint(1000, 1000000000) * types.byte
 
     def instrument(self) -> Instrument:
         dirs = self.path.split("/")
@@ -220,24 +222,21 @@ class StandardFitsFile(FitsFile):
 
         return inst
 
-    @property
     def file_path(self) -> str:
         return self.path
 
-    @property
     def checksum(self) -> str:
         letters = string.ascii_lowercase
-        return "".join(random.choice(letters) for _ in range(50))
+        return "".join(random.choice(letters) for _ in range(20))
 
     def headers(self) -> Dict[str, Any]:
-        #  TODO get FITS headers
-        return {}
+        hdulist = fits.open(self.path)
+        return hdulist[0].header
 
     def header_value(self, keyword: str) -> str:
-        letters = string.ascii_lowercase
-        if (keyword == "BVISITID"):
+        if (keyword == "BVISITID"):  # TODO Block visit can be nothing
             return "1000"
-        return "".join(random.choice(letters) for _ in range(random.randint(1, 10)))
+        return str(self.headers()[keyword])
 
 
 class DummyFitsFile(FitsFile):

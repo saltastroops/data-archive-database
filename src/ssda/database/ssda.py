@@ -147,8 +147,8 @@ class DatabaseService:
         with self._connection.cursor() as cur:
             sql = """
             SELECT proposal_id
-            FROM proposal
-            JOIN institution ON proposal.institution_id = institution.institution_id
+            FROM observations.proposal
+            JOIN observations.institution ON proposal.institution_id = institution.institution_id
             WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
             """
             cur.execute(
@@ -347,7 +347,6 @@ class DatabaseService:
                     %(observation_id)s,
                     %(value)s)
             """
-
             cur.execute(
                 sql,
                 dict(
@@ -489,6 +488,8 @@ class DatabaseService:
             )
             RETURNING observation.observation_id
             """
+
+            print(observation.intent.value)
 
             cur.execute(
                 sql,
@@ -716,9 +717,9 @@ class DatabaseService:
         with self._connection.cursor() as cur:
             sql = """
             WITH inst (institution_id) AS (
-                SELECT institution_id FROM institution WHERE name=%(institution)s
+                SELECT institution_id FROM observations.institution WHERE name=%(institution)s
             )
-            INSERT INTO proposal (institution_id, pi, proposal_code, title)
+            INSERT INTO observations.proposal (institution_id, pi, proposal_code, title)
             VALUES (
                 (SELECT institution_id FROM inst),
                 %(pi)s,
