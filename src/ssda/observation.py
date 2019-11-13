@@ -97,8 +97,8 @@ class StandardObservationProperties(ObservationProperties):
     ) -> List[types.InstrumentKeywordValue]:
         return self._observation_properties.instrument_keyword_values(observation_id)
 
-    def instrument_setup(self):
-        return
+    def instrument_setup(self, observation_id):
+        return self._observation_properties.instrument_setup(observation_id)
 
     def observation(self, observation_group_id: Optional[int], proposal_id: Optional[int]) -> types.Observation:
         return self._observation_properties.observation(observation_group_id=observation_group_id,

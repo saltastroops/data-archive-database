@@ -106,6 +106,23 @@ WHERE BlockVisit_Id = %s;
             return ps
         raise ValueError("Observation have no Investigators")
 
+    def find_target_type(self, block_visit_id: int) -> Optional[str]:
+        sql = """
+SELECT TargetType.TargetType as tt FROM BlockVisit
+    JOIN `Block` ON BlockVisit.Block_Id = `Block`.Block_Id
+    JOIN Pointing ON `Block`.Block_Id = Pointing.Block_Id
+    JOIN Observation ON Pointing.Pointing_Id = Observation.Pointing_Id
+    JOIN Target ON Observation.Target_Id = Target.Target_Id
+    JOIN TargetSubType ON Target.TargetSubType_Id = TargetSubType.TargetSubType_Id
+    JOIN TargetType ON TargetType.TargetType_Id = TargetSubType.TargetType_Id
+WHERE BlockVisit.BlockVisit_Id = %s
+        """
+        target_type = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
+        if target_type['TargetType']:
+            return target_type['TargetType']
+        return 'Unknown'
+
+
     def is_mos(self, slit_barcode: str) -> bool:
 
         sql = '''

@@ -12,9 +12,16 @@ class ReadInstrumentWavelength:
 
     def wavelengths_and_transmissions(self) -> List[Tuple[float, float]]:
         wavelength = []
+        filter_name = self._filter_name
         if not self._instrument or not self._filter_name:
             raise ValueError("Filter name and instrument must be provided to use this method")
-        with open(f'{os.environ["PATH_TO_WAVELENGTH_FILES"]}/{self._instrument}/{self._filter_name}.txt', 'r') \
+        if self._instrument.value.lower() == 'salticam':
+            if self._filter_name == 'Halpha-S1':
+                filter_name = 'H-alpha'
+            if self._filter_name == 'SDSSr-S1':
+                filter_name = 'SDSS_rp'
+
+        with open(f'{os.environ["PATH_TO_WAVELENGTH_FILES"]}/{self._instrument.value.lower()}/{filter_name}.txt', 'r') \
                 as file:
             for line in file.readlines():
                 la = line.split()

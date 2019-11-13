@@ -31,20 +31,41 @@ class SalticamObservationProperties:
         return scam_energy_cal(plane_id, filter_name)
 
     def instrument_keyword_values(self, observation_id: int) -> List[types.InstrumentKeywordValue]:
-        return [
-            types.InstrumentKeywordValue(
-                instrument=types.Instrument.SALTICAM,
-                instrument_keyword=types.InstrumentKeyword.FILTER,
-                observation_id=observation_id,
-                value=self.header_value("FILTER")
-            ),
-            types.InstrumentKeywordValue(
-                instrument=types.Instrument.SALTICAM,
-                instrument_keyword=types.InstrumentKeyword.EXPOSURE_TIME,
-                observation_id=observation_id,
-                value=self.header_value("EXPTIME")
-            )
-        ]  # TODO check if there is more keywords
+        # return [
+        #     types.InstrumentKeywordValue(
+        #         instrument=types.Instrument.SALTICAM,
+        #         instrument_keyword=types.InstrumentKeyword.FILTER,
+        #         observation_id=observation_id,
+        #         value=self.header_value("FILTER")
+        #     ),
+        #     types.InstrumentKeywordValue(
+        #         instrument=types.Instrument.SALTICAM,
+        #         instrument_keyword=types.InstrumentKeyword.EXPOSURE_TIME,
+        #         observation_id=observation_id,
+        #         value=self.header_value("EXPTIME")
+        #     )
+        # ]
+        return []
+
+    def instrument_setup(self,  observation_id: int) -> types.InstrumentSetup:
+        queries = []
+
+        detector_mode = None
+        for dm in types.DetectorMode:
+            if self.header_value("DETMODE").strip().upper() == dm.value.upper():
+                detector_mode = dm
+        filter = None
+        for fi in types.Filter:
+            if self.header_value("FILTER").strip() == fi.value:
+                filter = fi
+
+        return types.InstrumentSetup(
+            additional_queries=queries,
+            detector_mode=detector_mode,
+            filter=None,
+            instrument_mode=types.InstrumentMode.IMAGING,  # TODO HRS only do spectroscopy? ask Christian
+            observation_id=observation_id
+        )
 
     def observation(self,  observation_group_id: Optional[int], proposal_id: Optional[int]) -> types.Observation:
         return self.salt_observation.observation(
@@ -61,8 +82,8 @@ class SalticamObservationProperties:
     def plane(self, observation_id: int) -> types.Plane:
         return types.Plane(observation_id, data_product_type=types.DataProductType.IMAGE)
 
-    def polarization(self, plane_id: int) -> Optional[types.Polarization]:  # TODO find out why is this an array
-        return self.salt_observation.polarizations(plane_id=plane_id)
+    def polarization(self, plane_id: int) -> Optional[types.Polarization]:
+        return None
 
     def position(self, plane_id: int) -> Optional[types.Position]:
         return self.salt_observation.position(plane_id=plane_id)

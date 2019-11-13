@@ -36,20 +36,51 @@ class HrsObservationProperties:
         return hrs_energy_cal(plane_id, arm, resolution)
 
     def instrument_keyword_values(self, observation_id: int) -> List[types.InstrumentKeywordValue]:
-        return [
-            types.InstrumentKeywordValue(
-                instrument=types.Instrument.HRS,
-                instrument_keyword=types.InstrumentKeyword.FILTER,
-                observation_id=observation_id,
-                value=self.header_value("FILTER")
-            ),
-            types.InstrumentKeywordValue(
-                instrument=types.Instrument.HRS,
-                instrument_keyword=types.InstrumentKeyword.EXPOSURE_TIME,
-                observation_id=observation_id,
-                value=self.header_value("EXPTIME")
-            )
-        ]  # TODO check if there is more keywords
+        # return [
+        #     types.InstrumentKeywordValue(
+        #         instrument=types.Instrument.HRS,
+        #         instrument_keyword=types.InstrumentKeyword.FILTER,
+        #         observation_id=observation_id,
+        #         value=self.header_value("FILTER")
+        #     ),
+        #     types.InstrumentKeywordValue(
+        #         instrument=types.Instrument.HRS,
+        #         instrument_keyword=types.InstrumentKeyword.EXPOSURE_TIME,
+        #         observation_id=observation_id,
+        #         value=self.header_value("EXPTIME")
+        #     )
+        # ]  # TODO check if there is more keywords
+        return []
+
+    def instrument_setup(self,  observation_id: int) -> types.InstrumentSetup:
+        resolution = self.header_value("OBSMODE")
+        hrs_mode = None
+
+        for hm in types.HRSMode:
+            if self.header_value("OBSMODE").strip().lower() == hm.value.lower():
+                hrs_mode = hm
+        sql = """
+        WITH hm (id) AS (
+            SELECT hrs_mode_id FROM hrs_mode WHERE hrs_mode.hrs_mode=%(hrs_mode)s
+        )
+        INSERT INTO hrs_setup (instrument_setup_id, hrs_mode_id)
+        VALUES (%(instrument_setup_id)s, (SELECT id FROM hm))
+        """
+        parameters = dict(hrs_mode=hrs_mode.value)
+        queries = [types.SQLQuery(sql=sql, parameters=parameters)]
+
+        detector_mode = None
+        for dm in types.DetectorMode:
+            if self.header_value("DETMODE").strip() == dm.value:
+                detector_mode = dm
+
+        return types.InstrumentSetup(
+            additional_queries=queries,
+            detector_mode=detector_mode,
+            filter=None,
+            instrument_mode=types.InstrumentMode.SPECTROSCOPY,  # TODO HRS only do spectroscopy? ask Christian
+            observation_id=observation_id
+        )
 
     def observation(self, observation_group_id: Optional[int], proposal_id: Optional[int]) -> types.Observation:
         return self.salt_observation.observation(observation_group_id=observation_group_id,
@@ -65,8 +96,8 @@ class HrsObservationProperties:
     def plane(self, observation_id: int) -> types.Plane:
         return types.Plane(observation_id, data_product_type=types.DataProductType.SPECTRUM)
 
-    def polarization(self, plane_id: int) -> Optional[types.Polarization]:  # TODO find out why is this an array
-        return self.salt_observation.polarizations(plane_id=plane_id)
+    def polarization(self, plane_id: int) -> Optional[types.Polarization]:
+        return None
 
     def position(self, plane_id: int) -> Optional[types.Position]:
         return self.salt_observation.position(plane_id=plane_id)

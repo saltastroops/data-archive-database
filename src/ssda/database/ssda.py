@@ -247,7 +247,7 @@ class DatabaseService:
                 dict(
                     content_checksum=artifact.content_checksum,
                     content_length=artifact.content_length.to_value(types.byte),
-                    identifier=artifact.identifier,
+                    identifier=str(artifact.identifier),
                     name=artifact.name,
                     path=artifact.path,
                     plane_id=artifact.plane_id,

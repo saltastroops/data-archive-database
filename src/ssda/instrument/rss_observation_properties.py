@@ -1,7 +1,6 @@
 import random
 
 from ssda.database.sdb import SaltDatabaseService
-# from ssda.observation import ObservationProperties
 from ssda.util import types
 from ssda.util.energy_cal import rss_energy_cal, get_grating_frequency
 from ssda.util.salt_observation import SALTObservation
@@ -72,22 +71,23 @@ class RssObservationProperties:
 
         fabry_perot_mode = self.header_value("OBSMODE").strip()
 
-        gratings = [g for g in types.RSSGrating]
-        grating = random.choice(gratings)
+        grating_value = self.header_value("GRATING").strip()
+        grating = None if grating_value == "N/A" else grating_value
 
-        parameters = dict(
-            fabry_perot_mode=fabry_perot_mode.value, grating=grating.value
-        )
+        parameters = dict(fabry_perot_mode=fabry_perot_mode, grating=grating)
         queries = [types.SQLQuery(sql=sql, parameters=parameters)]
 
-        detector_modes = [d for d in types.DetectorMode]
+        detector_mode = None
+        for dm in types.DetectorMode:
+            if self.header_value("DETMODE").strip() == dm.value:
+                detector_mode = dm
 
-        detector_mode = random.choice(detector_modes)
-        filters = [f for f in types.Filter]
-        filter = random.choice(filters)
-        instrument_modes = [im for im in types.InstrumentMode]
-        instrument_mode = random.choice(instrument_modes)
+        filter = None
+        for fi in types.Filter:
+            if self.header_value("FILTER").strip() == fi.value:
+                filter = fi
 
+        instrument_mode = which_instrument_mode_rss(self.header_value, self.database_service)
 
         return types.InstrumentSetup(
             additional_queries=queries,
@@ -116,8 +116,31 @@ class RssObservationProperties:
             else types.DataProductType.SPECTRUM
         return types.Plane(observation_id, data_product_type=data_product_type)
 
-    def polarization(self, plane_id: int) -> Optional[types.Polarization]:  # TODO find out why is this an array
-        return self.salt_observation.polarizations(plane_id=plane_id)
+    @staticmethod
+    def get_pattern(pattern: str) -> types.PolarizationMode:
+        # if pattern.upper() == "NONE" or not pattern:  # TODO can we have a None if polarization_config is NOT Open
+        #     return None
+        if pattern.upper() == "LINEAR":
+            return types.PolarizationMode.LINEAR
+        elif pattern.upper() == "LINEAR-HI":
+            return types.PolarizationMode.LINEAR_HI
+        elif pattern.upper() == "CIRCULAR":
+            return types.PolarizationMode.CIRCULAR
+        elif pattern.upper() == "ALL-STOKES":
+            return types.PolarizationMode.ALL_STOKES
+        else:
+            return types.PolarizationMode.OTHER
+
+    def polarization(self, plane_id: int) -> Optional[types.Polarization]:
+        polarization_config = self.header_value("POLCONF").strip()
+        pattern: str = self.header_value("WPPATERN").strip().upper()
+        if polarization_config.upper() == "OPEN":
+            return None
+
+        return types.Polarization(
+            plane_id=plane_id,
+            polarization_mode=self.get_pattern(pattern=pattern)
+        )
 
     def position(self, plane_id: int) -> Optional[types.Position]:
         return self.salt_observation.position(plane_id=plane_id)
@@ -148,3 +171,21 @@ class RssObservationProperties:
                 proposal_id.upper() == "CAL_ARC":
             return None
         return self.salt_observation.target(observation_id=observation_id)
+
+
+def which_instrument_mode_rss(header_value, database_service) -> types.InstrumentMode:
+    slit_barcode = header_value("MASKID").strip()
+
+    mode = header_value("OBSMODE").strip().upper()
+    if mode == "FABRY-PEROT":
+        return types.InstrumentMode.FABRY_PEROT
+    if mode == "SPECTROSCOPY":
+        return types.InstrumentMode.SPECTROSCOPY
+    if mode == "IMAGING":
+        return types.InstrumentMode.IMAGING
+
+    if database_service.is_mos(slit_barcode=slit_barcode):
+        return types.InstrumentMode.MOS
+
+    # TODO how to find these  POLARIMETRIC_IMAGING, SPECTROPOLARIMETRY, STREAMING
+    raise ValueError("Some modes are not considered there are still in todo")

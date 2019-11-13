@@ -234,8 +234,6 @@ class StandardFitsFile(FitsFile):
         return hdulist[0].header
 
     def header_value(self, keyword: str) -> str:
-        if (keyword == "BVISITID"):  # TODO Block visit can be nothing
-            return "1000"
         return str(self.headers()[keyword])
 
 

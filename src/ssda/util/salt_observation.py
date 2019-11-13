@@ -1,9 +1,8 @@
-import random
-import string
 import uuid
+from dateutil.tz import tz
 from typing import Optional, List, Iterable
 from dateutil.parser import parse
-from datetime import timedelta
+from datetime import timedelta, datetime
 from astropy.coordinates import Angle
 
 import astropy.units as u
@@ -48,20 +47,34 @@ class SALTObservation:
                     ) -> types.Observation:
 
         if not self.header_value("BVISITID"):
-            pass
+            today = datetime.now()
+            release_date_tz = \
+                datetime(year=today.year,
+                         month=today.month,
+                         day=today.day,
+                         hour=today.hour,
+                         minute=today.minute,
+                         second=today.second,
+                         tzinfo=tz.gettz("Africa/Johannesburg"))
+            status = types.Status.ACCEPTED
+        else:
+            release_date_tz = self.database_service.find_release_date(int(self.header_value("BVISITID")))
+            status = self.database_service.find_observation_status(int(self.header_value("BVISITID")))
         return types.Observation(
-            data_release=self.database_service.find_release_date(int(self.header_value("BVISITID"))),
+            data_release=release_date_tz,
             instrument=instrument,
             intent=self.__intent(),
-            meta_release=self.database_service.find_meta_release_date(int(self.header_value("BVISITID"))),
+            meta_release=release_date_tz,
             observation_group_id=observation_group_id,
             observation_type=types.ObservationType.OBJECT,
             proposal_id=proposal_id,
-            status=self.database_service.find_observation_status(int(self.header_value("BVISITID"))),
+            status=status,
             telescope=types.Telescope.SALT
         )
 
     def observation_group(self) -> Optional[types.ObservationGroup]:
+        if not self.header_value("BVISITID"):
+            return None
         return types.ObservationGroup(
             group_identifier=self.header_value("BVISITID"),
             name=self.header_value("BVISITID")  # Todo block name
@@ -69,19 +82,26 @@ class SALTObservation:
 
     def observation_time(self, plane_id: int) -> types.ObservationTime:
         start_time = parse(self.header_value("TIME-OBS"))
+        start_time_tz = \
+            datetime(year=start_time.year,
+                     month=start_time.month,
+                     day=start_time.day,
+                     hour=start_time.hour,
+                     minute=start_time.minute,
+                     second=start_time.second,
+                     tzinfo=tz.gettz("Africa/Johannesburg"))
         exposure_time = float(self.header_value("EXPTIME"))
         return types.ObservationTime(
-            end_time=start_time + timedelta(seconds=exposure_time),
+            end_time=start_time_tz + timedelta(seconds=exposure_time),
             exposure_time=exposure_time * u.second,
             plane_id=plane_id,
             resolution=exposure_time * u.second,
-            start_time=start_time
+            start_time=start_time_tz
         )
 
     def position(self, plane_id: int) -> Optional[types.Position]:
         ra_header_value = self.header_value("RA")
         dec_header_value = self.header_value("DEC")
-        equinox = float(self.header_value("EQUINOX"))
         if ra_header_value and not dec_header_value:
             raise ValueError(
                 "There is a right ascension header value, but no declination header value."
@@ -92,9 +112,9 @@ class SALTObservation:
             )
         if not ra_header_value and not dec_header_value:
             return None
-        ra = Angle("{} hours".format(ra_header_value)).degree
-        dec = Angle("{} degrees".format(dec_header_value)).degree
-
+        ra = Angle("{} hours".format(ra_header_value)).degree * u.deg
+        dec = Angle("{} degrees".format(dec_header_value)).degree * u.deg
+        equinox = float(self.header_value("EQUINOX"))
         return types.Position(
             dec=dec,
             equinox=equinox,
@@ -125,6 +145,7 @@ class SALTObservation:
     def target(self, observation_id: int) -> types.Target:
         proposal_id = self.header_value("PROPID")
         object_name = self.header_value("OBJECT").strip()
+        block_visit_id = self.header_value("BVISITID")
         if object_name == types.ProductType.ARC or \
            object_name == types.ProductType.BIAS or \
            object_name == types.ProductType.FLAT:
@@ -139,7 +160,8 @@ class SALTObservation:
             name=object_name,
             observation_id=observation_id,
             standard=is_standard,
-            target_type=""  # TODO how to get target type
+            target_type='Unknown' if not block_visit_id else
+            self.database_service.find_target_type(int(block_visit_id))
         )
 
     def __product_type(self) -> types.ProductType:
@@ -190,30 +212,3 @@ class SALTObservation:
             raise ValueError(f"Strokes for filename ${self.file_path} are USER-DEFINED don't know what to return")
         else:
             raise ValueError(f"Strokes for filename ${self.file_path} not found")
-
-    @staticmethod
-    def get_pattern(pattern: str) -> types.PolarizationMode:
-        # if pattern.upper() == "NONE" or not pattern:  # TODO can we have a None if polarization_config is NOT Open
-        #     return None
-        if pattern.upper() == "LINEAR":
-            return types.PolarizationMode.LINEAR
-        elif pattern.upper() == "LINEAR-HI":
-            return types.PolarizationMode.LINEAR_HI
-        elif pattern.upper() == "CIRCULAR":
-            return types.PolarizationMode.CIRCULAR
-        elif pattern.upper() == "ALL-STOKES":
-            return types.PolarizationMode.ALL_STOKES
-        else:
-            return types.PolarizationMode.OTHER
-
-    def polarizations(self, plane_id: int) -> Optional[types.Polarization]:
-        polarization_config = self.header_value("POLCONF").strip()
-        pattern: str = self.header_value("WPPATERN").strip().upper()
-        if polarization_config.upper() == "OPEN":
-            return None
-
-        return types.Polarization(
-            plane_id=plane_id,
-            polarization_mode=self.get_pattern(pattern=pattern)
-        )
-
