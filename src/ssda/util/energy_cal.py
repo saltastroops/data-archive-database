@@ -139,14 +139,14 @@ def get_wavelength(x: float, grating_angle: Quantity, camera_angle: Quantity, gr
     """
     # What is the outgoing angle beta0 for the center of the middle chip? (Normally, the camera angle will be twice the
     # grating angle, so that the incoming angle (i.e. the grating angle) alpha is equal to beta0.
-    alpha0 = 0 * u.dec  # grating rotation home error, in degrees
-    beta_ae = -0.063 * u.dec  # alignment error of the articulation home, in degrees
+    alpha0 = 0 * u.deg  # grating rotation home error, in degrees
+    beta_ae = -0.063 * u.deg  # alignment error of the articulation home, in degrees
     f_a = -4.2e-5  # correction factor allowing for the mechanical error in placement of the articulation detent ring
     lambda1 = 1e7 / grating_frequency.to_value(unit=1/u.mm)    # grating period
     alpha = grating_angle.to_value(unit=u.rad) + alpha0.to_value(unit=u.rad)
     beta0 = math.radians(
-        (1 + f_a) * camera_angle.to_value(unit=u.dec) + beta_ae.to_value(unit=u.dec)
-        - (grating_angle.to_value(unit=u.dec) + alpha0.to_value(unit=u.dec))
+        (1 + f_a) * camera_angle.to_value(unit=u.deg) + beta_ae.to_value(unit=u.deg)
+        - (grating_angle.to_value(unit=u.deg) + alpha0.to_value(unit=u.deg))
     )
 
     # The relevant distance for the optics is that from the optical axis rather than that from the CCD center.
@@ -416,27 +416,27 @@ def rss_energy_cal(header_value: Any, plane_id: int) -> Optional[types.Energy]:
         energy_interval = (
             get_wavelength(
                 3162,
-                grating_angle * u.dec,
-                camera_angle * u.dec,
+                grating_angle * u.deg,
+                camera_angle * u.deg,
                 grating_frequency=Quantity(value=grating_frequency, unit=1/u.mm)
             ),
             get_wavelength(
                 -3162,
-                grating_angle * u.dec,
-                camera_angle * u.dec,
+                grating_angle * u.deg,
+                camera_angle * u.deg,
                 grating_frequency=Quantity(value=grating_frequency, unit=1/u.mm)
             )
         )
         dimension = 6096 // spectral_binning
         sample_size = get_wavelength(
             spectral_binning,
-            grating_angle * u.dec,
-            camera_angle * u.dec,
+            grating_angle * u.deg,
+            camera_angle * u.deg,
             Quantity(value=grating_frequency, unit=1/u.mm)
         ) - get_wavelength(
             0,
-            grating_angle * u.dec,
-            camera_angle * u.dec,
+            grating_angle * u.deg,
+            camera_angle * u.deg,
             Quantity(value=grating_frequency, unit=1/u.mm)
         )
         return types.Energy(
@@ -451,8 +451,8 @@ def rss_energy_cal(header_value: Any, plane_id: int) -> Optional[types.Energy]:
             ),
             plane_id=plane_id,
             resolving_power=get_wavelength_resolution(
-                grating_angle * u.dec,
-                camera_angle * u.dec,
+                grating_angle * u.deg,
+                camera_angle * u.deg,
                 grating_frequency=Quantity(value=grating_frequency, unit=1/u.mm),
                 slit_width=slit_width_from_barcode(slit_barcode)),
             sample_size=Quantity(
