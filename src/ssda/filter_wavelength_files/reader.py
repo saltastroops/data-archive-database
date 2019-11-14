@@ -4,6 +4,23 @@ from typing import Optional, List, Tuple, Iterable
 from ssda.util import types
 
 
+def _filter_name(_filter: str) -> str:
+    fn = _filter
+    if _filter == 'Halpha-S1':
+        fn = 'H-alpha'
+    if _filter == 'SDSSr-S1':
+        fn = 'SDSS_rp'
+    if _filter == 'SDSSi-S1':
+        fn = 'SDSS_ip'
+    if _filter == 'SDSSg-S1':
+        fn = 'SDSS_gp'
+    if _filter == 'SDSSu-S1':
+        fn = 'SDSS_up'
+    if _filter == 'SDSSz-S1':
+        fn = 'SDSS_zp'
+    return fn
+
+
 class ReadInstrumentWavelength:
     def __init__(self, filter_name: Optional[str] = None, instrument: Optional[types.Instrument] = None, resolution: Optional[str] = None):
         self._filter_name = filter_name
@@ -16,10 +33,7 @@ class ReadInstrumentWavelength:
         if not self._instrument or not self._filter_name:
             raise ValueError("Filter name and instrument must be provided to use this method")
         if self._instrument.value.lower() == 'salticam':
-            if self._filter_name == 'Halpha-S1':
-                filter_name = 'H-alpha'
-            if self._filter_name == 'SDSSr-S1':
-                filter_name = 'SDSS_rp'
+            filter_name = _filter_name(self._filter_name)
 
         with open(f'{os.environ["PATH_TO_WAVELENGTH_FILES"]}/{self._instrument.value.lower()}/{filter_name}.txt', 'r') \
                 as file:
