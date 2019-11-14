@@ -5,7 +5,7 @@ from ssda.observation import (
     DummyObservationProperties,
     ObservationProperties,
 )
-from ssda.repository import insert
+from ssda.repository import insert, delete
 from ssda.util.fits import StandardFitsFile
 from ssda.util.types import TaskName, TaskExecutionMode
 
@@ -35,6 +35,9 @@ def execute_task(
             ssda_database_service=database_services.ssda,
         )
     elif task_name == TaskName.DELETE:
-        raise NotImplementedError
+        delete(
+            observation_properties=observation_properties,
+            database_service=database_services.ssda,
+        )
     else:
         raise NotImplementedError
