@@ -401,8 +401,6 @@ def rss_energy_cal(header_value: Any, plane_id: int) -> Optional[types.Energy]:
         Energy
             RSS energy
     """
-    if header_value("FILTER").strip().upper() == "OPEN":
-        return None
     observation_mode = header_value("OBSMODE").strip().upper()
     if observation_mode.upper() == "IMAGING":
         return imaging_mode_cal(plane_id=plane_id,
@@ -500,7 +498,7 @@ def rss_energy_cal(header_value: Any, plane_id: int) -> Optional[types.Energy]:
     raise ValueError("RSS energy not calculated")
 
 
-def hrs_energy_cal(plane_id: int, arm: str, resolution: str) -> types.Energy:
+def hrs_energy_cal(plane_id: int, arm: str, resolution: str) -> Optional[types.Energy]:
     """
      Method to calculate an energy of HRS instrument
 
@@ -539,7 +537,7 @@ def hrs_energy_cal(plane_id: int, arm: str, resolution: str) -> types.Energy:
     )
 
 
-def scam_energy_cal(plane_id: int, filter_name: str) -> types.Energy:
+def scam_energy_cal(plane_id: int, filter_name: str) -> Optional[types.Energy]:
     """
 
     Method to calculate an energy of SALTICAM instrument
@@ -556,4 +554,11 @@ def scam_energy_cal(plane_id: int, filter_name: str) -> types.Energy:
         Energy
            SALTICAM energy
     """
+    print(filter_name)
+    if filter_name == "OPEN":
+        return None
+    if filter_name == "CLR-S1":
+        return None
+    if filter_name == "SDSSz-S1":
+        return None
     return imaging_mode_cal(plane_id=plane_id, filter_name=filter_name, instrument=types.Instrument.SALTICAM)

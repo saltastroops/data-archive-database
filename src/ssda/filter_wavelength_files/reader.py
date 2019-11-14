@@ -18,6 +18,8 @@ def _filter_name(_filter: str) -> str:
         fn = 'SDSS_up'
     if _filter == 'SDSSz-S1':
         fn = 'SDSS_zp'
+    if _filter == 'CLR-S1':
+        fn = 'Fused_silica_clear'
     return fn
 
 
