@@ -12,10 +12,41 @@ from ssda.util import types
 from ssda.util.types import DateRange, Instrument
 
 
+# The path of the base directory where all FITS files are stored.
+_fits_base_dir: str = ''
+
+
+def set_fits_base_dir(path: str) -> None:
+    """
+    Set the path of the base directory where all FITS files are stored.
+
+    Parameters
+    ----------
+    path : str
+        Path of the base directory.
+
+    """
+    global _fits_base_dir
+    _fits_base_dir = path
+
+
+def get_fits_base_dir():
+    """
+    Get the path of the base directory where all FITS files are stored.
+
+    Returns
+    -------
+    str
+        The path of the base directory.
+
+    """
+
+    return _fits_base_dir
+
+
 class FitsFile(ABC):
     """
     A FITS file interface.
-
 
     """
 

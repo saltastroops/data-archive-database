@@ -124,7 +124,7 @@ class ObservationPropertiesStub(ObservationProperties):
 
     def plane(self, observation_id: int) -> types.Plane:
         return types.Plane(
-            data_product_type=types.DataProductType.SCIENCE,
+            data_product_type=types.DataProductType.SPECTRUM,
             observation_id=observation_id,
         )
 

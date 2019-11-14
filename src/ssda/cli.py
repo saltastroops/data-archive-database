@@ -13,12 +13,12 @@ from ssda.database.sdb import SaltDatabaseService
 from ssda.database.services import DatabaseServices
 from ssda.task import execute_task
 from ssda.util import types
-from ssda.util.fits import fits_file_paths
+from ssda.util.fits import fits_file_paths, set_fits_base_dir
 from ssda.util.types import Instrument, DateRange, TaskName, TaskExecutionMode
 
-# # Log with Sentry
-# if os.environ.get("SENTRY_DSN"):
-#     sentry_sdk.init(os.environ.get("SENTRY_DSN"))  # type: ignore
+# Log with Sentry
+if os.environ.get("SENTRY_DSN"):
+    sentry_sdk.init(os.environ.get("SENTRY_DSN"))  # type: ignore
 
 
 def parse_date(value: str, now: Callable[[], datetime]) -> date:
@@ -155,6 +155,7 @@ def validate_options(
     required=True,
     help="Task execution mode.",
 )
+@click.option('--skip-errors', is_flag=True, help='Do not terminate if there is an error')
 @click.option("--start", type=str, help="Start date of the last night to consider.")
 @click.option(
     "--task",
@@ -171,6 +172,7 @@ def main(
     file: Optional[str],
     fits_base_dir: Optional[str],
     mode: str,
+    skip_errors: bool,
     verbose: bool,
 ) -> int:
     if verbose:
@@ -200,6 +202,9 @@ def main(
         instruments=instruments_set,
         fits_base_dir=fits_base_dir,
     )
+
+    # store the base directory
+    set_fits_base_dir(fits_base_dir)
 
     # get the FITS file paths
     if start_date and end_date and fits_base_dir:
@@ -238,8 +243,8 @@ def main(
     database_services = DatabaseServices(ssda=ssda_database_service, sdb=sdb_database_service)
 
     # execute the requested task
-    try:
-        for path in paths:
+    for path in paths:
+        try:
             if verbose:
                 logging.info(f"{task_name.value}: {path}")
             execute_task(
@@ -248,12 +253,15 @@ def main(
                 task_mode=task_mode,
                 database_services=database_services
             )
-    except BaseException as e:
-        ssda_connection.close()
-        logging.critical("Exception occurred", exc_info=True)
-        click.echo(click.style(str(e), fg="red", blink=True, bold=True))
+        except BaseException as e:
+            logging.error("Exception occurred", exc_info=True)
+            click.echo(click.style(str(e), fg="red", blink=True, bold=True))
 
-        return -1
+            if not skip_errors:
+                ssda_connection.close()
+                return -1
+
+    ssda_connection.close()
 
     # Success!
     return 0

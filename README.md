@@ -185,6 +185,8 @@ If you don't want ro open a new shell you may also execute the script with pipen
 pipenv run ssda --help
 ```
 
+The default behaviour of the command is to terminate if there is an error. However, if the `--skip-errors` flag is included, the command will instead proceed with inserting the next FITS file.
+
 ### Inserting observations
 
 The `insert` task allows you to create new database entries from FITS files. Typically you use it to create entries for a range of dates.
@@ -255,6 +257,7 @@ Option | Explanation
 --instrument | Instrument whose FITS files shall be considered. This option may be used multiple times unless the `--file` flag is used.
 -h / --help | Display a help message.
 --start | Start date (inclusive) of the date range to consider.
+--skip-errors | Do not terminate if there is an error.
 
 ## Logging in verbose mode
 

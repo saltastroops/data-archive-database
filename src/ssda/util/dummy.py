@@ -14,7 +14,7 @@ from faker import Faker
 
 from ssda.observation import ObservationProperties
 from ssda.util import types
-from ssda.util.fits import FitsFile
+from ssda.util.fits import FitsFile, get_fits_base_dir
 
 
 class FilenameDeterminedProperties(NamedTuple):
@@ -144,7 +144,7 @@ class DummyObservationProperties(ObservationProperties):
             identifier=str(uuid.uuid4()),
             name=os.path.basename(self._fits_file.path()),
             plane_id=plane_id,
-            path=self._fits_file.path(),
+            path=os.path.relpath(self._fits_file.path(), get_fits_base_dir()),
             product_type=product_type(),
         )
 
