@@ -215,8 +215,8 @@ def get_wavelength_resolution(grating_angle: Quantity, camera_angle: Quantity, g
         The resolution
 
     """
-    wavelength = get_wavelength(0, grating_angle.value, camera_angle.value, grating_frequency.value)
-    wavelength_resolution_element = get_resolution_element(grating_frequency.value, grating_angle.value, slit_width.value)
+    wavelength = get_wavelength(0, grating_angle, camera_angle, grating_frequency)
+    wavelength_resolution_element = get_resolution_element(grating_frequency, grating_angle, slit_width)
     return wavelength / wavelength_resolution_element
 
 
