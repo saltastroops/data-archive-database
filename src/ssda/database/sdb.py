@@ -108,7 +108,7 @@ WHERE BlockVisit_Id = %s;
 
     def find_target_type(self, block_visit_id: int) -> Optional[str]:
         sql = """
-SELECT TargetType.TargetType as tt FROM BlockVisit
+SELECT TargetType.TargetType as TargetType FROM BlockVisit
     JOIN `Block` ON BlockVisit.Block_Id = `Block`.Block_Id
     JOIN Pointing ON `Block`.Block_Id = Pointing.Block_Id
     JOIN Observation ON Pointing.Pointing_Id = Observation.Pointing_Id
