@@ -401,6 +401,8 @@ def rss_energy_cal(header_value: Any, plane_id: int) -> Optional[types.Energy]:
         Energy
             RSS energy
     """
+    if header_value("FILTER").strip().upper() == "OPEN":
+        return None
     observation_mode = header_value("OBSMODE").strip().upper()
     if observation_mode.upper() == "IMAGING":
         return imaging_mode_cal(plane_id=plane_id,
