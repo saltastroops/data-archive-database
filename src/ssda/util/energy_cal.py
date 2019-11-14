@@ -262,10 +262,10 @@ def get_grating_frequency(grating: str) -> float:
         "pg2300": 2302.60,
         "pg3000": 3000.55
     }
-    if not grating_table[grating]:
+    if not grating or grating.lower() not in grating_table:
         raise ValueError("Grating frequency not found on grating table")
 
-    return grating_table[grating]
+    return grating_table[grating.lower()]
 
 
 def hrs_interval(arm: str, resolution: str) -> Dict[str, Any]:
