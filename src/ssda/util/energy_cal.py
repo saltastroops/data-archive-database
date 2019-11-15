@@ -363,7 +363,6 @@ def imaging_mode_cal(plane_id: int, filter_name: str, instrument: types.Instrume
         Energy
             Calculated energy
     """
-
     fwhm_points = image_wavelength_intervals(filter_name, instrument)
     lambda1, lambda2 = fwhm_points["lambda1"], fwhm_points["lambda2"]
     resolving_power = lambda1[1] * (lambda1[0] + lambda2[0]) / (lambda2[0] - lambda1[0])
@@ -401,7 +400,10 @@ def rss_energy_cal(header_value: Any, plane_id: int) -> Optional[types.Energy]:
         Energy
             RSS energy
     """
-    if header_value("FILTER").strip() == "PC00000":
+    filter = header_value("FILTER").strip()
+    if not filter or \
+            filter.upper() == "EMPTY" or \
+            filter in ["PC00000", "PC03200", "PC03400", "PC03850", "PC04600"]:
         return None
     observation_mode = header_value("OBSMODE").strip().upper()
     if observation_mode.upper() == "IMAGING":
