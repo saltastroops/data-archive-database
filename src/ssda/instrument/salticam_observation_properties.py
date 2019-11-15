@@ -54,6 +54,8 @@ class SalticamObservationProperties:
         for dm in types.DetectorMode:
             if self.header_value("DETMODE").strip().upper() == dm.value.upper():
                 detector_mode = dm
+        if self.header_value("DETMODE").strip().upper() == "SLOT":
+            detector_mode = types.DetectorMode.SLOT_MODE
         filter = None
         for fi in types.Filter:
             if self.header_value("FILTER").strip() == fi.value:
@@ -62,7 +64,7 @@ class SalticamObservationProperties:
         return types.InstrumentSetup(
             additional_queries=queries,
             detector_mode=detector_mode,
-            filter=None,
+            filter=filter,
             instrument_mode=types.InstrumentMode.IMAGING,  # TODO HRS only do spectroscopy? ask Christian
             observation_id=observation_id
         )
