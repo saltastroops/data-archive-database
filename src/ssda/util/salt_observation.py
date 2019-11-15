@@ -115,6 +115,8 @@ class SALTObservation:
         ra = Angle("{} hours".format(ra_header_value)).degree * u.deg
         dec = Angle("{} degrees".format(dec_header_value)).degree * u.deg
         equinox = float(self.header_value("EQUINOX"))
+        if equinox == 0:
+            return None
         return types.Position(
             dec=dec,
             equinox=equinox,
