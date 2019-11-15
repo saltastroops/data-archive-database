@@ -5,7 +5,7 @@ import random
 import string
 from abc import ABC, abstractmethod
 from datetime import date, timedelta
-from typing import Iterator, Set, Dict, Any
+from typing import Iterator, Set, Dict, Any, Optional
 from astropy.units import Quantity
 from astropy.io import fits
 from ssda.util import types
@@ -264,8 +264,11 @@ class StandardFitsFile(FitsFile):
         hdulist = fits.open(self.path)
         return hdulist[0].header
 
-    def header_value(self, keyword: str) -> str:
-        return str(self.headers()[keyword])
+    def header_value(self, keyword: str) -> Optional[str]:
+        try:
+            return str(self.headers()[keyword])
+        except KeyError:
+            return None
 
 
 class DummyFitsFile(FitsFile):
