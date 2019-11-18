@@ -2,7 +2,6 @@ from typing import cast, Any, Dict, Optional
 
 import astropy.units as u
 import psycopg2
-from psycopg2 import connect
 
 from ssda.util import types
 
@@ -67,7 +66,7 @@ class DatabaseService:
         Returns
         -------
         Optional[int]
-            The database id for the observation group, or None if there is observation
+            The database id for the observation group, or None if there is no observation
             group in the database for the group identifier and telescope.
 
         """

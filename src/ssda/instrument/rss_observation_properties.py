@@ -1,8 +1,6 @@
-import random
-
 from ssda.database.sdb import SaltDatabaseService
 from ssda.util import types
-from ssda.util.energy_cal import rss_energy_cal, get_grating_frequency
+from ssda.util.energy_cal import rss_energy_properties
 from ssda.util.salt_observation import SALTObservation
 from ssda.util.fits import FitsFile
 from typing import Optional, List
@@ -32,7 +30,7 @@ class RssObservationProperties:
 
         if self.database_service.is_mos(slit_barcode=slit_barcode):
             return None
-        return rss_energy_cal(header_value=self.header_value, plane_id=plane_id)
+        return rss_energy_properties(header_value=self.header_value, plane_id=plane_id)
 
     def instrument_keyword_values(self, observation_id: int) -> List[types.InstrumentKeywordValue]:
         return []

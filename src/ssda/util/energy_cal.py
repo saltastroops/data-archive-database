@@ -246,7 +246,7 @@ def rss_slit_width_from_barcode(barcode: str) -> Quantity:
     return (float(barcode[2:6]) / 100) * u.arcsec
 
 
-def get_grating_frequency(grating: str) -> float:
+def get_grating_frequency(grating: str) -> Quantity:
     """
     Returns a grating frequency
 
@@ -256,7 +256,7 @@ def get_grating_frequency(grating: str) -> float:
             Grating name
     Return
     ------
-        Grating frequency
+        The grating frequency (in grooves/mm)
     """
     grating_table = {
         "pg0300": 300,
@@ -269,18 +269,18 @@ def get_grating_frequency(grating: str) -> float:
     if not grating or grating.lower() not in grating_table:
         raise ValueError("Grating frequency not found on grating table")
 
-    return grating_table[grating.lower()]
+    return Quantity(value=grating_table[grating.lower()], unit=1/u.mm)
 
 
-def hrs_interval(arm: str, resolution: str) -> Dict[str, Any]:
+def hrs_interval(arm: types.HRSArm, resolution: str) -> Dict[str, Any]:
     """
     Dictionary with wavelength interval (interval) as a 2D tuple where first entry being lower bound and second is the
     maximum  bound and resolving power (power)
 
     Parameter
     ---------
-        arm: String
-            HRS arm that is either red or blue
+        arm: HRS Arm
+            HRS arm that is either Red or Blue
         resolution: String
             A full name of  the resolution like Low Resolution
     Return
@@ -290,10 +290,10 @@ def hrs_interval(arm: str, resolution: str) -> Dict[str, Any]:
              "power": 15000
          }
     """
-    if arm.lower() not in ['red', 'blue']:
+    if arm.value not in ['Red', 'Blue']:
         raise ValueError('Arm not known')
 
-    def _get_hrs_resolution_fullname(res):
+    def _get_hrs_resolution_fullname(res: str) -> str:
         switcher = {
             'low resolution': 'lr',
             'medium resolution': 'mr',
@@ -303,8 +303,7 @@ def hrs_interval(arm: str, resolution: str) -> Dict[str, Any]:
         }
         return switcher.get(res, "Resolution not found")
 
-    _resolution = _get_hrs_resolution_fullname(resolution.lower())
-    print("RESOL: ", _resolution)
+    _resolution = _get_hrs_resolution_fullname(resolution)
 
     interval_table = {
         "blue": {
@@ -352,12 +351,12 @@ def hrs_interval(arm: str, resolution: str) -> Dict[str, Any]:
             }
         }
     }
-    return interval_table[arm][_resolution]
+    return interval_table[arm.value][_resolution]
 
 
-def imaging_mode_cal(plane_id: int, filter_name: str, instrument: types.Instrument) -> types.Energy:
+def imaging_energy_properties(plane_id: int, filter_name: str, instrument: types.Instrument) -> types.Energy:
     """
-    Method to calculate an energy from an image
+    Spectral properties of a Salticam setup.
 
     Parameter
     ----------
@@ -373,30 +372,29 @@ def imaging_mode_cal(plane_id: int, filter_name: str, instrument: types.Instrume
             Calculated energy
     """
     fwhm_points = filter_fwhm_interval(filter_name, instrument)
-    lambda1, lambda2 = fwhm_points["lambda1"], fwhm_points["lambda2"]
-    resolving_power = lambda1[1] * (lambda1[0] + lambda2[0]) / (lambda2[0] - lambda1[0])
+    lambda_min, lambda_max = fwhm_points["lambda1"], fwhm_points["lambda2"]
+    resolving_power = 0.5 * (lambda_min[0] + lambda_max[0]) / (lambda_max[0] - lambda_min[0])
     return types.Energy(
         dimension=1,
         max_wavelength=Quantity(
-            value=lambda2[0],
+            value=lambda_max[0],
             unit=u.meter
-        ),
-        min_wavelength=Quantity(
-            value=lambda1[0],
+        ),        min_wavelength=Quantity(
+            value=lambda_min[0],
             unit=u.meter
         ),
         plane_id=plane_id,
         resolving_power=resolving_power,
         sample_size=Quantity(
-            value=abs(lambda2[0]-lambda1[0]),
+            value=abs(lambda_max[0]-lambda_min[0]),
             unit=u.meter
         )
     )
 
 
-def rss_energy_cal(header_value: Any, plane_id: int) -> Optional[types.Energy]:
+def rss_energy_properties(header_value: Any, plane_id: int) -> Optional[types.Energy]:
     """
-     Method to calculate an energy of RSS instrument
+     Energy properties for an RSS setup.
 
     Parameter
     ----------
@@ -416,41 +414,41 @@ def rss_energy_cal(header_value: Any, plane_id: int) -> Optional[types.Energy]:
         return None
     observation_mode = header_value("OBSMODE").strip().upper()
     if observation_mode.upper() == "IMAGING":
-        return imaging_mode_cal(plane_id=plane_id,
-                                filter_name=header_value("FILTER").strip(),
-                                instrument=types.Instrument.RSS)
+        return imaging_energy_properties(plane_id=plane_id,
+                                         filter_name=header_value("FILTER").strip(),
+                                         instrument=types.Instrument.RSS)
 
     if observation_mode.upper() == "SPECTROSCOPY":
-        grating_angle = float(header_value("GR-ANGLE").strip())
-        camera_angle = float(header_value("AR-ANGLE").strip())
+        grating_angle = float(header_value("GR-ANGLE").strip()) * u.deg
+        camera_angle = float(header_value("AR-ANGLE").strip()) * u.deg
         slit_barcode = header_value("MASKID").strip()
         spectral_binning = int(header_value("CCDSUM").strip().split()[0])
         grating_frequency = get_grating_frequency(header_value("GRATING").strip())
         energy_interval = (
             get_wavelength(
                 3162,
-                grating_angle * u.deg,
-                camera_angle * u.deg,
-                grating_frequency=Quantity(value=grating_frequency, unit=1/u.mm)
+                grating_angle,
+                camera_angle,
+                grating_frequency=grating_frequency
             ),
             get_wavelength(
                 -3162,
-                grating_angle * u.deg,
-                camera_angle * u.deg,
-                grating_frequency=Quantity(value=grating_frequency, unit=1/u.mm)
+                grating_angle,
+                camera_angle,
+                grating_frequency=grating_frequency
             )
         )
         dimension = 6096 // spectral_binning
         sample_size = get_wavelength(
             spectral_binning,
-            grating_angle * u.deg,
-            camera_angle * u.deg,
-            Quantity(value=grating_frequency, unit=1/u.mm)
+            grating_angle,
+            camera_angle,
+            grating_frequency
         ) - get_wavelength(
             0,
-            grating_angle * u.deg,
-            camera_angle * u.deg,
-            Quantity(value=grating_frequency, unit=1/u.mm)
+            grating_angle,
+            camera_angle,
+            grating_frequency
         )
         return types.Energy(
             dimension=dimension,
@@ -464,9 +462,9 @@ def rss_energy_cal(header_value: Any, plane_id: int) -> Optional[types.Energy]:
             ),
             plane_id=plane_id,
             resolving_power=rss_resolution(
-                grating_angle * u.deg,
-                camera_angle * u.deg,
-                grating_frequency=Quantity(value=grating_frequency, unit=1/u.mm),
+                grating_angle,
+                camera_angle,
+                grating_frequency=grating_frequency,
                 slit_width=rss_slit_width_from_barcode(slit_barcode)),
             sample_size=Quantity(
                 value=abs(sample_size),
@@ -486,18 +484,18 @@ def rss_energy_cal(header_value: Any, plane_id: int) -> Optional[types.Energy]:
             resolution = header_value("ET1MODE").strip().upper()  # TODO CHECK with encarni which one use ET2/1
             lambda1 = float(header_value("ET1WAVE0"))
         else:
-            raise ValueError("Unknown Etelo state for  FP")
+            raise ValueError("Unknown Etelon state")
 
         fwhm = fabry_perot_fwhm_interval(resolution=resolution, wavelength=lambda1)
-        energy_intervals = ((lambda1 - fwhm) / 2, (lambda1 + fwhm) / 2)
+        energy_interval = (lambda1 - fwhm / 2, lambda1 + fwhm / 2)
         return types.Energy(
             dimension=1,
             max_wavelength=Quantity(
-                value=energy_intervals[1],
+                value=energy_interval[1],
                 unit=u.meter
             ),
             min_wavelength=Quantity(
-                value=energy_intervals[0],
+                value=energy_interval[0],
                 unit=u.meter
             ),
             plane_id=plane_id,
@@ -508,10 +506,10 @@ def rss_energy_cal(header_value: Any, plane_id: int) -> Optional[types.Energy]:
             )
         )
 
-    raise ValueError("RSS energy not calculated")
+    raise ValueError(f"Unsupported observation mode: {observation_mode}")
 
 
-def hrs_energy_cal(plane_id: int, arm: str, resolution: str) -> Optional[types.Energy]:
+def hrs_energy_properties(plane_id: int, arm: types.HRSArm, resolution: str) -> Optional[types.Energy]:
     """
      Method to calculate an energy of HRS instrument
 
@@ -527,7 +525,7 @@ def hrs_energy_cal(plane_id: int, arm: str, resolution: str) -> Optional[types.E
     Return
     ------
         Energy
-            HRS energy
+            HRS energy properties.
     """
 
     interval = hrs_interval(arm=arm, resolution=resolution)
@@ -544,7 +542,7 @@ def hrs_energy_cal(plane_id: int, arm: str, resolution: str) -> Optional[types.E
         plane_id=plane_id,
         resolving_power=interval["power"],
         sample_size=Quantity(
-            value=abs(interval["interval"][0]-interval["interval"][1]),
+            value=interval["interval"][1]-interval["interval"][0],
             unit=u.meter
         )
     )
@@ -574,4 +572,4 @@ def scam_energy_cal(plane_id: int, filter_name: str) -> Optional[types.Energy]:
         return None
     if filter_name == "SDSSz-S1":
         return None
-    return imaging_mode_cal(plane_id=plane_id, filter_name=filter_name, instrument=types.Instrument.SALTICAM)
+    return imaging_energy_properties(plane_id=plane_id, filter_name=filter_name, instrument=types.Instrument.SALTICAM)

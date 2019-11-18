@@ -7,7 +7,6 @@ from typing import Any, Dict, List, NamedTuple, Optional
 
 import astropy.units as u
 from astropy.units import def_unit, Quantity
-from click import UUID
 
 byte = def_unit("byte")
 
@@ -466,6 +465,11 @@ class Filter(Enum):
     JOHNSON_I = "Johnson I"
 
 
+class HRSArm(Enum):
+    RED = "Red"
+    BLUE = "Blue"
+
+
 class HRSMode(Enum):
     """
     Enumeration of the HRS (resolution) modes.
@@ -698,7 +702,7 @@ class Observation:
         Intent of the observation.
     meta_release : date
         Date when the metadata for this observation becomes public.
-    observation_group : str
+    observation_group_id : int
         Identifier of the observation group to which the observation belongs.
     observation_type : ObservationType
         Observation type.
