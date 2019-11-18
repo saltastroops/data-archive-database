@@ -4,56 +4,60 @@ from astropy import units as u
 import os
 import math
 
-from ssda.filter_wavelength_files.reader import ReadInstrumentWavelength
+from ssda.filter_wavelength_files.reader import wavelengths_and_transmissions, fp_hwfm
 from ssda.util import types
 
 
 # the focal length of the RSS imaging lens (in mm)
-FOCAL_LENGTH_RSS_IMAGING_LENS = 328
+FOCAL_LENGTH_RSS_IMAGING_LENS = 328 * u.mm
 
 # The location (in x direction) of the intersection between the center CCD and the optical axis in mm
-RSS_OPTICAL_AXIS_ON_CCD = 0.3066
+RSS_OPTICAL_AXIS_ON_CCD = 0.3066 * u.mm
 
 # The size of a pixel on the RSS CCD chips (in millimeters)
-RSS_PIXEL_SIZE = 0.015
+RSS_PIXEL_SIZE = 0.015 * u.mm
 
 # the focal length of the telescope (in mm)
-FOCAL_LENGTH_TELESCOPE = 46200
+FOCAL_LENGTH_TELESCOPE = 46200 * u.mm
 
 # the focal length of the RSS collimator (in mm)
-FOCAL_LENGTH_RSS_COLLIMATOR = 630
+FOCAL_LENGTH_RSS_COLLIMATOR = 630 * u.mm
 
 
-def linear_pol(list_of_tuple: List[Any]) -> Tuple[Tuple[float, float], Tuple[float, float]]:
-    half_y = max(list_of_tuple, key=lambda item: item[1])[1]/2
-    x_1_at_half_y = None
-    x_2_at_half_y = None
+def fwhm_interval(wavelengths: List[Any]) -> Tuple[Tuple[float, float], Tuple[float, float]]:
 
-    for i, t in enumerate(list_of_tuple):
-        if t[1] > half_y:
+    half_y_max = max(p[1] for p in wavelengths) / 2
+    x_1_at_half_y_max = None
+    x_2_at_half_y_max = None
+    sorted(wavelengths, key=lambda element: element[0])
+
+    for i, t in enumerate(wavelengths):
+        # Move through the points, starting from minimum x, until we've just passed half the maximum y value.
+        if t[1] > half_y_max:
             if i == 0:
                 raise ValueError("Half width full maximum of give array does not compute make sure list is sorted")
-            m = (list_of_tuple[i][1] - list_of_tuple[i - 1][1])/(
-                    list_of_tuple[i][0] - list_of_tuple[i - 1][0])
-            c = list_of_tuple[i][1] - m * list_of_tuple[i][0]
-            x_1_at_half_y = (half_y - c)/m
+            m = (wavelengths[i][1] - wavelengths[i - 1][1]) / (
+                    wavelengths[i][0] - wavelengths[i - 1][0])
+            c = wavelengths[i][1] - m * wavelengths[i][0]
+            x_1_at_half_y_max = (half_y_max - c)/m
             break
 
-    for i, t in enumerate(list_of_tuple[::-1]):
-        if t[1] > half_y:
+    for i, t in enumerate(wavelengths[::-1]):
+        # Move through the points, starting from large x, until we've just passed half the maximum y value.
+        if t[1] > half_y_max:
             if i == 0:
                 raise ValueError("Half width full maximum of give array does not compute make sure list is sorted")
-            m = (list_of_tuple[::-1][i][1] - list_of_tuple[::-1][i - 1][1])/(
-                    list_of_tuple[::-1][i][0] - list_of_tuple[::-1][i - 1][0])
-            c = list_of_tuple[::-1][i][1] - m * list_of_tuple[::-1][i][0]
-            x_2_at_half_y = (half_y - c)/m
+            m = (wavelengths[::-1][i][1] - wavelengths[::-1][i - 1][1]) / (
+                    wavelengths[::-1][i][0] - wavelengths[::-1][i - 1][0])
+            c = wavelengths[::-1][i][1] - m * wavelengths[::-1][i][0]
+            x_2_at_half_y_max = (half_y_max - c)/m
             break
-    if not x_1_at_half_y or not x_2_at_half_y or not half_y:
+    if not x_1_at_half_y_max or not x_2_at_half_y_max or not half_y_max:
         raise ValueError("Half width full maximum of give array does not compute make sure list is sorted")
-    return (x_1_at_half_y, half_y), (x_2_at_half_y, half_y)
+    return (x_1_at_half_y_max, half_y_max), (x_2_at_half_y_max, half_y_max)
 
 
-def image_wavelength_intervals(filter_name: str, instrument: types.Instrument) -> Dict[str, Tuple[float, float]]:
+def filter_fwhm_interval(filter_name: str, instrument: types.Instrument) -> Dict[str, Tuple[float, float]]:
     """
     It opens the file with the wavelength curve of the filter name and return the full width half max points of it
 
@@ -70,11 +74,9 @@ def image_wavelength_intervals(filter_name: str, instrument: types.Instrument) -
             The two points that that form fwhm on the curve where lambda1 being the small wavelength and lambda2 is
             the larger wavelength
     """
-    unsorted_wavelength = ReadInstrumentWavelength(instrument=instrument,
-                                                   filter_name=filter_name).wavelengths_and_transmissions()
+    unsorted_wavelength = wavelengths_and_transmissions(instrument_=instrument, filter_name_=filter_name)
 
-    sorted_wavelength = sorted(unsorted_wavelength, key=lambda element: element[0])
-    lambda1, lambda2 = linear_pol(sorted_wavelength)
+    lambda1, lambda2 = fwhm_interval(unsorted_wavelength)
 
     return {
         "lambda1": lambda1,
@@ -82,7 +84,7 @@ def image_wavelength_intervals(filter_name: str, instrument: types.Instrument) -
     }
 
 
-def fabry_perot_fwhm_calculation(resolution: str, wavelength: float) -> float:
+def fabry_perot_fwhm_interval(resolution: str, wavelength: float) -> float:
     """
     Calculates the full width half maximum of fabry perot for the given resolution and wavelength
 
@@ -98,17 +100,19 @@ def fabry_perot_fwhm_calculation(resolution: str, wavelength: float) -> float:
     """
 
     fwhm = None
-    resolution_fp_modes = ReadInstrumentWavelength(resolution=resolution).fp_hwfm()
+    resolution_fp_modes = fp_hwfm(resolution=resolution)
     if wavelength < min(resolution_fp_modes, key=lambda item: item[1])[1] or \
             wavelength > max(resolution_fp_modes, key=lambda item: item[1])[1]:
         raise ValueError("Wavelength is out of range")
-    sorted_wavelength = sorted(resolution_fp_modes, key=lambda element: element[1])
+    sorted_points = sorted(resolution_fp_modes, key=lambda element: element[1])
 
-    for i, w in enumerate(sorted_wavelength):
+    for i, w in enumerate(sorted_points):
+        #  sorted_pointss defines a function f of the FWHM as a function of the wavelength.
+        #  We use linear interpolation to estimate the value of f at the given wavelength.
         if w[1] > wavelength:
-            m = (sorted_wavelength[i][2] - sorted_wavelength[i - 1][2])/(
-                    sorted_wavelength[i][1] - sorted_wavelength[i - 1][1])
-            c = sorted_wavelength[i][2] - m * sorted_wavelength[i][1]
+            m = (sorted_points[i][2] - sorted_points[i - 1][2])/(
+                    sorted_points[i][1] - sorted_points[i - 1][1])
+            c = sorted_points[i][2] - m * sorted_points[i][1]
             fwhm = wavelength * m + c
             break
     if fwhm is None:
@@ -118,7 +122,7 @@ def fabry_perot_fwhm_calculation(resolution: str, wavelength: float) -> float:
 
 def get_wavelength(x: float, grating_angle: Quantity, camera_angle: Quantity, grating_frequency: Quantity) -> float:
     """
-    Returns the wavelength at the specified distance {@code x}
+    Returns the wavelength at the specified distance
     from the center of the middle CCD.
 
     See http://www.sal.wisc.edu/~khn/salt/Outgoing/3170AM0010_Spectrograph_Model_Draft_2.pdf
@@ -139,7 +143,7 @@ def get_wavelength(x: float, grating_angle: Quantity, camera_angle: Quantity, gr
     """
     # What is the outgoing angle beta0 for the center of the middle chip? (Normally, the camera angle will be twice the
     # grating angle, so that the incoming angle (i.e. the grating angle) alpha is equal to beta0.
-    alpha0 = 0 * u.deg  # grating rotation home error, in degrees
+    alpha0 = 0 * u.deg  # grating rotation home error.
     beta_ae = -0.063 * u.deg  # alignment error of the articulation home, in degrees
     f_a = -4.2e-5  # correction factor allowing for the mechanical error in placement of the articulation detent ring
     lambda1 = 1e7 / grating_frequency.to_value(unit=1/u.mm)    # grating period
@@ -150,7 +154,7 @@ def get_wavelength(x: float, grating_angle: Quantity, camera_angle: Quantity, gr
     )
 
     # The relevant distance for the optics is that from the optical axis rather than that from the CCD center.
-    x -= RSS_OPTICAL_AXIS_ON_CCD / RSS_PIXEL_SIZE
+    x -= RSS_OPTICAL_AXIS_ON_CCD.value / RSS_PIXEL_SIZE.value
 
     # "FUDGE FACTOR"
     x += 20.9
@@ -158,7 +162,7 @@ def get_wavelength(x: float, grating_angle: Quantity, camera_angle: Quantity, gr
     # The outgoing angle for a distance x is slightly different the correction dbeta is given by
     # tan(dbeta) = x / f_cam with the focal length f_cam of the imaging lens. Note that x must be converted from pixels
     # to a length.
-    dbeta = math.atan((x * RSS_PIXEL_SIZE) / FOCAL_LENGTH_RSS_IMAGING_LENS)
+    dbeta = math.atan((x * RSS_PIXEL_SIZE.value) / FOCAL_LENGTH_RSS_IMAGING_LENS.value)
     beta = beta0 + dbeta
 
     # The wavelength can now be obtained from the grating equation.
@@ -168,7 +172,7 @@ def get_wavelength(x: float, grating_angle: Quantity, camera_angle: Quantity, gr
     return float(wavelength / 1e10)
 
 
-def get_resolution_element(grating_frequency: Quantity,  grating_angle: Quantity,  slit_width: Quantity) -> float:
+def rss_resolution_element(grating_frequency: Quantity, grating_angle: Quantity, slit_width: Quantity) -> float:
     """
     Returns the resolution element for the given grating frequency, grating angle and slit width.
 
@@ -190,14 +194,14 @@ def get_resolution_element(grating_frequency: Quantity,  grating_angle: Quantity
 
     Lambda = 1e7 / grating_frequency.to_value(unit=1/u.mm)
     return float(slit_width.to_value(unit=u.rad) * Lambda * math.cos(grating_angle.to_value(unit=u.rad)) * (
-            FOCAL_LENGTH_TELESCOPE / FOCAL_LENGTH_RSS_COLLIMATOR))
+            FOCAL_LENGTH_TELESCOPE.value / FOCAL_LENGTH_RSS_COLLIMATOR.value))
 
 
-def get_wavelength_resolution(grating_angle: Quantity, camera_angle: Quantity, grating_frequency: Quantity,
-                              slit_width: Quantity) -> float:
+def rss_resolution(grating_angle: Quantity, camera_angle: Quantity, grating_frequency: Quantity,
+                   slit_width: Quantity) -> float:
     """
     Returns the resolution at the center of the middle CCD. This is the ratio of the resolution element and
-    the wavelength at the CD's center.
+    the wavelength at the CCD's center.
 
     Parameters
     ----------
@@ -216,11 +220,11 @@ def get_wavelength_resolution(grating_angle: Quantity, camera_angle: Quantity, g
 
     """
     wavelength = get_wavelength(0, grating_angle, camera_angle, grating_frequency)
-    wavelength_resolution_element = get_resolution_element(grating_frequency, grating_angle, slit_width)
+    wavelength_resolution_element = rss_resolution_element(grating_frequency, grating_angle, slit_width)
     return wavelength / wavelength_resolution_element
 
 
-def slit_width_from_barcode(barcode: str) -> Quantity:
+def rss_slit_width_from_barcode(barcode: str) -> Quantity:
     """
     Returns the slit width for the given barcode.
 
@@ -289,13 +293,18 @@ def hrs_interval(arm: str, resolution: str) -> Dict[str, Any]:
     if arm.lower() not in ['red', 'blue']:
         raise ValueError('Arm not known')
 
-    reso = 'lr' if (resolution.lower() == "low resolution") else \
-        'mr' if (resolution.lower() == "medium resolution") else \
-            'hr' if (resolution.lower() == "high resolution") else \
-                'hs-p' if (resolution.lower() == "high stability (p)") else \
-                    'hs-o' if (resolution.lower() == "high stability (o)") else None
-    if not reso:
-        raise ValueError("Resolution not found")
+    def _get_hrs_resolution_fullname(res):
+        switcher = {
+            'low resolution': 'lr',
+            'medium resolution': 'mr',
+            'high resolution': 'hr',
+            'high stability (p)': 'hs-p',
+            'high stability (o)': 'hs-o',
+        }
+        return switcher.get(res, "Resolution not found")
+
+    _resolution = _get_hrs_resolution_fullname(resolution.lower())
+    print("RESOL: ", _resolution)
 
     interval_table = {
         "blue": {
@@ -343,7 +352,7 @@ def hrs_interval(arm: str, resolution: str) -> Dict[str, Any]:
             }
         }
     }
-    return interval_table[arm][reso]
+    return interval_table[arm][_resolution]
 
 
 def imaging_mode_cal(plane_id: int, filter_name: str, instrument: types.Instrument) -> types.Energy:
@@ -363,7 +372,7 @@ def imaging_mode_cal(plane_id: int, filter_name: str, instrument: types.Instrume
         Energy
             Calculated energy
     """
-    fwhm_points = image_wavelength_intervals(filter_name, instrument)
+    fwhm_points = filter_fwhm_interval(filter_name, instrument)
     lambda1, lambda2 = fwhm_points["lambda1"], fwhm_points["lambda2"]
     resolving_power = lambda1[1] * (lambda1[0] + lambda2[0]) / (lambda2[0] - lambda1[0])
     return types.Energy(
@@ -454,11 +463,11 @@ def rss_energy_cal(header_value: Any, plane_id: int) -> Optional[types.Energy]:
                 unit=u.meter
             ),
             plane_id=plane_id,
-            resolving_power=get_wavelength_resolution(
+            resolving_power=rss_resolution(
                 grating_angle * u.deg,
                 camera_angle * u.deg,
                 grating_frequency=Quantity(value=grating_frequency, unit=1/u.mm),
-                slit_width=slit_width_from_barcode(slit_barcode)),
+                slit_width=rss_slit_width_from_barcode(slit_barcode)),
             sample_size=Quantity(
                 value=abs(sample_size),
                 unit=u.meter
@@ -479,7 +488,7 @@ def rss_energy_cal(header_value: Any, plane_id: int) -> Optional[types.Energy]:
         else:
             raise ValueError("Unknown Etelo state for  FP")
 
-        fwhm = fabry_perot_fwhm_calculation(resolution=resolution, wavelength=lambda1)
+        fwhm = fabry_perot_fwhm_interval(resolution=resolution, wavelength=lambda1)
         energy_intervals = ((lambda1 - fwhm) / 2, (lambda1 + fwhm) / 2)
         return types.Energy(
             dimension=1,
