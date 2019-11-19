@@ -214,3 +214,6 @@ class SALTObservation:
             raise ValueError(f"Strokes for filename ${self.file_path} are USER-DEFINED don't know what to return")
         else:
             raise ValueError(f"Strokes for filename ${self.file_path} not found")
+
+    def is_calibration(self):
+        return "CAL_" in self.header_value("PROPID")

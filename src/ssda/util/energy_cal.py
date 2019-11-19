@@ -4,7 +4,7 @@ from astropy import units as u
 import os
 import math
 
-from ssda.filter_wavelength_files.reader import wavelengths_and_transmissions, fp_hwfm
+from ssda.data.salt_filter_files_reader import wavelengths_and_transmissions, fp_hwfm
 from ssda.util import types
 
 
@@ -24,36 +24,52 @@ FOCAL_LENGTH_TELESCOPE = 46200 * u.mm
 FOCAL_LENGTH_RSS_COLLIMATOR = 630 * u.mm
 
 
-def fwhm_interval(wavelengths: List[Any]) -> Tuple[Tuple[float, float], Tuple[float, float]]:
+def fwhm_interval(wavelengths_transmissions: List[Any]) -> Tuple[Tuple[float, float], Tuple[float, float]]:
+    """
+    A full width half maximum of array of 2D tuples
 
-    half_y_max = max(p[1] for p in wavelengths) / 2
+    Parameter
+    ---------
+         wavelengths_and_transmissions: str
+            The pair of  wavelengths and transmissions
+
+    Return
+    ------
+        points: Tuple
+            A lower and a upper bound of the full width half maximum
+    """
+    sorted_wavelengths = sorted(wavelengths_transmissions, key=lambda element: element[0])
+    half_y_max = max(p[1] for p in sorted_wavelengths) / 2
     x_1_at_half_y_max = None
     x_2_at_half_y_max = None
-    sorted(wavelengths, key=lambda element: element[0])
 
-    for i, t in enumerate(wavelengths):
+    for i, t in enumerate(sorted_wavelengths):
         # Move through the points, starting from minimum x, until we've just passed half the maximum y value.
         if t[1] > half_y_max:
             if i == 0:
-                raise ValueError("Half width full maximum of give array does not compute make sure list is sorted")
-            m = (wavelengths[i][1] - wavelengths[i - 1][1]) / (
-                    wavelengths[i][0] - wavelengths[i - 1][0])
-            c = wavelengths[i][1] - m * wavelengths[i][0]
+                break
+            m = (sorted_wavelengths[i][1] - sorted_wavelengths[i - 1][1]) / (
+                    sorted_wavelengths[i][0] - sorted_wavelengths[i - 1][0])
+            c = sorted_wavelengths[i][1] - m * sorted_wavelengths[i][0]
             x_1_at_half_y_max = (half_y_max - c)/m
             break
 
-    for i, t in enumerate(wavelengths[::-1]):
+    for i, t in enumerate(sorted_wavelengths[::-1]):
         # Move through the points, starting from large x, until we've just passed half the maximum y value.
         if t[1] > half_y_max:
             if i == 0:
-                raise ValueError("Half width full maximum of give array does not compute make sure list is sorted")
-            m = (wavelengths[::-1][i][1] - wavelengths[::-1][i - 1][1]) / (
-                    wavelengths[::-1][i][0] - wavelengths[::-1][i - 1][0])
-            c = wavelengths[::-1][i][1] - m * wavelengths[::-1][i][0]
+                break
+            m = (sorted_wavelengths[::-1][i][1] - sorted_wavelengths[::-1][i - 1][1]) / (
+                    sorted_wavelengths[::-1][i][0] - sorted_wavelengths[::-1][i - 1][0])
+            c = sorted_wavelengths[::-1][i][1] - m * sorted_wavelengths[::-1][i][0]
             x_2_at_half_y_max = (half_y_max - c)/m
             break
-    if not x_1_at_half_y_max or not x_2_at_half_y_max or not half_y_max:
-        raise ValueError("Half width full maximum of give array does not compute make sure list is sorted")
+    if not x_2_at_half_y_max:
+        x_2_at_half_y_max = sorted_wavelengths[-1][0]
+
+    if not x_1_at_half_y_max:
+        x_1_at_half_y_max = sorted_wavelengths[0][0]
+
     return (x_1_at_half_y_max, half_y_max), (x_2_at_half_y_max, half_y_max)
 
 

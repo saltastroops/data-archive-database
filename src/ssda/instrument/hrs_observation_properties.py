@@ -24,7 +24,7 @@ class HrsObservationProperties:
         return self.salt_observation.artifact(plane_id)
 
     def energy(self, plane_id: int) -> Optional[types.Energy]:
-        if "CAL_" in self.header_value("PROPID"):
+        if self.salt_observation.is_calibration():
             return None
 
         filename = str(self.file_path.split()[-1])
@@ -35,21 +35,7 @@ class HrsObservationProperties:
         return hrs_energy_properties(plane_id, arm, resolution)
 
     def instrument_keyword_values(self, observation_id: int) -> List[types.InstrumentKeywordValue]:
-        # return [
-        #     types.InstrumentKeywordValue(
-        #         instrument=types.Instrument.HRS,
-        #         instrument_keyword=types.InstrumentKeyword.FILTER,
-        #         observation_id=observation_id,
-        #         value=self.header_value("FILTER")
-        #     ),
-        #     types.InstrumentKeywordValue(
-        #         instrument=types.Instrument.HRS,
-        #         instrument_keyword=types.InstrumentKeyword.EXPOSURE_TIME,
-        #         observation_id=observation_id,
-        #         value=self.header_value("EXPTIME")
-        #     )
-        # ]  # TODO check if there is more keywords
-        return []
+        return []  # TODO Needs to be implemented
 
     def instrument_setup(self,  observation_id: int) -> types.InstrumentSetup:
         resolution = self.header_value("OBSMODE")
@@ -72,12 +58,14 @@ class HrsObservationProperties:
         for dm in types.DetectorMode:
             if self.header_value("DETMODE").strip() == dm.value:
                 detector_mode = dm
+        if not detector_mode:
+            raise ValueError(f"Detector mode of file {self.file_path} is not recognised")
 
         return types.InstrumentSetup(
             additional_queries=queries,
             detector_mode=detector_mode,
             filter=None,
-            instrument_mode=types.InstrumentMode.SPECTROSCOPY,  # TODO HRS only do spectroscopy? ask Christian
+            instrument_mode=types.InstrumentMode.SPECTROSCOPY,
             observation_id=observation_id
         )
 
@@ -102,17 +90,6 @@ class HrsObservationProperties:
         return self.salt_observation.position(plane_id=plane_id)
 
     def proposal(self) -> Optional[types.Proposal]:
-        """
-        SALT proposal
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-        Proposal
-            A proposal for the file.
-        """
         return self.salt_observation.proposal()
 
     def proposal_investigators(

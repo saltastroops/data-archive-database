@@ -25,27 +25,13 @@ class SalticamObservationProperties:
         return self.salt_observation.artifact(plane_id)
 
     def energy(self, plane_id: int) -> Optional[types.Energy]:
-        if "CAL_" in self.header_value("PROPID"):
+        if self.salt_observation.is_calibration():
             return None
         filter_name = self.header_value("FILTER")
         return scam_energy_cal(plane_id, filter_name)
 
     def instrument_keyword_values(self, observation_id: int) -> List[types.InstrumentKeywordValue]:
-        # return [
-        #     types.InstrumentKeywordValue(
-        #         instrument=types.Instrument.SALTICAM,
-        #         instrument_keyword=types.InstrumentKeyword.FILTER,
-        #         observation_id=observation_id,
-        #         value=self.header_value("FILTER")
-        #     ),
-        #     types.InstrumentKeywordValue(
-        #         instrument=types.Instrument.SALTICAM,
-        #         instrument_keyword=types.InstrumentKeyword.EXPOSURE_TIME,
-        #         observation_id=observation_id,
-        #         value=self.header_value("EXPTIME")
-        #     )
-        # ]
-        return []
+        return []  # TODO Needs to be implemented
 
     def instrument_setup(self,  observation_id: int) -> types.InstrumentSetup:
         queries = []
@@ -91,17 +77,6 @@ class SalticamObservationProperties:
         return self.salt_observation.position(plane_id=plane_id)
 
     def proposal(self) -> Optional[types.Proposal]:
-        """
-        SALT proposal
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-        Proposal
-            A proposal for the file.
-        """
         return self.salt_observation.proposal()
 
     def proposal_investigators(

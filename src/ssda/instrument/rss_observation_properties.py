@@ -24,7 +24,7 @@ class RssObservationProperties:
         return self.salt_observation.artifact(plane_id)
 
     def energy(self, plane_id: int) -> Optional[types.Energy]:
-        if "CAL_" in self.header_value("PROPID"):
+        if self.salt_observation.is_calibration():
             return None
         slit_barcode = self.header_value("MASKID").strip()
 
@@ -33,27 +33,7 @@ class RssObservationProperties:
         return rss_energy_properties(header_value=self.header_value, plane_id=plane_id)
 
     def instrument_keyword_values(self, observation_id: int) -> List[types.InstrumentKeywordValue]:
-        return []
-        # return [
-        #     types.InstrumentKeywordValue(
-        #         instrument=types.Instrument.RSS,
-        #         instrument_keyword=types.InstrumentKeyword.GRATING,
-        #         observation_id=observation_id,
-        #         value=self.header_value("GRATING")
-        #     ),
-        #     types.InstrumentKeywordValue(
-        #         instrument=types.Instrument.RSS,
-        #         instrument_keyword=types.InstrumentKeyword.FILTER,
-        #         observation_id=observation_id,
-        #         value=self.header_value("FILTER")
-        #     ),
-        #     types.InstrumentKeywordValue(
-        #         instrument=types.Instrument.RSS,
-        #         instrument_keyword=types.InstrumentKeyword.EXPOSURE_TIME,
-        #         observation_id=observation_id,
-        #         value=self.header_value("EXPTIME")
-        #     )
-        # ]  # TODO check if there is more keywords
+        return []  # TODO Needs to be implemented
 
     def instrument_setup(self,  observation_id: int) -> types.InstrumentSetup:
         sql = """
@@ -144,17 +124,6 @@ class RssObservationProperties:
         return self.salt_observation.position(plane_id=plane_id)
 
     def proposal(self) -> Optional[types.Proposal]:
-        """
-        SALT proposal
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-        Proposal
-            A proposal for the file.
-        """
         return self.salt_observation.proposal()
 
     def proposal_investigators(

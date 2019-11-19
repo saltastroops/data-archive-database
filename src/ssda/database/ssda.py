@@ -488,8 +488,6 @@ class DatabaseService:
             RETURNING observation.observation_id
             """
 
-            print(observation.intent.value)
-
             cur.execute(
                 sql,
                 dict(

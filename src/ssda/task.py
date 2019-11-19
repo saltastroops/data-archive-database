@@ -13,8 +13,6 @@ from ssda.util.types import TaskName, TaskExecutionMode
 def execute_task(
     task_name: TaskName, fits_path: str, task_mode: TaskExecutionMode, database_services: DatabaseServices
 ) -> None:
-    # Get the database service.
-    database_service = DatabaseService(None)
 
     # Get the observation properties.
     if task_mode == TaskExecutionMode.PRODUCTION:
