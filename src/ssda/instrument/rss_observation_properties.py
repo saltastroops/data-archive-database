@@ -140,7 +140,7 @@ class RssObservationProperties:
         return self.salt_observation.target(observation_id=observation_id)
 
 
-def which_instrument_mode_rss(header_value, database_service) -> types.InstrumentMode:
+def rss_instrument_mode(header_value, database_service) -> types.InstrumentMode:
     slit_barcode = header_value("MASKID").strip()
 
     mode = header_value("OBSMODE").strip().upper()

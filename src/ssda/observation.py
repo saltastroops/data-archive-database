@@ -65,26 +65,24 @@ class ObservationProperties(ABC):
         raise NotImplementedError
 
 
-def instrument_observation_properties(fits_file: FitsFile,
-                                      salt_database_service: SaltDatabaseService) -> ObservationProperties:
-    o_p: Optional[ObservationProperties] = None
+def salt_instrument_observation_properties(fits_file: FitsFile,
+                                           salt_database_service: SaltDatabaseService) -> ObservationProperties:
     if fits_file.instrument().value.upper() == "RSS":
-        o_p = RssObservationProperties(fits_file, salt_database_service)
+        return RssObservationProperties(fits_file, salt_database_service)
 
     if fits_file.instrument().value.upper() == "HRS":
-        o_p = HrsObservationProperties(fits_file, salt_database_service)
+        return HrsObservationProperties(fits_file, salt_database_service)
 
     if fits_file.instrument().value.upper() == "SALTICAM":
-        o_p = SalticamObservationProperties(fits_file, salt_database_service)
-    if not o_p:
-        raise ValueError(f"Observation properties could not be defined for file {fits_file.file_path}")
-    return o_p
+        return SalticamObservationProperties(fits_file, salt_database_service)
+
+    raise ValueError(f"Observation properties could not be defined for file {fits_file.file_path}")
 
 
 class StandardObservationProperties(ObservationProperties):
     def __init__(self, fits_file: FitsFile, database_services: DatabaseServices):
         self._observation_properties: ObservationProperties = \
-            instrument_observation_properties(fits_file, database_services.sdb)
+            salt_instrument_observation_properties(fits_file, database_services.sdb)
 
     def artifact(self, plane_id: int) -> types.Artifact:
         return self._observation_properties.artifact(plane_id)

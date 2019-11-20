@@ -759,7 +759,7 @@ class Observation:
         return self._meta_release
 
     @property
-    def observation_group_id(self) -> Optional[int]:
+    def observation_group_id(self) -> int:
         return self._observation_group_id
 
     @property
@@ -807,7 +807,7 @@ class ObservationGroup:
         return self._group_identifier
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str:
         return self._name
 
 

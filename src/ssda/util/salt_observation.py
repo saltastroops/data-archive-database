@@ -166,7 +166,7 @@ class SALTObservation:
             self.database_service.find_target_type(int(block_visit_id))
         )
 
-    def __product_type(self) -> types.ProductType:
+    def _product_type(self) -> types.ProductType:
         observation_object = self.header_value("OBJECT")
         product_type = self.header_value("OBSTYPE")
         if observation_object.upper() == "ARC":
@@ -181,39 +181,17 @@ class SALTObservation:
         else:
             raise ValueError(f'Product type of file ${self.fits_file.file_path()} not found')
 
-    def __intent(self) -> types.Intent:
+    def _intent(self) -> types.Intent:
         observation_object: str = self.header_value("OBJECT")
         product_type: str = self.header_value("OBSTYPE")
         if observation_object.upper() == "ARC" or \
                 observation_object.upper() == "BIAS" or \
-                observation_object.upper() == "FLAT":
+                observation_object.upper() == "FLAT" or \
+                observation_object.upper() == "STANDARDS":
             return types.Intent.CALIBRATION
         elif product_type.upper() == "OBJECT" or product_type.upper() == "SCIENCE":
             return types.Intent.SCIENCE
         raise ValueError(f"unknown intent for file {self.file_path}")
-
-    @property
-    def stokes_parameter(self) -> Iterable[types.StokesParameter]:
-        pattern: str = self.header_value("WPPATERN").upper()
-
-        if pattern.upper() == "NONE" or not pattern:
-            return []
-        elif pattern.upper() == "LINEAR":
-            return [types.StokesParameter.Q, types.StokesParameter.U]
-        elif pattern.upper() == "LINEAR-HI":
-            return [types.StokesParameter.Q, types.StokesParameter.U]
-        elif pattern.upper() == "CIRCULAR":
-            return [types.StokesParameter.V]
-        elif pattern.upper() == "CIRCULAR-HI":
-            return [types.StokesParameter.V]
-        elif pattern.upper() == "ALL-STOKES":
-            return [types.StokesParameter.Q, types.StokesParameter.U, types.StokesParameter.V]
-        elif pattern.upper() == "OLD-ALL-STOKES":
-            raise ValueError(f"Strokes for filename ${self.file_path} are OLD-ALL-STOKES don't know what to return")
-        elif pattern.upper() == "USER-DEFINED":
-            raise ValueError(f"Strokes for filename ${self.file_path} are USER-DEFINED don't know what to return")
-        else:
-            raise ValueError(f"Strokes for filename ${self.file_path} not found")
 
     def is_calibration(self):
         return "CAL_" in self.header_value("PROPID")

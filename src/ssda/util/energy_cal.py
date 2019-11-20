@@ -8,19 +8,19 @@ from ssda.data.salt_filter_files_reader import wavelengths_and_transmissions, fp
 from ssda.util import types
 
 
-# the focal length of the RSS imaging lens (in mm)
+# the focal length of the RSS imaging lens
 FOCAL_LENGTH_RSS_IMAGING_LENS = 328 * u.mm
 
-# The location (in x direction) of the intersection between the center CCD and the optical axis in mm
+# The location (in x direction) of the intersection between the center CCD and the optical axis
 RSS_OPTICAL_AXIS_ON_CCD = 0.3066 * u.mm
 
-# The size of a pixel on the RSS CCD chips (in millimeters)
+# The size of a pixel on the RSS CCD chips
 RSS_PIXEL_SIZE = 0.015 * u.mm
 
-# the focal length of the telescope (in mm)
+# the focal length of the telescope
 FOCAL_LENGTH_TELESCOPE = 46200 * u.mm
 
-# the focal length of the RSS collimator (in mm)
+# the focal length of the RSS collimator
 FOCAL_LENGTH_RSS_COLLIMATOR = 630 * u.mm
 
 
@@ -73,7 +73,8 @@ def fwhm_interval(wavelengths_transmissions: List[Any]) -> Tuple[Tuple[float, fl
     return (x_1_at_half_y_max, half_y_max), (x_2_at_half_y_max, half_y_max)
 
 
-def filter_fwhm_interval(filter_name: str, instrument: types.Instrument) -> Dict[str, Tuple[float, float]]:
+def filter_fwhm_interval(filter_name: str, instrument: types.Instrument) \
+        -> Tuple[Tuple[float, float], Tuple[float, float]]:
     """
     It opens the file with the wavelength curve of the filter name and return the full width half max points of it
 
@@ -90,14 +91,11 @@ def filter_fwhm_interval(filter_name: str, instrument: types.Instrument) -> Dict
             The two points that that form fwhm on the curve where lambda1 being the small wavelength and lambda2 is
             the larger wavelength
     """
-    unsorted_wavelength = wavelengths_and_transmissions(instrument_=instrument, filter_name_=filter_name)
+    unsorted_wavelength = wavelengths_and_transmissions(instrument=instrument, filter_name=filter_name)
 
-    lambda1, lambda2 = fwhm_interval(unsorted_wavelength)
+    lambda_min, lambda_max = fwhm_interval(unsorted_wavelength)
 
-    return {
-        "lambda1": lambda1,
-        "lambda2": lambda2
-    }
+    return lambda_min, lambda_max
 
 
 def fabry_perot_fwhm_interval(resolution: str, wavelength: float) -> float:
@@ -109,18 +107,18 @@ def fabry_perot_fwhm_interval(resolution: str, wavelength: float) -> float:
     resolution: String
         A full name of the resolution like
     wavelength: float
-
+        A wave
     Return
     ------
     Full width half maximum
     """
 
     fwhm = None
-    resolution_fp_modes = fp_hwfm(resolution=resolution)
-    if wavelength < min(resolution_fp_modes, key=lambda item: item[1])[1] or \
-            wavelength > max(resolution_fp_modes, key=lambda item: item[1])[1]:
+    fp_fwhm_intervals = fp_hwfm(resolution=resolution)
+    if wavelength < min(fp_fwhm_intervals, key=lambda item: item[1])[1] or \
+            wavelength > max(fp_fwhm_intervals, key=lambda item: item[1])[1]:
         raise ValueError("Wavelength is out of range")
-    sorted_points = sorted(resolution_fp_modes, key=lambda element: element[1])
+    sorted_points = sorted(fp_fwhm_intervals, key=lambda element: element[1])
 
     for i, w in enumerate(sorted_points):
         #  sorted_pointss defines a function f of the FWHM as a function of the wavelength.
@@ -136,7 +134,7 @@ def fabry_perot_fwhm_interval(resolution: str, wavelength: float) -> float:
     return fwhm
 
 
-def get_wavelength(x: float, grating_angle: Quantity, camera_angle: Quantity, grating_frequency: Quantity) -> float:
+def rss_ccd_wavelength(x: float, grating_angle: Quantity, camera_angle: Quantity, grating_frequency: Quantity) -> float:
     """
     Returns the wavelength at the specified distance
     from the center of the middle CCD.
@@ -147,11 +145,11 @@ def get_wavelength(x: float, grating_angle: Quantity, camera_angle: Quantity, gr
     ----------
         x: float
             Distance (in spectral direction from center (in pixels)
-        grating_angle: float
+        grating_angle: Quantity
             The grating angle (in degrees)
-        camera_angle: float
+        camera_angle: Quantity
             The camera angle (in degrees)
-        grating_frequency: float
+        grating_frequency: Quantity
             The grating frequency (in grooves/mm)
     Return
     ------
@@ -162,15 +160,12 @@ def get_wavelength(x: float, grating_angle: Quantity, camera_angle: Quantity, gr
     alpha0 = 0 * u.deg  # grating rotation home error.
     beta_ae = -0.063 * u.deg  # alignment error of the articulation home, in degrees
     f_a = -4.2e-5  # correction factor allowing for the mechanical error in placement of the articulation detent ring
-    lambda1 = 1e7 / grating_frequency.to_value(unit=1/u.mm)    # grating period
-    alpha = grating_angle.to_value(unit=u.rad) + alpha0.to_value(unit=u.rad)
-    beta0 = math.radians(
-        (1 + f_a) * camera_angle.to_value(unit=u.deg) + beta_ae.to_value(unit=u.deg)
-        - (grating_angle.to_value(unit=u.deg) + alpha0.to_value(unit=u.deg))
-    )
+    Lambda = 1e7 / grating_frequency    # grating period
+    alpha = grating_angle + alpha0
+    beta0 = (1 + f_a) * camera_angle + beta_ae - (grating_angle + alpha0)
 
     # The relevant distance for the optics is that from the optical axis rather than that from the CCD center.
-    x -= RSS_OPTICAL_AXIS_ON_CCD.value / RSS_PIXEL_SIZE.value
+    x -= RSS_OPTICAL_AXIS_ON_CCD / RSS_PIXEL_SIZE
 
     # "FUDGE FACTOR"
     x += 20.9
@@ -182,13 +177,13 @@ def get_wavelength(x: float, grating_angle: Quantity, camera_angle: Quantity, gr
     beta = beta0 + dbeta
 
     # The wavelength can now be obtained from the grating equation.
-    wavelength = lambda1 * (math.sin(alpha) + math.sin(beta))
+    wavelength = Lambda * (math.sin(alpha) + math.sin(beta))
 
     # The CAOM expects the wavelength to be in metres, not Angstroms.
-    return float(wavelength / 1e10)
+    return float(wavelength / 1e10)  # TODO use quantity
 
 
-def rss_resolution_element(grating_frequency: Quantity, grating_angle: Quantity, slit_width: Quantity) -> float:
+def rss_resolution_element(grating_frequency: Quantity, grating_angle: Quantity, slit_width: Quantity) -> Quantity:
     """
     Returns the resolution element for the given grating frequency, grating angle and slit width.
 
@@ -204,30 +199,30 @@ def rss_resolution_element(grating_frequency: Quantity, grating_angle: Quantity,
     Return
     ------
     resolution_element
-        The resolution element (in mm)
+        The resolution element (in arcseconds)
 
     """
 
-    Lambda = 1e7 / grating_frequency.to_value(unit=1/u.mm)
-    return float(slit_width.to_value(unit=u.rad) * Lambda * math.cos(grating_angle.to_value(unit=u.rad)) * (
-            FOCAL_LENGTH_TELESCOPE.value / FOCAL_LENGTH_RSS_COLLIMATOR.value))
+    Lambda = 1e7 / grating_frequency
+    return float(slit_width * Lambda * math.cos(grating_angle) * (
+            FOCAL_LENGTH_TELESCOPE / FOCAL_LENGTH_RSS_COLLIMATOR)) * u.arcsec
 
 
 def rss_resolution(grating_angle: Quantity, camera_angle: Quantity, grating_frequency: Quantity,
-                   slit_width: Quantity) -> float:
+                   slit_width: Quantity) -> Quantity:
     """
     Returns the resolution at the center of the middle CCD. This is the ratio of the resolution element and
     the wavelength at the CCD's center.
 
     Parameters
     ----------
-        grating_angle: float
+        grating_angle: Quantity
             The grating angle (in degrees)
-        camera_angle: float
+        camera_angle: Quantity
             The camera angle (in degrees)
-        grating_frequency: float
+        grating_frequency: Quantity
             the grating frequency (in grooves/mm)
-        slit_width: float
+        slit_width: Quantity
             the slit width (in arcseconds)
     Return
     ------
@@ -235,7 +230,7 @@ def rss_resolution(grating_angle: Quantity, camera_angle: Quantity, grating_freq
         The resolution
 
     """
-    wavelength = get_wavelength(0, grating_angle, camera_angle, grating_frequency)
+    wavelength = rss_ccd_wavelength(0, grating_angle, camera_angle, grating_frequency)
     wavelength_resolution_element = rss_resolution_element(grating_frequency, grating_angle, slit_width)
     return wavelength / wavelength_resolution_element
 
@@ -285,7 +280,7 @@ def get_grating_frequency(grating: str) -> Quantity:
     if not grating or grating.lower() not in grating_table:
         raise ValueError("Grating frequency not found on grating table")
 
-    return Quantity(value=grating_table[grating.lower()], unit=1/u.mm)
+    return grating_table[grating.lower()] / u.mm
 
 
 def hrs_interval(arm: types.HRSArm, resolution: str) -> Dict[str, Any]:
@@ -384,11 +379,11 @@ def imaging_energy_properties(plane_id: int, filter_name: str, instrument: types
             Instrument used for this file
     Return
     ------
-        Energy
-            Calculated energy
+        Spectral properties
+            Calculated spectral properties
     """
     fwhm_points = filter_fwhm_interval(filter_name, instrument)
-    lambda_min, lambda_max = fwhm_points["lambda1"], fwhm_points["lambda2"]
+    lambda_min, lambda_max = fwhm_points[0], fwhm_points[1]
     resolving_power = 0.5 * (lambda_min[0] + lambda_max[0]) / (lambda_max[0] - lambda_min[0])
     return types.Energy(
         dimension=1,
@@ -410,7 +405,7 @@ def imaging_energy_properties(plane_id: int, filter_name: str, instrument: types
 
 def rss_energy_properties(header_value: Any, plane_id: int) -> Optional[types.Energy]:
     """
-     Energy properties for an RSS setup.
+     Spectral properties for an RSS setup.
 
     Parameter
     ----------
@@ -420,8 +415,8 @@ def rss_energy_properties(header_value: Any, plane_id: int) -> Optional[types.En
             Plane id of of this file
     Return
     ------
-        Energy
-            RSS energy
+        Spectral properties
+            RSS Spectral properties
     """
     filter = header_value("FILTER").strip()
     if not filter or \
@@ -441,13 +436,13 @@ def rss_energy_properties(header_value: Any, plane_id: int) -> Optional[types.En
         spectral_binning = int(header_value("CCDSUM").strip().split()[0])
         grating_frequency = get_grating_frequency(header_value("GRATING").strip())
         energy_interval = (
-            get_wavelength(
+            rss_ccd_wavelength(
                 3162,
                 grating_angle,
                 camera_angle,
                 grating_frequency=grating_frequency
             ),
-            get_wavelength(
+            rss_ccd_wavelength(
                 -3162,
                 grating_angle,
                 camera_angle,
@@ -455,12 +450,12 @@ def rss_energy_properties(header_value: Any, plane_id: int) -> Optional[types.En
             )
         )
         dimension = 6096 // spectral_binning
-        sample_size = get_wavelength(
+        sample_size = rss_ccd_wavelength(
             spectral_binning,
             grating_angle,
             camera_angle,
             grating_frequency
-        ) - get_wavelength(
+        ) - rss_ccd_wavelength(
             0,
             grating_angle,
             camera_angle,
@@ -495,15 +490,15 @@ def rss_energy_properties(header_value: Any, plane_id: int) -> Optional[types.En
 
         if etalon_state.strip().lower() == "s3 - etalon 2":
             resolution = header_value("ET2MODE").strip().upper()  # TODO CHECK with encarni which one use ET2/1
-            lambda1 = float(header_value("ET2WAVE0"))
+            _lambda = float(header_value("ET2WAVE0"))
         elif etalon_state.strip().lower() == "s2 - etalon 1" or etalon_state.strip().lower() == "s4 - etalon 1 & 2":
             resolution = header_value("ET1MODE").strip().upper()  # TODO CHECK with encarni which one use ET2/1
-            lambda1 = float(header_value("ET1WAVE0"))
+            _lambda = float(header_value("ET1WAVE0"))
         else:
-            raise ValueError("Unknown Etelon state")
+            raise ValueError("Unknown etelon state")
 
-        fwhm = fabry_perot_fwhm_interval(resolution=resolution, wavelength=lambda1)
-        energy_interval = (lambda1 - fwhm / 2, lambda1 + fwhm / 2)
+        fwhm = fabry_perot_fwhm_interval(resolution=resolution, wavelength=_lambda)
+        energy_interval = (_lambda - fwhm / 2, _lambda + fwhm / 2)
         return types.Energy(
             dimension=1,
             max_wavelength=Quantity(
@@ -515,7 +510,7 @@ def rss_energy_properties(header_value: Any, plane_id: int) -> Optional[types.En
                 unit=u.meter
             ),
             plane_id=plane_id,
-            resolving_power=lambda1/fwhm,
+            resolving_power=_lambda/fwhm,
             sample_size=Quantity(
                 value=fwhm,
                 unit=u.meter
@@ -525,23 +520,23 @@ def rss_energy_properties(header_value: Any, plane_id: int) -> Optional[types.En
     raise ValueError(f"Unsupported observation mode: {observation_mode}")
 
 
-def hrs_energy_properties(plane_id: int, arm: types.HRSArm, resolution: str) -> Optional[types.Energy]:
+def hrs_energy(plane_id: int, arm: types.HRSArm, resolution: str) -> Optional[types.Energy]:
     """
-     Method to calculate an energy of HRS instrument
+     Method to calculate an spectral properties of HRS instrument
 
     Parameter
     ----------
         plane_id: Integer
             Plane id of of this file
-        arm: String
+        arm: HRSArm
             HRS arm either red or blue
         resolution: String
             HRS resolution (Low, Medium, ...) Resolution
 
     Return
     ------
-        Energy
-            HRS energy properties.
+        Spectral properties
+            HRS spectral properties.
     """
 
     interval = hrs_interval(arm=arm, resolution=resolution)
@@ -567,7 +562,7 @@ def hrs_energy_properties(plane_id: int, arm: types.HRSArm, resolution: str) -> 
 def scam_energy_cal(plane_id: int, filter_name: str) -> Optional[types.Energy]:
     """
 
-    Method to calculate an energy of SALTICAM instrument
+    Spectral properties of a Salticam setup.
 
     Parameter
     ----------
@@ -578,10 +573,9 @@ def scam_energy_cal(plane_id: int, filter_name: str) -> Optional[types.Energy]:
 
     Return
     ------
-        Energy
-           SALTICAM energy
+        Spectral properties
+           SALTICAM spectral properties
     """
-    print(filter_name)
     if filter_name == "OPEN":
         return None
     if filter_name == "CLR-S1":

@@ -1,5 +1,5 @@
 from ssda.database.services import DatabaseServices
-from ssda.database.ssda import DatabaseService
+from ssda.database.ssda import SSDADatabaseService
 from ssda.observation import (
     StandardObservationProperties,
     DummyObservationProperties,

@@ -51,7 +51,7 @@ class SalticamObservationProperties:
             additional_queries=queries,
             detector_mode=detector_mode,
             filter=filter,
-            instrument_mode=types.InstrumentMode.IMAGING,  # TODO HRS only do spectroscopy? ask Christian
+            instrument_mode=types.InstrumentMode.IMAGING,
             observation_id=observation_id
         )
 

@@ -1,11 +1,11 @@
 from typing import cast
 
-from ssda.database.ssda import DatabaseService
+from ssda.database.ssda import SSDADatabaseService
 from ssda.observation import ObservationProperties
 
 
 def delete(
-    observation_properties: ObservationProperties, database_service: DatabaseService
+    observation_properties: ObservationProperties, database_service: SSDADatabaseService
 ) -> None:
     """
     Delete an observation.
@@ -17,7 +17,7 @@ def delete(
     ----------
     observation_properties : ObservationProperties
         Observation properties.
-    database_service : DatabaseService
+    database_service : SSDADatabaseService
         Database service.
 
     """
@@ -46,7 +46,7 @@ def delete(
 
 
 def insert(
-    observation_properties: ObservationProperties, ssda_database_service: DatabaseService
+    observation_properties: ObservationProperties, ssda_database_service: SSDADatabaseService
 ) -> None:
     """
     Insert an observation.
@@ -62,7 +62,7 @@ def insert(
     ----------
     observation_properties : ObservationProperties
         Observation properties.
-    ssda_database_service : DatabaseService
+    ssda_database_service : SSDADatabaseService
         Database service for accessing the database.
 
     """

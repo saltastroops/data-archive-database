@@ -1,6 +1,6 @@
 from ssda.database.sdb import SaltDatabaseService
 from ssda.util import types
-from ssda.util.energy_cal import hrs_energy_properties
+from ssda.util.energy_cal import hrs_energy
 from ssda.util.salt_observation import SALTObservation
 from ssda.util.fits import FitsFile
 from typing import Optional, List
@@ -32,7 +32,7 @@ class HrsObservationProperties:
         if not arm:
             raise ValueError("Unknown arm.")
         resolution = self.header_value("OBSMODE")
-        return hrs_energy_properties(plane_id, arm, resolution)
+        return hrs_energy(plane_id, arm, resolution)
 
     def instrument_keyword_values(self, observation_id: int) -> List[types.InstrumentKeywordValue]:
         return []  # TODO Needs to be implemented

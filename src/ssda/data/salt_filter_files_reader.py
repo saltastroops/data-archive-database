@@ -2,7 +2,7 @@ import os
 from typing import List, Tuple
 
 
-def _filter_name(_filter: str) -> str:
+def _parse_filter_name(_filter: str) -> str:
     if _filter == 'Halpha-S1':
         return 'H-alpha'
     if _filter == 'SDSSr-S1':
@@ -26,12 +26,12 @@ def wavelengths_and_transmissions(filter_name, instrument) -> List[Tuple[float, 
     if not instrument or not filter_name:
         raise ValueError("Filter name and instrument must be provided to use this method")
     if instrument.value.lower() == 'salticam':
-        filt_name = _filter_name(filter_name)
+        filt_name = _parse_filter_name(filter_name)
 
     with open(f'{os.environ["PATH_TO_WAVELENGTH_FILES"]}/{instrument.value.lower()}/{filt_name}.txt', 'r') \
             as file:
         for line in file.readlines():
-            if len(line.split()) and not line.split()[0].startswith("!") and not line.split()[0].startswith("#"):
+            if line and not line.startswith("!") and not line.startswith("#"):
                 wavelengths.append((float(line.split()[0]), float(line.split()[1])))
     return wavelengths
 

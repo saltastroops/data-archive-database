@@ -237,7 +237,7 @@ def main(
         port=3306,
         database=sdb_db_config.database
     )
-    ssda_database_service = ssda.database.ssda.DatabaseService(ssda_connection)
+    ssda_database_service = ssda.database.ssda.SSDADatabaseService(ssda_connection)
     sdb_database_service = SaltDatabaseService(sdb_db_config)
 
     database_services = DatabaseServices(ssda=ssda_database_service, sdb=sdb_database_service)

@@ -18,7 +18,7 @@ class SaltDatabaseService:
 
     def find_pi(self, block_visit_id: int) -> str:
         sql = """
-SELECT CONCAT(FirstName, Surname) as FullName FROM  BlockVisit
+SELECT CONCAT(FirstName, " ", Surname) as FullName FROM  BlockVisit
     JOIN `Block` USING(Block_Id)
     JOIN Proposal ON `Block`.Proposal_Id=Proposal.Proposal_Id
     JOIN ProposalCode ON Proposal.ProposalCode_Id=ProposalCode.ProposalCode_Id
@@ -29,7 +29,7 @@ WHERE BlockVisit_Id=%s;
         results = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
         if results['FullName']:
             return results['FullName']
-        raise ValueError("Observation have no Principal  Investigator")
+        raise ValueError("Observation have no Principal Investigator")
 
     def find_proposal_code(self, block_visit_id: int) -> str:
         sql = """
@@ -42,7 +42,7 @@ WHERE BlockVisit_Id=%s;
         results = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
         if results['Proposal_Code']:
             return f"{results['Proposal_Code']}"
-        raise ValueError("Observation has proposal/program code")
+        raise ValueError("Observation has no proposal code")
 
     def find_proposal_title(self, block_visit_id: int) -> str:
         sql = """
@@ -81,31 +81,31 @@ WHERE BlockVisit_Id=%s;
         results = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
         if results['ReleaseDate']:
             return results['ReleaseDate']
-        raise ValueError("Observation hasno release date.")
+        raise ValueError("Observation has no release date.")
 
     def find_meta_release_date(self, block_visit_id: int) -> datetime.datetime:
         return self.find_release_date(block_visit_id)
 
     def find_proposal_investigators(self, block_visit_id: int) -> List[str]:
         sql = """
-SELECT CONCAT(FirstName, Surname) as FullName FROM  BlockVisit
+SELECT PiptUser_Id as UserId FROM  BlockVisit
     JOIN `Block` USING(Block_Id)
     JOIN Proposal ON `Block`.Proposal_Id=Proposal.Proposal_Id
     JOIN ProposalInvestigator ON Proposal.ProposalCode_Id=ProposalInvestigator.ProposalCode_Id
-    JOIN Investigator ON ProposalInvestigator.Investigator_Id=Investigator.Investigator_Id
+    JOIN PiptUser ON ProposalInvestigator.Investigator_Id=PiptUser.Investigator_Id
 WHERE BlockVisit_Id=%s;
         """
         results = pd.read_sql(sql, self._connection, params=(block_visit_id,))
         if len(results):
             ps = []
             for index, row in results.iterrows():
-                ps.append(row['FullName'])
+                ps.append(row['UserId'])
             return ps
         raise ValueError("Observation have no Investigators")
 
     def find_target_type(self, block_visit_id: int) -> Optional[str]:
         sql = """
-SELECT TargetType FROM BlockVisit
+SELECT NumericCode FROM BlockVisit
     JOIN `Block` ON BlockVisit.Block_Id=`Block`.Block_Id
     JOIN Pointing ON `Block`.Block_Id=Pointing.Block_Id
     JOIN Observation ON Pointing.Pointing_Id=Observation.Pointing_Id
@@ -115,8 +115,8 @@ SELECT TargetType FROM BlockVisit
 WHERE BlockVisit.BlockVisit_Id=%s
         """
         results = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
-        if results['TargetType']:
-            return results['TargetType']
+        if results['NumericCode']:
+            return results['NumericCode']
         return "00.00.00.00"
 
     def is_mos(self, slit_barcode: str) -> bool:
