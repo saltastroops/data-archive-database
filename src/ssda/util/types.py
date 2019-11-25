@@ -721,7 +721,7 @@ class Observation:
         instrument: Instrument,
         intent: Intent,
         meta_release: date,
-        observation_group_id: int,
+        observation_group_id: Optional[int],
         observation_type: ObservationType,
         proposal_id: Optional[int],
         status: Status,

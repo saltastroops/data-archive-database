@@ -2,6 +2,7 @@ from __future__ import annotations
 import glob
 import os
 import random
+import hashlib
 import string
 from abc import ABC, abstractmethod
 from datetime import date, timedelta
@@ -193,7 +194,7 @@ def fits_file_paths(
 
 def fits_file_dir(night: date, instrument: Instrument, base_dir: str) -> str:
     """
-    The directory containing the FITs file for a night and instrument.
+    The directory containing the FITS file for a night and instrument.
 
     Parameters
     ----------
@@ -258,7 +259,8 @@ class StandardFitsFile(FitsFile):
 
     def checksum(self) -> str:
         letters = string.ascii_lowercase
-        return "".join(random.choice(letters) for _ in range(20))
+        result = "".join(random.choice(letters) for _ in range(20))
+        return hashlib.md5(result.encode())
 
     def headers(self) -> Dict[str, Any]:
         hdulist = fits.open(self.path)
@@ -276,7 +278,7 @@ class DummyFitsFile(FitsFile):
         self.path = path
 
     def size(self) -> Quantity:
-        return random.randint(1000, 100000000)
+        return random.randint(1000, 100000000) * types.byte
 
     def checksum(self) -> str:
         letters = string.ascii_lowercase

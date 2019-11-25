@@ -15,9 +15,6 @@ from ssda.util import types
 
 class SALTObservation:
     def __init__(self, fits_file: FitsFile, database_service:  SaltDatabaseService):
-        """
-        :param fits_file:
-        """
         self.headers = fits_file.headers
         self.header_value = fits_file.header_value
         self.size = fits_file.size()
@@ -25,6 +22,7 @@ class SALTObservation:
         self.fits_file = fits_file
         self.file_path = fits_file.file_path
         self.database_service = database_service
+        self.block_visit_id = int(fits_file.header_value("BVISITID"))
 
     def artifact(self, plane_id: int) -> types.Artifact:
 
@@ -35,7 +33,7 @@ class SALTObservation:
             content_checksum=self.fits_file.checksum(),
             content_length=self.fits_file.size(),
             identifier=identifier,
-            name=path.split("/")[-1],
+            name=os.path.basename(path),
             plane_id=plane_id,
             path=path,
             product_type=self._product_type()
@@ -47,20 +45,17 @@ class SALTObservation:
                     instrument: types.Instrument
                     ) -> types.Observation:
 
-        if not self.header_value("BVISITID"):
-            today = datetime.now()
+        if not self.block_visit_id:
+            today = datetime.strptime(self.header_value("DATE-OBS").strip(), '%Y-%m-%d').date()
             release_date_tz = \
                 datetime(year=today.year,
                          month=today.month,
                          day=today.day,
-                         hour=today.hour,
-                         minute=today.minute,
-                         second=today.second,
                          tzinfo=tz.gettz("Africa/Johannesburg"))
             status = types.Status.ACCEPTED
         else:
-            release_date_tz = self.database_service.find_release_date(int(self.header_value("BVISITID")))
-            status = self.database_service.find_observation_status(int(self.header_value("BVISITID")))
+            release_date_tz = self.database_service.find_release_date(self.block_visit_id)
+            status = self.database_service.find_observation_status(self.block_visit_id)
         return types.Observation(
             data_release=release_date_tz,
             instrument=instrument,
@@ -131,13 +126,13 @@ class SALTObservation:
 
         return types.Proposal(
             institution=types.Institution.SALT,
-            pi=self.database_service.find_pi(int(self.fits_file.header_value("BVISITID"))),
-            proposal_code=self.database_service.find_proposal_code(int(self.header_value("BVISITID"))),
-            title=self.database_service.find_proposal_title(int(self.header_value("BVISITID")))
+            pi=self.database_service.find_pi(self.block_visit_id),
+            proposal_code=self.database_service.find_proposal_code(self.block_visit_id),
+            title=self.database_service.find_proposal_title(self.block_visit_id)
         )
 
     def proposal_investigators(self, proposal_id: int) -> List[types.ProposalInvestigator]:
-        investigators = self.database_service.find_proposal_investigators(int(self.header_value("BVISITID")))
+        investigators = self.database_service.find_proposal_investigators(self.block_visit_id)
         return [
             types.ProposalInvestigator(
                 proposal_id=proposal_id,
@@ -145,14 +140,13 @@ class SALTObservation:
             ) for investigator in investigators
         ]
 
-    def target(self, observation_id: int) -> types.Target:
+    def target(self, observation_id: int) -> Optional[types.Target]:
         proposal_id = self.header_value("PROPID")
         object_name = self.header_value("OBJECT").strip()
-        block_visit_id = self.header_value("BVISITID")
         if object_name == types.ProductType.ARC or \
            object_name == types.ProductType.BIAS or \
            object_name == types.ProductType.FLAT:
-            raise ValueError("Calibrations (Arcs, Bias and Flats) doesn't have a target")
+            return None
         is_standard = False
         if proposal_id.upper() == "CAL_SPST" or \
                 proposal_id.upper() == "CAL_LICKST" or\
@@ -163,8 +157,7 @@ class SALTObservation:
             name=object_name,
             observation_id=observation_id,
             standard=is_standard,
-            target_type='Unknown' if not block_visit_id else
-            self.database_service.find_target_type(int(block_visit_id))
+            target_type=self.database_service.find_target_type(self.block_visit_id)
         )
 
     def _product_type(self) -> types.ProductType:
