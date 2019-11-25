@@ -1,7 +1,7 @@
 from typing import Any, Tuple, Dict, List, Optional
 from astropy.units import Quantity
 from astropy import units as u
-import os
+import numpy as np
 import math
 
 from ssda.data.salt_filter_files_reader import wavelengths_and_transmissions, fp_hwfm
@@ -47,7 +47,10 @@ def fwhm_interval(wavelengths_transmissions: List[Any]) -> Tuple[Tuple[float, fl
         # Move through the points, starting from minimum x, until we've just passed half the maximum y value.
         if t[1] > half_y_max:
             if i == 0:
+                x_1_at_half_y_max = t[0]
                 break
+            # Calculate the line y = m * x + c passing through the point before and after the half maximum.
+            # Use this line to get an estimate of the x where y=half_y_max.
             m = (sorted_wavelengths[i][1] - sorted_wavelengths[i - 1][1]) / (
                     sorted_wavelengths[i][0] - sorted_wavelengths[i - 1][0])
             c = sorted_wavelengths[i][1] - m * sorted_wavelengths[i][0]
@@ -56,19 +59,18 @@ def fwhm_interval(wavelengths_transmissions: List[Any]) -> Tuple[Tuple[float, fl
 
     for i, t in enumerate(sorted_wavelengths[::-1]):
         # Move through the points, starting from large x, until we've just passed half the maximum y value.
+        print(i, t[1], half_y_max)
         if t[1] > half_y_max:
             if i == 0:
+                x_2_at_half_y_max = t[0]
                 break
+            # Calculate the line y = m * x + c passing through the point before and after the half maximum.
+            # Use this line to get an estimate of the x where y=half_y_max.
             m = (sorted_wavelengths[::-1][i][1] - sorted_wavelengths[::-1][i - 1][1]) / (
                     sorted_wavelengths[::-1][i][0] - sorted_wavelengths[::-1][i - 1][0])
             c = sorted_wavelengths[::-1][i][1] - m * sorted_wavelengths[::-1][i][0]
             x_2_at_half_y_max = (half_y_max - c)/m
             break
-    if not x_2_at_half_y_max:
-        x_2_at_half_y_max = sorted_wavelengths[-1][0]
-
-    if not x_1_at_half_y_max:
-        x_1_at_half_y_max = sorted_wavelengths[0][0]
 
     return (x_1_at_half_y_max, half_y_max), (x_2_at_half_y_max, half_y_max)
 
@@ -91,9 +93,9 @@ def filter_fwhm_interval(filter_name: str, instrument: types.Instrument) \
             The two points that that form fwhm on the curve where lambda1 being the small wavelength and lambda2 is
             the larger wavelength
     """
-    unsorted_wavelength = wavelengths_and_transmissions(instrument=instrument, filter_name=filter_name)
+    wavelength_transmission_pairs = wavelengths_and_transmissions(instrument=instrument, filter_name=filter_name)
 
-    lambda_min, lambda_max = fwhm_interval(unsorted_wavelength)
+    lambda_min, lambda_max = fwhm_interval(wavelength_transmission_pairs)
 
     return lambda_min, lambda_max
 
@@ -104,13 +106,14 @@ def fabry_perot_fwhm_interval(resolution: str, wavelength: float) -> float:
 
     Parameter
     ---------
-    resolution: String
+    resolution: str
         A full name of the resolution like
     wavelength: float
         A wave
     Return
     ------
-    Full width half maximum
+    fwhm:
+        A full width half maximum
     """
 
     fwhm = None
@@ -121,7 +124,7 @@ def fabry_perot_fwhm_interval(resolution: str, wavelength: float) -> float:
     sorted_points = sorted(fp_fwhm_intervals, key=lambda element: element[1])
 
     for i, w in enumerate(sorted_points):
-        #  sorted_pointss defines a function f of the FWHM as a function of the wavelength.
+        #  sorted_points defines a function f of the FWHM as a function of the wavelength.
         #  We use linear interpolation to estimate the value of f at the given wavelength.
         if w[1] > wavelength:
             m = (sorted_points[i][2] - sorted_points[i - 1][2])/(
@@ -134,12 +137,12 @@ def fabry_perot_fwhm_interval(resolution: str, wavelength: float) -> float:
     return fwhm
 
 
-def rss_ccd_wavelength(x: float, grating_angle: Quantity, camera_angle: Quantity, grating_frequency: Quantity) -> float:
+def rss_ccd_wavelength(x: float, grating_angle: Quantity, camera_angle: Quantity, grating_frequency: Quantity) \
+        -> Quantity:
     """
     Returns the wavelength at the specified distance
     from the center of the middle CCD.
 
-    See http://www.sal.wisc.edu/~khn/salt/Outgoing/3170AM0010_Spectrograph_Model_Draft_2.pdf
     for the constants.
     Parameters
     ----------
@@ -153,7 +156,8 @@ def rss_ccd_wavelength(x: float, grating_angle: Quantity, camera_angle: Quantity
             The grating frequency (in grooves/mm)
     Return
     ------
-        the wavelength (in metres)
+        wavelength: metres
+            The wavelength (in metres)
     """
     # What is the outgoing angle beta0 for the center of the middle chip? (Normally, the camera angle will be twice the
     # grating angle, so that the incoming angle (i.e. the grating angle) alpha is equal to beta0.
@@ -173,14 +177,13 @@ def rss_ccd_wavelength(x: float, grating_angle: Quantity, camera_angle: Quantity
     # The outgoing angle for a distance x is slightly different the correction dbeta is given by
     # tan(dbeta) = x / f_cam with the focal length f_cam of the imaging lens. Note that x must be converted from pixels
     # to a length.
-    dbeta = math.atan((x * RSS_PIXEL_SIZE.value) / FOCAL_LENGTH_RSS_IMAGING_LENS.value)
+    dbeta = np.arctan((x * RSS_PIXEL_SIZE.value) / FOCAL_LENGTH_RSS_IMAGING_LENS.value)
     beta = beta0 + dbeta
 
     # The wavelength can now be obtained from the grating equation.
-    wavelength = Lambda * (math.sin(alpha) + math.sin(beta))
+    wavelength = Lambda * (np.sin(alpha) + np.sin(beta))
 
-    # The CAOM expects the wavelength to be in metres, not Angstroms.
-    return float(wavelength / 1e10)  # TODO use quantity
+    return float(wavelength / 1e10) * u.m
 
 
 def rss_resolution_element(grating_frequency: Quantity, grating_angle: Quantity, slit_width: Quantity) -> Quantity:
@@ -204,7 +207,7 @@ def rss_resolution_element(grating_frequency: Quantity, grating_angle: Quantity,
     """
 
     Lambda = 1e7 / grating_frequency
-    return float(slit_width * Lambda * math.cos(grating_angle) * (
+    return float(slit_width * Lambda * np.cos(grating_angle) * (
             FOCAL_LENGTH_TELESCOPE / FOCAL_LENGTH_RSS_COLLIMATOR)) * u.arcsec
 
 
@@ -292,7 +295,7 @@ def hrs_interval(arm: types.HRSArm, resolution: str) -> Dict[str, Any]:
     ---------
         arm: HRS Arm
             HRS arm that is either Red or Blue
-        resolution: String
+        resolution: str
             A full name of  the resolution like Low Resolution
     Return
     ------
@@ -371,9 +374,9 @@ def imaging_energy_properties(plane_id: int, filter_name: str, instrument: types
 
     Parameter
     ----------
-        plane_id: Integer
+        plane_id: int
             Plane id of of this file
-        filter_name: String
+        filter_name: str
             Filter name used for this file
         instrument: Instrument
             Instrument used for this file
@@ -411,7 +414,7 @@ def rss_energy_properties(header_value: Any, plane_id: int) -> Optional[types.En
     ----------
         header_value: Function
             Observation method to get FITS header value using key
-        plane_id: Integer
+        plane_id: int
             Plane id of of this file
     Return
     ------
@@ -495,7 +498,7 @@ def rss_energy_properties(header_value: Any, plane_id: int) -> Optional[types.En
             resolution = header_value("ET1MODE").strip().upper()  # TODO CHECK with encarni which one use ET2/1
             _lambda = float(header_value("ET1WAVE0"))
         else:
-            raise ValueError("Unknown etelon state")
+            raise ValueError("Unknown etalon state")
 
         fwhm = fabry_perot_fwhm_interval(resolution=resolution, wavelength=_lambda)
         energy_interval = (_lambda - fwhm / 2, _lambda + fwhm / 2)
@@ -526,11 +529,11 @@ def hrs_energy(plane_id: int, arm: types.HRSArm, resolution: str) -> Optional[ty
 
     Parameter
     ----------
-        plane_id: Integer
+        plane_id: int
             Plane id of of this file
         arm: HRSArm
             HRS arm either red or blue
-        resolution: String
+        resolution: str
             HRS resolution (Low, Medium, ...) Resolution
 
     Return
@@ -566,9 +569,9 @@ def scam_energy_cal(plane_id: int, filter_name: str) -> Optional[types.Energy]:
 
     Parameter
     ----------
-        plane_id: Integer
+        plane_id: int
             Plane id of of this file
-        filter_name: String
+        filter_name: str
             filter user for this file
 
     Return

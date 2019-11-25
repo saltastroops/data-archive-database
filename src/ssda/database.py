@@ -71,11 +71,6 @@ class DatabaseService:
 
         raise NotImplementedError
 
-    @staticmethod
-    def find_identifier(identifier: str) -> Optional[str]:
-        # Todo search data base if Identifier exist
-        return None
-
     def insert_artifact(self, artifact: types.Artifact) -> int:
         """
         Insert an artifact.

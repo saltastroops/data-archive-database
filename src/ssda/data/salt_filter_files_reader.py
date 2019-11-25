@@ -28,7 +28,7 @@ def wavelengths_and_transmissions(filter_name, instrument) -> List[Tuple[float, 
     if instrument.value.lower() == 'salticam':
         filt_name = _parse_filter_name(filter_name)
 
-    with open(f'{os.environ["PATH_TO_WAVELENGTH_FILES"]}/{instrument.value.lower()}/{filt_name}.txt', 'r') \
+    with open(f'{os.path.abspath(os.curdir)}/{instrument.value.lower()}/{filt_name}.txt', 'r') \
             as file:
         for line in file.readlines():
             if line and not line.startswith("!") and not line.startswith("#"):
@@ -40,7 +40,7 @@ def fp_hwfm(resolution) -> List[Tuple[str, float, float]]:
     if not resolution:
         raise ValueError("A resolution must be provided to use this method")
     fp_modes = []
-    with open(f'{os.environ["PATH_TO_WAVELENGTH_FILES"]}/rss/properties_of_fp_modes.txt', 'r') as file:
+    with open(f'{os.path.abspath(os.curdir)}/rss/properties_of_fp_modes.txt', 'r') as file:
         for line in file.readlines():
             if len(line.split()) and not line.split()[0].startswith("!") and not line.split()[0].startswith("#"):
                 if len(line.split()) > 7 and line.split()[0] in ["TF", "LR", "MR", "HR"]:
@@ -64,6 +64,6 @@ def fp_hwfm(resolution) -> List[Tuple[str, float, float]]:
         reso = None
 
     if not reso:
-        raise ValueError(f"Resolution {resolution} not found for fabry perot")
+        raise ValueError(f"Resolution {resolution} not found for Fabry Perot")
 
     return [x for x in fp_modes if x[0].upper() == reso]

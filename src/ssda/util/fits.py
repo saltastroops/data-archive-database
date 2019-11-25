@@ -85,7 +85,7 @@ class FitsFile(ABC):
 
         Returns
         -------
-        str :
+        instrument: Instrument
             The Instrument.
 
         """
@@ -95,7 +95,7 @@ class FitsFile(ABC):
     @abstractmethod
     def headers(self) -> Dict[str, Any]:
         """
-        The FITS header value for a keyword.
+        The directory of the key-value pairs of the (primary) FITS header.
 
         Returns
         -------
@@ -234,7 +234,7 @@ class StandardFitsFile(FitsFile):
         self.path = path
 
     def size(self) -> Quantity:
-        return random.randint(1000, 1000000000) * types.byte
+        return os.stat(self.path).st_size * types.byte
 
     def instrument(self) -> Instrument:
         dirs = self.path.split("/")

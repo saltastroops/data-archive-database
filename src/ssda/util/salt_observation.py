@@ -1,5 +1,6 @@
 import uuid
 from dateutil.tz import tz
+import os
 from typing import Optional, List, Iterable
 from dateutil.parser import parse
 from datetime import timedelta, datetime
@@ -37,7 +38,7 @@ class SALTObservation:
             name=path.split("/")[-1],
             plane_id=plane_id,
             path=path,
-            product_type=self.__product_type()
+            product_type=self._product_type()
         )
 
     def observation(self,
@@ -63,7 +64,7 @@ class SALTObservation:
         return types.Observation(
             data_release=release_date_tz,
             instrument=instrument,
-            intent=self.__intent(),
+            intent=self._intent(),
             meta_release=release_date_tz,
             observation_group_id=observation_group_id,
             observation_type=types.ObservationType.OBJECT,
