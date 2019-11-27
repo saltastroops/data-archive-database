@@ -88,7 +88,7 @@ WHERE BlockVisit_Id=%s;
 
     def find_proposal_investigators(self, block_visit_id: int) -> List[str]:
         sql = """
-SELECT PiptUser_Id as UserId FROM  BlockVisit
+SELECT PiptUser_Id FROM  BlockVisit
     JOIN `Block` USING(Block_Id)
     JOIN Proposal ON `Block`.Proposal_Id=Proposal.Proposal_Id
     JOIN ProposalInvestigator ON Proposal.ProposalCode_Id=ProposalInvestigator.ProposalCode_Id
@@ -99,9 +99,9 @@ WHERE BlockVisit_Id=%s;
         if len(results):
             ps = []
             for index, row in results.iterrows():
-                ps.append(row['UserId'])
+                ps.append(row['PiptUser_Id'])
             return ps
-        raise ValueError("Observation have no Investigators")
+        raise ValueError("Observation has no Investigators")
 
     def find_target_type(self, block_visit_id: int) -> Optional[str]:
         sql = """
@@ -117,7 +117,7 @@ WHERE BlockVisit.BlockVisit_Id=%s
         results = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
         if results['NumericCode']:
             return results['NumericCode']
-        return "00.00.00.00"
+        raise ValueError(f"No numeric code defined for the target type of block visit {block_visit_id}")
 
     def is_mos(self, slit_barcode: str) -> bool:
 

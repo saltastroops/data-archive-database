@@ -3,7 +3,7 @@ from dateutil.tz import tz
 import os
 from typing import Optional, List, Iterable
 from dateutil.parser import parse
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, date
 from astropy.coordinates import Angle
 
 import astropy.units as u
@@ -48,10 +48,9 @@ class SALTObservation:
         if not self.block_visit_id:
             today = datetime.strptime(self.header_value("DATE-OBS").strip(), '%Y-%m-%d').date()
             release_date_tz = \
-                datetime(year=today.year,
+                date(year=today.year,
                          month=today.month,
-                         day=today.day,
-                         tzinfo=tz.gettz("Africa/Johannesburg"))
+                         day=today.day)
             status = types.Status.ACCEPTED
         else:
             release_date_tz = self.database_service.find_release_date(self.block_visit_id)
@@ -73,7 +72,7 @@ class SALTObservation:
             return None
         return types.ObservationGroup(
             group_identifier=self.header_value("BVISITID"),
-            name=self.header_value("BVISITID")  # Todo block name
+            name="SALT-" + self.header_value("BVISITID")
         )
 
     def observation_time(self, plane_id: int) -> types.ObservationTime:
@@ -111,7 +110,7 @@ class SALTObservation:
         ra = Angle("{} hours".format(ra_header_value)).degree * u.deg
         dec = Angle("{} degrees".format(dec_header_value)).degree * u.deg
         equinox = float(self.header_value("EQUINOX"))
-        if equinox == 0:
+        if equinox == 0:  # TODO check if it is cal and use it instead
             return None
         return types.Position(
             dec=dec,

@@ -1,6 +1,6 @@
 from ssda.database.sdb import SaltDatabaseService
 from ssda.util import types
-from ssda.util.energy_cal import hrs_energy
+from ssda.util.energy_cal import hrs_spectral_properties
 from ssda.util.salt_observation import SALTObservation
 from ssda.util.fits import FitsFile
 from typing import Optional, List
@@ -27,23 +27,19 @@ class HrsObservationProperties:
         if self.salt_observation.is_calibration():
             return None
 
-        filename = str(self.file_path.split()[-1])
+        filename = str(os.path.basename(self.file_path))
         arm = types.HRSArm.RED if filename[0] == "R" else types.HRSArm.BLUE if filename[0] == "H" else None
         if not arm:
             raise ValueError("Unknown arm.")
-        resolution = self.header_value("OBSMODE")
-        return hrs_energy(plane_id, arm, resolution)
+        resolution = self._mode()
+        return hrs_spectral_properties(plane_id, arm, resolution)
 
     def instrument_keyword_values(self, observation_id: int) -> List[types.InstrumentKeywordValue]:
         return []  # TODO Needs to be implemented
 
     def instrument_setup(self,  observation_id: int) -> types.InstrumentSetup:
-        resolution = self.header_value("OBSMODE")
-        hrs_mode = None
+        hrs_mode = self._mode()
 
-        for hm in types.HRSMode:
-            if self.header_value("OBSMODE").strip().lower() == hm.value.lower():
-                hrs_mode = hm
         sql = """
         WITH hm (id) AS (
             SELECT hrs_mode_id FROM hrs_mode WHERE hrs_mode.hrs_mode=%(hrs_mode)s
@@ -104,3 +100,15 @@ class HrsObservationProperties:
                 proposal_id.upper() == "CAL_ARC":
             return None
         return self.salt_observation.target(observation_id=observation_id)
+
+    def _mode(self) -> types.HRSMode:
+        observation_mode = self.header_value("OBSMODE")
+        if observation_mode == "LOW RESOLUTION":
+            return types.HRSMode.LOW_RESOLUTION
+        if observation_mode == "MEDIUM RESOLUTION":
+            return types.HRSMode.MEDIUM_RESOLUTION
+        if observation_mode == "HIGH RESOLUTION":
+            return types.HRSMode.HIGH_RESOLUTION
+        if observation_mode == "HIGH STABILITY":
+            return types.HRSMode.HIGH_STABILITY
+        raise ValueError(f"Unknown resolution {resolution.value}")

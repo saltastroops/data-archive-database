@@ -94,19 +94,6 @@ class FitsFile(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def headers(self) -> Dict[str, Any]:
-        """
-        The directory of the key-value pairs of the (primary) FITS header.
-
-        Returns
-        -------
-        dict
-            FITS headers key value pair.
-        """
-
-        raise NotImplementedError
-
-    @abstractmethod
     def header_value(self, keyword: str) -> str:
         """
         The FITS header value for a keyword.
@@ -232,7 +219,9 @@ def fits_file_dir(night: date, instrument: Instrument, base_dir: str) -> str:
 
 class StandardFitsFile(FitsFile):
     def __init__(self, path: str) -> None:
+        hdulist = fits.open(self.path)
         self.path = path
+        self.headers = hdulist[0].header
 
     def size(self) -> Quantity:
         return os.stat(self.path).st_size * types.byte
@@ -260,15 +249,18 @@ class StandardFitsFile(FitsFile):
     def checksum(self) -> str:
         letters = string.ascii_lowercase
         result = "".join(random.choice(letters) for _ in range(20))
-        return hashlib.md5(result.encode())
 
-    def headers(self) -> Dict[str, Any]:
-        hdulist = fits.open(self.path)
-        return hdulist[0].header
+        # Open,close, read file and calculate MD5 on its contents
+        with open(self.file_path()) as f:
+            # read contents of the file
+            data = f.read()
+            # pipe contents of the file through
+            md5_returned = hashlib.md5(data).hexdigest()
+        return md5_returned
 
     def header_value(self, keyword: str) -> Optional[str]:
         try:
-            return str(self.headers()[keyword])
+            return str(self.headers[keyword])
         except KeyError:
             return None
 

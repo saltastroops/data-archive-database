@@ -12,8 +12,14 @@ class SSDADatabaseService:
 
     """
 
-    def __init__(self, connection: psycopg2.extensions.connection):
-        self._connection = connection
+    def __init__(self, database_config: types.DatabaseConfiguration):
+        self._connection = connect(
+            user=database_config.username(),
+            password=database_config.password(),
+            host=database_config.host(),
+            port=database_config.port(),
+            database=database_config.database(),
+        )
 
     def begin_transaction(self) -> None:
         """

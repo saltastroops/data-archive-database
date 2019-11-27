@@ -485,6 +485,19 @@ class HRSMode(Enum):
     LOW_RESOLUTION = "Low Resolution"
     MEDIUM_RESOLUTION = "Medium Resolution"
 
+    @staticmethod
+    def hrs_mode(hrs_mode_abbr: str) -> Optional[HRSMode]:
+        if hrs_mode_abbr == "LR":
+            return  HRSMode.LOW_RESOLUTION
+        if resolution.lower() == "medium resolution":
+            reso = 'MR'
+        if resolution.lower() == "high resolution":
+            reso = 'HR'
+        if resolution.lower() == "frame transfer":
+            reso = "TF"
+        else:
+            reso = None
+
 
 class Institution(Enum):
     """
@@ -936,6 +949,21 @@ class PolarizationMode(Enum):
     LINEAR = "Linear"
     LINEAR_HI = "Linear Hi"
     OTHER = "Other"
+
+    @staticmethod
+    def polarization_mode(polarization_mode: str) -> PolarizationMode:
+        if polarization_mode.upper() == "LINEAR":
+            return PolarizationMode.LINEAR
+        elif polarization_mode.upper() == "LINEAR-HI":
+            return PolarizationMode.LINEAR_HI
+        elif polarization_mode.upper() == "CIRCULAR":
+            return PolarizationMode.CIRCULAR
+        elif polarization_mode.upper() == "ALL-STOKES":
+            return PolarizationMode.ALL_STOKES
+        elif polarization_mode.upper() == "OTHER":
+            return PolarizationMode.OTHER
+        else:
+            raise ValueError(f"Polarization mode {polarization_mode} is not known")
 
 
 class Polarization:

@@ -76,7 +76,8 @@ def salt_instrument_observation_properties(fits_file: FitsFile,
     if fits_file.instrument().value.upper() == "SALTICAM":
         return SalticamObservationProperties(fits_file, salt_database_service)
 
-    raise ValueError(f"Observation properties could not be defined for file {fits_file.file_path}")
+    raise ValueError(f"Observation properties could not be defined for instrument {fits_file.instrument().value}, "
+                     f"file {fits_file.file_path}")
 
 
 class StandardObservationProperties(ObservationProperties):
@@ -129,5 +130,3 @@ class StandardObservationProperties(ObservationProperties):
         return self._observation_properties.target(observation_id)
 
 
-class DummyObservationProperties(ObservationProperties):
-    pass

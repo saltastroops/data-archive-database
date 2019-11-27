@@ -1,6 +1,6 @@
 from ssda.database.sdb import SaltDatabaseService
 from ssda.util import types
-from ssda.util.energy_cal import rss_energy_properties
+from ssda.util.energy_cal import rss_spectral_properties
 from ssda.util.salt_observation import SALTObservation
 from ssda.util.fits import FitsFile
 from typing import Optional, List
@@ -30,7 +30,7 @@ class RssObservationProperties:
 
         if self.database_service.is_mos(slit_barcode=slit_barcode):
             return None
-        return rss_energy_properties(header_value=self.header_value, plane_id=plane_id)
+        return rss_spectral_properties(header_value=self.header_value, plane_id=plane_id)
 
     def instrument_keyword_values(self, observation_id: int) -> List[types.InstrumentKeywordValue]:
         return []  # TODO Needs to be implemented
@@ -65,7 +65,7 @@ class RssObservationProperties:
             if self.header_value("FILTER").strip() == fi.value:
                 filter = fi
 
-        instrument_mode = which_instrument_mode_rss(self.header_value, self.database_service)
+        instrument_mode = rss_instrument_mode(self.header_value, self.database_service)
 
         return types.InstrumentSetup(
             additional_queries=queries,
@@ -94,30 +94,17 @@ class RssObservationProperties:
             else types.DataProductType.SPECTRUM
         return types.Plane(observation_id, data_product_type=data_product_type)
 
-    @staticmethod
-    def get_pattern(pattern: str) -> types.PolarizationMode:
-        # if pattern.upper() == "NONE" or not pattern:  # TODO can we have a None if polarization_config is NOT Open
-        #     return None
-        if pattern.upper() == "LINEAR":
-            return types.PolarizationMode.LINEAR
-        elif pattern.upper() == "LINEAR-HI":
-            return types.PolarizationMode.LINEAR_HI
-        elif pattern.upper() == "CIRCULAR":
-            return types.PolarizationMode.CIRCULAR
-        elif pattern.upper() == "ALL-STOKES":
-            return types.PolarizationMode.ALL_STOKES
-        else:
-            return types.PolarizationMode.OTHER
-
     def polarization(self, plane_id: int) -> Optional[types.Polarization]:
         polarization_config = self.header_value("POLCONF").strip()
-        pattern: str = self.header_value("WPPATERN").strip().upper()
-        if polarization_config.upper() == "OPEN":
+        polarization_mode: str = self.header_value("WPPATERN").strip().upper()
+        if polarization_mode or polarization_config.upper() == "OPEN" or polarization_mode.upper() == "NONE":
             return None
+        if polarization_mode.upper() not in ["ALL-STOKES", "LINEAR-HI", "LINEAR", "CIRCULAR"]:
+            polarization_mode = "OTHER"
 
         return types.Polarization(
             plane_id=plane_id,
-            polarization_mode=self.get_pattern(pattern=pattern)
+            polarization_mode=types.PolarizationMode.polarization_mode(polarization_mode=polarization_mode)
         )
 
     def position(self, plane_id: int) -> Optional[types.Position]:
@@ -144,6 +131,7 @@ def rss_instrument_mode(header_value, database_service) -> types.InstrumentMode:
     slit_barcode = header_value("MASKID").strip()
 
     mode = header_value("OBSMODE").strip().upper()
+    polarization_mode: str = header_value("WPPATERN").strip().upper()
     if mode == "FABRY-PEROT":
         return types.InstrumentMode.FABRY_PEROT
     if mode == "SPECTROSCOPY":

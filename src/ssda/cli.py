@@ -222,8 +222,8 @@ def main(
 
     # database access
     ssda_db_config = dsnparse.parse_environ("SSDA_DSN")
-    ssda_connection = connect(
-        user=ssda_db_config.user,
+    ssda_db_config = types.DatabaseConfiguration(
+        username=ssda_db_config.user,
         password=ssda_db_config.secret,
         host=ssda_db_config.host,
         port=ssda_db_config.port,
@@ -237,7 +237,7 @@ def main(
         port=3306,
         database=sdb_db_config.database
     )
-    ssda_database_service = ssda.database.ssda.SSDADatabaseService(ssda_connection)
+    ssda_database_service = ssda.database.ssda.SSDADatabaseService(ssda_db_config)
     sdb_database_service = SaltDatabaseService(sdb_db_config)
 
     database_services = DatabaseServices(ssda=ssda_database_service, sdb=sdb_database_service)
