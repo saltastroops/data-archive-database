@@ -2,6 +2,7 @@ from typing import cast, Any, Dict, Optional
 
 import astropy.units as u
 import psycopg2
+from psycopg2 import connect
 
 from ssda.util import types
 
@@ -37,6 +38,9 @@ class SSDADatabaseService:
         """
 
         self._connection.commit()
+
+    def connection(self) -> connect:
+        return self._connection
 
     def delete_observation(self, observation_id: int) -> None:
         """

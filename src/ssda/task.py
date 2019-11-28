@@ -2,7 +2,6 @@ from ssda.database.services import DatabaseServices
 from ssda.database.ssda import SSDADatabaseService
 from ssda.observation import (
     StandardObservationProperties,
-    DummyObservationProperties,
     ObservationProperties,
 )
 from ssda.repository import insert, delete

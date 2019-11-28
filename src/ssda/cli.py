@@ -241,6 +241,7 @@ def main(
     sdb_database_service = SaltDatabaseService(sdb_db_config)
 
     database_services = DatabaseServices(ssda=ssda_database_service, sdb=sdb_database_service)
+    ssda_connection = database_services.ssda.connection()
 
     # execute the requested task
     for path in paths:

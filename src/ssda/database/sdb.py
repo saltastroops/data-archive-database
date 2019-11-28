@@ -105,7 +105,7 @@ WHERE BlockVisit_Id=%s;
 
     def find_target_type(self, block_visit_id: int) -> Optional[str]:
         sql = """
-SELECT NumericCode FROM BlockVisit
+SELECT TargetSubType.NumericCode as NumericCode FROM BlockVisit
     JOIN `Block` ON BlockVisit.Block_Id=`Block`.Block_Id
     JOIN Pointing ON `Block`.Block_Id=Pointing.Block_Id
     JOIN Observation ON Pointing.Pointing_Id=Observation.Pointing_Id
@@ -129,7 +129,7 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
             return results['RssMaskType'] == 'MOS'
 
     def find_block_code(self, block_visit_id) -> Optional[str]:
-        sql = """
+        sql = """ 
 SELECT BlockCode FROM  BlockCode
     JOIN `Block` USING(BlockCode_Id)
     JOIN BlockVisit ON `Block`.Block_Id=BlockVisit.Block_Id

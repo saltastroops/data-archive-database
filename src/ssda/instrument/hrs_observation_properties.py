@@ -111,4 +111,4 @@ class HrsObservationProperties:
             return types.HRSMode.HIGH_RESOLUTION
         if observation_mode == "HIGH STABILITY":
             return types.HRSMode.HIGH_STABILITY
-        raise ValueError(f"Unknown resolution {resolution.value}")
+        raise ValueError(f"Unknown resolution for file {self.file_path}")

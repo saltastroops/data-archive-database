@@ -219,7 +219,7 @@ def fits_file_dir(night: date, instrument: Instrument, base_dir: str) -> str:
 
 class StandardFitsFile(FitsFile):
     def __init__(self, path: str) -> None:
-        hdulist = fits.open(self.path)
+        hdulist = fits.open(path)
         self.path = path
         self.headers = hdulist[0].header
 
@@ -251,7 +251,7 @@ class StandardFitsFile(FitsFile):
         result = "".join(random.choice(letters) for _ in range(20))
 
         # Open,close, read file and calculate MD5 on its contents
-        with open(self.file_path()) as f:
+        with open(self.file_path(), 'rb') as f:
             # read contents of the file
             data = f.read()
             # pipe contents of the file through
