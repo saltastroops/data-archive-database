@@ -485,19 +485,6 @@ class HRSMode(Enum):
     LOW_RESOLUTION = "Low Resolution"
     MEDIUM_RESOLUTION = "Medium Resolution"
 
-    @staticmethod
-    def hrs_mode(hrs_mode_abbr: str) -> Optional[HRSMode]:
-        if hrs_mode_abbr == "LR":
-            return  HRSMode.LOW_RESOLUTION
-        if resolution.lower() == "medium resolution":
-            reso = 'MR'
-        if resolution.lower() == "high resolution":
-            reso = 'HR'
-        if resolution.lower() == "frame transfer":
-            reso = "TF"
-        else:
-            reso = None
-
 
 class Institution(Enum):
     """

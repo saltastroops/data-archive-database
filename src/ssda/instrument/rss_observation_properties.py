@@ -7,11 +7,12 @@ from typing import Optional, List
 
 
 class RssObservationProperties:
+    """
+    The RSS Observation Properties.
+    This class should be implementing ObservationProperties but it doesn't need all the methods.
+    """
 
     def __init__(self, fits_file: FitsFile, salt_database_service: SaltDatabaseService):
-        """
-        :param fits_file:
-        """
         self.header_value = fits_file.header_value
         self.file_path = fits_file.file_path
         self.database_service = salt_database_service
@@ -132,6 +133,10 @@ def rss_instrument_mode(header_value, database_service) -> types.InstrumentMode:
 
     mode = header_value("OBSMODE").strip().upper()
     polarization_mode: str = header_value("WPPATERN").strip().upper()
+    if mode == "IMAGING" and polarization_mode in ["ALL-STOKES", "LINEAR-HI", "LINEAR", "CIRCULAR"]:
+        return types.InstrumentMode.POLARIMETRIC_IMAGING
+    if mode == "SPECTROSCOPY" and polarization_mode in ["ALL-STOKES", "LINEAR-HI", "LINEAR", "CIRCULAR"]:
+        return types.InstrumentMode.POLARIMETRIC_IMAGING
     if mode == "FABRY-PEROT":
         return types.InstrumentMode.FABRY_PEROT
     if mode == "SPECTROSCOPY":
@@ -142,5 +147,4 @@ def rss_instrument_mode(header_value, database_service) -> types.InstrumentMode:
     if database_service.is_mos(slit_barcode=slit_barcode):
         return types.InstrumentMode.MOS
 
-    # TODO how to find these  POLARIMETRIC_IMAGING, SPECTROPOLARIMETRY, STREAMING
     raise ValueError("Some modes are not considered there are still in todo")

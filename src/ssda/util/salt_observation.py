@@ -46,11 +46,11 @@ class SALTObservation:
                     ) -> types.Observation:
 
         if not self.block_visit_id:
-            today = datetime.strptime(self.header_value("DATE-OBS").strip(), '%Y-%m-%d').date()
+            observation_date = datetime.strptime(self.header_value("DATE-OBS").strip(), '%Y-%m-%d').date()
             release_date_tz = \
-                date(year=today.year,
-                         month=today.month,
-                         day=today.day)
+                date(year=observation_date.year,
+                     month=observation_date.month,
+                     day=observation_date.day)
             status = types.Status.ACCEPTED
         else:
             release_date_tz = self.database_service.find_release_date(self.block_visit_id)

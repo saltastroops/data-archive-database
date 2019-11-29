@@ -1,3 +1,5 @@
+import os
+
 from ssda.database.sdb import SaltDatabaseService
 from ssda.util import types
 from ssda.util.energy_cal import hrs_spectral_properties
@@ -7,11 +9,12 @@ from typing import Optional, List
 
 
 class HrsObservationProperties:
+    """
+    The HRS Observation Properties.
+    This class should be implementing ObservationProperties but it doesn't need all the methods.
+    """
 
     def __init__(self, fits_file: FitsFile, database_service: SaltDatabaseService):
-        """
-        :param fits_file:
-        """
         self.header_value = fits_file.header_value
         self.file_path = fits_file.file_path()
         self.database_service = database_service
@@ -31,8 +34,8 @@ class HrsObservationProperties:
         arm = types.HRSArm.RED if filename[0] == "R" else types.HRSArm.BLUE if filename[0] == "H" else None
         if not arm:
             raise ValueError("Unknown arm.")
-        resolution = self._mode()
-        return hrs_spectral_properties(plane_id, arm, resolution)
+        hrs_mode = self._mode()
+        return hrs_spectral_properties(plane_id, arm, hrs_mode)
 
     def instrument_keyword_values(self, observation_id: int) -> List[types.InstrumentKeywordValue]:
         return []  # TODO Needs to be implemented
@@ -102,13 +105,13 @@ class HrsObservationProperties:
         return self.salt_observation.target(observation_id=observation_id)
 
     def _mode(self) -> types.HRSMode:
-        observation_mode = self.header_value("OBSMODE")
-        if observation_mode == "LOW RESOLUTION":
+        hrs_mode = self.header_value("OBSMODE").strip().upper()
+        if hrs_mode == "LOW RESOLUTION":
             return types.HRSMode.LOW_RESOLUTION
-        if observation_mode == "MEDIUM RESOLUTION":
+        if hrs_mode == "MEDIUM RESOLUTION":
             return types.HRSMode.MEDIUM_RESOLUTION
-        if observation_mode == "HIGH RESOLUTION":
+        if hrs_mode == "HIGH RESOLUTION":
             return types.HRSMode.HIGH_RESOLUTION
-        if observation_mode == "HIGH STABILITY":
+        if hrs_mode == "HIGH STABILITY":
             return types.HRSMode.HIGH_STABILITY
-        raise ValueError(f"Unknown resolution for file {self.file_path}")
+        raise ValueError(f"Unknown HRS mode {hrs_mode} for file {self.file_path}")

@@ -10,6 +10,7 @@ from psycopg2 import connect
 
 import ssda.database.ssda
 from ssda.database.sdb import SaltDatabaseService
+from ssda.database.ssda import SSDADatabaseService
 from ssda.database.services import DatabaseServices
 from ssda.task import execute_task
 from ssda.util import types
@@ -80,6 +81,8 @@ def validate_options(
         FITS file (path).
     instruments : set of Instrument
         Set of instruments.
+    fits_base_dir: str
+        The base directory to data files
 
     """
 
@@ -237,7 +240,7 @@ def main(
         port=3306,
         database=sdb_db_config.database
     )
-    ssda_database_service = ssda.database.ssda.SSDADatabaseService(ssda_db_config)
+    ssda_database_service = SSDADatabaseService(ssda_db_config)
     sdb_database_service = SaltDatabaseService(sdb_db_config)
 
     database_services = DatabaseServices(ssda=ssda_database_service, sdb=sdb_database_service)

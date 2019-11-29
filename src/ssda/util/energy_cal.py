@@ -23,44 +23,58 @@ FOCAL_LENGTH_TELESCOPE = 46200 * u.mm
 FOCAL_LENGTH_RSS_COLLIMATOR = 630 * u.mm
 
 
-def x_at_half_y_max(line: List[Tuple[float, float]]) -> float:
-    half_y_max = max(p[1] for p in line) / 2
-    x_1_at_half_y_max = None
-    for i, t in enumerate(line):
+def x_at_half_y_max(curve: List[Tuple[Quantity, float]]) -> Quantity:
+    """
+    The value of x at half of maximum y in the given line/curve
+    The curve have be sorted by x values (index 0)
+
+    Parameters
+    ----------
+    curve: List
+        A two dimension array defining a curve or a line
+
+    Returns
+    -------
+    x_at_half_y_max: Quantity
+        The value of x at half of maximum y
+    """
+    half_y_max = max(p[1] for p in curve) / 2
+    _x_at_half_y_max = None
+    for i, t in enumerate(curve):
         # Move through the points, starting from minimum x, until we've just passed half the maximum y value.
         if t[1] > half_y_max:
             if i == 0:
-                x_1_at_half_y_max = t[0]
+                _x_at_half_y_max = t[0]
                 break
             # Calculate the line y = m * x + c passing through the point before and after the half maximum.
             # Use this line to get an estimate of the x where y=half_y_max.
-            m = (line[i][1] - line[i - 1][1]) / (
-                    line[i][0] - line[i - 1][0])
-            c = line[i][1] - m * line[i][0]
-            x_1_at_half_y_max = (half_y_max - c)/m
+            m = (curve[i][1] - curve[i - 1][1]) / (
+                    curve[i][0] - curve[i - 1][0])
+            c = curve[i][1] - m * curve[i][0]
+            _x_at_half_y_max = (half_y_max - c)/m
             break
-    return x_1_at_half_y_max
+    return _x_at_half_y_max
 
 
-def fwhm_interval(wavelengths_transmissions: List[Any]) -> Tuple[float, float]:
+def fwhm_interval(wavelengths_transmissions: List[Tuple[Quantity, float]]) -> Tuple[Quantity, Quantity]:
     """
     A full width half maximum of array of 2D tuples
 
     Parameter
     ---------
-         wavelengths_and_transmissions: List
-            The pairs of  wavelengths and transmissions
+    wavelengths_and_transmissions: List
+       The pairs of wavelengths and transmissions
 
     Return
     ------
-        points: Tuple
-            A lower and a upper bound of the full width half maximum
+    points: Tuple
+        A lower and a upper bound of the full width half maximum
     """
     sorted_wavelengths = sorted(wavelengths_transmissions, key=lambda element: element[0])
-    revesed_sorted_wavelengths = sorted_wavelengths[::-1]
+    reversed_sorted_wavelengths = sorted_wavelengths[::-1]
 
     x_1_at_half_y_max = x_at_half_y_max(sorted_wavelengths)
-    x_2_at_half_y_max = x_at_half_y_max(revesed_sorted_wavelengths)
+    x_2_at_half_y_max = x_at_half_y_max(reversed_sorted_wavelengths)
 
     return x_1_at_half_y_max, x_2_at_half_y_max
 
@@ -72,16 +86,17 @@ def filter_fwhm_interval(filter_name: str, instrument: types.Instrument) \
 
     Parameter
     ---------
-        filter_name: str
-            The name of the filter you need intervals of
+    filter_name: str
+        The name of the filter you need intervals of
 
-        instrument: types.Instrument
-            THe instrument used for the filter
+    instrument: types.Instrument
+        THe instrument used for the filter
+
     Return
     ------
-        points: Dict
-            The two points that that form fwhm on the curve where lambda1 being the small wavelength and lambda2 is
-            the larger wavelength
+    points: Dict
+        The two points that that form fwhm on the curve where lambda1 being the small wavelength and lambda2 is
+        the larger wavelength
     """
     wavelength_transmission_pairs = wavelengths_and_transmissions(instrument=instrument, filter_name=filter_name)
 
@@ -100,6 +115,7 @@ def fabry_perot_fwhm_interval(rss_fp_mode: types.RSSFabryPerotMode, wavelength: 
         A full name of the resolution like
     wavelength: Quantity
         A wavelength
+
     Return
     ------
     fwhm:
@@ -136,18 +152,19 @@ def rss_ccd_wavelength(x: float, grating_angle: Quantity, camera_angle: Quantity
     for the constants.
     Parameters
     ----------
-        x: float
-            Distance (in spectral direction from center (in pixels)
-        grating_angle: Quantity
-            The grating angle
-        camera_angle: Quantity
-            The camera angle
-        grating_frequency: Quantity
-            The grating frequency
+    x: float
+        Distance (in spectral direction from center (in pixels)
+    grating_angle: Quantity
+        The grating angle
+    camera_angle: Quantity
+        The camera angle
+    grating_frequency: Quantity
+        The grating frequency
+
     Return
     ------
-        wavelength: metres
-            The wavelength
+    wavelength: metres
+        The wavelength
     """
     # What is the outgoing angle beta0 for the center of the middle chip? (Normally, the camera angle will be twice the
     # grating angle, so that the incoming angle (i.e. the grating angle) alpha is equal to beta0.
@@ -180,12 +197,12 @@ def rss_resolution_element(grating_frequency: Quantity, grating_angle: Quantity,
 
     Parameters
     ----------
-        grating_frequency:
-           the grating frequency
-        grating_angle:
-            the grating angle
-        slit_width:
-            the slit width
+    grating_frequency:
+       The grating frequency
+    grating_angle:
+        The grating angle
+    slit_width:
+        The slit width
 
     Return
     ------
@@ -207,14 +224,15 @@ def rss_resolution(grating_angle: Quantity, camera_angle: Quantity, grating_freq
 
     Parameters
     ----------
-        grating_angle: Quantity
-            The grating angle
-        camera_angle: Quantity
-            The camera angle
-        grating_frequency: Quantity
-            the grating frequency
-        slit_width: Quantity
-            the slit width
+    grating_angle: Quantity
+        The grating angle
+    camera_angle: Quantity
+        The camera angle
+    grating_frequency: Quantity
+        The grating frequency
+    slit_width: Quantity
+        The slit width
+
     Return
     ------
     resolution
@@ -232,7 +250,8 @@ def rss_slit_width_from_barcode(barcode: str) -> Quantity:
 
     Parameters
     ----------
-        barcode: str
+    barcode: str
+
     Return
     ------
     slit_width
@@ -254,11 +273,11 @@ def get_grating_frequency(grating: str) -> Quantity:
 
     Parameter
     ---------
-        grating: str
-            Grating name
+    grating: str
+        Grating name
     Return
     ------
-        The grating frequency (in grooves/mm)
+    The grating frequency (in grooves/mm)
     """
     grating_table = {
         "pg0300": 300,
@@ -274,66 +293,66 @@ def get_grating_frequency(grating: str) -> Quantity:
     return grating_table[grating.lower()] / u.mm
 
 
-def hrs_resolving_power(arm: types.HRSArm, resolution: types.HRSMode) -> float:
+def hrs_resolving_power(arm: types.HRSArm, hrs_mode: types.HRSMode) -> float:
     """
    The HRS wavelength interval (interval) as a 2D tuple where first entry being lower bound and second is the
    maximum  bound and resolving power (power)
 
    Parameter
    ---------
-       arm: HRS Arm
-           HRS arm that is either Red or Blue
-       resolution: str
-           A full name of  the resolution like Low Resolution
+    arm: HRS Arm
+        HRS arm that is either Red or Blue
+    resolution: HRSMode
+        A full name of  the resolution like Low Resolution
    Return
    ------
-       power: float
-           HRS resolving power
+    power: float
+        HRS resolving power
    """
 
     if types.HRSArm.BLUE == arm:
-        if resolution == types.HRSMode.LOW_RESOLUTION:
+        if hrs_mode == types.HRSMode.LOW_RESOLUTION:
             return 15000
-        if resolution == types.HRSMode.MEDIUM_RESOLUTION:
+        if hrs_mode == types.HRSMode.MEDIUM_RESOLUTION:
             return 43400
-        if resolution == types.HRSMode.HIGH_RESOLUTION:
+        if hrs_mode == types.HRSMode.HIGH_RESOLUTION:
             return 66700
-        if resolution == types.HRSMode.HIGH_STABILITY:
+        if hrs_mode == types.HRSMode.HIGH_STABILITY:
             return 66900
 
     if types.HRSArm.RED == arm:
-        if resolution == types.HRSMode.LOW_RESOLUTION:
+        if hrs_mode == types.HRSMode.LOW_RESOLUTION:
             return 14000
-        if resolution == types.HRSMode.MEDIUM_RESOLUTION:
+        if hrs_mode == types.HRSMode.MEDIUM_RESOLUTION:
             return 39600
-        if resolution == types.HRSMode.HIGH_RESOLUTION:
+        if hrs_mode == types.HRSMode.HIGH_RESOLUTION:
             return 73700
-        if resolution == types.HRSMode.HIGH_STABILITY:
+        if hrs_mode == types.HRSMode.HIGH_STABILITY:
             return 64600
 
     raise ValueError(f"Unknown HRS arm {arm.value}")
 
 
-def hrs_wavelength_interval(arm: types.HRSArm) -> Tuple[float, float]:
+def hrs_wavelength_interval(arm: types.HRSArm) -> Tuple[Quantity, Quantity]:
     """
     The HRS wavelength interval (interval) as a 2D tuple where first entry being lower bound and second is the
     maximum  bound.
 
     Parameter
     ---------
-        arm: HRSArm
-            HRS arm, either Red or Blue
+    arm: HRSArm
+       HRS arm, either Red or Blue
     Return
     ------
-        hrs_interval: tuple
-            The HRS interval.
+    hrs_interval: tuple
+        The HRS interval.
     """
 
     if types.HRSArm.BLUE == arm:
-        return 370, 555
+        return 370 * u.mn, 555 * u.mn
 
     if types.HRSArm.RED == arm:
-        return 555, 890
+        return 555 * u.mn, 890 * u.mn
 
     raise ValueError(f"Unknown HRS arm {arm.value}")
 
@@ -344,35 +363,27 @@ def imaging_spectral_properties(plane_id: int, filter_name: str, instrument: typ
 
     Parameter
     ----------
-        plane_id: int
-            Plane id of of this file
-        filter_name: str
-            Filter name used for this file
-        instrument: Instrument
-            Instrument used for this file
+    plane_id: int
+        Plane id of of this file
+    filter_name: str
+        Filter name used for this file
+    instrument: Instrument
+        Instrument used for this file
     Return
     ------
-        Spectral properties
-            Calculated spectral properties
+    Spectral properties
+        Calculated spectral properties
     """
     fwhm_points = filter_fwhm_interval(filter_name, instrument)
     lambda_min, lambda_max = fwhm_points[0], fwhm_points[1]
-    resolving_power = 0.5 * (lambda_min[0] + lambda_max[0]) / (lambda_max[0] - lambda_min[0])
+    resolving_power = 0.5 * (lambda_min + lambda_max) / (lambda_max - lambda_min)
     return types.Energy(
         dimension=1,
-        max_wavelength=Quantity(
-            value=lambda_max[0],
-            unit=u.meter
-        ),        min_wavelength=Quantity(
-            value=lambda_min[0],
-            unit=u.meter
-        ),
+        max_wavelength=lambda_max,
+        min_wavelength=lambda_min,
         plane_id=plane_id,
         resolving_power=resolving_power,
-        sample_size=Quantity(
-            value=abs(lambda_max[0]-lambda_min[0]),
-            unit=u.meter
-        )
+        sample_size=abs(lambda_max-lambda_min)
     )
 
 
@@ -382,14 +393,14 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
 
     Parameter
     ----------
-        header_value: Function
-            Observation method to get FITS header value using key
-        plane_id: int
-            Plane id of of this file
+    header_value: Function
+        Observation method to get FITS header value using key
+    plane_id: int
+        Plane id of of this file
     Return
     ------
-        Spectral properties
-            RSS Spectral properties
+    Spectral properties
+        RSS Spectral properties
     """
     filter = header_value("FILTER").strip()
     if not filter or \
@@ -466,7 +477,7 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
             _lambda = float(header_value("ET2WAVE0"))
         elif etalon_state.strip().lower() == "s2 - etalon 1" or etalon_state.strip().lower() == "s4 - etalon 1 & 2":
             resolution = header_value("ET1MODE").strip().upper()  # TODO CHECK with encarni which one use ET2/1
-            _lambda = float(header_value("ET1WAVE0"))
+            _lambda = float(header_value("ET1WAVE0"))  # Todo what are this units?
         else:
             raise ValueError("Unknown etalon state")
 
@@ -499,17 +510,17 @@ def hrs_spectral_properties(plane_id: int, arm: types.HRSArm, hrs_mode: types.HR
 
     Parameter
     ----------
-        plane_id: int
-            Plane id of of this file
-        arm: HRSArm
-            HRS arm either red or blue
-        resolution: HRSMode
-            HRS resolution (Low, Medium, ...) Resolution
+    plane_id: int
+        Plane id of of this file
+    arm: HRSArm
+        HRS arm either red or blue
+    hrs_mode: HRSMode
+        HRS resolution (Low, Medium, ...) Resolution
 
     Return
     ------
-        Spectral properties
-            HRS spectral properties.
+    Spectral properties
+        HRS spectral properties.
     """
 
     interval = hrs_wavelength_interval(arm=arm)
@@ -524,7 +535,7 @@ def hrs_spectral_properties(plane_id: int, arm: types.HRSArm, hrs_mode: types.HR
             unit=u.meter
         ),
         plane_id=plane_id,
-        resolving_power=hrs_resolving_power(arm=arm, resolution=hrs_mode),
+        resolving_power=hrs_resolving_power(arm=arm, hrs_mode=hrs_mode),
         sample_size=Quantity(
             value=interval[1]-interval[0],
             unit=u.meter

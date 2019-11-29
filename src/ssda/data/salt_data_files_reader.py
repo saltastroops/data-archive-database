@@ -31,7 +31,7 @@ def wavelengths_and_transmissions(filter_name: str, instrument: types.Instrument
     if not instrument or not filter_name:
         raise ValueError("Filter name and instrument must be provided to use this method")
 
-    with open(f'{instrument.value.lower()}/{filt_name}.txt', 'r') \
+    with open(f"{instrument.value.lower()}/{filt_name}.txt", 'r') \
             as file:
         for line in file.readlines():
             if line and not line.startswith("!") and not line.startswith("#"):

@@ -8,6 +8,10 @@ from typing import Optional, List
 
 
 class SalticamObservationProperties:
+    """
+    The Salticam Observation Properties.
+    This class should be implementing ObservationProperties but it doesn't need all the methods.
+    """
 
     def __init__(self, fits_file: FitsFile, database_service: SaltDatabaseService):
         """
