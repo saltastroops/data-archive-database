@@ -260,7 +260,8 @@ class StandardFitsFile(FitsFile):
 
     def header_value(self, keyword: str) -> Optional[str]:
         try:
-            return str(self.headers[keyword])
+            value: str = str(self.headers[keyword]).strip()
+            return None if value.upper() == "NONE" else value
         except KeyError:
             return None
 

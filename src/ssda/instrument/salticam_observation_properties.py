@@ -42,13 +42,13 @@ class SalticamObservationProperties:
 
         detector_mode = None
         for dm in types.DetectorMode:
-            if self.header_value("DETMODE").strip().upper() == dm.value.upper():
+            if self.header_value("DETMODE").upper() == dm.value.upper():
                 detector_mode = dm
-        if self.header_value("DETMODE").strip().upper() == "SLOT":
+        if self.header_value("DETMODE").upper() == "SLOT":
             detector_mode = types.DetectorMode.SLOT_MODE
         filter = None
         for fi in types.Filter:
-            if self.header_value("FILTER").strip() == fi.value:
+            if self.header_value("FILTER") == fi.value:
                 filter = fi
 
         return types.InstrumentSetup(

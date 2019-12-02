@@ -46,20 +46,20 @@ class SALTObservation:
                     ) -> types.Observation:
 
         if not self.block_visit_id:
-            observation_date = datetime.strptime(self.header_value("DATE-OBS").strip(), '%Y-%m-%d').date()
-            release_date_tz = \
+            observation_date = datetime.strptime(self.header_value("DATE-OBS"), '%Y-%m-%d').date()
+            release_date = \
                 date(year=observation_date.year,
                      month=observation_date.month,
                      day=observation_date.day)
             status = types.Status.ACCEPTED
         else:
-            release_date_tz = self.database_service.find_release_date(self.block_visit_id)
+            release_date = self.database_service.find_release_date(self.block_visit_id)
             status = self.database_service.find_observation_status(self.block_visit_id)
         return types.Observation(
-            data_release=release_date_tz,
+            data_release=release_date,
             instrument=instrument,
             intent=self._intent(),
-            meta_release=release_date_tz,
+            meta_release=release_date,
             observation_group_id=observation_group_id,
             observation_type=types.ObservationType.OBJECT,
             proposal_id=proposal_id,
@@ -141,7 +141,7 @@ class SALTObservation:
 
     def target(self, observation_id: int) -> Optional[types.Target]:
         proposal_id = self.header_value("PROPID")
-        object_name = self.header_value("OBJECT").strip()
+        object_name = self.header_value("OBJECT")
         if object_name == types.ProductType.ARC or \
            object_name == types.ProductType.BIAS or \
            object_name == types.ProductType.FLAT:

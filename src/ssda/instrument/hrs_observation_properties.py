@@ -55,7 +55,7 @@ class HrsObservationProperties:
 
         detector_mode = None
         for dm in types.DetectorMode:
-            if self.header_value("DETMODE").strip() == dm.value:
+            if self.header_value("DETMODE") == dm.value:
                 detector_mode = dm
         if not detector_mode:
             raise ValueError(f"Detector mode of file {self.file_path} is not recognised")
@@ -105,7 +105,7 @@ class HrsObservationProperties:
         return self.salt_observation.target(observation_id=observation_id)
 
     def _mode(self) -> types.HRSMode:
-        hrs_mode = self.header_value("OBSMODE").strip().upper()
+        hrs_mode = self.header_value("OBSMODE").upper()
         if hrs_mode == "LOW RESOLUTION":
             return types.HRSMode.LOW_RESOLUTION
         if hrs_mode == "MEDIUM RESOLUTION":

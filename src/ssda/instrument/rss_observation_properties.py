@@ -27,7 +27,7 @@ class RssObservationProperties:
     def energy(self, plane_id: int) -> Optional[types.Energy]:
         if self.salt_observation.is_calibration():
             return None
-        slit_barcode = self.header_value("MASKID").strip()
+        slit_barcode = self.header_value("MASKID")
 
         if self.database_service.is_mos(slit_barcode=slit_barcode):
             return None
@@ -48,9 +48,9 @@ class RssObservationProperties:
         VALUES (%(instrument_setup_id)s, (SELECT id FROM fpm), (SELECT id FROM rg))
         """
 
-        fabry_perot_mode = self.header_value("OBSMODE").strip()
+        fabry_perot_mode = self.header_value("OBSMODE")
 
-        grating_value = self.header_value("GRATING").strip()
+        grating_value = self.header_value("GRATING")
         grating = None if grating_value == "N/A" else grating_value
 
         parameters = dict(fabry_perot_mode=fabry_perot_mode, grating=grating)
@@ -58,12 +58,12 @@ class RssObservationProperties:
 
         detector_mode = None
         for dm in types.DetectorMode:
-            if self.header_value("DETMODE").strip() == dm.value:
+            if self.header_value("DETMODE") == dm.value:
                 detector_mode = dm
 
         filter = None
         for fi in types.Filter:
-            if self.header_value("FILTER").strip() == fi.value:
+            if self.header_value("FILTER") == fi.value:
                 filter = fi
 
         instrument_mode = rss_instrument_mode(self.header_value, self.database_service)
@@ -88,7 +88,7 @@ class RssObservationProperties:
         return self.salt_observation.observation_time(plane_id)
 
     def plane(self, observation_id: int) -> types.Plane:
-        observation_mode = self.header_value("OBSMODE").strip().upper()
+        observation_mode = self.header_value("OBSMODE").upper()
         data_product_type = types.DataProductType.IMAGE \
             if observation_mode == "IMAGING" \
             or observation_mode == "FABRY-PEROT" \
@@ -96,8 +96,8 @@ class RssObservationProperties:
         return types.Plane(observation_id, data_product_type=data_product_type)
 
     def polarization(self, plane_id: int) -> Optional[types.Polarization]:
-        polarization_config = self.header_value("POLCONF").strip()
-        polarization_mode: str = self.header_value("WPPATERN").strip().upper()
+        polarization_config = self.header_value("POLCONF")
+        polarization_mode: str = self.header_value("WPPATERN").upper()
         if polarization_mode or polarization_config.upper() == "OPEN" or polarization_mode.upper() == "NONE":
             return None
         if polarization_mode.upper() not in ["ALL-STOKES", "LINEAR-HI", "LINEAR", "CIRCULAR"]:
@@ -129,13 +129,13 @@ class RssObservationProperties:
 
 
 def rss_instrument_mode(header_value, database_service) -> types.InstrumentMode:
-    slit_barcode = header_value("MASKID").strip()
+    slit_barcode = header_value("MASKID")
 
-    mode = header_value("OBSMODE").strip().upper()
-    polarization_mode: str = header_value("WPPATERN").strip().upper()
-    if mode == "IMAGING" and polarization_mode in ["ALL-STOKES", "LINEAR-HI", "LINEAR", "CIRCULAR"]:
+    mode = header_value("OBSMODE").upper()
+    polarization_mode: Optional[str] = header_value("WPPATERN").upper()
+    if mode == "IMAGING" and polarization_mode:
         return types.InstrumentMode.POLARIMETRIC_IMAGING
-    if mode == "SPECTROSCOPY" and polarization_mode in ["ALL-STOKES", "LINEAR-HI", "LINEAR", "CIRCULAR"]:
+    if mode == "SPECTROSCOPY" and polarization_mode:
         return types.InstrumentMode.POLARIMETRIC_IMAGING
     if mode == "FABRY-PEROT":
         return types.InstrumentMode.FABRY_PEROT

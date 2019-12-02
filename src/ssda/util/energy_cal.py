@@ -3,7 +3,7 @@ from astropy.units import Quantity
 from astropy import units as u
 import numpy as np
 
-from ssda.data.salt_data_files_reader import wavelengths_and_transmissions, fp_hwfm
+from ssda.data.salt_data_files_reader import wavelengths_and_transmissions, fp_fwhm
 from ssda.util import types
 
 
@@ -56,31 +56,7 @@ def x_at_half_y_max(curve: List[Tuple[Quantity, float]]) -> Quantity:
     return _x_at_half_y_max
 
 
-def fwhm_interval(wavelengths_transmissions: List[Tuple[Quantity, float]]) -> Tuple[Quantity, Quantity]:
-    """
-    A full width half maximum of array of 2D tuples
-
-    Parameter
-    ---------
-    wavelengths_and_transmissions: List
-       The pairs of wavelengths and transmissions
-
-    Return
-    ------
-    points: Tuple
-        A lower and a upper bound of the full width half maximum
-    """
-    sorted_wavelengths = sorted(wavelengths_transmissions, key=lambda element: element[0])
-    reversed_sorted_wavelengths = sorted_wavelengths[::-1]
-
-    x_1_at_half_y_max = x_at_half_y_max(sorted_wavelengths)
-    x_2_at_half_y_max = x_at_half_y_max(reversed_sorted_wavelengths)
-
-    return x_1_at_half_y_max, x_2_at_half_y_max
-
-
-def filter_fwhm_interval(filter_name: str, instrument: types.Instrument) \
-        -> Tuple[Tuple[float, float], Tuple[float, float]]:
+def filter_fwhm_interval(filter_name: str, instrument: types.Instrument) -> Tuple[Quantity, Quantity]:
     """
     It opens the file with the wavelength curve of the filter name and return the full width half max points of it
 
@@ -94,13 +70,17 @@ def filter_fwhm_interval(filter_name: str, instrument: types.Instrument) \
 
     Return
     ------
-    points: Dict
-        The two points that that form fwhm on the curve where lambda1 being the small wavelength and lambda2 is
+    points: Tuple
+        The two points that that form fwhm on the curve where lambda_min being the small wavelength and lambda_max is
         the larger wavelength
     """
     wavelength_transmission_pairs = wavelengths_and_transmissions(instrument=instrument, filter_name=filter_name)
 
-    lambda_min, lambda_max = fwhm_interval(wavelength_transmission_pairs)
+    sorted_wavelengths = sorted(wavelength_transmission_pairs, key=lambda element: element[0])
+    reversed_sorted_wavelengths = sorted_wavelengths[::-1]
+
+    lambda_min = x_at_half_y_max(sorted_wavelengths)
+    lambda_max = x_at_half_y_max(reversed_sorted_wavelengths)
 
     return lambda_min, lambda_max
 
@@ -123,7 +103,7 @@ def fabry_perot_fwhm_interval(rss_fp_mode: types.RSSFabryPerotMode, wavelength: 
     """
 
     fwhm = None
-    fp_fwhm_intervals = fp_hwfm(rss_fp_mode=rss_fp_mode)
+    fp_fwhm_intervals = fp_fwhm(rss_fp_mode=rss_fp_mode)
     if wavelength < min(fp_fwhm_intervals, key=lambda item: item[0])[0] or \
             wavelength > max(fp_fwhm_intervals, key=lambda item: item[0])[0]:
         raise ValueError("Wavelength is out of range")
@@ -132,7 +112,8 @@ def fabry_perot_fwhm_interval(rss_fp_mode: types.RSSFabryPerotMode, wavelength: 
         #  sorted_points defines a function f of the FWHM as a function of the wavelength.
         #  We use linear interpolation to estimate the value of f at the given wavelength.
         if w[0] > wavelength:
-            m = (sorted_points[i][1] - sorted_points[i - 1][1])/(sorted_points[i][0] - sorted_points[i - 1][0])
+            m = (sorted_points[i][1] - sorted_points[i - 1][1])/(
+                    sorted_points[i][0] - sorted_points[i - 1][0])
             c = sorted_points[i][1] - m * sorted_points[i][0]
             fwhm = wavelength * m + c
             break
@@ -348,10 +329,10 @@ def hrs_wavelength_interval(arm: types.HRSArm) -> Tuple[Quantity, Quantity]:
     """
 
     if types.HRSArm.BLUE == arm:
-        return 370 * u.mn, 555 * u.mn
+        return 370 * u.nm, 555 * u.nm
 
     if types.HRSArm.RED == arm:
-        return 555 * u.mn, 890 * u.mn
+        return 555 * u.nm, 890 * u.nm
 
     raise ValueError(f"Unknown HRS arm {arm.value}")
 
@@ -393,40 +374,40 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
     Parameter
     ----------
     header_value: Function
-        Observation method to get FITS header value using key
+        Method to get FITS header value for a key
     plane_id: int
-        Plane id of of this file
+        Plane id of this file
     Return
     ------
     Spectral properties
         RSS Spectral properties
     """
-    filter = header_value("FILTER").strip()
+    filter = header_value("FILTER")
     if not filter or \
             filter.upper() == "EMPTY" or \
             filter in ["PC00000", "PC03200", "PC03400", "PC03850", "PC04600"]:
         return None
-    observation_mode = header_value("OBSMODE").strip().upper()
+    observation_mode = header_value("OBSMODE").upper()
     if observation_mode.upper() == "IMAGING":
         return imaging_spectral_properties(plane_id=plane_id,
-                                           filter_name=header_value("FILTER").strip(),
+                                           filter_name=header_value("FILTER"),
                                            instrument=types.Instrument.RSS)
 
     if observation_mode.upper() == "SPECTROSCOPY":
-        grating_angle = float(header_value("GR-ANGLE").strip()) * u.deg
-        camera_angle = float(header_value("AR-ANGLE").strip()) * u.deg
-        slit_barcode = header_value("MASKID").strip()
-        spectral_binning = int(header_value("CCDSUM").strip().split()[0])
-        grating_frequency = get_grating_frequency(header_value("GRATING").strip())
+        grating_angle = float(header_value("GR-ANGLE")) * u.deg
+        camera_angle = float(header_value("AR-ANGLE")) * u.deg
+        slit_barcode = header_value("MASKID")
+        spectral_binning = int(header_value("CCDSUM").split()[0])
+        grating_frequency = get_grating_frequency(header_value("GRATING"))
         wavelength_interval = (
             rss_ccd_wavelength(
-                3162,
+                -3162,
                 grating_angle,
                 camera_angle,
                 grating_frequency=grating_frequency
             ),
             rss_ccd_wavelength(
-                -3162,
+                3162,
                 grating_angle,
                 camera_angle,
                 grating_frequency=grating_frequency
@@ -446,30 +427,27 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
         )
         return types.Energy(
             dimension=dimension,
-            max_wavelength=wavelength_interval[0],
-            min_wavelength=wavelength_interval[1],
+            max_wavelength=max(wavelength_interval),
+            min_wavelength=min(wavelength_interval),
             plane_id=plane_id,
             resolving_power=rss_resolution(
                 grating_angle,
                 camera_angle,
                 grating_frequency=grating_frequency,
                 slit_width=rss_slit_width_from_barcode(slit_barcode)),
-            sample_size=Quantity(
-                value=abs(sample_size),
-                unit=u.meter
-            )
+            sample_size=abs(sample_size),
         )
 
     if observation_mode == "FABRY-PEROT":
         etalon_state = header_value("ET-STATE")
-        if etalon_state.strip().lower() == "s1 - etalon open":
+        if etalon_state.lower() == "s1 - etalon open":
             return None
 
-        if etalon_state.strip().lower() == "s3 - etalon 2":
-            resolution = header_value("ET2MODE").strip().upper()  # TODO CHECK with encarni which one use ET2/1
+        if etalon_state.lower() == "s3 - etalon 2":
+            resolution = header_value("ET2MODE").upper()  # TODO CHECK with encarni which one use ET2/1
             _lambda = float(header_value("ET2WAVE0")) * u.nm
-        elif etalon_state.strip().lower() == "s2 - etalon 1" or etalon_state.strip().lower() == "s4 - etalon 1 & 2":
-            resolution = header_value("ET1MODE").strip().upper()  # TODO CHECK with encarni which one use ET2/1
+        elif etalon_state.lower() == "s2 - etalon 1" or etalon_state.lower() == "s4 - etalon 1 & 2":
+            resolution = header_value("ET1MODE").upper()  # TODO CHECK with encarni which one use ET2/1
             _lambda = float(header_value("ET1WAVE0")) * u.nm  # Todo what are this units?
         else:
             raise ValueError("Unknown etalon state")
@@ -532,7 +510,7 @@ def salticam_spectral_properties(plane_id: int, filter_name: str) -> Optional[ty
 
     Return
     ------
-        Spectral properties
+        Spectral properties: Energy
            SALTICAM spectral properties
     """
     if filter_name == "OPEN":

@@ -32,16 +32,17 @@ def wavelengths_and_transmissions(filter_name: str, instrument: types.Instrument
     filt_name = _parse_filter_name(filter_name, instrument)
     if not instrument or not filter_name:
         raise ValueError("Filter name and instrument must be provided to use this method")
-
-    with open(f"{instrument.value.lower()}/{filt_name}.txt", 'r') \
+    filename = os.path.join(dirname, f"{instrument.value.lower()}/{filt_name}.txt")
+    with open(filename, 'r') \
             as file:
         for line in file.readlines():
-            if line and not line.startswith("!") and not line.startswith("#"):
+
+            if len(line.split()) == 2 and not line.startswith("!") and not line.startswith("#"):
                 wavelengths.append((float(line.split()[0]) * u.angstrom, float(line.split()[1])))
     return wavelengths
 
 
-def fp_hwfm(rss_fp_mode: types.RSSFabryPerotMode) -> List[Tuple[Quantity, Quantity]]:
+def fp_fwhm(rss_fp_mode: types.RSSFabryPerotMode) -> List[Tuple[Quantity, Quantity]]:
     """
     The list of wavelength-transmission pairs for an HRS mode.
 

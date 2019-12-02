@@ -5,6 +5,7 @@ from ssda.observation import (
     ObservationProperties,
 )
 from ssda.repository import insert, delete
+from ssda.util.dummy import DummyObservationProperties
 from ssda.util.fits import StandardFitsFile
 from ssda.util.types import TaskName, TaskExecutionMode
 
@@ -20,7 +21,7 @@ def execute_task(
             fits_file,
             database_services
         )
-    elif task_name == TaskName.INSERT:
+    elif task_name == TaskExecutionMode.DUMMY:
         observation_properties = DummyObservationProperties()
     else:
         raise NotImplementedError
