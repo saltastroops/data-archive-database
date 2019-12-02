@@ -5,6 +5,8 @@ from astropy.units import Quantity
 from ssda.util import types
 from astropy import units as u
 
+dirname = os.path.dirname(__file__)
+
 
 def _parse_filter_name(_filter: str, instrument: types.Instrument) -> str:
     if instrument.value == "Salticam":
@@ -54,13 +56,13 @@ def fp_hwfm(rss_fp_mode: types.RSSFabryPerotMode) -> List[Tuple[Quantity, Quanti
 
     """
     def _parse_fp_mode(fp_mode_abbr: str) -> types.RSSFabryPerotMode:
-        if rss_fp_mode.upper() == "LR":
+        if fp_mode_abbr.upper() == "LR":
             return types.RSSFabryPerotMode.LOW_RESOLUTION
-        if rss_fp_mode.upper() == "MR":
+        if fp_mode_abbr.upper() == "MR":
             return types.RSSFabryPerotMode.MEDIUM_RESOLUTION
-        if rss_fp_mode.upper() == "HR":
+        if fp_mode_abbr.upper() == "HR":
             return types.RSSFabryPerotMode.HIGH_RESOLUTION
-        if rss_fp_mode.upper() == "TF":
+        if fp_mode_abbr.upper() == "TF":
             return types.RSSFabryPerotMode.TUNABLE_FILTER
         raise ValueError(f"Mode {fp_mode_abbr} is not known.")
 
@@ -68,7 +70,8 @@ def fp_hwfm(rss_fp_mode: types.RSSFabryPerotMode) -> List[Tuple[Quantity, Quanti
         raise ValueError("A resolution must be provided to use this method")
 
     fp_modes = []
-    with open(f'rss/properties_of_fp_modes.txt', 'r') as file:
+    filename = os.path.join(dirname,"rss/properties_of_fp_modes.txt")
+    with open(filename, 'r') as file:
         for line in file.readlines():
             if line and not line.startswith("!") and not line.startswith("#"):
                 if len(line.split()) > 7 and line.split()[0] in ["TF", "LR", "MR", "HR"]:

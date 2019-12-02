@@ -124,18 +124,16 @@ def fabry_perot_fwhm_interval(rss_fp_mode: types.RSSFabryPerotMode, wavelength: 
 
     fwhm = None
     fp_fwhm_intervals = fp_hwfm(rss_fp_mode=rss_fp_mode)
-    if wavelength < min(fp_fwhm_intervals, key=lambda item: item[1])[1] or \
-            wavelength > max(fp_fwhm_intervals, key=lambda item: item[1])[1]:
+    if wavelength < min(fp_fwhm_intervals, key=lambda item: item[0])[0] or \
+            wavelength > max(fp_fwhm_intervals, key=lambda item: item[0])[0]:
         raise ValueError("Wavelength is out of range")
-    sorted_points = sorted(fp_fwhm_intervals, key=lambda element: element[1])
-
+    sorted_points = sorted(fp_fwhm_intervals, key=lambda element: element[0])
     for i, w in enumerate(sorted_points):
         #  sorted_points defines a function f of the FWHM as a function of the wavelength.
         #  We use linear interpolation to estimate the value of f at the given wavelength.
-        if w[1] > wavelength:
-            m = (sorted_points[i][2] - sorted_points[i - 1][2])/(
-                    sorted_points[i][1] - sorted_points[i - 1][1])
-            c = sorted_points[i][2] - m * sorted_points[i][1]
+        if w[0] > wavelength:
+            m = (sorted_points[i][1] - sorted_points[i - 1][1])/(sorted_points[i][0] - sorted_points[i - 1][0])
+            c = sorted_points[i][1] - m * sorted_points[i][0]
             fwhm = wavelength * m + c
             break
     if fwhm is None:
