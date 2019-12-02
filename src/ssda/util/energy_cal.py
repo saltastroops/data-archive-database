@@ -213,11 +213,12 @@ def rss_resolution_element(grating_frequency: Quantity, grating_angle: Quantity,
 
     Lambda = 1/grating_frequency
     # TODO some thing is not right below units were supposed to be arcsec but got arcsec * mm
-    return slit_width * Lambda * np.cos(grating_angle) * (FOCAL_LENGTH_TELESCOPE / FOCAL_LENGTH_RSS_COLLIMATOR)
+    return slit_width.to_value(u.arcsec) * Lambda * np.cos(grating_angle) * (FOCAL_LENGTH_TELESCOPE /
+                                                                    FOCAL_LENGTH_RSS_COLLIMATOR)
 
 
 def rss_resolution(grating_angle: Quantity, camera_angle: Quantity, grating_frequency: Quantity,
-                   slit_width: Quantity) -> Quantity:
+                   slit_width: Quantity) -> float:
     """
     Returns the resolution at the center of the middle CCD. This is the ratio of the resolution element and
     the wavelength at the CCD's center.
@@ -241,7 +242,7 @@ def rss_resolution(grating_angle: Quantity, camera_angle: Quantity, grating_freq
     """
     wavelength = rss_ccd_wavelength(0, grating_angle, camera_angle, grating_frequency)
     wavelength_resolution_element = rss_resolution_element(grating_frequency, grating_angle, slit_width)
-    return wavelength / wavelength_resolution_element
+    return (wavelength / wavelength_resolution_element).to_value(u.dimensionless_unscaled)
 
 
 def rss_slit_width_from_barcode(barcode: str) -> Quantity:
@@ -447,14 +448,8 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
         )
         return types.Energy(
             dimension=dimension,
-            max_wavelength=Quantity(
-                value=wavelength_interval[0],
-                unit=u.meter
-            ),
-            min_wavelength=Quantity(
-                value=wavelength_interval[1],
-                unit=u.meter
-            ),
+            max_wavelength=wavelength_interval[0],
+            min_wavelength=wavelength_interval[1],
             plane_id=plane_id,
             resolving_power=rss_resolution(
                 grating_angle,
@@ -474,10 +469,10 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
 
         if etalon_state.strip().lower() == "s3 - etalon 2":
             resolution = header_value("ET2MODE").strip().upper()  # TODO CHECK with encarni which one use ET2/1
-            _lambda = float(header_value("ET2WAVE0"))
+            _lambda = float(header_value("ET2WAVE0")) * u.nm
         elif etalon_state.strip().lower() == "s2 - etalon 1" or etalon_state.strip().lower() == "s4 - etalon 1 & 2":
             resolution = header_value("ET1MODE").strip().upper()  # TODO CHECK with encarni which one use ET2/1
-            _lambda = float(header_value("ET1WAVE0"))  # Todo what are this units?
+            _lambda = float(header_value("ET1WAVE0")) * u.nm  # Todo what are this units?
         else:
             raise ValueError("Unknown etalon state")
 
@@ -485,20 +480,11 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
         wavelength_interval = (_lambda - fwhm / 2, _lambda + fwhm / 2)
         return types.Energy(
             dimension=1,
-            max_wavelength=Quantity(
-                value=wavelength_interval[1],
-                unit=u.meter
-            ),
-            min_wavelength=Quantity(
-                value=wavelength_interval[0],
-                unit=u.meter
-            ),
+            max_wavelength=wavelength_interval[1],
+            min_wavelength=wavelength_interval[0],
             plane_id=plane_id,
             resolving_power=_lambda/fwhm,
-            sample_size=Quantity(
-                value=fwhm,
-                unit=u.meter
-            )
+            sample_size=fwhm,
         )
 
     raise ValueError(f"Unsupported observation mode: {observation_mode}")
@@ -526,20 +512,11 @@ def hrs_spectral_properties(plane_id: int, arm: types.HRSArm, hrs_mode: types.HR
     interval = hrs_wavelength_interval(arm=arm)
     return types.Energy(
         dimension=1,
-        max_wavelength=Quantity(
-            value=max(interval),
-            unit=u.meter
-        ),
-        min_wavelength=Quantity(
-            value=min(interval),
-            unit=u.meter
-        ),
+        max_wavelength=max(interval),
+        min_wavelength=min(interval),
         plane_id=plane_id,
         resolving_power=hrs_resolving_power(arm=arm, hrs_mode=hrs_mode),
-        sample_size=Quantity(
-            value=interval[1]-interval[0],
-            unit=u.meter
-        )
+        sample_size=interval[1]-interval[0],
     )
 
 
