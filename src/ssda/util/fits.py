@@ -6,11 +6,10 @@ import hashlib
 import string
 from abc import ABC, abstractmethod
 from datetime import date, timedelta
-from typing import Iterator, Set, Dict, Any, Optional
+from typing import Iterator, Set, Optional
 from astropy.units import Quantity
 from astropy.io import fits
 from ssda.util import types
-from ssda.util.types import DateRange, Instrument
 
 
 # The path of the base directory where all FITS files are stored.
@@ -80,14 +79,28 @@ class FitsFile(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def instrument(self) -> Instrument:
+    def instrument(self) -> types.Instrument:
         """
         The instrument a file belongs too.
 
         Returns
         -------
         instrument: Instrument
-            The Instrument.
+            The types.Instrument.
+
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def telescope(self) -> types.Instrument:
+        """
+        The telescope used.
+
+        Returns
+        -------
+        telescope: Telescope
+            The types.Telescope.
 
         """
 
@@ -147,7 +160,7 @@ class FitsFile(ABC):
 
 
 def fits_file_paths(
-    nights: DateRange, instruments: Set[Instrument], base_dir: str
+    nights: types.DateRange, instruments: Set[types.Instrument], base_dir: str
 ) -> Iterator[str]:
     """
     The paths of the FITS files for a date range and a set of instruments.
@@ -179,7 +192,7 @@ def fits_file_paths(
         night += timedelta(days=1)
 
 
-def fits_file_dir(night: date, instrument: Instrument, base_dir: str) -> str:
+def fits_file_dir(night: date, instrument: types.Instrument, base_dir: str) -> str:
     """
     The directory containing the FITS file for a night and instrument.
 
@@ -188,7 +201,7 @@ def fits_file_dir(night: date, instrument: Instrument, base_dir: str) -> str:
     night : date
         Start date of the night.
     instrument : Instrument
-        Instrument.
+        types.Instrument.
     base_dir : str
         Path of the base directory where all the FITS files are located.
 
@@ -207,11 +220,11 @@ def fits_file_dir(night: date, instrument: Instrument, base_dir: str) -> str:
     if base_dir == "/":
         base_dir = ""
 
-    if instrument == Instrument.HRS:
+    if instrument == types.Instrument.HRS:
         return f"{base_dir}/salt/data/{year}/{month}{day}/hrs/raw"
-    elif instrument == Instrument.RSS:
+    elif instrument == types.Instrument.RSS:
         return f"{base_dir}/salt/data/{year}/{month}{day}/rss/raw"
-    elif instrument == Instrument.SALTICAM:
+    elif instrument == types.Instrument.SALTICAM:
         return f"{base_dir}/salt/data/{year}/{month}{day}/scam/raw"
     else:
         raise NotImplementedError(f"Not implemented for {instrument}")
@@ -226,22 +239,35 @@ class StandardFitsFile(FitsFile):
     def size(self) -> Quantity:
         return os.stat(self.path).st_size * types.byte
 
-    def instrument(self) -> Instrument:
+    def instrument(self) -> types.Instrument:
         dirs = self.path.split("/")
         instrument_dir = None
         for i, d in enumerate(dirs):
             if d.lower() == "data" and dirs[i - 1].lower() == "salt":
                 instrument_dir = dirs[i + 3]
                 break
-        if not instrument_dir:
-            raise ValueError("No selected instrument")
-        inst = Instrument.RSS if instrument_dir.lower() == "rss" else \
-            Instrument.HRS if instrument_dir.lower() == "hrs" else \
-            Instrument.SALTICAM if instrument_dir.lower() == "scam" else None
-        if not inst:
-            raise ValueError("Unknown instrument")
 
-        return inst
+        if instrument_dir.lower() == "rss":
+            return types.Instrument.RSS
+        elif instrument_dir.lower() == "hrs":
+            return types.Instrument.HRS
+        elif instrument_dir.lower() == "scam":
+            return types.Instrument.SALTICAM
+        else:
+            raise ValueError(f"Instrument used for file: {self.path} is not known")
+
+    def telescope(self) -> types.Telescope:
+        dirs = self.path.split("/")
+        telescopre_dir = None
+        for i, d in enumerate(dirs):
+            if d.lower() == "data" and dirs[i - 1].lower() == "salt":
+                telescopre_dir = dirs[i + 1]
+                break
+
+        if telescopre_dir.lower() == "salt":
+            return types.Telescope.SALT
+        else:
+            raise ValueError(f"Telescope used for file : {self.path} is unknown")
 
     def file_path(self) -> str:
         return self.path
@@ -260,7 +286,7 @@ class StandardFitsFile(FitsFile):
 
     def header_value(self, keyword: str) -> Optional[str]:
         try:
-            value: str = str(self.headers[keyword]).strip()
+            value = str(self.headers[keyword]).strip()
             return None if value.upper() == "NONE" else value
         except KeyError:
             return None

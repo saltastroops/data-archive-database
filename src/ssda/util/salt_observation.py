@@ -1,9 +1,8 @@
 import uuid
-from dateutil.tz import tz
 import os
 from typing import Optional, List, Iterable
 from dateutil.parser import parse
-from datetime import timedelta, datetime, date
+from datetime import timedelta, datetime, date, timezone
 from astropy.coordinates import Angle
 
 import astropy.units as u
@@ -22,7 +21,7 @@ class SALTObservation:
         self.fits_file = fits_file
         self.file_path = fits_file.file_path
         self.database_service = database_service
-        self.block_visit_id = int(fits_file.header_value("BVISITID"))
+        self.block_visit_id = None if not fits_file.header_value("BVISITID") else int(fits_file.header_value("BVISITID"))
 
     def artifact(self, plane_id: int) -> types.Artifact:
 
@@ -84,7 +83,7 @@ class SALTObservation:
                      hour=start_time.hour,
                      minute=start_time.minute,
                      second=start_time.second,
-                     tzinfo=tz.gettz("Africa/Johannesburg"))
+                     tzinfo=timezone.utc)
         exposure_time = float(self.header_value("EXPTIME"))
         return types.ObservationTime(
             end_time=start_time_tz + timedelta(seconds=exposure_time),

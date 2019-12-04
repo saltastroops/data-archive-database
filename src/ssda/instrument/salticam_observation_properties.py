@@ -1,5 +1,6 @@
 from ssda.database.sdb import SaltDatabaseService
 # from ssda.observation import ObservationProperties
+from ssda.observation import ObservationProperties
 from ssda.util import types
 from ssda.util.energy_cal import salticam_spectral_properties
 from ssda.util.salt_observation import SALTObservation
@@ -7,16 +8,8 @@ from ssda.util.fits import FitsFile
 from typing import Optional, List
 
 
-class SalticamObservationProperties:
-    """
-    The Salticam Observation Properties.
-    This class should be implementing ObservationProperties but it doesn't need all the methods.
-    """
-
+class SalticamObservationProperties(ObservationProperties):
     def __init__(self, fits_file: FitsFile, database_service: SaltDatabaseService):
-        """
-        :param fits_file:
-        """
         self.header_value = fits_file.header_value
         self.file_path = fits_file.file_path()
         self.database_service = database_service

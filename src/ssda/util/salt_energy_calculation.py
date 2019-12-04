@@ -23,10 +23,10 @@ FOCAL_LENGTH_TELESCOPE = 46200 * u.mm
 FOCAL_LENGTH_RSS_COLLIMATOR = 630 * u.mm
 
 
-def x_at_half_y_max(curve: List[Tuple[Quantity, float]]) -> Quantity:
+def wavelength_interval_first_boundary(curve: List[Tuple[Quantity, float]]) -> Quantity:
     """
-    The value of x at half of maximum y in the given line/curve
-    The curve have be sorted by x values (index 0)
+    Gets the first wavelength boundary of a curve at an half maximum height of the curve or the first value if the
+    it is above the half maximum.
 
     Parameters
     ----------
@@ -35,59 +35,59 @@ def x_at_half_y_max(curve: List[Tuple[Quantity, float]]) -> Quantity:
 
     Returns
     -------
-    x_at_half_y_max: Quantity
-        The value of x at half of maximum y
+    Quantity
+        The first boundary
     """
     half_y_max = max(p[1] for p in curve) / 2
-    _x_at_half_y_max = None
+    first_boundary = None
     for i, t in enumerate(curve):
         # Move through the points, starting from minimum x, until we've just passed half the maximum y value.
         if t[1] > half_y_max:
             if i == 0:
-                _x_at_half_y_max = t[0]
+                first_boundary = t[0]
                 break
             # Calculate the line y = m * x + c passing through the point before and after the half maximum.
             # Use this line to get an estimate of the x where y=half_y_max.
             m = (curve[i][1] - curve[i - 1][1]) / (
                     curve[i][0] - curve[i - 1][0])
             c = curve[i][1] - m * curve[i][0]
-            _x_at_half_y_max = (half_y_max - c)/m
+            first_boundary = (half_y_max - c)/m
             break
-    return _x_at_half_y_max
+    return first_boundary
 
 
-def filter_fwhm_interval(filter_name: str, instrument: types.Instrument) -> Tuple[Quantity, Quantity]:
+def filter_wavelength_interval_boundaries(filter_name: str, instrument: types.Instrument) -> Tuple[Quantity, Quantity]:
     """
-    It opens the file with the wavelength curve of the filter name and return the full width half max points of it
+    The filter's wavelength boundaries for the instrument
 
     Parameter
     ---------
     filter_name: str
-        The name of the filter you need intervals of
+        The name of the filter
 
-    instrument: types.Instrument
-        THe instrument used for the filter
+    instrument: Instrument
+        The instrument
 
     Return
     ------
-    points: Tuple
-        The two points that that form fwhm on the curve where lambda_min being the small wavelength and lambda_max is
-        the larger wavelength
+    Tuple
+        The wavelength interval boundaries
     """
     wavelength_transmission_pairs = wavelengths_and_transmissions(instrument=instrument, filter_name=filter_name)
 
     sorted_wavelengths = sorted(wavelength_transmission_pairs, key=lambda element: element[0])
     reversed_sorted_wavelengths = sorted_wavelengths[::-1]
 
-    lambda_min = x_at_half_y_max(sorted_wavelengths)
-    lambda_max = x_at_half_y_max(reversed_sorted_wavelengths)
+    lambda_min = wavelength_interval_first_boundary(sorted_wavelengths)
+    # This is the last boundary
+    lambda_max = wavelength_interval_first_boundary(reversed_sorted_wavelengths)
 
     return lambda_min, lambda_max
 
 
-def fabry_perot_fwhm_interval(rss_fp_mode: types.RSSFabryPerotMode, wavelength: Quantity) -> Quantity:
+def fabry_perot_fwhm(rss_fp_mode: types.RSSFabryPerotMode, wavelength: Quantity) -> Quantity:
     """
-    Calculates the full width half maximum of fabry perot for the given resolution and wavelength
+    Gets or approximate the full width half maximum of fabry perot for the given resolution and wavelength
 
     Parameter
     ---------
@@ -98,7 +98,7 @@ def fabry_perot_fwhm_interval(rss_fp_mode: types.RSSFabryPerotMode, wavelength: 
 
     Return
     ------
-    fwhm:
+    Quantity
         The full width half maximum
     """
 
@@ -354,8 +354,8 @@ def imaging_spectral_properties(plane_id: int, filter_name: str, instrument: typ
     Spectral properties
         Calculated spectral properties
     """
-    fwhm_points = filter_fwhm_interval(filter_name, instrument)
-    lambda_min, lambda_max = fwhm_points[0], fwhm_points[1]
+    wavelength_interval_boundaries = filter_wavelength_interval_boundaries(filter_name, instrument)
+    lambda_min, lambda_max = wavelength_interval_boundaries[0], wavelength_interval_boundaries[1]
     resolving_power = 0.5 * (lambda_min + lambda_max) / (lambda_max - lambda_min)
     return types.Energy(
         dimension=1,
@@ -452,15 +452,15 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
         else:
             raise ValueError("Unknown etalon state")
 
-        fwhm = fabry_perot_fwhm_interval(rss_fp_mode=resolution, wavelength=_lambda)
-        wavelength_interval = (_lambda - fwhm / 2, _lambda + fwhm / 2)
+        wavelength_boundaries = fabry_perot_wavelength_interval(rss_fp_mode=resolution, wavelength=_lambda)
+        wavelength_interval = (_lambda - wavelength_boundaries / 2, _lambda + wavelength_boundaries / 2)
         return types.Energy(
             dimension=1,
             max_wavelength=wavelength_interval[1],
             min_wavelength=wavelength_interval[0],
             plane_id=plane_id,
-            resolving_power=_lambda/fwhm,
-            sample_size=fwhm,
+            resolving_power=_lambda/wavelength_boundaries,
+            sample_size=wavelength_boundaries,
         )
 
     raise ValueError(f"Unsupported observation mode: {observation_mode}")
@@ -481,7 +481,7 @@ def hrs_spectral_properties(plane_id: int, arm: types.HRSArm, hrs_mode: types.HR
 
     Return
     ------
-    Spectral properties
+    Energy
         HRS spectral properties.
     """
 

@@ -1,6 +1,7 @@
 import os
 
 from ssda.database.sdb import SaltDatabaseService
+from ssda.observation import ObservationProperties
 from ssda.util import types
 from ssda.util.energy_cal import hrs_spectral_properties
 from ssda.util.salt_observation import SALTObservation
@@ -8,12 +9,7 @@ from ssda.util.fits import FitsFile
 from typing import Optional, List
 
 
-class HrsObservationProperties:
-    """
-    The HRS Observation Properties.
-    This class should be implementing ObservationProperties but it doesn't need all the methods.
-    """
-
+class HrsObservationProperties(ObservationProperties):
     def __init__(self, fits_file: FitsFile, database_service: SaltDatabaseService):
         self.header_value = fits_file.header_value
         self.file_path = fits_file.file_path()

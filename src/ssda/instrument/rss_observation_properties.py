@@ -1,4 +1,5 @@
 from ssda.database.sdb import SaltDatabaseService
+from ssda.observation import ObservationProperties
 from ssda.util import types
 from ssda.util.energy_cal import rss_spectral_properties
 from ssda.util.salt_observation import SALTObservation
@@ -6,11 +7,7 @@ from ssda.util.fits import FitsFile
 from typing import Optional, List
 
 
-class RssObservationProperties:
-    """
-    The RSS Observation Properties.
-    This class should be implementing ObservationProperties but it doesn't need all the methods.
-    """
+class RssObservationProperties(ObservationProperties):
 
     def __init__(self, fits_file: FitsFile, salt_database_service: SaltDatabaseService):
         self.header_value = fits_file.header_value
@@ -133,18 +130,22 @@ def rss_instrument_mode(header_value, database_service) -> types.InstrumentMode:
 
     mode = header_value("OBSMODE").upper()
     polarization_mode: Optional[str] = header_value("WPPATERN").upper()
-    if mode == "IMAGING" and polarization_mode:
-        return types.InstrumentMode.POLARIMETRIC_IMAGING
-    if mode == "SPECTROSCOPY" and polarization_mode:
-        return types.InstrumentMode.POLARIMETRIC_IMAGING
+    if mode == "IMAGING":
+        if polarization_mode:
+            return types.InstrumentMode.POLARIMETRIC_IMAGING
+        else:
+            return types.InstrumentMode.IMAGING
+
+    if mode == "SPECTROSCOPY":
+        if database_service.is_mos(slit_barcode=slit_barcode):
+            return types.InstrumentMode.MOS
+
+        if polarization_mode:
+            return types.InstrumentMode.POLARIMETRIC_IMAGING
+        else:
+            return types.InstrumentMode.SPECTROSCOPY
+
     if mode == "FABRY-PEROT":
         return types.InstrumentMode.FABRY_PEROT
-    if mode == "SPECTROSCOPY":
-        return types.InstrumentMode.SPECTROSCOPY
-    if mode == "IMAGING":
-        return types.InstrumentMode.IMAGING
 
-    if database_service.is_mos(slit_barcode=slit_barcode):
-        return types.InstrumentMode.MOS
-
-    raise ValueError("Some modes are not considered there are still in todo")
+    raise ValueError(f"Unsupported mode: {mode}")
