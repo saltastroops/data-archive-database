@@ -13,7 +13,7 @@ from ssda.util import types
 
 
 # The path of the base directory where all FITS files are stored.
-_fits_base_dir: str = ''
+_fits_base_dir = ''
 
 
 def set_fits_base_dir(path: str) -> None:
@@ -86,7 +86,7 @@ class FitsFile(ABC):
         Returns
         -------
         instrument: Instrument
-            The types.Instrument.
+            The Instrument.
 
         """
 
@@ -100,7 +100,7 @@ class FitsFile(ABC):
         Returns
         -------
         telescope: Telescope
-            The types.Telescope.
+            The Telescope.
 
         """
 
@@ -258,13 +258,13 @@ class StandardFitsFile(FitsFile):
 
     def telescope(self) -> types.Telescope:
         dirs = self.path.split("/")
-        telescopre_dir = None
+        telescope_dir = None
         for i, d in enumerate(dirs):
             if d.lower() == "data" and dirs[i - 1].lower() == "salt":
-                telescopre_dir = dirs[i + 1]
+                telescope_dir = dirs[i - 1]
                 break
 
-        if telescopre_dir.lower() == "salt":
+        if telescope_dir.lower() == "salt":
             return types.Telescope.SALT
         else:
             raise ValueError(f"Telescope used for file : {self.path} is unknown")

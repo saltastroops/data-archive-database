@@ -1,4 +1,4 @@
-from typing import Any, Tuple, Dict, List, Optional
+from typing import Any, Tuple, List, Optional
 from astropy.units import Quantity
 from astropy import units as u
 import numpy as np
@@ -56,9 +56,12 @@ def wavelength_interval_first_boundary(curve: List[Tuple[Quantity, float]]) -> Q
     return first_boundary
 
 
-def filter_wavelength_interval_boundaries(filter_name: str, instrument: types.Instrument) -> Tuple[Quantity, Quantity]:
+def filter_wavelength_interval(filter_name: str, instrument: types.Instrument) -> Tuple[Quantity, Quantity]:
     """
-    The filter's wavelength boundaries for the instrument
+    The wavelength interval for a filter.
+
+    The filter is specified by a filter name and instrument. The wavelength interval is the interval of wavelengths for
+    which the filter transmission is greater than or equal to half the maximum transmission.
 
     Parameter
     ---------
@@ -87,7 +90,9 @@ def filter_wavelength_interval_boundaries(filter_name: str, instrument: types.In
 
 def fabry_perot_fwhm(rss_fp_mode: types.RSSFabryPerotMode, wavelength: Quantity) -> Quantity:
     """
-    Gets or approximate the full width half maximum of fabry perot for the given resolution and wavelength
+    The wavelength interval for a Fabry-Perot resolution and wavelength.
+
+    The wavelength interval is taken to be the FWHM interval for the Fabry-Perot setup.
 
     Parameter
     ---------
@@ -344,18 +349,17 @@ def imaging_spectral_properties(plane_id: int, filter_name: str, instrument: typ
     Parameter
     ----------
     plane_id: int
-        Plane id of of this file
+        Plane id
     filter_name: str
-        Filter name used for this file
+        Filter name
     instrument: Instrument
-        Instrument used for this file
+        Instrument
     Return
     ------
-    Spectral properties
+    Energy
         Calculated spectral properties
     """
-    wavelength_interval_boundaries = filter_wavelength_interval_boundaries(filter_name, instrument)
-    lambda_min, lambda_max = wavelength_interval_boundaries[0], wavelength_interval_boundaries[1]
+    lambda_min, lambda_max = filter_wavelength_interval(filter_name, instrument)
     resolving_power = 0.5 * (lambda_min + lambda_max) / (lambda_max - lambda_min)
     return types.Energy(
         dimension=1,
@@ -379,7 +383,7 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
         Plane id of this file
     Return
     ------
-    Spectral properties
+    Energy
         RSS Spectral properties
     """
     filter = header_value("FILTER")
@@ -452,7 +456,7 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
         else:
             raise ValueError("Unknown etalon state")
 
-        wavelength_boundaries = fabry_perot_wavelength_interval(rss_fp_mode=resolution, wavelength=_lambda)
+        wavelength_boundaries = fabry_perot_fwhm(rss_fp_mode=resolution, wavelength=_lambda)
         wavelength_interval = (_lambda - wavelength_boundaries / 2, _lambda + wavelength_boundaries / 2)
         return types.Energy(
             dimension=1,

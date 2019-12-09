@@ -3,7 +3,7 @@ import os
 from ssda.database.sdb import SaltDatabaseService
 from ssda.observation import ObservationProperties
 from ssda.util import types
-from ssda.util.energy_cal import hrs_spectral_properties
+from ssda.util.salt_energy_calculation import hrs_spectral_properties
 from ssda.util.salt_observation import SALTObservation
 from ssda.util.fits import FitsFile
 from typing import Optional, List

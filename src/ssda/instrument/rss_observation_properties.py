@@ -1,7 +1,7 @@
 from ssda.database.sdb import SaltDatabaseService
 from ssda.observation import ObservationProperties
 from ssda.util import types
-from ssda.util.energy_cal import rss_spectral_properties
+from ssda.util.salt_energy_calculation import rss_spectral_properties
 from ssda.util.salt_observation import SALTObservation
 from ssda.util.fits import FitsFile
 from typing import Optional, List
@@ -89,13 +89,13 @@ class RssObservationProperties(ObservationProperties):
         data_product_type = types.DataProductType.IMAGE \
             if observation_mode == "IMAGING" \
             or observation_mode == "FABRY-PEROT" \
-            else types.DataProductType.SPECTRUM
+            else types.DataProductType.SPECTRUM    # TODO is fp only imaging
         return types.Plane(observation_id, data_product_type=data_product_type)
 
     def polarization(self, plane_id: int) -> Optional[types.Polarization]:
         polarization_config = self.header_value("POLCONF")
-        polarization_mode: str = self.header_value("WPPATERN").upper()
-        if polarization_mode or polarization_config.upper() == "OPEN" or polarization_mode.upper() == "NONE":
+        polarization_mode = self.header_value("WPPATERN")
+        if not polarization_mode or polarization_config.upper() == "OPEN":
             return None
         if polarization_mode.upper() not in ["ALL-STOKES", "LINEAR-HI", "LINEAR", "CIRCULAR"]:
             polarization_mode = "OTHER"
@@ -129,7 +129,7 @@ def rss_instrument_mode(header_value, database_service) -> types.InstrumentMode:
     slit_barcode = header_value("MASKID")
 
     mode = header_value("OBSMODE").upper()
-    polarization_mode: Optional[str] = header_value("WPPATERN").upper()
+    polarization_mode = header_value("WPPATERN")
     if mode == "IMAGING":
         if polarization_mode:
             return types.InstrumentMode.POLARIMETRIC_IMAGING
@@ -141,7 +141,7 @@ def rss_instrument_mode(header_value, database_service) -> types.InstrumentMode:
             return types.InstrumentMode.MOS
 
         if polarization_mode:
-            return types.InstrumentMode.POLARIMETRIC_IMAGING
+            return types.InstrumentMode.SPECTROPOLARIMETRY
         else:
             return types.InstrumentMode.SPECTROSCOPY
 

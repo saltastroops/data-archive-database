@@ -1,6 +1,6 @@
 import uuid
 import os
-from typing import Optional, List, Iterable
+from typing import Optional, List
 from dateutil.parser import parse
 from datetime import timedelta, datetime, date, timezone
 from astropy.coordinates import Angle
@@ -143,7 +143,7 @@ class SALTObservation:
         object_name = self.header_value("OBJECT")
         if object_name == types.ProductType.ARC or \
            object_name == types.ProductType.BIAS or \
-           object_name == types.ProductType.FLAT:
+           object_name == types.ProductType.FLAT or not self.block_visit_id:
             return None
         is_standard = False
         if proposal_id.upper() == "CAL_SPST" or \
@@ -167,15 +167,15 @@ class SALTObservation:
             return types.ProductType.BIAS
         elif observation_object.upper() == "FLAT":
             return types.ProductType.FLAT
-        elif product_type.upper() == "OBJECT" or product_type.upper() == "SCIENCE":
+        else: # product_type.upper() == "OBJECT" or product_type.upper() == "SCIENCE":
             # TODO Check if there is any other product type for SALT instruments
             return types.ProductType.SCIENCE
-        else:
-            raise ValueError(f'Product type of file ${self.fits_file.file_path()} not found')
+        # else:
+        #     raise ValueError(f'Product type of file ${self.fits_file.file_path()} not found')
 
     def _intent(self) -> types.Intent:
-        observation_object: str = self.header_value("OBJECT")
-        product_type: str = self.header_value("OBSTYPE")
+        observation_object = self.header_value("OBJECT")
+        product_type = self.header_value("OBSTYPE")
         if observation_object.upper() == "ARC" or \
                 observation_object.upper() == "BIAS" or \
                 observation_object.upper() == "FLAT" or \

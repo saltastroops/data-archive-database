@@ -103,7 +103,7 @@ WHERE BlockVisit_Id=%s;
             return ps
         raise ValueError("Observation has no Investigators")
 
-    def find_target_type(self, block_visit_id: int) -> Optional[str]:
+    def find_target_type(self, block_visit_id: int) -> str:
         sql = """
 SELECT TargetSubType.NumericCode as NumericCode FROM BlockVisit
     JOIN `Block` ON BlockVisit.Block_Id=`Block`.Block_Id

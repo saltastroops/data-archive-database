@@ -69,7 +69,7 @@ brew install flyway
 
 The data archive database requires [pgSphere](https://pgsphere.github.io/doc/index.html), which provides various spherical data types, functions and operators.
 
-To install it, first make sure that pg_config is available on the server.
+To install it on **MacOS**, first make sure that pg_config is available on the server.
 
 ```bash
 pgconfig --help
@@ -97,6 +97,18 @@ followed by
 
 ```bash
 sudo make USE_PGXS=1 PG_CONFIG=`which pg_config` install
+```
+
+To install it on **Ubuntu**.
+
+Run update command to update package repositories and get latest package information.
+```bash
+sudo apt-get update -y
+```
+
+Run the install command with -y flag to quickly install the packages and dependencies.
+```bash
+sudo apt-get install -y postgresql-10-pgsphere
 ```
 
 ### Creating and initialising the database
