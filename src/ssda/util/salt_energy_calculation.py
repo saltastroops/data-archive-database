@@ -31,7 +31,7 @@ def wavelength_interval_first_boundary(curve: List[Tuple[Quantity, float]]) -> Q
     Parameters
     ----------
     curve: List
-        A two dimension array defining a curve or a line
+        A two dimension array defining a curve
 
     Returns
     -------
@@ -74,7 +74,7 @@ def filter_wavelength_interval(filter_name: str, instrument: types.Instrument) -
     Return
     ------
     Tuple
-        The wavelength interval boundaries
+        The wavelength interval.
     """
     wavelength_transmission_pairs = wavelengths_and_transmissions(instrument=instrument, filter_name=filter_name)
 
@@ -378,7 +378,7 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
     Parameter
     ----------
     header_value: Function
-        Method to get FITS header value for a key
+        Method to get FITS header value for a keyword
     plane_id: int
         Plane id of this file
     Return

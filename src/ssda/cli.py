@@ -6,9 +6,7 @@ from typing import Callable, Optional, Set, Tuple
 import click
 import dsnparse
 import sentry_sdk
-from psycopg2 import connect
 
-import ssda.database.ssda
 from ssda.database.sdb import SaltDatabaseService
 from ssda.database.ssda import SSDADatabaseService
 from ssda.database.services import DatabaseServices
@@ -18,8 +16,8 @@ from ssda.util.fits import fits_file_paths, set_fits_base_dir
 from ssda.util.types import Instrument, DateRange, TaskName, TaskExecutionMode
 
 # Log with Sentry
-# if os.environ.get("SENTRY_DSN"):
-#     sentry_sdk.init(os.environ.get("SENTRY_DSN"))  # type: ignore
+if os.environ.get("SENTRY_DSN"):
+    sentry_sdk.init(os.environ.get("SENTRY_DSN"))  # type: ignore
 
 
 def parse_date(value: str, now: Callable[[], datetime]) -> date:

@@ -86,7 +86,7 @@ class FitsFile(ABC):
         Returns
         -------
         instrument: Instrument
-            The Instrument.
+            The instrument.
 
         """
 
@@ -100,7 +100,7 @@ class FitsFile(ABC):
         Returns
         -------
         telescope: Telescope
-            The Telescope.
+            The telescope.
 
         """
 
