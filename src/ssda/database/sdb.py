@@ -12,7 +12,7 @@ class SaltDatabaseService:
             database=database_config.database(),
             host=database_config.host(),
             user=database_config.username(),
-            passwd=database_config.password()
+            passwd=database_config.password(),
         )
         self._cursor = self._connection.cursor()
 
@@ -27,8 +27,8 @@ SELECT CONCAT(FirstName, " ", Surname) as FullName FROM  BlockVisit
 WHERE BlockVisit_Id=%s;
         """
         results = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
-        if results['FullName']:
-            return results['FullName']
+        if results["FullName"]:
+            return results["FullName"]
         raise ValueError("Observation have no Principal Investigator")
 
     def find_proposal_code(self, block_visit_id: int) -> str:
@@ -40,7 +40,7 @@ SELECT Proposal_Code FROM  BlockVisit
 WHERE BlockVisit_Id=%s;
         """
         results = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
-        if results['Proposal_Code']:
+        if results["Proposal_Code"]:
             return f"{results['Proposal_Code']}"
         raise ValueError("Observation has no proposal code")
 
@@ -54,7 +54,7 @@ SELECT Title FROM  BlockVisit
 WHERE BlockVisit_Id=%s;
         """
         results = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
-        if results['Title']:
+        if results["Title"]:
             return f"{results['Title']}"
         raise ValueError("Observation has no title")
 
@@ -64,9 +64,9 @@ SELECT BlockVisitStatus FROM BlockVisit JOIN BlockVisitStatus USING(BlockVisitSt
         """
         results = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
 
-        if results['BlockVisitStatus'].lower() == "accepted":
+        if results["BlockVisitStatus"].lower() == "accepted":
             return types.Status.ACCEPTED
-        if results['BlockVisitStatus'].lower() == "rejected":
+        if results["BlockVisitStatus"].lower() == "rejected":
             return types.Status.REJECTED
         raise ValueError("Observation has an unknown status.")
 
@@ -79,8 +79,8 @@ SELECT ReleaseDate FROM  BlockVisit
 WHERE BlockVisit_Id=%s;
         """
         results = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
-        if results['ReleaseDate']:
-            return results['ReleaseDate']
+        if results["ReleaseDate"]:
+            return results["ReleaseDate"]
         raise ValueError("Observation has no release date.")
 
     def find_meta_release_date(self, block_visit_id: int) -> datetime.datetime:
@@ -99,7 +99,7 @@ WHERE BlockVisit_Id=%s;
         if len(results):
             ps = []
             for index, row in results.iterrows():
-                ps.append(row['PiptUser_Id'])
+                ps.append(row["PiptUser_Id"])
             return ps
         raise ValueError("Observation has no Investigators")
 
@@ -115,9 +115,11 @@ SELECT TargetSubType.NumericCode as NumericCode FROM BlockVisit
 WHERE BlockVisit.BlockVisit_Id=%s
         """
         results = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
-        if results['NumericCode']:
-            return results['NumericCode']
-        raise ValueError(f"No numeric code defined for the target type of block visit {block_visit_id}")
+        if results["NumericCode"]:
+            return results["NumericCode"]
+        raise ValueError(
+            f"No numeric code defined for the target type of block visit {block_visit_id}"
+        )
 
     def is_mos(self, slit_barcode: str) -> bool:
 
@@ -125,8 +127,8 @@ WHERE BlockVisit.BlockVisit_Id=%s
 SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Barcode=%s
         """
         results = pd.read_sql(sql, self._connection, params=(slit_barcode,)).iloc[0]
-        if results['RssMaskType']:
-            return results['RssMaskType'] == 'MOS'
+        if results["RssMaskType"]:
+            return results["RssMaskType"] == "MOS"
 
     def find_block_code(self, block_visit_id) -> Optional[str]:
         sql = """ 
@@ -135,7 +137,9 @@ SELECT BlockCode FROM  BlockCode
     JOIN BlockVisit ON `Block`.Block_Id=BlockVisit.Block_Id
 WHERE BlockVisit_Id=%s;
         """
-        block_code=pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
-        if block_code['BlockCode']:
-            return block_code['BlockCode']
+        block_code = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[
+            0
+        ]
+        if block_code["BlockCode"]:
+            return block_code["BlockCode"]
         return None

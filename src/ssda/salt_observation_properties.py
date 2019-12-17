@@ -1,13 +1,17 @@
 from ssda.database.services import DatabaseServices
 from ssda.instrument.hrs_observation_properties import HrsObservationProperties
 from ssda.instrument.rss_observation_properties import RssObservationProperties
-from ssda.instrument.salticam_observation_properties import SalticamObservationProperties
+from ssda.instrument.salticam_observation_properties import (
+    SalticamObservationProperties,
+)
 from ssda.observation import ObservationProperties
 from ssda.util import types
 from ssda.util.fits import FitsFile
 
 
-def observation_properties(fits_file: FitsFile, database_services: DatabaseServices) -> ObservationProperties:
+def observation_properties(
+    fits_file: FitsFile, database_services: DatabaseServices
+) -> ObservationProperties:
     """
     It determines which observation properties to use for thw fits file
 
@@ -34,5 +38,9 @@ def observation_properties(fits_file: FitsFile, database_services: DatabaseServi
 
         if fits_file.instrument() == types.Instrument.SALTICAM:
             return SalticamObservationProperties(fits_file, database_services.sdb)
-        raise ValueError(f"Unknown instrument for file {fits_file.file_path()}")
-    raise ValueError(f"Unknown telescope for file {fits_file.file_path()}")
+        raise ValueError(
+            f"Unknown instrument for file {fits_file.file_path()}: { fits_file.instrument()}"
+        )
+    raise ValueError(
+        f"Unknown telescope for file {fits_file.file_path()}: {fits_file.telescope()}"
+    )

@@ -25,13 +25,18 @@ FOCAL_LENGTH_RSS_COLLIMATOR = 630 * u.mm
 
 def wavelength_interval_first_boundary(curve: List[Tuple[Quantity, float]]) -> Quantity:
     """
-    Gets the first wavelength boundary of a curve at an half maximum height of the curve or the first value if the
-    it is above the half maximum.
+    Get the first wavelength for which the given curve has half its maximum's value, or the smallest curve wavelength if
+    the curve value exceeds half the maximum at that wavelength.
+
+    More technically, let f be the function defined by the curve, [lambda1, lambda2] the domain of f and y_max the
+    maximum value of f (for wavelengths in the the domain). Assuming that f(lambda1) < y_max / 2, the value returned is
+    the value lambda for which f(lambda) = y_max / 2 and f(l) < y_max / 2 for all l < lambda.
+    If f(lambda1) >= y_max / 2, lambda1 is returned instead.
 
     Parameters
     ----------
     curve: List
-        A two dimension array defining a curve
+        A two-dimensional array defining a curve
 
     Returns
     -------
@@ -48,15 +53,16 @@ def wavelength_interval_first_boundary(curve: List[Tuple[Quantity, float]]) -> Q
                 break
             # Calculate the line y = m * x + c passing through the point before and after the half maximum.
             # Use this line to get an estimate of the x where y=half_y_max.
-            m = (curve[i][1] - curve[i - 1][1]) / (
-                    curve[i][0] - curve[i - 1][0])
+            m = (curve[i][1] - curve[i - 1][1]) / (curve[i][0] - curve[i - 1][0])
             c = curve[i][1] - m * curve[i][0]
-            first_boundary = (half_y_max - c)/m
+            first_boundary = (half_y_max - c) / m
             break
     return first_boundary
 
 
-def filter_wavelength_interval(filter_name: str, instrument: types.Instrument) -> Tuple[Quantity, Quantity]:
+def filter_wavelength_interval(
+    filter_name: str, instrument: types.Instrument
+) -> Tuple[Quantity, Quantity]:
     """
     The wavelength interval for a filter.
 
@@ -76,9 +82,13 @@ def filter_wavelength_interval(filter_name: str, instrument: types.Instrument) -
     Tuple
         The wavelength interval.
     """
-    wavelength_transmission_pairs = wavelengths_and_transmissions(instrument=instrument, filter_name=filter_name)
+    wavelength_transmission_pairs = wavelengths_and_transmissions(
+        instrument=instrument, filter_name=filter_name
+    )
 
-    sorted_wavelengths = sorted(wavelength_transmission_pairs, key=lambda element: element[0])
+    sorted_wavelengths = sorted(
+        wavelength_transmission_pairs, key=lambda element: element[0]
+    )
     reversed_sorted_wavelengths = sorted_wavelengths[::-1]
 
     lambda_min = wavelength_interval_first_boundary(sorted_wavelengths)
@@ -88,7 +98,9 @@ def filter_wavelength_interval(filter_name: str, instrument: types.Instrument) -
     return lambda_min, lambda_max
 
 
-def fabry_perot_fwhm(rss_fp_mode: types.RSSFabryPerotMode, wavelength: Quantity) -> Quantity:
+def fabry_perot_fwhm(
+    rss_fp_mode: types.RSSFabryPerotMode, wavelength: Quantity
+) -> Quantity:
     """
     The wavelength interval for a Fabry-Perot resolution and wavelength.
 
@@ -109,16 +121,19 @@ def fabry_perot_fwhm(rss_fp_mode: types.RSSFabryPerotMode, wavelength: Quantity)
 
     fwhm = None
     fp_fwhm_intervals = fp_fwhm(rss_fp_mode=rss_fp_mode)
-    if wavelength < min(fp_fwhm_intervals, key=lambda item: item[0])[0] or \
-            wavelength > max(fp_fwhm_intervals, key=lambda item: item[0])[0]:
+    if (
+        wavelength < min(fp_fwhm_intervals, key=lambda item: item[0])[0]
+        or wavelength > max(fp_fwhm_intervals, key=lambda item: item[0])[0]
+    ):
         raise ValueError("Wavelength is out of range")
     sorted_points = sorted(fp_fwhm_intervals, key=lambda element: element[0])
     for i, w in enumerate(sorted_points):
         #  sorted_points defines a function f of the FWHM as a function of the wavelength.
         #  We use linear interpolation to estimate the value of f at the given wavelength.
         if w[0] > wavelength:
-            m = (sorted_points[i][1] - sorted_points[i - 1][1])/(
-                    sorted_points[i][0] - sorted_points[i - 1][0])
+            m = (sorted_points[i][1] - sorted_points[i - 1][1]) / (
+                sorted_points[i][0] - sorted_points[i - 1][0]
+            )
             c = sorted_points[i][1] - m * sorted_points[i][0]
             fwhm = wavelength * m + c
             break
@@ -127,8 +142,12 @@ def fabry_perot_fwhm(rss_fp_mode: types.RSSFabryPerotMode, wavelength: Quantity)
     return fwhm
 
 
-def rss_ccd_wavelength(x: float, grating_angle: Quantity, camera_angle: Quantity, grating_frequency: Quantity) \
-        -> Quantity:
+def rss_ccd_wavelength(
+    x: float,
+    grating_angle: Quantity,
+    camera_angle: Quantity,
+    grating_frequency: Quantity,
+) -> Quantity:
     """
     Returns the wavelength at the specified distance
     from the center of the middle CCD.
@@ -154,8 +173,10 @@ def rss_ccd_wavelength(x: float, grating_angle: Quantity, camera_angle: Quantity
     # grating angle, so that the incoming angle (i.e. the grating angle) alpha is equal to beta0.
     alpha0 = 0 * u.deg  # grating rotation home error.
     beta_ae = -0.063 * u.deg  # alignment error of the articulation home
-    f_a = -4.2e-5  # correction factor allowing for the mechanical error in placement of the articulation detent ring
-    Lambda = 1 / grating_frequency    # grating period
+    f_a = (
+        -4.2e-5
+    )  # correction factor allowing for the mechanical error in placement of the articulation detent ring
+    Lambda = 1 / grating_frequency  # grating period
     alpha = grating_angle + alpha0
     beta0 = (1 + f_a) * camera_angle + beta_ae - (grating_angle + alpha0)
 
@@ -175,7 +196,9 @@ def rss_ccd_wavelength(x: float, grating_angle: Quantity, camera_angle: Quantity
     return Lambda * (np.sin(alpha) + np.sin(beta))
 
 
-def rss_resolution_element(grating_frequency: Quantity, grating_angle: Quantity, slit_width: Quantity) -> Quantity:
+def rss_resolution_element(
+    grating_frequency: Quantity, grating_angle: Quantity, slit_width: Quantity
+) -> Quantity:
     """
     Returns the resolution element for the given grating frequency, grating angle and slit width.
 
@@ -195,14 +218,22 @@ def rss_resolution_element(grating_frequency: Quantity, grating_angle: Quantity,
 
     """
 
-    Lambda = 1/grating_frequency
+    Lambda = 1 / grating_frequency
     # TODO some thing is not right below units were supposed to be arcsec but got arcsec * mm
-    return slit_width.to_value(u.arcsec) * Lambda * np.cos(grating_angle) * (FOCAL_LENGTH_TELESCOPE /
-                                                                    FOCAL_LENGTH_RSS_COLLIMATOR)
+    return (
+        slit_width.to_value(u.arcsec)
+        * Lambda
+        * np.cos(grating_angle)
+        * (FOCAL_LENGTH_TELESCOPE / FOCAL_LENGTH_RSS_COLLIMATOR)
+    )
 
 
-def rss_resolution(grating_angle: Quantity, camera_angle: Quantity, grating_frequency: Quantity,
-                   slit_width: Quantity) -> float:
+def rss_resolution(
+    grating_angle: Quantity,
+    camera_angle: Quantity,
+    grating_frequency: Quantity,
+    slit_width: Quantity,
+) -> float:
     """
     Returns the resolution at the center of the middle CCD. This is the ratio of the resolution element and
     the wavelength at the CCD's center.
@@ -225,8 +256,12 @@ def rss_resolution(grating_angle: Quantity, camera_angle: Quantity, grating_freq
 
     """
     wavelength = rss_ccd_wavelength(0, grating_angle, camera_angle, grating_frequency)
-    wavelength_resolution_element = rss_resolution_element(grating_frequency, grating_angle, slit_width)
-    return (wavelength / wavelength_resolution_element).to_value(u.dimensionless_unscaled)
+    wavelength_resolution_element = rss_resolution_element(
+        grating_frequency, grating_angle, slit_width
+    )
+    return (wavelength / wavelength_resolution_element).to_value(
+        u.dimensionless_unscaled
+    )
 
 
 def rss_slit_width_from_barcode(barcode: str) -> Quantity:
@@ -270,7 +305,7 @@ def get_grating_frequency(grating: str) -> Quantity:
         "pg1300": 1299.6,
         "pg1800": 1801.89,
         "pg2300": 2302.60,
-        "pg3000": 3000.55
+        "pg3000": 3000.55,
     }
     if not grating or grating.lower() not in grating_table:
         raise ValueError("Grating frequency not found on grating table")
@@ -342,7 +377,9 @@ def hrs_wavelength_interval(arm: types.HRSArm) -> Tuple[Quantity, Quantity]:
     raise ValueError(f"Unknown HRS arm {arm.value}")
 
 
-def imaging_spectral_properties(plane_id: int, filter_name: str, instrument: types.Instrument) -> types.Energy:
+def imaging_spectral_properties(
+    plane_id: int, filter_name: str, instrument: types.Instrument
+) -> types.Energy:
     """
     Spectral properties of a Salticam setup.
 
@@ -367,7 +404,7 @@ def imaging_spectral_properties(plane_id: int, filter_name: str, instrument: typ
         min_wavelength=lambda_min,
         plane_id=plane_id,
         resolving_power=resolving_power,
-        sample_size=abs(lambda_max-lambda_min)
+        sample_size=abs(lambda_max - lambda_min),
     )
 
 
@@ -387,15 +424,19 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
         RSS Spectral properties
     """
     filter = header_value("FILTER")
-    if not filter or \
-            filter.upper() == "EMPTY" or \
-            filter in ["PC00000", "PC03200", "PC03400", "PC03850", "PC04600"]:
+    if (
+        not filter
+        or filter.upper() == "EMPTY"
+        or filter in ["PC00000", "PC03200", "PC03400", "PC03850", "PC04600"]
+    ):
         return None
     observation_mode = header_value("OBSMODE").upper()
     if observation_mode.upper() == "IMAGING":
-        return imaging_spectral_properties(plane_id=plane_id,
-                                           filter_name=header_value("FILTER"),
-                                           instrument=types.Instrument.RSS)
+        return imaging_spectral_properties(
+            plane_id=plane_id,
+            filter_name=header_value("FILTER"),
+            instrument=types.Instrument.RSS,
+        )
 
     if observation_mode.upper() == "SPECTROSCOPY":
         grating_angle = float(header_value("GR-ANGLE")) * u.deg
@@ -405,30 +446,16 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
         grating_frequency = get_grating_frequency(header_value("GRATING"))
         wavelength_interval = (
             rss_ccd_wavelength(
-                -3162,
-                grating_angle,
-                camera_angle,
-                grating_frequency=grating_frequency
+                -3162, grating_angle, camera_angle, grating_frequency=grating_frequency
             ),
             rss_ccd_wavelength(
-                3162,
-                grating_angle,
-                camera_angle,
-                grating_frequency=grating_frequency
-            )
+                3162, grating_angle, camera_angle, grating_frequency=grating_frequency
+            ),
         )
         dimension = 6096 // spectral_binning
         sample_size = rss_ccd_wavelength(
-            spectral_binning,
-            grating_angle,
-            camera_angle,
-            grating_frequency
-        ) - rss_ccd_wavelength(
-            0,
-            grating_angle,
-            camera_angle,
-            grating_frequency
-        )
+            spectral_binning, grating_angle, camera_angle, grating_frequency
+        ) - rss_ccd_wavelength(0, grating_angle, camera_angle, grating_frequency)
         return types.Energy(
             dimension=dimension,
             max_wavelength=max(wavelength_interval),
@@ -438,7 +465,8 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
                 grating_angle,
                 camera_angle,
                 grating_frequency=grating_frequency,
-                slit_width=rss_slit_width_from_barcode(slit_barcode)),
+                slit_width=rss_slit_width_from_barcode(slit_barcode),
+            ),
             sample_size=abs(sample_size),
         )
 
@@ -448,29 +476,45 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
             return None
 
         if etalon_state.lower() == "s3 - etalon 2":
-            resolution = header_value("ET2MODE").upper()  # TODO CHECK with encarni which one use ET2/1
+            resolution = header_value(
+                "ET2MODE"
+            ).upper()  # TODO CHECK with encarni which one use ET2/1
             _lambda = float(header_value("ET2WAVE0")) * u.nm
-        elif etalon_state.lower() == "s2 - etalon 1" or etalon_state.lower() == "s4 - etalon 1 & 2":
-            resolution = header_value("ET1MODE").upper()  # TODO CHECK with encarni which one use ET2/1
-            _lambda = float(header_value("ET1WAVE0")) * u.nm  # Todo what are this units?
+        elif (
+            etalon_state.lower() == "s2 - etalon 1"
+            or etalon_state.lower() == "s4 - etalon 1 & 2"
+        ):
+            resolution = header_value(
+                "ET1MODE"
+            ).upper()  # TODO CHECK with encarni which one use ET2/1
+            _lambda = (
+                float(header_value("ET1WAVE0")) * u.nm
+            )  # Todo what are this units?
         else:
             raise ValueError("Unknown etalon state")
 
-        wavelength_boundaries = fabry_perot_fwhm(rss_fp_mode=resolution, wavelength=_lambda)
-        wavelength_interval = (_lambda - wavelength_boundaries / 2, _lambda + wavelength_boundaries / 2)
+        wavelength_interval_length = fabry_perot_fwhm(
+            rss_fp_mode=resolution, wavelength=_lambda
+        )
+        wavelength_interval = (
+            _lambda - wavelength_interval_length / 2,
+            _lambda + wavelength_interval_length / 2,
+        )
         return types.Energy(
             dimension=1,
             max_wavelength=wavelength_interval[1],
             min_wavelength=wavelength_interval[0],
             plane_id=plane_id,
-            resolving_power=_lambda/wavelength_boundaries,
-            sample_size=wavelength_boundaries,
+            resolving_power=_lambda / wavelength_interval_length,
+            sample_size=wavelength_interval_length,
         )
 
     raise ValueError(f"Unsupported observation mode: {observation_mode}")
 
 
-def hrs_spectral_properties(plane_id: int, arm: types.HRSArm, hrs_mode: types.HRSMode) -> Optional[types.Energy]:
+def hrs_spectral_properties(
+    plane_id: int, arm: types.HRSArm, hrs_mode: types.HRSMode
+) -> Optional[types.Energy]:
     """
      Method to calculate an spectral properties of HRS instrument
 
@@ -496,11 +540,13 @@ def hrs_spectral_properties(plane_id: int, arm: types.HRSArm, hrs_mode: types.HR
         min_wavelength=min(interval),
         plane_id=plane_id,
         resolving_power=hrs_resolving_power(arm=arm, hrs_mode=hrs_mode),
-        sample_size=interval[1]-interval[0],
+        sample_size=interval[1] - interval[0],
     )
 
 
-def salticam_spectral_properties(plane_id: int, filter_name: str) -> Optional[types.Energy]:
+def salticam_spectral_properties(
+    plane_id: int, filter_name: str
+) -> Optional[types.Energy]:
     """
 
     Spectral properties of a Salticam setup.
@@ -523,4 +569,6 @@ def salticam_spectral_properties(plane_id: int, filter_name: str) -> Optional[ty
         return None
     if filter_name == "SDSSz-S1":
         return None
-    return imaging_spectral_properties(plane_id=plane_id, filter_name=filter_name, instrument=types.Instrument.SALTICAM)
+    return imaging_spectral_properties(
+        plane_id=plane_id, filter_name=filter_name, instrument=types.Instrument.SALTICAM
+    )

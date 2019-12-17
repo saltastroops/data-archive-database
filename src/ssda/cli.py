@@ -156,7 +156,9 @@ def validate_options(
     required=True,
     help="Task execution mode.",
 )
-@click.option('--skip-errors', is_flag=True, help='Do not terminate if there is an error')
+@click.option(
+    "--skip-errors", is_flag=True, help="Do not terminate if there is an error"
+)
 @click.option("--start", type=str, help="Start date of the last night to consider.")
 @click.option(
     "--task",
@@ -236,12 +238,14 @@ def main(
         password=sdb_db_config.secret,
         host=sdb_db_config.host,
         port=3306,
-        database=sdb_db_config.database
+        database=sdb_db_config.database,
     )
     ssda_database_service = SSDADatabaseService(ssda_db_config)
     sdb_database_service = SaltDatabaseService(sdb_db_config)
 
-    database_services = DatabaseServices(ssda=ssda_database_service, sdb=sdb_database_service)
+    database_services = DatabaseServices(
+        ssda=ssda_database_service, sdb=sdb_database_service
+    )
     ssda_connection = database_services.ssda.connection()
 
     # execute the requested task
@@ -253,7 +257,7 @@ def main(
                 task_name=task_name,
                 fits_path=path,
                 task_mode=task_mode,
-                database_services=database_services
+                database_services=database_services,
             )
         except BaseException as e:
             logging.error("Exception occurred", exc_info=True)

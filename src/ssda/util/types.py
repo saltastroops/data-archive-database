@@ -941,11 +941,17 @@ class PolarizationMode(Enum):
     def polarization_mode(polarization_mode: str) -> PolarizationMode:
         if polarization_mode.upper() == "LINEAR":
             return PolarizationMode.LINEAR
-        elif polarization_mode.upper() == "LINEAR-HI" or polarization_mode.upper() == "LINEAR HI":
+        elif (
+            polarization_mode.upper() == "LINEAR-HI"
+            or polarization_mode.upper() == "LINEAR HI"
+        ):
             return PolarizationMode.LINEAR_HI
         elif polarization_mode.upper() == "CIRCULAR":
             return PolarizationMode.CIRCULAR
-        elif polarization_mode.upper() == "ALL-STOKES" or polarization_mode.upper() == "ALL STOKES":
+        elif (
+            polarization_mode.upper() == "ALL-STOKES"
+            or polarization_mode.upper() == "ALL STOKES"
+        ):
             return PolarizationMode.ALL_STOKES
         elif polarization_mode.upper() == "OTHER":
             return PolarizationMode.OTHER

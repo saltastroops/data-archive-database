@@ -46,7 +46,8 @@ def delete(
 
 
 def insert(
-    observation_properties: ObservationProperties, ssda_database_service: SSDADatabaseService
+    observation_properties: ObservationProperties,
+    ssda_database_service: SSDADatabaseService,
 ) -> None:
     """
     Insert an observation.
@@ -86,7 +87,9 @@ def insert(
                     proposal_id
                 )
                 for proposal_investigator in proposal_investigators:
-                    ssda_database_service.insert_proposal_investigator(proposal_investigator)
+                    ssda_database_service.insert_proposal_investigator(
+                        proposal_investigator
+                    )
         else:
             proposal_id = None
 
@@ -129,11 +132,15 @@ def insert(
             observation_id
         )
         for instrument_keyword_value in instrument_keyword_values:
-            ssda_database_service.insert_instrument_keyword_value(instrument_keyword_value)
+            ssda_database_service.insert_instrument_keyword_value(
+                instrument_keyword_value
+            )
 
         # insert instrument setup
         instrument_setup = observation_properties.instrument_setup(observation_id)
-        instrument_setup_id = ssda_database_service.insert_instrument_setup(instrument_setup)
+        instrument_setup_id = ssda_database_service.insert_instrument_setup(
+            instrument_setup
+        )
 
         # insert instrument-specific content
         for query in instrument_setup.additional_queries:

@@ -8,14 +8,12 @@ from typing import Optional, List
 
 
 class RssObservationProperties(ObservationProperties):
-
     def __init__(self, fits_file: FitsFile, salt_database_service: SaltDatabaseService):
         self.header_value = fits_file.header_value
         self.file_path = fits_file.file_path
         self.database_service = salt_database_service
         self.salt_observation = SALTObservation(
-            fits_file=fits_file,
-            database_service=salt_database_service
+            fits_file=fits_file, database_service=salt_database_service
         )
 
     def artifact(self, plane_id: int) -> types.Artifact:
@@ -28,12 +26,16 @@ class RssObservationProperties(ObservationProperties):
 
         if self.database_service.is_mos(slit_barcode=slit_barcode):
             return None
-        return rss_spectral_properties(header_value=self.header_value, plane_id=plane_id)
+        return rss_spectral_properties(
+            header_value=self.header_value, plane_id=plane_id
+        )
 
-    def instrument_keyword_values(self, observation_id: int) -> List[types.InstrumentKeywordValue]:
+    def instrument_keyword_values(
+        self, observation_id: int
+    ) -> List[types.InstrumentKeywordValue]:
         return []  # TODO Needs to be implemented
 
-    def instrument_setup(self,  observation_id: int) -> types.InstrumentSetup:
+    def instrument_setup(self, observation_id: int) -> types.InstrumentSetup:
         sql = """
         WITH fpm (id) AS (
             SELECT rss_fabry_perot_mode_id FROM rss_fabry_perot_mode WHERE fabry_perot_mode=%(fabry_perot_mode)s
@@ -73,10 +75,14 @@ class RssObservationProperties(ObservationProperties):
             observation_id=observation_id,
         )
 
-    def observation(self, observation_group_id: Optional[int], proposal_id: Optional[int]) -> types.Observation:
-        return self.salt_observation.observation(observation_group_id=observation_group_id,
-                                                 proposal_id=proposal_id,
-                                                 instrument=types.Instrument.RSS)
+    def observation(
+        self, observation_group_id: Optional[int], proposal_id: Optional[int]
+    ) -> types.Observation:
+        return self.salt_observation.observation(
+            observation_group_id=observation_group_id,
+            proposal_id=proposal_id,
+            instrument=types.Instrument.RSS,
+        )
 
     def observation_group(self) -> Optional[types.ObservationGroup]:
         return self.salt_observation.observation_group()
@@ -86,10 +92,11 @@ class RssObservationProperties(ObservationProperties):
 
     def plane(self, observation_id: int) -> types.Plane:
         observation_mode = self.header_value("OBSMODE").upper()
-        data_product_type = types.DataProductType.IMAGE \
-            if observation_mode == "IMAGING" \
-            or observation_mode == "FABRY-PEROT" \
-            else types.DataProductType.SPECTRUM    # TODO is fp only imaging
+        data_product_type = (
+            types.DataProductType.IMAGE
+            if observation_mode == "IMAGING" or observation_mode == "FABRY-PEROT"
+            else types.DataProductType.SPECTRUM
+        )  # TODO is fp only imaging
         return types.Plane(observation_id, data_product_type=data_product_type)
 
     def polarization(self, plane_id: int) -> Optional[types.Polarization]:
@@ -97,12 +104,19 @@ class RssObservationProperties(ObservationProperties):
         polarization_mode = self.header_value("WPPATERN")
         if not polarization_mode or polarization_config.upper() == "OPEN":
             return None
-        if polarization_mode.upper() not in ["ALL-STOKES", "LINEAR-HI", "LINEAR", "CIRCULAR"]:
+        if polarization_mode.upper() not in [
+            "ALL-STOKES",
+            "LINEAR-HI",
+            "LINEAR",
+            "CIRCULAR",
+        ]:
             polarization_mode = "OTHER"
 
         return types.Polarization(
             plane_id=plane_id,
-            polarization_mode=types.PolarizationMode.polarization_mode(polarization_mode=polarization_mode)
+            polarization_mode=types.PolarizationMode.polarization_mode(
+                polarization_mode=polarization_mode
+            ),
         )
 
     def position(self, plane_id: int) -> Optional[types.Position]:
@@ -112,15 +126,17 @@ class RssObservationProperties(ObservationProperties):
         return self.salt_observation.proposal()
 
     def proposal_investigators(
-            self, proposal_id: int
+        self, proposal_id: int
     ) -> List[types.ProposalInvestigator]:
         return self.salt_observation.proposal_investigators(proposal_id=proposal_id)
 
     def target(self, observation_id: int) -> Optional[types.Target]:
         proposal_id = self.header_value("PROPID")
-        if proposal_id.upper() == "CAL_BIAS" or \
-                proposal_id.upper() == "CAL_FLAT" or \
-                proposal_id.upper() == "CAL_ARC":
+        if (
+            proposal_id.upper() == "CAL_BIAS"
+            or proposal_id.upper() == "CAL_FLAT"
+            or proposal_id.upper() == "CAL_ARC"
+        ):
             return None
         return self.salt_observation.target(observation_id=observation_id)
 

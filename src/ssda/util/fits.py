@@ -13,7 +13,7 @@ from ssda.util import types
 
 
 # The path of the base directory where all FITS files are stored.
-_fits_base_dir = ''
+_fits_base_dir = ""
 
 
 def set_fits_base_dir(path: str) -> None:
@@ -231,6 +231,7 @@ def fits_file_dir(night: date, instrument: types.Instrument, base_dir: str) -> s
 
 
 class StandardFitsFile(FitsFile):
+
     def __init__(self, path: str) -> None:
         hdulist = fits.open(path)
         self.path = path
@@ -240,34 +241,23 @@ class StandardFitsFile(FitsFile):
         return os.stat(self.path).st_size * types.byte
 
     def instrument(self) -> types.Instrument:
-        dirs = self.path.split("/")
-        instrument_dir = None
-        for i, d in enumerate(dirs):
-            if d.lower() == "data" and dirs[i - 1].lower() == "salt":
-                instrument_dir = dirs[i + 3]
-                break
-
-        if instrument_dir.lower() == "rss":
+        instrument_value = self.header_value("INSTRUME").upper()
+        if instrument_value == "RSS":
             return types.Instrument.RSS
-        elif instrument_dir.lower() == "hrs":
+        elif instrument_value.upper() == "HRS":
             return types.Instrument.HRS
-        elif instrument_dir.lower() == "scam":
+        elif instrument_value.upper() == "SALTICAM":
             return types.Instrument.SALTICAM
         else:
-            raise ValueError(f"Instrument used for file: {self.path} is not known")
+            raise ValueError(f"Instrument: {instrument_value} in not known for file: {self.path} is not known")
 
     def telescope(self) -> types.Telescope:
-        dirs = self.path.split("/")
-        telescope_dir = None
-        for i, d in enumerate(dirs):
-            if d.lower() == "data" and dirs[i - 1].lower() == "salt":
-                telescope_dir = dirs[i - 1]
-                break
 
-        if telescope_dir.lower() == "salt":
+        telescope_value = self.header_value("INSTRUME").upper()
+        if telescope_value == "SALT":
             return types.Telescope.SALT
         else:
-            raise ValueError(f"Telescope used for file : {self.path} is unknown")
+            raise ValueError(f"Telescope: {telescope_value} in not known for file: {self.path} is not known")
 
     def file_path(self) -> str:
         return self.path
@@ -277,7 +267,7 @@ class StandardFitsFile(FitsFile):
         result = "".join(random.choice(letters) for _ in range(20))
 
         # Open,close, read file and calculate MD5 on its contents
-        with open(self.file_path(), 'rb') as f:
+        with open(self.file_path(), "rb") as f:
             # read contents of the file
             data = f.read()
             # pipe contents of the file through

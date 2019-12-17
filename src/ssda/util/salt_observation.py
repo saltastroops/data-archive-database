@@ -13,7 +13,7 @@ from ssda.util import types
 
 
 class SALTObservation:
-    def __init__(self, fits_file: FitsFile, database_service:  SaltDatabaseService):
+    def __init__(self, fits_file: FitsFile, database_service: SaltDatabaseService):
         self.headers = fits_file.headers
         self.header_value = fits_file.header_value
         self.size = fits_file.size()
@@ -21,7 +21,11 @@ class SALTObservation:
         self.fits_file = fits_file
         self.file_path = fits_file.file_path
         self.database_service = database_service
-        self.block_visit_id = None if not fits_file.header_value("BVISITID") else int(fits_file.header_value("BVISITID"))
+        self.block_visit_id = (
+            None
+            if not fits_file.header_value("BVISITID")
+            else int(fits_file.header_value("BVISITID"))
+        )
 
     def artifact(self, plane_id: int) -> types.Artifact:
 
@@ -35,21 +39,25 @@ class SALTObservation:
             name=os.path.basename(path),
             plane_id=plane_id,
             path=path,
-            product_type=self._product_type()
+            product_type=self._product_type(),
         )
 
-    def observation(self,
-                    observation_group_id: Optional[int],
-                    proposal_id: Optional[int],
-                    instrument: types.Instrument
-                    ) -> types.Observation:
+    def observation(
+        self,
+        observation_group_id: Optional[int],
+        proposal_id: Optional[int],
+        instrument: types.Instrument,
+    ) -> types.Observation:
 
         if not self.block_visit_id:
-            observation_date = datetime.strptime(self.header_value("DATE-OBS"), '%Y-%m-%d').date()
-            release_date = \
-                date(year=observation_date.year,
-                     month=observation_date.month,
-                     day=observation_date.day)
+            observation_date = datetime.strptime(
+                self.header_value("DATE-OBS"), "%Y-%m-%d"
+            ).date()
+            release_date = date(
+                year=observation_date.year,
+                month=observation_date.month,
+                day=observation_date.day,
+            )
             status = types.Status.ACCEPTED
         else:
             release_date = self.database_service.find_release_date(self.block_visit_id)
@@ -63,7 +71,7 @@ class SALTObservation:
             observation_type=types.ObservationType.OBJECT,
             proposal_id=proposal_id,
             status=status,
-            telescope=types.Telescope.SALT
+            telescope=types.Telescope.SALT,
         )
 
     def observation_group(self) -> Optional[types.ObservationGroup]:
@@ -71,26 +79,27 @@ class SALTObservation:
             return None
         return types.ObservationGroup(
             group_identifier=self.header_value("BVISITID"),
-            name="SALT-" + self.header_value("BVISITID")
+            name="SALT-" + self.header_value("BVISITID"),
         )
 
     def observation_time(self, plane_id: int) -> types.ObservationTime:
         start_time = parse(self.header_value("TIME-OBS"))
-        start_time_tz = \
-            datetime(year=start_time.year,
-                     month=start_time.month,
-                     day=start_time.day,
-                     hour=start_time.hour,
-                     minute=start_time.minute,
-                     second=start_time.second,
-                     tzinfo=timezone.utc)
+        start_time_tz = datetime(
+            year=start_time.year,
+            month=start_time.month,
+            day=start_time.day,
+            hour=start_time.hour,
+            minute=start_time.minute,
+            second=start_time.second,
+            tzinfo=timezone.utc,
+        )
         exposure_time = float(self.header_value("EXPTIME"))
         return types.ObservationTime(
             end_time=start_time_tz + timedelta(seconds=exposure_time),
             exposure_time=exposure_time * u.second,
             plane_id=plane_id,
             resolution=exposure_time * u.second,
-            start_time=start_time_tz
+            start_time=start_time_tz,
         )
 
     def position(self, plane_id: int) -> Optional[types.Position]:
@@ -111,12 +120,7 @@ class SALTObservation:
         equinox = float(self.header_value("EQUINOX"))
         if equinox == 0:  # TODO check if it is cal and use it instead
             return None
-        return types.Position(
-            dec=dec,
-            equinox=equinox,
-            plane_id=plane_id,
-            ra=ra
-        )
+        return types.Position(dec=dec, equinox=equinox, plane_id=plane_id, ra=ra)
 
     def proposal(self) -> Optional[types.Proposal]:
         if not self.fits_file.header_value("BVISITID"):
@@ -126,37 +130,45 @@ class SALTObservation:
             institution=types.Institution.SALT,
             pi=self.database_service.find_pi(self.block_visit_id),
             proposal_code=self.database_service.find_proposal_code(self.block_visit_id),
-            title=self.database_service.find_proposal_title(self.block_visit_id)
+            title=self.database_service.find_proposal_title(self.block_visit_id),
         )
 
-    def proposal_investigators(self, proposal_id: int) -> List[types.ProposalInvestigator]:
-        investigators = self.database_service.find_proposal_investigators(self.block_visit_id)
+    def proposal_investigators(
+        self, proposal_id: int
+    ) -> List[types.ProposalInvestigator]:
+        investigators = self.database_service.find_proposal_investigators(
+            self.block_visit_id
+        )
         return [
             types.ProposalInvestigator(
-                proposal_id=proposal_id,
-                investigator_id=str(investigator)
-            ) for investigator in investigators
+                proposal_id=proposal_id, investigator_id=str(investigator)
+            )
+            for investigator in investigators
         ]
 
     def target(self, observation_id: int) -> Optional[types.Target]:
         proposal_id = self.header_value("PROPID")
         object_name = self.header_value("OBJECT")
-        if object_name == types.ProductType.ARC or \
-           object_name == types.ProductType.BIAS or \
-           object_name == types.ProductType.FLAT or \
-           not self.block_visit_id:
+        if (
+            object_name == types.ProductType.ARC
+            or object_name == types.ProductType.BIAS
+            or object_name == types.ProductType.FLAT
+            or not self.block_visit_id
+        ):
             return None
         is_standard = False
-        if proposal_id.upper() == "CAL_SPST" or \
-                proposal_id.upper() == "CAL_LICKST" or\
-                proposal_id.upper() == "CAL_RVST" or\
-                proposal_id.upper() == "CAL_SPST":
+        if (
+            proposal_id.upper() == "CAL_SPST"
+            or proposal_id.upper() == "CAL_LICKST"
+            or proposal_id.upper() == "CAL_RVST"
+            or proposal_id.upper() == "CAL_SPST"
+        ):
             is_standard = True
         return types.Target(
             name=object_name,
             observation_id=observation_id,
             standard=is_standard,
-            target_type=self.database_service.find_target_type(self.block_visit_id)
+            target_type=self.database_service.find_target_type(self.block_visit_id),
         )
 
     def _product_type(self) -> types.ProductType:
@@ -172,19 +184,23 @@ class SALTObservation:
             # TODO Check if there is any other product type for SALT instruments
             return types.ProductType.SCIENCE
         else:
-            raise ValueError(f'Product type of file ${self.fits_file.file_path()} not found')
+            raise ValueError(
+                f"Product type of file ${self.fits_file.file_path()} could not be determined"
+            )
 
     def _intent(self) -> types.Intent:
         observation_object = self.header_value("OBJECT")
         product_type = self.header_value("OBSTYPE")
-        if observation_object.upper() == "ARC" or \
-                observation_object.upper() == "BIAS" or \
-                observation_object.upper() == "FLAT" or \
-                observation_object.upper() == "STANDARDS":
+        if (
+            observation_object.upper() == "ARC"
+            or observation_object.upper() == "BIAS"
+            or observation_object.upper() == "FLAT"
+            or observation_object.upper() == "STANDARDS"
+        ):
             return types.Intent.CALIBRATION
         elif product_type.upper() == "OBJECT" or product_type.upper() == "SCIENCE":
             return types.Intent.SCIENCE
-        raise ValueError(f"unknown intent for file {self.file_path}")
+        raise ValueError(f"Intent for file {self.file_path} could not be determined")
 
     def is_calibration(self):
         return "CAL_" in self.header_value("PROPID")
