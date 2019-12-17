@@ -249,15 +249,15 @@ class StandardFitsFile(FitsFile):
         elif instrument_value.upper() == "SALTICAM":
             return types.Instrument.SALTICAM
         else:
-            raise ValueError(f"Instrument: {instrument_value} in not known for file: {self.path} is not known")
+            raise ValueError(f"Unknown instrument in file {self.path}: {instrument_value}")
 
     def telescope(self) -> types.Telescope:
 
-        telescope_value = self.header_value("INSTRUME").upper()
+        telescope_value = self.header_value("OBSERVAT").upper()
         if telescope_value == "SALT":
             return types.Telescope.SALT
         else:
-            raise ValueError(f"Telescope: {telescope_value} in not known for file: {self.path} is not known")
+            raise ValueError(f"Unknown telescope in file {self.path}: {telescope_value}")
 
     def file_path(self) -> str:
         return self.path
