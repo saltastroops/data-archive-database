@@ -127,4 +127,6 @@ class HrsObservationProperties(ObservationProperties):
             return types.HRSMode.HIGH_RESOLUTION
         if hrs_mode == "HIGH STABILITY":
             return types.HRSMode.HIGH_STABILITY
+        if hrs_mode == "INT CAL FIBRE":
+            return types.HRSMode.INT_CAL_FIBRE
         raise ValueError(f"Unknown HRS mode {hrs_mode} for file {self.file_path}")

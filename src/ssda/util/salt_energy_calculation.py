@@ -403,7 +403,7 @@ def imaging_spectral_properties(
         max_wavelength=lambda_max,
         min_wavelength=lambda_min,
         plane_id=plane_id,
-        resolving_power=resolving_power,
+        resolving_power=resolving_power.value,
         sample_size=abs(lambda_max - lambda_min),
     )
 
