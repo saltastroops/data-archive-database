@@ -3,7 +3,7 @@ from ssda.repository import insert, delete
 from ssda.salt_observation_properties import observation_properties
 from ssda.util.dummy import DummyObservationProperties
 from ssda.util.fits import StandardFitsFile, DummyFitsFile
-from ssda.util.types import TaskName, TaskExecutionMode
+from ssda.util.types import TaskName, TaskExecutionMode, Status
 
 
 def execute_task(
@@ -16,6 +16,20 @@ def execute_task(
     # Get the observation properties.
     if task_mode == TaskExecutionMode.PRODUCTION:
         fits_file = StandardFitsFile(fits_path)
+        block_visit_id = (
+            None
+            if not fits_file.header_value("BVISITID")
+            else int(fits_file.header_value("BVISITID"))
+        )
+
+        status = (
+            "ACCEPTED"
+            if not block_visit_id
+            else database_services.sdb.find_observation_status(block_visit_id)
+        )
+        print(status)
+        if status == Status.DELETED:
+            return None
         _observation_properties = observation_properties(fits_file, database_services)
     elif task_mode == TaskExecutionMode.DUMMY:
         _observation_properties = DummyObservationProperties(

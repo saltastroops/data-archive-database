@@ -68,6 +68,8 @@ SELECT BlockVisitStatus FROM BlockVisit JOIN BlockVisitStatus USING(BlockVisitSt
             return types.Status.ACCEPTED
         if results["BlockVisitStatus"].lower() == "rejected":
             return types.Status.REJECTED
+        if results["BlockVisitStatus"].lower() == "deleted":
+            return types.Status.DELETED
         raise ValueError("Observation has an unknown status.")
 
     def find_release_date(self, block_visit_id: int) -> datetime.datetime:
