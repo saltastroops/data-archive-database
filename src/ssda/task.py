@@ -23,7 +23,7 @@ def execute_task(
         )
 
         status = (
-            "ACCEPTED"
+            Status.ACCEPTED
             if not block_visit_id
             else database_services.sdb.find_observation_status(block_visit_id)
         )

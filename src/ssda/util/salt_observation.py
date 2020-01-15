@@ -173,6 +173,7 @@ class SALTObservation:
 
     def _product_type(self) -> types.ProductType:
         observation_object = self.header_value("OBJECT")
+        print(observation_object)
         product_type = self.header_value("OBSTYPE")
         if observation_object.upper() == "ARC":
             return types.ProductType.ARC
