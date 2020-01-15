@@ -121,6 +121,7 @@ def fabry_perot_fwhm(
 
     fwhm = None
     fp_fwhm_intervals = fp_fwhm(rss_fp_mode=rss_fp_mode)
+
     if (
         wavelength < min(fp_fwhm_intervals, key=lambda item: item[0])[0]
         or wavelength > max(fp_fwhm_intervals, key=lambda item: item[0])[0]
@@ -259,9 +260,7 @@ def rss_resolution(
     wavelength_resolution_element = rss_resolution_element(
         grating_frequency, grating_angle, slit_width
     )
-    return (wavelength / wavelength_resolution_element).to_value(
-        u.dimensionless_unscaled
-    )
+    return (wavelength / wavelength_resolution_element).to_value(u.dimensionless_unscaled)
 
 
 def rss_slit_width_from_barcode(barcode: str) -> Quantity:
@@ -403,7 +402,7 @@ def imaging_spectral_properties(
         max_wavelength=lambda_max,
         min_wavelength=lambda_min,
         plane_id=plane_id,
-        resolving_power=resolving_power.value,
+        resolving_power=resolving_power.to_value(u.dimensionless_unscaled),
         sample_size=abs(lambda_max - lambda_min),
     )
 
@@ -479,7 +478,7 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
             resolution = header_value(
                 "ET2MODE"
             ).upper()  # TODO CHECK with encarni which one use ET2/1
-            _lambda = float(header_value("ET2WAVE0")) * u.nm
+            _lambda = float(header_value("ET2WAVE0")) * u.angstrom
         elif (
             etalon_state.lower() == "s2 - etalon 1"
             or etalon_state.lower() == "s4 - etalon 1 & 2"
@@ -488,7 +487,7 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
                 "ET1MODE"
             ).upper()  # TODO CHECK with encarni which one use ET2/1
             _lambda = (
-                float(header_value("ET1WAVE0")) * u.nm
+                float(header_value("ET1WAVE0")) * u.angstrom
             )  # Todo what are this units?
         else:
             raise ValueError("Unknown etalon state")

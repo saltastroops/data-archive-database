@@ -178,7 +178,7 @@ class SALTObservation:
             return types.ProductType.ARC
         elif observation_object.upper() == "BIAS":
             return types.ProductType.BIAS
-        elif observation_object.upper() == "FLAT":
+        elif observation_object.upper() == "FLAT" or observation_object.upper() == "FLAT FIELD":
             return types.ProductType.FLAT
         elif product_type.upper() == "OBJECT" or product_type.upper() == "SCIENCE":
             # TODO Check if there is any other product type for SALT instruments
@@ -195,12 +195,13 @@ class SALTObservation:
             observation_object.upper() == "ARC"
             or observation_object.upper() == "BIAS"
             or observation_object.upper() == "FLAT"
+            or observation_object.upper() == "FLAT FIELD"
             or observation_object.upper() == "STANDARDS"
         ):
             return types.Intent.CALIBRATION
         elif product_type.upper() == "OBJECT" or product_type.upper() == "SCIENCE":
             return types.Intent.SCIENCE
-        raise ValueError(f"Intent for file {self.file_path} could not be determined")
+        raise ValueError(f"Intent for file {self.file_path()} could not be determined")
 
     def is_calibration(self):
         return "CAL_" in self.header_value("PROPID")

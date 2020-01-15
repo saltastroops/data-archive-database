@@ -91,7 +91,7 @@ def fp_fwhm(rss_fp_mode: types.RSSFabryPerotMode) -> List[Tuple[Quantity, Quanti
                     "MR",
                     "HR",
                 ]:
-                    if _parse_fp_mode(line.split()[0]) == rss_fp_mode:  # Resolution
+                    if line.split()[0] == rss_fp_mode:  # Resolution
                         fp_modes.append(
                             (
                                 float(line.split()[2]) * u.nm,  # wavelength,
