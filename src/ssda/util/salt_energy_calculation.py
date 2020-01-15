@@ -504,7 +504,7 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
             max_wavelength=wavelength_interval[1],
             min_wavelength=wavelength_interval[0],
             plane_id=plane_id,
-            resolving_power=_lambda / wavelength_interval_length,
+            resolving_power=(_lambda / wavelength_interval_length).to_value(u.dimensionless_unscaled),
             sample_size=wavelength_interval_length,
         )
 
