@@ -16,6 +16,10 @@ def execute_task(
     # Get the observation properties.
     if task_mode == TaskExecutionMode.PRODUCTION:
         fits_file = StandardFitsFile(fits_path)
+        observation_object = fits_file.header_value("OBJECT")
+        if observation_object == "JUNK":
+            return None
+
         block_visit_id = (
             None
             if not fits_file.header_value("BVISITID")
@@ -27,9 +31,11 @@ def execute_task(
             if not block_visit_id
             else database_services.sdb.find_observation_status(block_visit_id)
         )
-        print(status)
-        if status == Status.DELETED:
+
+        if status == Status.DELETED or observation_object == "JUNK":
             return None
+        print(observation_object)
+        print(status)
         _observation_properties = observation_properties(fits_file, database_services)
     elif task_mode == TaskExecutionMode.DUMMY:
         _observation_properties = DummyObservationProperties(
