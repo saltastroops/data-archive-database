@@ -57,7 +57,7 @@ class RssObservationProperties(ObservationProperties):
 
         detector_mode = None
         for dm in types.DetectorMode:
-            if self.header_value("DETMODE") == dm.value:
+            if self.header_value("DETMODE").upper() == dm.value.upper():
                 detector_mode = dm
 
         filter = None

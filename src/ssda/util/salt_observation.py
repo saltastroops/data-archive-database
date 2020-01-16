@@ -117,6 +117,8 @@ class SALTObservation:
             return None
         ra = Angle("{} hours".format(ra_header_value)).degree * u.deg
         dec = Angle("{} degrees".format(dec_header_value)).degree * u.deg
+        if ra.value == 0 and dec.value == 0:
+            return None
         equinox = float(self.header_value("EQUINOX"))
         if equinox == 0:  # TODO check if it is cal and use it instead
             return None

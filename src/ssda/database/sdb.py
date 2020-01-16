@@ -128,6 +128,9 @@ WHERE BlockVisit.BlockVisit_Id=%s
         sql = """
 SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Barcode=%s
         """
+        results = pd.read_sql(sql, self._connection, params=(slit_barcode,))
+        if len(results) <= 0:
+            return False
         results = pd.read_sql(sql, self._connection, params=(slit_barcode,)).iloc[0]
         if results["RssMaskType"]:
             return results["RssMaskType"] == "MOS"
