@@ -64,12 +64,16 @@ SELECT BlockVisitStatus FROM BlockVisit JOIN BlockVisitStatus USING(BlockVisitSt
         """
         results = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
 
+        print(results["BlockVisitStatus"])
+
         if results["BlockVisitStatus"].lower() == "accepted":
             return types.Status.ACCEPTED
         if results["BlockVisitStatus"].lower() == "rejected":
             return types.Status.REJECTED
         if results["BlockVisitStatus"].lower() == "deleted":
             return types.Status.DELETED
+        if results["BlockVisitStatus"].lower() == "in queue":
+            return types.Status.INQUEUE
         raise ValueError("Observation has an unknown status.")
 
     def find_release_date(self, block_visit_id: int) -> datetime.datetime:

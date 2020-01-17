@@ -32,7 +32,7 @@ def execute_task(
             else database_services.sdb.find_observation_status(block_visit_id)
         )
 
-        if status == Status.DELETED:
+        if status == Status.DELETED or status == Status.INQUEUE:
             return None
         print(proposal_id)
         print(status)

@@ -1190,6 +1190,7 @@ class Status(Enum):
 
     ACCEPTED = "Accepted"
     DELETED = "Deleted"
+    INQUEUE = "In queue"
     REJECTED = "Rejected"
 
 
