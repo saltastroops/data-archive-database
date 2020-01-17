@@ -195,10 +195,15 @@ class SALTObservation:
         product_type = self.header_value("OBSTYPE")
         if (
             observation_object.upper() == "ARC"
+            or product_type.upper() == "ARC"
             or observation_object.upper() == "BIAS"
+            or product_type.upper() == "BIAS"
             or observation_object.upper() == "FLAT"
+            or product_type.upper() == "FLAT"
             or observation_object.upper() == "FLAT FIELD"
+            or product_type.upper() == "FLAT FIELD"
             or observation_object.upper() == "STANDARDS"
+            or product_type.upper() == "STANDARDS"
         ):
             return types.Intent.CALIBRATION
         elif product_type.upper() == "OBJECT" or product_type.upper() == "SCIENCE":
