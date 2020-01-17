@@ -94,11 +94,12 @@ WHERE BlockVisit_Id=%s;
 
     def find_proposal_investigators(self, block_visit_id: int) -> List[str]:
         sql = """
-SELECT PiptUser_Id FROM  BlockVisit
+SELECT PiptUser.PiptUser_Id FROM  BlockVisit
     JOIN `Block` USING(Block_Id)
     JOIN Proposal ON `Block`.Proposal_Id=Proposal.Proposal_Id
     JOIN ProposalInvestigator ON Proposal.ProposalCode_Id=ProposalInvestigator.ProposalCode_Id
-    JOIN PiptUser ON ProposalInvestigator.Investigator_Id=PiptUser.Investigator_Id
+    JOIN Investigator ON ProposalInvestigator.Investigator_Id=Investigator.Investigator_Id
+    JOIN PiptUser ON Investigator.PiptUser_Id=PiptUser.PiptUser_Id
 WHERE BlockVisit_Id=%s;
         """
         results = pd.read_sql(sql, self._connection, params=(block_visit_id,))
