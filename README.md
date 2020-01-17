@@ -10,18 +10,6 @@ Ensure that Python 3.7 is running on your machine. You can check this with the `
 python3 --version
 ```
 
-If it is not installed on your machine already, [install pipenv](https://pipenv.readthedocs.io/en/latest/install/#installing-pipenv). One option for this is to use pip,
-
-```bash
-pip3 install pipenv
-```
-
-but you may also use Homebrew (on a Mac) or Lunuxbrew (on a Linux machine),
-
-```bash
-brew install pipenv
-```
-
 Then clone the package from its repository,
 
 ```bash
@@ -34,18 +22,33 @@ and make sure you are in the master branch,
 git checkout master
 ```
 
-You can then install the package and its requirements with pipenv,
+Then create a virtual environment to manage python packages using the [venv module](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/)
 
 ```bash
-pipenv install -e .
+python3 -m venv venv
+```
+
+**NB!** the first ```venv``` is the python3 module whereas the second ```venv``` is the directory 
+where the virtual environment files reside.
+
+To activate the virtual environment run the command below,
+
+```bash
+source venv/bin/activate
+```
+
+Then install the packages from the requirements.txt file,
+
+```bash
+pip install -r requirements.txt
 ```
 
 Before using the package you need to define the following environment variables.
 
 Variable name | Explanation | Example
 --- | --- | ---
-SSDA_DSN | Data source name of the data archive database | postgresql://ssda:secret@example.host.za/ssda
-SDB_DSN | Data source name of the SALT science database | mysql://salt:secret@example.host.za/sdb
+SSDA_DSN | Data source name of the data archive database | postgresql://ssda:secret@example.host.za:port/ssda
+SDB_DSN | Data source name of the SALT science database | mysql://salt:secret@example.host.za:port/sdb
 
 See below for instructions on how to run the script as a cron job.
 
@@ -164,7 +167,7 @@ git pull
 Finally update the installed package.
 
 ```bash
-pipenv update ssda
+pip install -e .
 ```
 
 ### Updating the database
@@ -177,25 +180,19 @@ flyway -url=jdbc:postgresql://your.host:5432/ssda -user=admin -locations=filesys
 
 ## Usage
 
-The package provides a command `ssda` for inserting, updating and deleting entries in the Data Archive database. To run it, first open a new pipenv shell.
+The package provides a command `ssda` for inserting, updating and deleting entries in the Data Archive database. To run it, first install it.
 
 ```bash
-pipenv shell
+pip install -e .
 ```
 
 To find out about the available options you may use the `--help` option.
 
 ```bash
-python ssda --help
+ssda --help
 ``` 
 
 The various tasks for modifying the database are explained in the following sections.
-
-If you don't want ro open a new shell you may also execute the script with pipenv's `run` command.
-
-```bash
-pipenv run ssda --help
-```
 
 The default behaviour of the command is to terminate if there is an error. However, if the `--skip-errors` flag is included, the command will instead proceed with inserting the next FITS file.
 
@@ -310,16 +307,10 @@ SSDA_LOG=/home/ssda/logs/database-update.txt
 
 ### Using an additional Python library
 
-If you need to make use of a new Python library, you need to install it with `pipenv`.
+If you need to make use of a new Python library, you need to install it with `pip`.
 
 ```bash
-pipenv install new_paqckage
-```
-
-If the new package is needed for development only, you should use the `--dev` glag when installing it.
-
-```bash
-pipenv install --dev new_package
+pip install new_paqckage
 ```
 
 ### Accessing a new database
