@@ -176,11 +176,11 @@ class SALTObservation:
     def _product_type(self) -> types.ProductType:
         observation_object = self.header_value("OBJECT")
         product_type = self.header_value("OBSTYPE")
-        if observation_object.upper() == "ARC":
+        if observation_object.upper() == "ARC" or product_type.upper() == "ARC":
             return types.ProductType.ARC
-        elif observation_object.upper() == "BIAS":
+        elif observation_object.upper() == "BIAS" or product_type.upper() == "BIAS":
             return types.ProductType.BIAS
-        elif observation_object.upper() == "FLAT" or observation_object.upper() == "FLAT FIELD":
+        elif observation_object.upper() == "FLAT" or product_type.upper() == "FLAT" or observation_object.upper() == "FLAT FIELD" or product_type.upper() == "FLAT FIELD":
             return types.ProductType.FLAT
         elif product_type.upper() == "OBJECT" or product_type.upper() == "SCIENCE":
             # TODO Check if there is any other product type for SALT instruments
