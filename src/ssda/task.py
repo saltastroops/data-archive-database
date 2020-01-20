@@ -17,6 +17,7 @@ def execute_task(
     if task_mode == TaskExecutionMode.PRODUCTION:
         fits_file = StandardFitsFile(fits_path)
         proposal_id = fits_file.header_value("PROPID")
+
         if proposal_id == "JUNK":
             return None
 
