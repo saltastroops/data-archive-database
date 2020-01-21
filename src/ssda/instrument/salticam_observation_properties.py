@@ -39,6 +39,8 @@ class SalticamObservationProperties(ObservationProperties):
                 detector_mode = dm
         if self.header_value("DETMODE").upper() == "SLOT":
             detector_mode = types.DetectorMode.SLOT_MODE
+        if self.header_value("DETMODE").upper() == "FT":
+            detector_mode = types.DetectorMode.FRAME_TRANSFER
         filter = None
         for fi in types.Filter:
             if self.header_value("FILTER") == fi.value:
