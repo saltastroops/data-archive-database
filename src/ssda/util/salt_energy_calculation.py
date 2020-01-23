@@ -380,7 +380,7 @@ def imaging_spectral_properties(
     plane_id: int, filter_name: str, instrument: types.Instrument
 ) -> types.Energy:
     """
-    Spectral properties of a Salticam setup.
+    Spectral properties of a imaging setup.
 
     Parameter
     ----------
@@ -543,12 +543,12 @@ def hrs_spectral_properties(
     )
 
 
-def salticam_spectral_properties(
-    plane_id: int, filter_name: str
+def salt_imaging_camera_spectral_properties(
+    plane_id: int, filter_name: str, instrument: types.Instrument
 ) -> Optional[types.Energy]:
     """
 
-    Spectral properties of a Salticam setup.
+    Spectral properties of a salt imaging camera setup.
 
     Parameter
     ----------
@@ -560,7 +560,7 @@ def salticam_spectral_properties(
     Return
     ------
         Spectral properties: Energy
-           SALTICAM spectral properties
+           salt imaging camera spectral properties
     """
     if filter_name == "OPEN":
         return None
@@ -569,5 +569,5 @@ def salticam_spectral_properties(
     if filter_name == "SDSSz-S1":
         return None
     return imaging_spectral_properties(
-        plane_id=plane_id, filter_name=filter_name, instrument=types.Instrument.SALTICAM
+        plane_id=plane_id, filter_name=filter_name, instrument=instrument
     )

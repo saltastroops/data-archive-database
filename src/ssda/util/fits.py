@@ -93,7 +93,7 @@ class FitsFile(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def telescope(self) -> types.Instrument:
+    def telescope(self) -> types.Telescope:
         """
         The telescope used.
 
@@ -224,7 +224,7 @@ def fits_file_dir(night: date, instrument: types.Instrument, base_dir: str) -> s
         return f"{base_dir}/salt/data/{year}/{month}{day}/hrs/raw"
     elif instrument == types.Instrument.RSS:
         return f"{base_dir}/salt/data/{year}/{month}{day}/rss/raw"
-    elif instrument == types.Instrument.SALTICAM:
+    elif instrument == types.Instrument.SALTICAM or instrument == types.Instrument.BCAM:
         return f"{base_dir}/salt/data/{year}/{month}{day}/scam/raw"
     else:
         raise NotImplementedError(f"Not implemented for {instrument}")
@@ -248,6 +248,8 @@ class StandardFitsFile(FitsFile):
             return types.Instrument.HRS
         elif instrument_value.upper() == "SALTICAM":
             return types.Instrument.SALTICAM
+        elif instrument_value.upper() == "BCAM":
+            return types.Instrument.BCAM
         else:
             raise ValueError(f"Unknown instrument in file {self.path}: {instrument_value}")
 

@@ -146,7 +146,7 @@ def validate_options(
 @click.option(
     "--instrument",
     "instruments",
-    type=click.Choice(["HRS", "RSS", "Salticam"], case_sensitive=False),
+    type=click.Choice(["HRS", "RSS", "Salticam", "BCAM"], case_sensitive=False),
     multiple=True,
     help="Instrument to consider.",
 )

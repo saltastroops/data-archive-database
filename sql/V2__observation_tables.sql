@@ -104,6 +104,7 @@ COMMENT ON COLUMN instrument.name IS 'Instrument name.';
 
 INSERT INTO instrument (name)
 VALUES ('BVIT'),
+       ('BCAM'),
        ('HIPPO'),
        ('HRS'),
        ('RSS'),

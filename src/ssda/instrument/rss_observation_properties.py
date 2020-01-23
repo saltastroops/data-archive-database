@@ -142,7 +142,6 @@ class RssObservationProperties(ObservationProperties):
 
 
 def rss_instrument_mode(header_value, database_service) -> types.InstrumentMode:
-    slit_barcode = header_value("MASKID")
 
     mode = header_value("OBSMODE").upper()
     polarization_mode = header_value("WPPATERN")
@@ -153,6 +152,9 @@ def rss_instrument_mode(header_value, database_service) -> types.InstrumentMode:
             return types.InstrumentMode.IMAGING
 
     if mode == "SPECTROSCOPY":
+        slit_barcode = header_value("MASKID")
+        if slit_barcode == "NOREAD" and header_value("MASKTYPE") == "MOS":
+            return types.InstrumentMode.MOS
         if database_service.is_mos(slit_barcode=slit_barcode):
             return types.InstrumentMode.MOS
 

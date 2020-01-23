@@ -1,9 +1,8 @@
 from ssda.database.services import DatabaseServices
+from ssda.instrument.bcam_observation_properties import BCAMObservationProperties
 from ssda.instrument.hrs_observation_properties import HrsObservationProperties
 from ssda.instrument.rss_observation_properties import RssObservationProperties
-from ssda.instrument.salticam_observation_properties import (
-    SalticamObservationProperties,
-)
+from ssda.instrument.salticam_observation_properties import SalticamObservationProperties
 from ssda.observation import ObservationProperties
 from ssda.util import types
 from ssda.util.fits import FitsFile
@@ -38,6 +37,10 @@ def observation_properties(
 
         if fits_file.instrument() == types.Instrument.SALTICAM:
             return SalticamObservationProperties(fits_file, database_services.sdb)
+
+        if fits_file.instrument() == types.Instrument.BCAM:
+            return BCAMObservationProperties(fits_file, database_services.sdb)
+
         raise ValueError(
             f"Unknown instrument for file {fits_file.file_path()}: { fits_file.instrument()}"
         )

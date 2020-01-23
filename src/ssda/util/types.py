@@ -511,6 +511,7 @@ class Instrument(Enum):
     RSS = "RSS"
     HRS = "HRS"
     SALTICAM = "Salticam"
+    BCAM = "BCAM"
 
     @staticmethod
     def for_name(name: str) -> Instrument:

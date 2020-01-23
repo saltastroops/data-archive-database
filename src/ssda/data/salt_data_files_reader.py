@@ -9,7 +9,7 @@ dirname = os.path.dirname(__file__)
 
 
 def _parse_filter_name(_filter: str, instrument: types.Instrument) -> str:
-    if instrument.value == "Salticam":
+    if instrument.value == "Salticam" or instrument.value == "BCAM":
         if _filter == "Halpha-S1":
             return "H-alpha"
         if _filter == "SDSSr-S1":
