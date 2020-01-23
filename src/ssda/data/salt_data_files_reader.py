@@ -62,21 +62,9 @@ def fp_fwhm(rss_fp_mode: types.RSSFabryPerotMode) -> List[Tuple[Quantity, Quanti
     rss_fp_mode
 
     Returns TODO need finish this
-    -------
+    ----------
 
     """
-
-    def _parse_fp_mode(fp_mode_abbr: str) -> types.RSSFabryPerotMode:
-        if fp_mode_abbr.upper() == "LR":
-            return types.RSSFabryPerotMode.LOW_RESOLUTION
-        if fp_mode_abbr.upper() == "MR":
-            return types.RSSFabryPerotMode.MEDIUM_RESOLUTION
-        if fp_mode_abbr.upper() == "HR":
-            return types.RSSFabryPerotMode.HIGH_RESOLUTION
-        if fp_mode_abbr.upper() == "TF":
-            return types.RSSFabryPerotMode.TUNABLE_FILTER
-        raise ValueError(f"Mode {fp_mode_abbr} is not known.")
-
     if not rss_fp_mode:
         raise ValueError("A resolution must be provided to use this method")
 
@@ -91,7 +79,7 @@ def fp_fwhm(rss_fp_mode: types.RSSFabryPerotMode) -> List[Tuple[Quantity, Quanti
                     "MR",
                     "HR",
                 ]:
-                    if line.split()[0] == rss_fp_mode:  # Resolution
+                    if types.RSSFabryPerotMode.parse_fp_mode(line.split()[0]) == rss_fp_mode:  # Resolution
                         fp_modes.append(
                             (
                                 float(line.split()[2]) * u.nm,  # wavelength,

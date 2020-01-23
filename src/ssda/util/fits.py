@@ -260,7 +260,6 @@ class StandardFitsFile(FitsFile):
             raise ValueError(f"Unknown telescope in file {self.path}: {telescope_value}")
 
     def file_path(self) -> str:
-        print(self.path)
         return self.path
 
     def checksum(self) -> str:

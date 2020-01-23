@@ -1160,6 +1160,18 @@ class RSSFabryPerotMode(Enum):
     MEDIUM_RESOLUTION = "Medium Resolution"
     TUNABLE_FILTER = "Tunable Filter"
 
+    @staticmethod
+    def parse_fp_mode(fp_mode_abbr: str) -> RSSFabryPerotMode:
+        if fp_mode_abbr.upper() == "LR":
+            return RSSFabryPerotMode.LOW_RESOLUTION
+        if fp_mode_abbr.upper() == "MR":
+            return RSSFabryPerotMode.MEDIUM_RESOLUTION
+        if fp_mode_abbr.upper() == "HR":
+            return RSSFabryPerotMode.HIGH_RESOLUTION
+        if fp_mode_abbr.upper() == "TF":
+            return RSSFabryPerotMode.TUNABLE_FILTER
+        raise ValueError(f"Mode {fp_mode_abbr} is not known.")
+
 
 class RSSGrating(Enum):
     """

@@ -180,11 +180,7 @@ flyway -url=jdbc:postgresql://your.host:5432/ssda -user=admin -locations=filesys
 
 ## Usage
 
-The package provides a command `ssda` for inserting, updating and deleting entries in the Data Archive database. To run it, first install it.
-
-```bash
-pip install -e .
-```
+The package provides a command `ssda` for inserting, updating and deleting entries in the Data Archive database.
 
 To find out about the available options you may use the `--help` option.
 
@@ -310,7 +306,7 @@ SSDA_LOG=/home/ssda/logs/database-update.txt
 If you need to make use of a new Python library, you need to install it with `pip`.
 
 ```bash
-pip install new_paqckage
+pip install new_package
 ```
 
 ### Accessing a new database
