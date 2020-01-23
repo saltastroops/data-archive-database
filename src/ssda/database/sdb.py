@@ -64,8 +64,6 @@ SELECT BlockVisitStatus FROM BlockVisit JOIN BlockVisitStatus USING(BlockVisitSt
         """
         results = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
 
-        print(results["BlockVisitStatus"])
-
         if results["BlockVisitStatus"].lower() == "accepted":
             return types.Status.ACCEPTED
         if results["BlockVisitStatus"].lower() == "rejected":
@@ -136,9 +134,8 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
         results = pd.read_sql(sql, self._connection, params=(slit_barcode,))
         if len(results) <= 0:
             return False
-        results = pd.read_sql(sql, self._connection, params=(slit_barcode,)).iloc[0]
-        if results["RssMaskType"]:
-            return results["RssMaskType"] == "MOS"
+
+        return results.iloc[0]["RssMaskType"] == "MOS"
 
     def find_block_code(self, block_visit_id) -> Optional[str]:
         sql = """ 

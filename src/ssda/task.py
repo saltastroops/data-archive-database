@@ -19,7 +19,7 @@ def execute_task(
         proposal_id = fits_file.header_value("PROPID")
 
         if proposal_id == "JUNK":
-            return None
+            return
 
         block_visit_id = (
             None
@@ -27,6 +27,7 @@ def execute_task(
             else int(fits_file.header_value("BVISITID"))
         )
 
+        # Observations not belonging to a proposal are accepted by default.
         status = (
             Status.ACCEPTED
             if not block_visit_id
@@ -34,9 +35,8 @@ def execute_task(
         )
 
         if status == Status.DELETED or status == Status.INQUEUE:
-            return None
-        print(proposal_id)
-        print(status)
+            return
+
         _observation_properties = observation_properties(fits_file, database_services)
     elif task_mode == TaskExecutionMode.DUMMY:
         _observation_properties = DummyObservationProperties(

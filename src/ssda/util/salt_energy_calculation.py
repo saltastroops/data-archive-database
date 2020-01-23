@@ -475,17 +475,13 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
             return None
 
         if etalon_state.lower() == "s3 - etalon 2":
-            resolution = header_value(
-                "ET2MODE"
-            ).upper()  # TODO CHECK with encarni which one use ET2/1
+            resolution = types.RSSFabryPerotMode.parse_fp_mode(header_value("ET2MODE").upper())  # TODO CHECK with encarni which one use ET2/1
             _lambda = float(header_value("ET2WAVE0")) * u.angstrom
         elif (
             etalon_state.lower() == "s2 - etalon 1"
             or etalon_state.lower() == "s4 - etalon 1 & 2"
         ):
-            resolution = header_value(
-                "ET1MODE"
-            ).upper()  # TODO CHECK with encarni which one use ET2/1
+            resolution = types.RSSFabryPerotMode.parse_fp_mode(header_value("ET1MODE").upper())  # TODO CHECK with encarni which one use ET2/1
             _lambda = (
                 float(header_value("ET1WAVE0")) * u.angstrom
             )  # Todo what are this units?
