@@ -36,7 +36,10 @@ def wavelengths_and_transmissions(
         raise ValueError(
             "Filter name and instrument must be provided to use this method"
         )
-    filename = os.path.join(dirname, f"{instrument.value.lower()}/{filt_name}.txt")
+    instrument_path_name = instrument.value.lower()
+    if instrument_path_name == "bcam":
+        instrument_path_name = "salticam"  # No filters for bcam it uses salticam's
+    filename = os.path.join(dirname, f"{instrument_path_name}/{filt_name}.txt")
     with open(filename, "r") as file:
         for line in file.readlines():
 
