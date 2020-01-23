@@ -182,6 +182,8 @@ class SALTObservation:
             return types.ProductType.BIAS
         elif observation_object.upper() == "FLAT" or product_type.upper() == "FLAT" or observation_object.upper() == "FLAT FIELD" or product_type.upper() == "FLAT FIELD":
             return types.ProductType.FLAT
+        elif observation_object.upper() == "DARK" or product_type.upper() == "DARK":
+            return types.ProductType.DARK
         elif product_type.upper() == "OBJECT" or product_type.upper() == "SCIENCE":
             # TODO Check if there is any other product type for SALT instruments
             return types.ProductType.SCIENCE
@@ -204,6 +206,8 @@ class SALTObservation:
             or product_type.upper() == "FLAT FIELD"
             or observation_object.upper() == "STANDARDS"
             or product_type.upper() == "STANDARDS"
+            or observation_object.upper() == "DARK"
+            or product_type.upper() == "DARK"
         ):
             return types.Intent.CALIBRATION
         elif product_type.upper() == "OBJECT" or product_type.upper() == "SCIENCE":
