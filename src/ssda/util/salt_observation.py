@@ -83,16 +83,18 @@ class SALTObservation:
         )
 
     def observation_time(self, plane_id: int) -> types.ObservationTime:
-        start_time = parse(self.header_value("TIME-OBS"))
+        start_date_time_str = self.header_value("DATE-OBS") + " " + self.header_value("TIME-OBS")
+        start_date_time = datetime.strptime(start_date_time_str, '%Y-%m-%d %H:%M:%S.%f')
         start_time_tz = datetime(
-            year=start_time.year,
-            month=start_time.month,
-            day=start_time.day,
-            hour=start_time.hour,
-            minute=start_time.minute,
-            second=start_time.second,
+            year=start_date_time.year,
+            month=start_date_time.month,
+            day=start_date_time.day,
+            hour=start_date_time.hour,
+            minute=start_date_time.minute,
+            second=start_date_time.second,
             tzinfo=timezone.utc,
         )
+
         exposure_time = float(self.header_value("EXPTIME"))
         return types.ObservationTime(
             end_time=start_time_tz + timedelta(seconds=exposure_time),
