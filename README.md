@@ -414,13 +414,13 @@ from typing import Type
 
 from instrument_fits_data import InstrumentFitsData
 from ssda.instrument.instrument import HrsFitsData
-from ssda.instrument.instrument import IsidibaneFitsData
+from ssda.instrument.instrument import UkukhanyaFitsData
 from ssda.instrument.instrument import RssFitsData
 # ... other imports ...
 
 class Instrument(Enum):
     HRS = "HRS"
-    ISIBANE = "Isibane"
+    UKUKHANYA = "Ukukhanya"
     RSS = "RSS"
     # ... other enum members ...
 
@@ -446,7 +446,7 @@ class Instrument(Enum):
         if self == Instrument.HRS:
             return HrsFitsData
         elif self == Instrument.ISIBANE:
-            return IsidibaneFitsData
+            return UkukhanyaFitsData
         elif self == Instrument.RSS:
             return RssFitsData
         # ... elif clauses for other enum members ...
