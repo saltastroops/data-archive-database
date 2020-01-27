@@ -75,7 +75,7 @@ The data archive database requires [pgSphere](https://pgsphere.github.io/doc/ind
 To install it on **MacOS**, first make sure that pg_config is available on the server.
 
 ```bash
-pgconfig --help
+pg_config --help
 ```
 
 Then clone the pgSphere source code from [its GitHub repository](https://github.com/akorotkov/pgsphere),
