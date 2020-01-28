@@ -103,8 +103,8 @@ COMMENT ON TABLE instrument IS 'An instrument for taking observation data.';
 COMMENT ON COLUMN instrument.name IS 'Instrument name.';
 
 INSERT INTO instrument (name)
-VALUES ('BVIT'),
-       ('BCAM'),
+VALUES ('BCAM'),
+       ('BVIT'),
        ('HIPPO'),
        ('HRS'),
        ('RSS'),

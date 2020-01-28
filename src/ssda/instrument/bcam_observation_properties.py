@@ -3,7 +3,7 @@ from ssda.util import types
 from typing import Optional
 
 
-class BCAMObservationProperties(SaltImagingCameraObservationProperties):
+class BcamObservationProperties(SaltImagingCameraObservationProperties):
     def observation(
             self, observation_group_id: Optional[int], proposal_id: Optional[int]
     ) -> types.Observation:
