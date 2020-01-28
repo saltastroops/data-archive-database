@@ -154,9 +154,9 @@ class SALTObservation:
         proposal_id = self.header_value("PROPID")
         object_name = self.header_value("OBJECT")
         if (
-            object_name == types.ProductType.ARC
-            or object_name == types.ProductType.BIAS
-            or object_name == types.ProductType.FLAT
+            object_name.upper() == types.ProductType.ARC.upper()
+            or object_name.upper() == types.ProductType.BIAS.upper()
+            or object_name.upper() == types.ProductType.FLAT.upper()
             or not self.block_visit_id
         ):
             return None
