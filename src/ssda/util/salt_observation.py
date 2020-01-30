@@ -154,9 +154,9 @@ class SALTObservation:
         proposal_id = self.header_value("PROPID")
         object_name = self.header_value("OBJECT")
         if (
-            object_name.upper() == types.ProductType.ARC.upper()
-            or object_name.upper() == types.ProductType.BIAS.upper()
-            or object_name.upper() == types.ProductType.FLAT.upper()
+            object_name.upper() == "ARC"
+            or object_name.upper() == "BIAS"
+            or object_name.upper() == "FLAT"
             or not self.block_visit_id
         ):
             return None
@@ -168,6 +168,7 @@ class SALTObservation:
             or proposal_id.upper() == "CAL_SPST"
         ):
             is_standard = True
+
         return types.Target(
             name=object_name,
             observation_id=observation_id,
