@@ -175,7 +175,7 @@ pip install -e .
 To update the database you execute Flyway the same way as for initialising it:
 
 ```bash
-flyway -url=jdbc:postgresql://your.host:5432/ssda -user=admin -locations=filesystem:sql migrate
+flyway -url=jdbc:postgresql://your.host:5432/ssda -user=admin -locations=filesystem:sql -schemas=public,admin,observations,extensions migrate
 ```
 
 ## Usage
