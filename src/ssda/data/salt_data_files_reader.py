@@ -24,6 +24,10 @@ def _parse_filter_name(_filter: str, instrument: types.Instrument) -> str:
             return "SDSS_zp"
         if _filter == "CLR-S1":
             return "Fused_silica_clear"
+        if _filter == "B-S1":
+            return "Johnson_B"
+        if _filter == "R-S1":
+            return "Cousins_R"
     return _filter
 
 
