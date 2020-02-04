@@ -17,6 +17,11 @@ def execute_task(
     # Get the observation properties.
     if task_mode == TaskExecutionMode.PRODUCTION:
         fits_file: FitsFile = StandardFitsFile(fits_path)
+        observation_date = fits_file.header_value("DATE-OBS")
+        # If the FITS header does not include the observation date, do not store its data.
+        if not observation_date:
+            return
+
         observation_properties: ObservationProperties = StandardObservationProperties(
             fits_file
         )
