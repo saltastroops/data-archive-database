@@ -20,6 +20,11 @@ def execute_task(
 
         if proposal_id == "JUNK":
             return
+        
+        observation_date = fits_file.header_value("DATE-OBS")
+        # If the FITS header does not include the observation date, do not store its data.
+        if not observation_date:
+            return
 
         block_visit_id = (
             None
