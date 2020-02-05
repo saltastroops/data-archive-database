@@ -15,9 +15,13 @@ def execute_task(
 
     # Get the observation properties.
     if task_mode == TaskExecutionMode.PRODUCTION:
+        # If the FITS file already exist in the database, do nothing.
+        if database_services.ssda.file_exists(fits_path):
+            return
+
         fits_file = StandardFitsFile(fits_path)
         proposal_id = fits_file.header_value("PROPID")
-
+        # If the FITS file is junk, do not store its data
         if proposal_id == "JUNK":
             return
         

@@ -169,6 +169,30 @@ class SSDADatabaseService:
             else:
                 return None
 
+    def file_exists(self, path: str) -> bool:
+        """
+        Check if the FITS file already exists.
+
+        Parameters
+        ----------
+        path : str
+            FITS file path.
+
+        Returns
+        -------
+        bool
+            True or False
+
+        """
+        with self._connection.cursor() as cur:
+            sql = """
+            SELECT EXISTS(SELECT 1 FROM observations.artifact WHERE path=%(path)s);
+            """
+            cur.execute(
+                sql, dict(path=path)
+            )
+            return cur.fetchone()[0]
+
     def insert_artifact(self, artifact: types.Artifact) -> int:
         """
         Insert an artifact.
