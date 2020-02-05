@@ -1,5 +1,6 @@
 from __future__ import annotations
 import os
+import uuid
 from datetime import date, datetime
 from enum import Enum
 from typing import Any, Dict, List, NamedTuple, Optional
@@ -69,7 +70,7 @@ class Artifact:
         self,
         content_checksum: str,
         content_length: Quantity,
-        identifier: str,
+        identifier: uuid.UUID,
         name: str,
         plane_id: int,
         path: str,
@@ -83,8 +84,6 @@ class Artifact:
             raise ValueError("The content length must have a file size unit.")
         if content_length.to_value(byte) <= 0:
             raise ValueError("The content length must be positive.")
-        if len(identifier) > 50:
-            raise ValueError("The artifact identifier must have at most 50 characters.")
         if len(name) > 200:
             raise ValueError("The artifact name must have at most 200 characters.")
         if len(path) > 200:
@@ -107,7 +106,7 @@ class Artifact:
         return self._content_length
 
     @property
-    def identifier(self) -> str:
+    def identifier(self) -> uuid.UUID:
         return self._identifier
 
     @property
@@ -466,6 +465,11 @@ class Filter(Enum):
     JOHNSON_I = "Johnson I"
 
 
+class HRSArm(Enum):
+    RED = "Red"
+    BLUE = "Blue"
+
+
 class HRSMode(Enum):
     """
     Enumeration of the HRS (resolution) modes.
@@ -507,6 +511,7 @@ class Instrument(Enum):
     RSS = "RSS"
     HRS = "HRS"
     SALTICAM = "Salticam"
+    BCAM = "BCAM"
 
     @staticmethod
     def for_name(name: str) -> Instrument:
@@ -537,6 +542,7 @@ class InstrumentKeyword(Enum):
 
     """
 
+    EXPOSURE_TIME = "Exposure time"
     FILTER = "Filter"
     GRATING = "Grating"
 
@@ -553,7 +559,7 @@ class InstrumentKeywordValue:
         Instrument keyword.
     observation_id : int
         Database id of the observation to which the keyword value refers.
-    value : Optional[str]
+    value : str
         Value.
 
     """
@@ -563,9 +569,9 @@ class InstrumentKeywordValue:
         instrument: Instrument,
         instrument_keyword: InstrumentKeyword,
         observation_id: int,
-        value: Optional[str],
+        value: str,
     ):
-        if value and len(value) > 200:
+        if len(value) > 200:
             raise ValueError("The values must have at most 200 characters.")
 
         self._instrument = instrument
@@ -586,7 +592,7 @@ class InstrumentKeywordValue:
         return self._observation_id
 
     @property
-    def value(self) -> Optional[str]:
+    def value(self) -> str:
         return self._value
 
 
@@ -679,9 +685,7 @@ class Intent(Enum):
 
     """
 
-    ARC = "Arc"
-    BIAS = "Bias"
-    FLAT = "Flat"
+    CALIBRATION = "Calibration"
     SCIENCE = "Science"
 
 
@@ -699,7 +703,7 @@ class Observation:
         Intent of the observation.
     meta_release : date
         Date when the metadata for this observation becomes public.
-    observation_group_id : Optional[int]
+    observation_group_id : int
         Identifier of the observation group to which the observation belongs.
     observation_type : ObservationType
         Observation type.
@@ -756,7 +760,7 @@ class Observation:
         return self._meta_release
 
     @property
-    def observation_group_id(self) -> Optional[int]:
+    def observation_group_id(self) -> int:
         return self._observation_group_id
 
     @property
@@ -932,6 +936,28 @@ class PolarizationMode(Enum):
     CIRCULAR = "Circular"
     LINEAR = "Linear"
     LINEAR_HI = "Linear Hi"
+    OTHER = "Other"
+
+    @staticmethod
+    def polarization_mode(polarization_mode: str) -> PolarizationMode:
+        if polarization_mode.upper() == "LINEAR":
+            return PolarizationMode.LINEAR
+        elif (
+            polarization_mode.upper() == "LINEAR-HI"
+            or polarization_mode.upper() == "LINEAR HI"
+        ):
+            return PolarizationMode.LINEAR_HI
+        elif polarization_mode.upper() == "CIRCULAR":
+            return PolarizationMode.CIRCULAR
+        elif (
+            polarization_mode.upper() == "ALL-STOKES"
+            or polarization_mode.upper() == "ALL STOKES"
+        ):
+            return PolarizationMode.ALL_STOKES
+        elif polarization_mode.upper() == "OTHER":
+            return PolarizationMode.OTHER
+        else:
+            raise ValueError(f"Polarization mode {polarization_mode} is not known")
 
 
 class Polarization:
@@ -1135,6 +1161,18 @@ class RSSFabryPerotMode(Enum):
     MEDIUM_RESOLUTION = "Medium Resolution"
     TUNABLE_FILTER = "Tunable Filter"
 
+    @staticmethod
+    def parse_fp_mode(fp_mode_abbr: str) -> RSSFabryPerotMode:
+        if fp_mode_abbr.upper() == "LR":
+            return RSSFabryPerotMode.LOW_RESOLUTION
+        if fp_mode_abbr.upper() == "MR":
+            return RSSFabryPerotMode.MEDIUM_RESOLUTION
+        if fp_mode_abbr.upper() == "HR":
+            return RSSFabryPerotMode.HIGH_RESOLUTION
+        if fp_mode_abbr.upper() == "TF":
+            return RSSFabryPerotMode.TUNABLE_FILTER
+        raise ValueError(f"Mode {fp_mode_abbr} is not known.")
+
 
 class RSSGrating(Enum):
     """
@@ -1164,6 +1202,8 @@ class Status(Enum):
     """
 
     ACCEPTED = "Accepted"
+    DELETED = "Deleted"
+    INQUEUE = "In queue"
     REJECTED = "Rejected"
 
 

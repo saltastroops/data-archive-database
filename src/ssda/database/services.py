@@ -1,7 +1,9 @@
 from typing import NamedTuple
 
-import ssda.database.ssda
+from ssda.database.ssda import SSDADatabaseService
+from ssda.database.sdb import SaltDatabaseService
 
 
 class DatabaseServices(NamedTuple):
-    ssda: ssda.database.ssda.DatabaseService
+    sdb: SaltDatabaseService
+    ssda: SSDADatabaseService

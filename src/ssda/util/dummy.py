@@ -135,7 +135,12 @@ class DummyObservationProperties(ObservationProperties):
 
     def artifact(self, plane_id: int) -> types.Artifact:
         def product_type() -> types.ProductType:
-            product_types = [types.ProductType.ARC, types.ProductType.BIAS, types.ProductType.FLAT, types.ProductType.SCIENCE]
+            product_types = [
+                types.ProductType.ARC,
+                types.ProductType.BIAS,
+                types.ProductType.FLAT,
+                types.ProductType.SCIENCE,
+            ]
             return random.choice(product_types)
 
         return types.Artifact(

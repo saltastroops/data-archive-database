@@ -103,7 +103,8 @@ COMMENT ON TABLE instrument IS 'An instrument for taking observation data.';
 COMMENT ON COLUMN instrument.name IS 'Instrument name.';
 
 INSERT INTO instrument (name)
-VALUES ('BVIT'),
+VALUES ('BCAM'),
+       ('BVIT'),
        ('HIPPO'),
        ('HRS'),
        ('RSS'),
@@ -153,9 +154,7 @@ CREATE TABLE intent
 COMMENT ON TABLE intent IS 'The intent of an observation, such as "Science" or "Arc".';
 
 INSERT INTO intent (intent)
-VALUES ('Arc'),
-       ('Bias'),
-       ('Flat'),
+VALUES ('Calibration'),
        ('Science');
 
 -- observation_type

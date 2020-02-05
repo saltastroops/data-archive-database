@@ -7,14 +7,20 @@ from psycopg2 import connect
 from ssda.util import types
 
 
-class DatabaseService:
+class SSDADatabaseService:
     """
     Access to the database.
 
     """
 
-    def __init__(self, connection: psycopg2.extensions.connection):
-        self._connection = connection
+    def __init__(self, database_config: types.DatabaseConfiguration):
+        self._connection = connect(
+            user=database_config.username(),
+            password=database_config.password(),
+            host=database_config.host(),
+            port=database_config.port(),
+            database=database_config.database(),
+        )
 
     def begin_transaction(self) -> None:
         """
@@ -32,6 +38,9 @@ class DatabaseService:
         """
 
         self._connection.commit()
+
+    def connection(self) -> connect:
+        return self._connection
 
     def delete_observation(self, observation_id: int) -> None:
         """
@@ -67,7 +76,7 @@ class DatabaseService:
         Returns
         -------
         Optional[int]
-            The database id for the observation group, or None if there is observation
+            The database id for the observation group, or None if there is no observation
             group in the database for the group identifier and telescope.
 
         """
@@ -147,8 +156,8 @@ class DatabaseService:
         with self._connection.cursor() as cur:
             sql = """
             SELECT proposal_id
-            FROM proposal
-            JOIN institution ON proposal.institution_id = institution.institution_id
+            FROM observations.proposal
+            JOIN observations.institution ON proposal.institution_id = institution.institution_id
             WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
             """
             cur.execute(
@@ -205,7 +214,7 @@ class DatabaseService:
                 dict(
                     content_checksum=artifact.content_checksum,
                     content_length=artifact.content_length.to_value(types.byte),
-                    identifier=artifact.identifier,
+                    identifier=str(artifact.identifier),
                     name=artifact.name,
                     path=artifact.path,
                     plane_id=artifact.plane_id,
@@ -305,7 +314,6 @@ class DatabaseService:
                     %(observation_id)s,
                     %(value)s)
             """
-
             cur.execute(
                 sql,
                 dict(
@@ -674,9 +682,9 @@ class DatabaseService:
         with self._connection.cursor() as cur:
             sql = """
             WITH inst (institution_id) AS (
-                SELECT institution_id FROM institution WHERE name=%(institution)s
+                SELECT institution_id FROM observations.institution WHERE name=%(institution)s
             )
-            INSERT INTO proposal (institution_id, pi, proposal_code, title)
+            INSERT INTO observations.proposal (institution_id, pi, proposal_code, title)
             VALUES (
                 (SELECT institution_id FROM inst),
                 %(pi)s,

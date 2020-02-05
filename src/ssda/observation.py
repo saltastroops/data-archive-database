@@ -1,8 +1,6 @@
 from abc import ABC
 from typing import List, Optional
-
 from ssda.util import types
-from ssda.util.fits import FitsFile
 
 
 class ObservationProperties(ABC):
@@ -58,8 +56,3 @@ class ObservationProperties(ABC):
 
     def target(self, observation_id: int) -> Optional[types.Target]:
         raise NotImplementedError
-
-
-class StandardObservationProperties(ObservationProperties):
-    def __init__(self, fits_file: FitsFile):
-        pass

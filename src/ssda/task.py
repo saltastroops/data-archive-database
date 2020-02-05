@@ -1,11 +1,9 @@
-from abc import ABC
-
 from ssda.database.services import DatabaseServices
-from ssda.observation import StandardObservationProperties, ObservationProperties
+from ssda.repository import insert, delete
+from ssda.salt_observation_properties import observation_properties
 from ssda.util.dummy import DummyObservationProperties
-from ssda.repository import delete, insert
-from ssda.util.fits import DummyFitsFile, FitsFile, StandardFitsFile
-from ssda.util.types import TaskName, TaskExecutionMode
+from ssda.util.fits import StandardFitsFile, DummyFitsFile
+from ssda.util.types import TaskName, TaskExecutionMode, Status
 
 
 def execute_task(
@@ -14,32 +12,53 @@ def execute_task(
     task_mode: TaskExecutionMode,
     database_services: DatabaseServices,
 ) -> None:
+
     # Get the observation properties.
     if task_mode == TaskExecutionMode.PRODUCTION:
-        fits_file: FitsFile = StandardFitsFile(fits_path)
+        fits_file = StandardFitsFile(fits_path)
+        proposal_id = fits_file.header_value("PROPID")
+
+        if proposal_id == "JUNK":
+            return
+        
         observation_date = fits_file.header_value("DATE-OBS")
         # If the FITS header does not include the observation date, do not store its data.
         if not observation_date:
             return
 
-        observation_properties: ObservationProperties = StandardObservationProperties(
-            fits_file
+        block_visit_id = (
+            None
+            if not fits_file.header_value("BVISITID")
+            else int(fits_file.header_value("BVISITID"))
         )
+
+        # Observations not belonging to a proposal are accepted by default.
+        status = (
+            Status.ACCEPTED
+            if not block_visit_id
+            else database_services.sdb.find_observation_status(block_visit_id)
+        )
+
+        if status == Status.DELETED or status == Status.INQUEUE:
+            return
+
+        _observation_properties = observation_properties(fits_file, database_services)
     elif task_mode == TaskExecutionMode.DUMMY:
-        fits_file = DummyFitsFile(fits_path)
-        observation_properties = DummyObservationProperties(fits_file)
+        _observation_properties = DummyObservationProperties(
+            fits_file=DummyFitsFile(fits_path)
+        )
     else:
         raise NotImplementedError
 
     # Execute the task
     if task_name == TaskName.INSERT:
         insert(
-            observation_properties=observation_properties,
-            database_service=database_services.ssda,
+            observation_properties=_observation_properties,
+            ssda_database_service=database_services.ssda,
         )
     elif task_name == TaskName.DELETE:
         delete(
-            observation_properties=observation_properties,
+            observation_properties=_observation_properties,
             database_service=database_services.ssda,
         )
     else:

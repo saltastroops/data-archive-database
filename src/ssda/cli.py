@@ -6,11 +6,12 @@ from typing import Callable, Optional, Set, Tuple
 import click
 import dsnparse
 import sentry_sdk
-from psycopg2 import connect
 
-import ssda.database.ssda
+from ssda.database.sdb import SaltDatabaseService
+from ssda.database.ssda import SSDADatabaseService
 from ssda.database.services import DatabaseServices
 from ssda.task import execute_task
+from ssda.util import types
 from ssda.util.fits import fits_file_paths, set_fits_base_dir
 from ssda.util.types import Instrument, DateRange, TaskName, TaskExecutionMode
 
@@ -78,6 +79,8 @@ def validate_options(
         FITS file (path).
     instruments : set of Instrument
         Set of instruments.
+    fits_base_dir: str
+        The base directory to data files
 
     """
 
@@ -143,7 +146,7 @@ def validate_options(
 @click.option(
     "--instrument",
     "instruments",
-    type=click.Choice(["HRS", "RSS", "Salticam"], case_sensitive=False),
+    type=click.Choice(["BCAM", "HRS", "RSS", "Salticam"], case_sensitive=False),
     multiple=True,
     help="Instrument to consider.",
 )
@@ -153,7 +156,9 @@ def validate_options(
     required=True,
     help="Task execution mode.",
 )
-@click.option('--skip-errors', is_flag=True, help='Do not terminate if there is an error')
+@click.option(
+    "--skip-errors", is_flag=True, help="Do not terminate if there is an error"
+)
 @click.option("--start", type=str, help="Start date of the last night to consider.")
 @click.option(
     "--task",
@@ -220,16 +225,28 @@ def main(
 
     # database access
     ssda_db_config = dsnparse.parse_environ("SSDA_DSN")
-    ssda_connection = connect(
-        user=ssda_db_config.user,
+    ssda_db_config = types.DatabaseConfiguration(
+        username=ssda_db_config.user,
         password=ssda_db_config.secret,
         host=ssda_db_config.host,
         port=ssda_db_config.port,
         database=ssda_db_config.database,
     )
-    ssda_database_service = ssda.database.ssda.DatabaseService(ssda_connection)
+    sdb_db_config = dsnparse.parse_environ("SDB_DSN")
+    sdb_db_config = types.DatabaseConfiguration(
+        username=sdb_db_config.user,
+        password=sdb_db_config.secret,
+        host=sdb_db_config.host,
+        port=3306,
+        database=sdb_db_config.database,
+    )
+    ssda_database_service = SSDADatabaseService(ssda_db_config)
+    sdb_database_service = SaltDatabaseService(sdb_db_config)
 
-    database_services = DatabaseServices(ssda=ssda_database_service)
+    database_services = DatabaseServices(
+        ssda=ssda_database_service, sdb=sdb_database_service
+    )
+    ssda_connection = database_services.ssda.connection()
 
     # execute the requested task
     for path in paths:
