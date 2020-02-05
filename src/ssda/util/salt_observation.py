@@ -165,7 +165,6 @@ class SALTObservation:
             proposal_id.upper() == "CAL_SPST"
             or proposal_id.upper() == "CAL_LICKST"
             or proposal_id.upper() == "CAL_RVST"
-            or proposal_id.upper() == "CAL_SPST"
         ):
             is_standard = True
 
