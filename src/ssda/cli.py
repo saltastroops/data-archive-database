@@ -166,7 +166,11 @@ def validate_options(
     required=True,
     help="Task to perform.",
 )
-@click.option("--verbose", is_flag=True, help="Log more details.")
+@click.option(
+    "--verbosity",
+    type=click.Choice(["0", "1", "2"]),
+    help="Log more details."
+)
 def main(
     task: str,
     start: Optional[str],
@@ -176,9 +180,9 @@ def main(
     fits_base_dir: Optional[str],
     mode: str,
     skip_errors: bool,
-    verbose: bool,
+    verbosity: Optional[str],
 ) -> int:
-    if verbose:
+    if verbosity:
         logging.basicConfig(level=logging.INFO)
 
     if not os.environ.get("SENTRY_DSN"):
@@ -251,7 +255,7 @@ def main(
     # execute the requested task
     for path in paths:
         try:
-            if verbose:
+            if verbosity:
                 logging.info(f"{task_name.value}: {path}")
             execute_task(
                 task_name=task_name,
@@ -260,6 +264,15 @@ def main(
                 database_services=database_services,
             )
         except BaseException as e:
+            if verbosity == "0":
+                # don't output anything
+                pass
+            if verbosity == "1":
+                # output the date and the error message / file path for the first occurrence of each error
+                pass
+            if verbosity == "2":
+                # output the date, file path and all errors with stacktrace
+                pass
             logging.error("Exception occurred", exc_info=True)
             click.echo(click.style(str(e), fg="red", blink=True, bold=True))
 
