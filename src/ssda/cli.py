@@ -182,8 +182,11 @@ def main(
     skip_errors: bool,
     verbosity: Optional[str],
 ) -> int:
-    if verbosity:
-        logging.basicConfig(level=logging.INFO)
+    verbosity_level = (
+        2
+        if not verbosity
+        else int(verbosity)
+    )
 
     if not os.environ.get("SENTRY_DSN"):
         logging.warning(
@@ -255,7 +258,7 @@ def main(
     # execute the requested task
     for path in paths:
         try:
-            if verbosity:
+            if int(verbosity) == 2:
                 logging.info(f"{task_name.value}: {path}")
             execute_task(
                 task_name=task_name,
@@ -264,17 +267,19 @@ def main(
                 database_services=database_services,
             )
         except BaseException as e:
-            if verbosity == "0":
+            if verbosity_level == 0:
                 # don't output anything
                 pass
-            if verbosity == "1":
-                # output the date and the error message / file path for the first occurrence of each error
-                pass
-            if verbosity == "2":
-                # output the date, file path and all errors with stacktrace
-                pass
-            logging.error("Exception occurred", exc_info=True)
-            click.echo(click.style(str(e), fg="red", blink=True, bold=True))
+            if verbosity_level == 1:
+                # output the date and FITS file path.
+                msg = f"At {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} \r\nin the file: {path}"
+                logging.error(f"Exception occurred")
+                click.echo(click.style(msg, fg="red", blink=True, bold=True))
+            if verbosity_level == 2:
+                # output the date, FITS file path and all errors with stacktrace
+                msg = f"At {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} \r\nin the file: {path} \r\nError: {str(e)}"
+                logging.error("Exception occurred", exc_info=True)
+                click.echo(click.style(msg, fg="red", blink=True, bold=True))
 
             if not skip_errors:
                 ssda_connection.close()
