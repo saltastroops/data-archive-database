@@ -48,6 +48,10 @@ def execute_task(
 
         _observation_properties = observation_properties(fits_file, database_services)
     elif task_mode == TaskExecutionMode.DUMMY:
+        # If the FITS file already exist in the database, do nothing.
+        if database_services.ssda.file_exists(fits_path):
+            return
+
         _observation_properties = DummyObservationProperties(
             fits_file=DummyFitsFile(fits_path)
         )

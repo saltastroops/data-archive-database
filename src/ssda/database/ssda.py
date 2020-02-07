@@ -1,10 +1,12 @@
 from typing import cast, Any, Dict, Optional
+import os
 
 import astropy.units as u
 import psycopg2
 from psycopg2 import connect
 
 from ssda.util import types
+from ssda.util.fits import get_fits_base_dir
 
 
 class SSDADatabaseService:
@@ -181,15 +183,15 @@ class SSDADatabaseService:
         Returns
         -------
         bool
-            True or False
 
         """
+
         with self._connection.cursor() as cur:
             sql = """
             SELECT EXISTS(SELECT 1 FROM observations.artifact WHERE path=%(path)s);
             """
             cur.execute(
-                sql, dict(path=path)
+                sql, dict(path=os.path.relpath(path, get_fits_base_dir()))
             )
             return cur.fetchone()[0]
 
