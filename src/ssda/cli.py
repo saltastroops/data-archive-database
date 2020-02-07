@@ -13,7 +13,7 @@ from ssda.database.ssda import SSDADatabaseService
 from ssda.database.services import DatabaseServices
 from ssda.task import execute_task
 from ssda.util import types
-from ssda.util.fits import fits_file_paths, set_fits_base_dir
+from ssda.util.fits import fits_file_paths, set_fits_base_dir, get_night_date
 from ssda.util.types import Instrument, DateRange, TaskName, TaskExecutionMode
 
 # Log with Sentry
@@ -259,12 +259,13 @@ def main(
     ssda_connection = database_services.ssda.connection()
 
     flagged_errors = set()
+    night_date = ""
     # execute the requested task
     for path in paths:
         try:
-            night_date = re.search("[0-9]{4}/[0-9]{4}", path).group(0)
-            if verbosity_level == 2:
-                click.echo(f"Night date: {night_date}")
+            if verbosity_level >= 1 and night_date != get_night_date(path):
+                night_date = get_night_date(path)
+                click.echo(f"Mapping files for {get_night_date(path)}")
             execute_task(
                 task_name=task_name,
                 fits_path=path,
@@ -280,13 +281,13 @@ def main(
                 # Add error to already flagged errors.
                 flagged_errors.add(error_msg)
                 # output the FITS file path and the error message.
-                msg = f"In the file: {path} \r\nError: {error_msg}"
+                msg = f"Error in {path}:\n{error_msg}"
                 logging.error(msg)
-            if verbosity_level == 2 and error_msg not in flagged_errors:
+            if verbosity_level == 2:
                 # Add error to already flagged errors.
                 flagged_errors.add(error_msg)
                 # output the FITS file path and error stacktrace.
-                msg = f"In the file: {path} \r\nError: {error_msg}"
+                msg = f"Error in {path}:\n{error_msg}"
                 logging.error(msg, exc_info=True)
 
             if not skip_errors:

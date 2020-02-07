@@ -3,6 +3,7 @@ import glob
 import os
 import random
 import hashlib
+import re
 import string
 from abc import ABC, abstractmethod
 from datetime import date, timedelta
@@ -28,6 +29,29 @@ def set_fits_base_dir(path: str) -> None:
     """
     global _fits_base_dir
     _fits_base_dir = path
+
+
+def get_night_date(path: str) -> str:
+    """
+    Extract the night start date from the FITS file path.
+
+    Parameters
+    ----------
+    path : str
+        Path of the FITS file.
+
+    Returns
+    -------
+    str
+        The night date.
+
+    """
+    # search for the night date
+    date_search = re.search(r"(\d{4})/(\d{2})(\d{2})", path)
+    # format the date "yyy-mm-dd"
+    night_date = f"{date_search.group(1)}-{date_search.group(2)}-{date_search.group(3)}"
+
+    return night_date
 
 
 def get_fits_base_dir():
