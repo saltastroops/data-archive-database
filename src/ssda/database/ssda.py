@@ -1,10 +1,12 @@
 from typing import cast, Any, Dict, Optional
+import os
 
 import astropy.units as u
 import psycopg2
 from psycopg2 import connect
 
 from ssda.util import types
+from ssda.util.fits import get_fits_base_dir
 
 
 class SSDADatabaseService:
@@ -168,6 +170,30 @@ class SSDADatabaseService:
                 return cast(int, result[0])
             else:
                 return None
+
+    def file_exists(self, path: str) -> bool:
+        """
+        Check if the FITS file already exists.
+
+        Parameters
+        ----------
+        path : str
+            FITS file path.
+
+        Returns
+        -------
+        bool
+
+        """
+
+        with self._connection.cursor() as cur:
+            sql = """
+            SELECT EXISTS(SELECT 1 FROM observations.artifact WHERE path=%(path)s);
+            """
+            cur.execute(
+                sql, dict(path=os.path.relpath(path, get_fits_base_dir()))
+            )
+            return cur.fetchone()[0]
 
     def insert_artifact(self, artifact: types.Artifact) -> int:
         """
