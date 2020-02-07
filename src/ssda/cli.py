@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from datetime import date, datetime, timedelta
 from typing import Callable, Optional, Set, Tuple
 
@@ -12,7 +13,7 @@ from ssda.database.ssda import SSDADatabaseService
 from ssda.database.services import DatabaseServices
 from ssda.task import execute_task
 from ssda.util import types
-from ssda.util.fits import fits_file_paths, set_fits_base_dir
+from ssda.util.fits import fits_file_paths, set_fits_base_dir, get_night_date
 from ssda.util.types import Instrument, DateRange, TaskName, TaskExecutionMode
 
 # Log with Sentry
@@ -166,7 +167,11 @@ def validate_options(
     required=True,
     help="Task to perform.",
 )
-@click.option("--verbose", is_flag=True, help="Log more details.")
+@click.option(
+    "--verbosity",
+    type=click.Choice(["0", "1", "2"]),
+    help="Log more details."
+)
 def main(
     task: str,
     start: Optional[str],
@@ -176,10 +181,15 @@ def main(
     fits_base_dir: Optional[str],
     mode: str,
     skip_errors: bool,
-    verbose: bool,
+    verbosity: Optional[str],
 ) -> int:
-    if verbose:
-        logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.INFO)
+
+    verbosity_level = (
+        2
+        if not verbosity
+        else int(verbosity)
+    )
 
     if not os.environ.get("SENTRY_DSN"):
         logging.warning(
@@ -248,11 +258,14 @@ def main(
     )
     ssda_connection = database_services.ssda.connection()
 
+    flagged_errors = set()
+    night_date = ""
     # execute the requested task
     for path in paths:
         try:
-            if verbose:
-                logging.info(f"{task_name.value}: {path}")
+            if verbosity_level >= 1 and night_date != get_night_date(path):
+                night_date = get_night_date(path)
+                click.echo(f"Mapping files for {get_night_date(path)}")
             execute_task(
                 task_name=task_name,
                 fits_path=path,
@@ -260,8 +273,20 @@ def main(
                 database_services=database_services,
             )
         except BaseException as e:
-            logging.error("Exception occurred", exc_info=True)
-            click.echo(click.style(str(e), fg="red", blink=True, bold=True))
+            error_msg = str(e)
+            if verbosity_level == 0:
+                # don't output anything
+                pass
+            if verbosity_level == 1 and error_msg not in flagged_errors:
+                # Add error to already flagged errors.
+                flagged_errors.add(error_msg)
+                # output the FITS file path and the error message.
+                msg = f"Error in {path}:\n{error_msg}"
+                logging.error(msg)
+            if verbosity_level == 2:
+                # output the FITS file path and error stacktrace.
+                msg = f"Error in {path}:\n{error_msg}"
+                logging.error(msg, exc_info=True)
 
             if not skip_errors:
                 ssda_connection.close()
