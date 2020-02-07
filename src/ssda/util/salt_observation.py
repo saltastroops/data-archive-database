@@ -7,7 +7,7 @@ from astropy.coordinates import Angle
 
 import astropy.units as u
 from ssda.database.sdb import SaltDatabaseService
-from ssda.util.fits import FitsFile
+from ssda.util.fits import FitsFile, get_fits_base_dir
 
 from ssda.util import types
 
@@ -38,7 +38,7 @@ class SALTObservation:
             identifier=identifier,
             name=os.path.basename(path),
             plane_id=plane_id,
-            path=path,
+            path=os.path.relpath(path, get_fits_base_dir()),
             product_type=self._product_type(),
         )
 
