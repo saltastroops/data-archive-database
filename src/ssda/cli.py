@@ -284,8 +284,6 @@ def main(
                 msg = f"Error in {path}:\n{error_msg}"
                 logging.error(msg)
             if verbosity_level == 2:
-                # Add error to already flagged errors.
-                flagged_errors.add(error_msg)
                 # output the FITS file path and error stacktrace.
                 msg = f"Error in {path}:\n{error_msg}"
                 logging.error(msg, exc_info=True)

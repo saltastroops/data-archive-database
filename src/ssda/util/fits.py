@@ -27,6 +27,7 @@ def set_fits_base_dir(path: str) -> None:
         Path of the base directory.
 
     """
+
     global _fits_base_dir
     _fits_base_dir = path
 
@@ -46,9 +47,10 @@ def get_night_date(path: str) -> str:
         The night date.
 
     """
+
     # search for the night date
     date_search = re.search(r"(\d{4})/(\d{2})(\d{2})", path)
-    # format the date "yyy-mm-dd"
+    # format the date as "yyy-mm-dd"
     night_date = f"{date_search.group(1)}-{date_search.group(2)}-{date_search.group(3)}"
 
     return night_date
