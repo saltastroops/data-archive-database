@@ -12,7 +12,7 @@ def execute_task(
     task_mode: TaskExecutionMode,
     database_services: DatabaseServices,
 ) -> None:
-    # If the FITS file already exist in the database, do nothing.
+    # If the FITS file already exists in the database, do nothing.
     if database_services.ssda.file_exists(fits_path):
         return
 
