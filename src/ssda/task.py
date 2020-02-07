@@ -12,13 +12,12 @@ def execute_task(
     task_mode: TaskExecutionMode,
     database_services: DatabaseServices,
 ) -> None:
+    # If the FITS file already exist in the database, do nothing.
+    if database_services.ssda.file_exists(fits_path):
+        return
 
     # Get the observation properties.
     if task_mode == TaskExecutionMode.PRODUCTION:
-        # If the FITS file already exist in the database, do nothing.
-        if database_services.ssda.file_exists(fits_path):
-            return
-
         fits_file = StandardFitsFile(fits_path)
         proposal_id = fits_file.header_value("PROPID")
         # If the FITS file is junk, do not store its data
@@ -48,10 +47,6 @@ def execute_task(
 
         _observation_properties = observation_properties(fits_file, database_services)
     elif task_mode == TaskExecutionMode.DUMMY:
-        # If the FITS file already exist in the database, do nothing.
-        if database_services.ssda.file_exists(fits_path):
-            return
-
         _observation_properties = DummyObservationProperties(
             fits_file=DummyFitsFile(fits_path)
         )
