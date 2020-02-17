@@ -530,14 +530,14 @@ COMMENT ON COLUMN position.ra IS 'Right ascension, in degrees between 0 and 360.
 
 CREATE TABLE artifact
 (
-    artifact_id      bigserial PRIMARY KEY,
-    content_checksum varchar(32)         NOT NULL,
-    content_length   bigint              NOT NULL CHECK (content_length > 0),
-    identifier       varchar(50) UNIQUE  NOT NULL,
-    name             varchar(200)        NOT NULL,
-    path             varchar(255) UNIQUE NOT NULL,
-    plane_id         int                 NOT NULL REFERENCES Plane (plane_id) ON DELETE CASCADE,
-    product_type_id  int REFERENCES product_type (product_type_id)
+    artifact_id          bigserial PRIMARY KEY,
+    content_checksum     varchar(32)         NOT NULL,
+    content_length       bigint              NOT NULL CHECK (content_length > 0),
+    identifier           varchar(50) UNIQUE  NOT NULL,
+    name                 varchar(200)        NOT NULL,
+    paths                json                NOT NULL,
+    plane_id             int                 NOT NULL REFERENCES Plane (plane_id) ON DELETE CASCADE,
+    product_type_id      int REFERENCES product_type (product_type_id)
 );
 
 CREATE INDEX artifact_plane ON artifact (plane_id);
@@ -546,7 +546,7 @@ CREATE INDEX artifact_product ON artifact (product_type_id);
 COMMENT ON TABLE artifact IS 'A data product, such as a FITS file.';
 COMMENT ON COLUMN artifact.identifier IS 'Unique identifier string for this artifact.';
 COMMENT ON COLUMN artifact.name IS 'The name of the artifact.';
-COMMENT ON COLUMN artifact.path IS 'String indicating where the artifact is stored.';
+COMMENT ON COLUMN artifact.paths IS 'An object indicating where are the calibration level artifacts stored.';
 
 -- Insert filters
 

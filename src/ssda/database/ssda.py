@@ -1,3 +1,4 @@
+import json
 from typing import cast, Any, Dict, Optional
 import os
 
@@ -188,7 +189,7 @@ class SSDADatabaseService:
 
         with self._connection.cursor() as cur:
             sql = """
-            SELECT EXISTS(SELECT 1 FROM observations.artifact WHERE path=%(path)s);
+            SELECT EXISTS(SELECT 1 FROM observations.artifact WHERE paths ->> 'raw' =%(path)s);
             """
             cur.execute(
                 sql, dict(path=os.path.relpath(path, get_fits_base_dir()))
@@ -222,14 +223,14 @@ class SSDADatabaseService:
                                   content_length,
                                   identifier,
                                   name,
-                                  path,
+                                  paths,
                                   plane_id,
                                   product_type_id)
             VALUES (%(content_checksum)s,
                     %(content_length)s,
                     %(identifier)s,
                     %(name)s,
-                    %(path)s,
+                    %(paths)s,
                     %(plane_id)s,
                     (SELECT product_type_id FROM pt))
             RETURNING artifact_id
@@ -242,7 +243,7 @@ class SSDADatabaseService:
                     content_length=artifact.content_length.to_value(types.byte),
                     identifier=str(artifact.identifier),
                     name=artifact.name,
-                    path=artifact.path,
+                    paths=json.dumps(artifact.paths),
                     plane_id=artifact.plane_id,
                     product_type=artifact.product_type.value,
                 ),

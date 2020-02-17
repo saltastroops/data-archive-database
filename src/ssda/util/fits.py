@@ -247,11 +247,11 @@ def fits_file_dir(night: date, instrument: types.Instrument, base_dir: str) -> s
         base_dir = ""
 
     if instrument == types.Instrument.HRS:
-        return f"{base_dir}/salt/data/{year}/{month}{day}/hrs/product"
+        return f"{base_dir}/salt/data/{year}/{month}{day}/hrs/raw"
     elif instrument == types.Instrument.RSS:
-        return f"{base_dir}/salt/data/{year}/{month}{day}/rss/product"
+        return f"{base_dir}/salt/data/{year}/{month}{day}/rss/raw"
     elif instrument == types.Instrument.SALTICAM or instrument == types.Instrument.BCAM:
-        return f"{base_dir}/salt/data/{year}/{month}{day}/scam/product"
+        return f"{base_dir}/salt/data/{year}/{month}{day}/scam/raw"
     else:
         raise NotImplementedError(f"Not implemented for {instrument}")
 

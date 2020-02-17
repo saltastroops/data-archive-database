@@ -1,3 +1,6 @@
+import glob
+import json
+import re
 import uuid
 import os
 from typing import Optional, List
@@ -28,17 +31,38 @@ class SALTObservation:
         )
 
     def artifact(self, plane_id: int) -> types.Artifact:
+        # Creates a file path of the reduced calibration level mapping a raw calibration level.
+        def create_raw_path(path: str) -> str:
+            product_dir = re.sub("(raw)\/(H|P|S)\d{12}\.(fits)", f"product/*.fits", path)
 
-        path = self.fits_file.file_path()
+            product_paths = glob.glob(product_dir)
+
+            product_path = ""
+
+            '''TO DO UPDATE'''
+            # What if there are two reduced files?
+            # Currently, only the latest will be taken.
+            for product_path in product_paths:
+                if os.path.basename(path) in product_path:
+                    product_path = product_path
+
+            return product_path
+
+        raw_cal_level_path = self.fits_file.file_path()
+        reduced_cal_level_path = create_raw_path(raw_cal_level_path)
+
         identifier = uuid.uuid4()
 
         return types.Artifact(
             content_checksum=self.fits_file.checksum(),
             content_length=self.fits_file.size(),
             identifier=identifier,
-            name=os.path.basename(path),
+            name=os.path.basename(raw_cal_level_path),
             plane_id=plane_id,
-            path=os.path.relpath(path, get_fits_base_dir()),
+            paths={
+                "raw": os.path.relpath(raw_cal_level_path, get_fits_base_dir()),
+                "reduced": os.path.relpath(reduced_cal_level_path, get_fits_base_dir())
+            },
             product_type=self._product_type(),
         )
 
