@@ -6,11 +6,20 @@ SET search_path TO observations, extensions;
 
 -- ENUM TYPES
 
+-- calibration_level
+
+CREATE TYPE  calibration_level AS (
+    raw     varchar(255),
+    reduced varchar(255)
+);
+
+COMMENT ON TYPE calibration_level IS 'Calibration levels for the artifacts.';
+
 -- stokes_parameter
 
 CREATE TYPE stokes_parameter AS ENUM ('I', 'Q', 'U', 'V');
 
-COMMENT ON TYPE stokes_parameter IS 'A Stokes psarameter for describing polarization.';
+COMMENT ON TYPE stokes_parameter IS 'A Stokes parameter for describing polarization.';
 
 -- LOOKUP TABLES
 
@@ -535,7 +544,7 @@ CREATE TABLE artifact
     content_length       bigint              NOT NULL CHECK (content_length > 0),
     identifier           varchar(50) UNIQUE  NOT NULL,
     name                 varchar(200)        NOT NULL,
-    paths                json                NOT NULL,
+    paths                calibration_level   NOT NULL,
     plane_id             int                 NOT NULL REFERENCES Plane (plane_id) ON DELETE CASCADE,
     product_type_id      int REFERENCES product_type (product_type_id)
 );

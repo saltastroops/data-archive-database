@@ -1,6 +1,7 @@
 from __future__ import annotations
 import os
 import uuid
+from dataclasses import dataclass
 from datetime import date, datetime
 from enum import Enum
 from typing import Any, Dict, List, NamedTuple, Optional
@@ -43,6 +44,28 @@ class SQLQuery(NamedTuple):
     sql: str
 
 
+@dataclass
+class CalibrationLevel:
+    """
+    The calibration level data class
+
+    Parameters
+    ----------
+    raw : str
+        A raw calibration level.
+    reduced : Quantity
+        A reduced calibration level.
+
+    """
+
+    raw: str
+    reduced: str
+
+    def __init__(self, raw: str, reduced: str):
+        self.raw = raw
+        self.reduced = reduced
+
+
 class Artifact:
     """
     An artifact, usually a FITS file.
@@ -57,8 +80,8 @@ class Artifact:
         A unique identifier for the artifact.
     name : str
         Artifact name.
-    paths : List[str]
-        A list of strings indicating where are the files stored.
+    paths : CalibrationLevel
+        A data class of strings indicating artifact calibration levels.
     plane_id : int
         Database id of the plane which the artifact belongs to.
     product_type : ProductType
@@ -73,7 +96,7 @@ class Artifact:
         identifier: uuid.UUID,
         name: str,
         plane_id: int,
-        paths: Dict,
+        paths: CalibrationLevel,
         product_type: ProductType,
     ):
         if len(content_checksum) > 32:
@@ -86,10 +109,8 @@ class Artifact:
             raise ValueError("The content length must be positive.")
         if len(name) > 200:
             raise ValueError("The artifact name must have at most 200 characters.")
-        if len(paths) > 0:
-            for path in paths:
-                if len(path) > 200:
-                    raise ValueError("The path must have at most 200 characters.")
+        if paths is None:
+            raise ValueError("The artifact calibration levels must be included..")
 
         self._content_checksum = content_checksum
         self._content_length = content_length
@@ -116,7 +137,7 @@ class Artifact:
         return self._name
 
     @property
-    def paths(self) -> Dict:
+    def paths(self) -> CalibrationLevel:
         return self._paths
 
     @property

@@ -189,7 +189,7 @@ class SSDADatabaseService:
 
         with self._connection.cursor() as cur:
             sql = """
-            SELECT EXISTS(SELECT 1 FROM observations.artifact WHERE paths ->> 'raw' =%(path)s);
+            SELECT EXISTS(SELECT 1 FROM observations.artifact WHERE (paths).raw=%(path)s);
             """
             cur.execute(
                 sql, dict(path=os.path.relpath(path, get_fits_base_dir()))
@@ -243,7 +243,7 @@ class SSDADatabaseService:
                     content_length=artifact.content_length.to_value(types.byte),
                     identifier=str(artifact.identifier),
                     name=artifact.name,
-                    paths=json.dumps(artifact.paths),
+                    paths=(artifact.paths.raw, artifact.paths.reduced),
                     plane_id=artifact.plane_id,
                     product_type=artifact.product_type.value,
                 ),
