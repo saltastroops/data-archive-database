@@ -30,7 +30,7 @@ class SALTObservation:
 
     def artifact(self, plane_id: int) -> types.Artifact:
         # Creates a file path of the reduced calibration level mapping a raw calibration level.
-        def create_raw_path(path: str) -> str:
+        def create_reduced_path(path: str) -> str:
             reduced_dir = os.path.join(os.path.dirname(Path(path).parent), "product/*.fits")
 
             reduced_paths = glob.glob(reduced_dir)
@@ -44,7 +44,7 @@ class SALTObservation:
             return _reduced_path
 
         raw_path = self.fits_file.file_path()
-        reduced_path = create_raw_path(raw_path)
+        reduced_path = create_reduced_path(raw_path)
 
         identifier = uuid.uuid4()
 
