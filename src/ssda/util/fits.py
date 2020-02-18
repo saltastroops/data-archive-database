@@ -1,5 +1,4 @@
 from __future__ import annotations
-import glob
 import os
 import random
 import hashlib
@@ -7,6 +6,7 @@ import re
 import string
 from abc import ABC, abstractmethod
 from datetime import date, timedelta
+from pathlib import Path
 from typing import Iterator, Set, Optional
 from astropy.units import Quantity
 from astropy.io import fits
@@ -209,12 +209,8 @@ def fits_file_paths(
     night = nights.start
     while night < nights.end:
         for instrument in instruments:
-            for path in sorted(
-                glob.iglob(
-                    os.path.join(fits_file_dir(night, instrument, base_dir), "*.fits")
-                )
-            ):
-                yield path
+            for path in sorted(Path(fits_file_dir(night, instrument, base_dir)).glob("*.fits")):
+                yield str(path)
         night += timedelta(days=1)
 
 

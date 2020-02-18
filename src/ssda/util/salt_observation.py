@@ -1,7 +1,7 @@
 import glob
 import uuid
 import os
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Optional, List
 from datetime import timedelta, datetime, date, timezone
 from astropy.coordinates import Angle
@@ -31,16 +31,15 @@ class SALTObservation:
     def artifact(self, plane_id: int) -> types.Artifact:
         # Creates a file path of the reduced calibration level mapping a raw calibration level.
         def create_reduced_path(path: str) -> str:
-            reduced_dir = os.path.join(os.path.dirname(Path(path).parent), "product/*.fits")
+            reduced_dir = PurePath.joinpath(Path(path).parent.parent, 'product')
 
-            reduced_paths = glob.glob(reduced_dir)
+            reduced_paths = sorted(Path(reduced_dir).glob('*.fits'))
 
             _reduced_path = ""
 
             for _path in reduced_paths:
-                if _path.endswith(os.path.basename(path)):
+                if _path.name.endswith(PurePath(path).name):
                     _reduced_path = _path
-
             return _reduced_path
 
         raw_path = self.fits_file.file_path()
@@ -52,11 +51,11 @@ class SALTObservation:
             content_checksum=self.fits_file.checksum(),
             content_length=self.fits_file.size(),
             identifier=identifier,
-            name=os.path.basename(raw_path),
+            name=PurePath(raw_path).name,
             plane_id=plane_id,
-            paths=types.CalibrationLevel(
-                raw=os.path.relpath(raw_path, get_fits_base_dir()),
-                reduced=os.path.relpath(reduced_path, get_fits_base_dir())
+            paths=types.CalibrationLevelPath(
+                raw=PurePath(raw_path).relative_to(get_fits_base_dir()),
+                reduced=PurePath(reduced_path).relative_to(get_fits_base_dir())
             ),
             product_type=self._product_type(),
         )

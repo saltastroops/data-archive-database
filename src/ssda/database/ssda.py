@@ -243,7 +243,7 @@ class SSDADatabaseService:
                     content_length=artifact.content_length.to_value(types.byte),
                     identifier=str(artifact.identifier),
                     name=artifact.name,
-                    paths=(artifact.paths.raw, artifact.paths.reduced),
+                    paths=(str(artifact.paths.raw), str(artifact.paths.reduced)),
                     plane_id=artifact.plane_id,
                     product_type=artifact.product_type.value,
                 ),

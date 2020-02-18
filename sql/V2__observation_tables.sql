@@ -4,16 +4,18 @@ CREATE SCHEMA observations;
 
 SET search_path TO observations, extensions;
 
--- ENUM TYPES
+-- COMPOSITE TYPES
 
--- calibration_level
+-- calibration_level_path
 
-CREATE TYPE  calibration_level AS (
+CREATE TYPE  calibration_level_path AS (
     raw     varchar(255),
     reduced varchar(255)
 );
 
-COMMENT ON TYPE calibration_level IS 'Calibration levels for the artifacts.';
+COMMENT ON TYPE calibration_level_path IS 'Calibration level paths for the artifacts.';
+
+-- ENUM TYPES
 
 -- stokes_parameter
 
@@ -540,12 +542,12 @@ COMMENT ON COLUMN position.ra IS 'Right ascension, in degrees between 0 and 360.
 CREATE TABLE artifact
 (
     artifact_id          bigserial PRIMARY KEY,
-    content_checksum     varchar(32)         NOT NULL,
-    content_length       bigint              NOT NULL CHECK (content_length > 0),
-    identifier           varchar(50) UNIQUE  NOT NULL,
-    name                 varchar(200)        NOT NULL,
-    paths                calibration_level   NOT NULL,
-    plane_id             int                 NOT NULL REFERENCES Plane (plane_id) ON DELETE CASCADE,
+    content_checksum     varchar(32)            NOT NULL,
+    content_length       bigint                 NOT NULL CHECK (content_length > 0),
+    identifier           varchar(50) UNIQUE     NOT NULL,
+    name                 varchar(200)           NOT NULL,
+    paths                calibration_level_path NOT NULL,
+    plane_id             int                    NOT NULL REFERENCES Plane (plane_id) ON DELETE CASCADE,
     product_type_id      int REFERENCES product_type (product_type_id)
 );
 

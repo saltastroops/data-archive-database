@@ -4,6 +4,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import date, datetime
 from enum import Enum
+from pathlib import PurePath
 from typing import Any, Dict, List, NamedTuple, Optional
 
 import astropy.units as u
@@ -45,25 +46,14 @@ class SQLQuery(NamedTuple):
 
 
 @dataclass
-class CalibrationLevel:
+class CalibrationLevelPath:
     """
-    The calibration level data class
-
-    Parameters
-    ----------
-    raw : str
-        A raw calibration level.
-    reduced : Quantity
-        A reduced calibration level.
+    The calibration level path
 
     """
 
-    raw: str
-    reduced: str
-
-    def __init__(self, raw: str, reduced: str):
-        self.raw = raw
-        self.reduced = reduced
+    raw: PurePath
+    reduced: PurePath
 
 
 class Artifact:
@@ -80,8 +70,8 @@ class Artifact:
         A unique identifier for the artifact.
     name : str
         Artifact name.
-    paths : CalibrationLevel
-        A data class of strings indicating artifact calibration levels.
+    paths : CalibrationLevelPath
+        File paths for the data at different calibration levels.
     plane_id : int
         Database id of the plane which the artifact belongs to.
     product_type : ProductType
@@ -96,7 +86,7 @@ class Artifact:
         identifier: uuid.UUID,
         name: str,
         plane_id: int,
-        paths: CalibrationLevel,
+        paths: CalibrationLevelPath,
         product_type: ProductType,
     ):
         if len(content_checksum) > 32:
@@ -109,8 +99,8 @@ class Artifact:
             raise ValueError("The content length must be positive.")
         if len(name) > 200:
             raise ValueError("The artifact name must have at most 200 characters.")
-        if paths is None:
-            raise ValueError("The artifact calibration levels must be included..")
+        if paths.raw is None and paths.reduced is None:
+            raise ValueError("The artifact calibration level path must be included.")
 
         self._content_checksum = content_checksum
         self._content_length = content_length
@@ -137,7 +127,7 @@ class Artifact:
         return self._name
 
     @property
-    def paths(self) -> CalibrationLevel:
+    def paths(self) -> CalibrationLevelPath:
         return self._paths
 
     @property
