@@ -4,7 +4,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import date, datetime
 from enum import Enum
-from pathlib import PurePath
+from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional
 
 import astropy.units as u
@@ -46,14 +46,21 @@ class SQLQuery(NamedTuple):
 
 
 @dataclass
-class CalibrationLevelPath:
+class CalibrationLevelPaths:
     """
-    The calibration level path
+    Data file paths for different calibration levels.
+
+    Parameters
+    ----------
+    raw : Path
+        The path for the raw data file.
+    reduced : Path
+        The path for the reduced data file.
 
     """
 
-    raw: PurePath
-    reduced: PurePath
+    raw: Path
+    reduced: Path
 
 
 class Artifact:
@@ -70,7 +77,7 @@ class Artifact:
         A unique identifier for the artifact.
     name : str
         Artifact name.
-    paths : CalibrationLevelPath
+    paths : CalibrationLevelPaths
         File paths for the data at different calibration levels.
     plane_id : int
         Database id of the plane which the artifact belongs to.
@@ -86,7 +93,7 @@ class Artifact:
         identifier: uuid.UUID,
         name: str,
         plane_id: int,
-        paths: CalibrationLevelPath,
+        paths: CalibrationLevelPaths,
         product_type: ProductType,
     ):
         if len(content_checksum) > 32:
@@ -100,7 +107,7 @@ class Artifact:
         if len(name) > 200:
             raise ValueError("The artifact name must have at most 200 characters.")
         if paths.raw is None and paths.reduced is None:
-            raise ValueError("The artifact calibration level path must be included.")
+            raise ValueError("At least one of the paths must be non-None.")
 
         self._content_checksum = content_checksum
         self._content_length = content_length
@@ -127,7 +134,7 @@ class Artifact:
         return self._name
 
     @property
-    def paths(self) -> CalibrationLevelPath:
+    def paths(self) -> CalibrationLevelPaths:
         return self._paths
 
     @property

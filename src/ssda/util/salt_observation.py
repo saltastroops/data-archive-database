@@ -30,20 +30,20 @@ class SALTObservation:
 
     def artifact(self, plane_id: int) -> types.Artifact:
         # Creates a file path of the reduced calibration level mapping a raw calibration level.
-        def create_reduced_path(path: str) -> str:
-            reduced_dir = PurePath.joinpath(Path(path).parent.parent, 'product')
+        def create_reduced_path(path: Path) -> Path:
+            reduced_dir = Path.joinpath(path.parent.parent, 'product')
 
-            reduced_paths = sorted(Path(reduced_dir).glob('*.fits'))
+            reduced_paths = reduced_dir.glob('*.fits')
 
             _reduced_path = ""
 
             for _path in reduced_paths:
-                if _path.name.endswith(PurePath(path).name):
+                if _path.name.endswith(path.name):
                     _reduced_path = _path
             return _reduced_path
 
         raw_path = self.fits_file.file_path()
-        reduced_path = create_reduced_path(raw_path)
+        reduced_path = create_reduced_path(Path(raw_path))
 
         identifier = uuid.uuid4()
 
@@ -51,11 +51,11 @@ class SALTObservation:
             content_checksum=self.fits_file.checksum(),
             content_length=self.fits_file.size(),
             identifier=identifier,
-            name=PurePath(raw_path).name,
+            name=Path(raw_path).name,
             plane_id=plane_id,
-            paths=types.CalibrationLevelPath(
-                raw=PurePath(raw_path).relative_to(get_fits_base_dir()),
-                reduced=PurePath(reduced_path).relative_to(get_fits_base_dir())
+            paths=types.CalibrationLevelPaths(
+                raw=Path(raw_path).relative_to(get_fits_base_dir()),
+                reduced=Path(reduced_path).relative_to(get_fits_base_dir())
             ),
             product_type=self._product_type(),
         )

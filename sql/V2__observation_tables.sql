@@ -13,7 +13,7 @@ CREATE TYPE  calibration_level_path AS (
     reduced varchar(255)
 );
 
-COMMENT ON TYPE calibration_level_path IS 'Calibration level paths for the artifacts.';
+COMMENT ON TYPE calibration_level_path IS 'Paths for artifacts at different calibration levels.';
 
 -- ENUM TYPES
 
