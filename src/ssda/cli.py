@@ -1,6 +1,5 @@
 import logging
 import os
-import re
 from datetime import date, datetime, timedelta
 from typing import Callable, Optional, Set, Tuple
 
@@ -52,7 +51,6 @@ def parse_date(value: str, now: Callable[[], datetime]) -> date:
 def validate_options(
     start: Optional[date],
     end: Optional[date],
-    file: Optional[str],
     instruments: Set[Instrument],
     fits_base_dir: Optional[str],
 ) -> None:
@@ -63,10 +61,7 @@ def validate_options(
 
     * A start date but no end date is given.
     * An end date but no start date is given.
-    * Both a date range and a FITS file are specified.
-    * Neither a date range nor a FITS file are specified.
-    * Either no instrument or more than one instrument is specified along with
-      specifying a FITS file.
+    * A date range not specified.
     * The start date is later than the end date.
     * A future date is specified.
 
@@ -76,8 +71,6 @@ def validate_options(
         Start date.
     end : datetime
         End date.
-    file : str
-        FITS file (path).
     instruments : set of Instrument
         Set of instruments.
     fits_base_dir: str
@@ -95,23 +88,16 @@ def validate_options(
             "You must also use the --start option if you use the --end option."
         )
 
-    # Date ranges and the --file option are mutually exclusive
-    if start and file:
+    # The --instrument is unknown
+    if len(instruments) != len([instrument for instrument in Instrument]):
         raise click.UsageError(
-            "The --start/--end and --file options are mutually exclusive."
+            "The --instrument is unknown."
         )
 
-    # The --instrument and the --file option are mutually exclusive
-    if len(instruments) != len([instrument for instrument in Instrument]) and file:
+    # A date range must be specified
+    if not start and not end:
         raise click.UsageError(
-            "The --instrument and --file options are mutually exclusive."
-        )
-
-    # Either a date range or a FITS file must be specified
-    if not start and not end and not file:
-        raise click.UsageError(
-            "You must either specify a date range (with the --start/--end options) or "
-            "a FITS file (with the --file option)."
+            "You must either specify a date range (with the --start/--end options)."
         )
 
     # A date range requires a base directory
@@ -121,12 +107,6 @@ def validate_options(
             "--fits-base-dir option) if you are using a date range."
         )
 
-    # A base directory and a file are mutually exclusive
-    if file and fits_base_dir:
-        raise click.UsageError(
-            "The --file and --fits-base-dir options are mutually exclusive."
-        )
-
     # The start date must be earlier than the end date
     if start and end and start >= end:
         raise click.UsageError("The start date must be earlier than the end date.")
@@ -134,11 +114,6 @@ def validate_options(
 
 @click.command()
 @click.option("--end", type=str, help="Start date of the last night to consider.")
-@click.option(
-    "--file",
-    type=click.Path(exists=True, file_okay=True, dir_okay=False),
-    help="FITS file to map to the database.",
-)
 @click.option(
     "--fits-base-dir",
     type=click.Path(exists=True, file_okay=False, dir_okay=True),
@@ -177,7 +152,6 @@ def main(
     start: Optional[str],
     end: Optional[str],
     instruments: Tuple[str],
-    file: Optional[str],
     fits_base_dir: Optional[str],
     mode: str,
     skip_errors: bool,
@@ -211,7 +185,6 @@ def main(
     validate_options(
         start=start_date,
         end=end_date,
-        file=file,
         instruments=instruments_set,
         fits_base_dir=fits_base_dir,
     )
@@ -226,8 +199,6 @@ def main(
             instruments=instruments_set,
             base_dir=fits_base_dir,
         )
-    elif file:
-        paths = iter([file])
     else:
         raise click.UsageError(
             "The command line options do not allow the FITS file paths to be found."
