@@ -1,5 +1,4 @@
 from __future__ import annotations
-import glob
 import os
 import random
 import hashlib
@@ -7,6 +6,7 @@ import re
 import string
 from abc import ABC, abstractmethod
 from datetime import date, timedelta
+from pathlib import Path
 from typing import Iterator, Set, Optional
 from astropy.units import Quantity
 from astropy.io import fits
@@ -209,12 +209,8 @@ def fits_file_paths(
     night = nights.start
     while night < nights.end:
         for instrument in instruments:
-            for path in sorted(
-                glob.iglob(
-                    os.path.join(fits_file_dir(night, instrument, base_dir), "*.fits")
-                )
-            ):
-                yield path
+            for path in sorted(Path(fits_file_dir(night, instrument, base_dir)).glob("*.fits")):
+                yield str(path)
         night += timedelta(days=1)
 
 
@@ -247,11 +243,11 @@ def fits_file_dir(night: date, instrument: types.Instrument, base_dir: str) -> s
         base_dir = ""
 
     if instrument == types.Instrument.HRS:
-        return f"{base_dir}/salt/data/{year}/{month}{day}/hrs/product"
+        return f"{base_dir}/salt/data/{year}/{month}{day}/hrs/raw"
     elif instrument == types.Instrument.RSS:
-        return f"{base_dir}/salt/data/{year}/{month}{day}/rss/product"
+        return f"{base_dir}/salt/data/{year}/{month}{day}/rss/raw"
     elif instrument == types.Instrument.SALTICAM or instrument == types.Instrument.BCAM:
-        return f"{base_dir}/salt/data/{year}/{month}{day}/scam/product"
+        return f"{base_dir}/salt/data/{year}/{month}{day}/scam/raw"
     else:
         raise NotImplementedError(f"Not implemented for {instrument}")
 

@@ -1,8 +1,10 @@
 from __future__ import annotations
 import os
 import uuid
+from dataclasses import dataclass
 from datetime import date, datetime
 from enum import Enum
+from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional
 
 import astropy.units as u
@@ -43,6 +45,24 @@ class SQLQuery(NamedTuple):
     sql: str
 
 
+@dataclass
+class CalibrationLevelPaths:
+    """
+    Data file paths for different calibration levels.
+
+    Parameters
+    ----------
+    raw : Path
+        The path for the raw data file.
+    reduced : Path
+        The path for the reduced data file.
+
+    """
+
+    raw: Path
+    reduced: Path
+
+
 class Artifact:
     """
     An artifact, usually a FITS file.
@@ -57,8 +77,8 @@ class Artifact:
         A unique identifier for the artifact.
     name : str
         Artifact name.
-    path : str
-        A string indicating where the file is stored.
+    paths : CalibrationLevelPaths
+        File paths for the data at different calibration levels.
     plane_id : int
         Database id of the plane which the artifact belongs to.
     product_type : ProductType
@@ -73,7 +93,7 @@ class Artifact:
         identifier: uuid.UUID,
         name: str,
         plane_id: int,
-        path: str,
+        paths: CalibrationLevelPaths,
         product_type: ProductType,
     ):
         if len(content_checksum) > 32:
@@ -86,14 +106,14 @@ class Artifact:
             raise ValueError("The content length must be positive.")
         if len(name) > 200:
             raise ValueError("The artifact name must have at most 200 characters.")
-        if len(path) > 200:
-            raise ValueError("The path must have at most 200 characters.")
+        if paths.raw is None and paths.reduced is None:
+            raise ValueError("At least one of the paths must be non-None.")
 
         self._content_checksum = content_checksum
         self._content_length = content_length
         self._identifier = identifier
         self._name = name
-        self._path = path
+        self._paths = paths
         self._plane_id = plane_id
         self._product_type = product_type
 
@@ -114,8 +134,8 @@ class Artifact:
         return self._name
 
     @property
-    def path(self) -> str:
-        return self._path
+    def paths(self) -> CalibrationLevelPaths:
+        return self._paths
 
     @property
     def plane_id(self) -> int:
