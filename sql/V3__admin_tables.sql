@@ -209,8 +209,8 @@ DROP TABLE IF EXISTS data_request_calibration_level;
 
 CREATE TABLE data_request_calibration_level
 (
-    calibration_level_id     int REFERENCES calibration_level (calibration_level_id),
-    data_request_id          int REFERENCES data_request (data_request_id)
+    data_request_id          int REFERENCES data_request (data_request_id),
+    calibration_level_id     int REFERENCES calibration_level (calibration_level_id)
 );
 
 CREATE INDEX data_request_calibration_level_calibration_level_fk ON data_request_calibration_level (calibration_level_id);
@@ -225,8 +225,8 @@ DROP TABLE IF EXISTS data_request_calibration_type;
 
 CREATE TABLE data_request_calibration_type
 (
-    calibration_type_id      int REFERENCES calibration_type (calibration_type_id),
-    data_request_id          int REFERENCES data_request (data_request_id)
+    data_request_id          int REFERENCES data_request (data_request_id),
+    calibration_type_id      int REFERENCES calibration_type (calibration_type_id)
 );
 
 CREATE INDEX data_request_calibration_type_calibration_type_fk ON data_request_calibration_type (calibration_type_id);
