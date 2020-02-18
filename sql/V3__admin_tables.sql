@@ -36,8 +36,8 @@ CREATE TABLE calibration_level
 COMMENT ON TABLE calibration_level IS 'Calibration levels.';
 
 INSERT INTO calibration_level (calibration_level)
-VALUES ('RAW'),
-       ('REDUCED');
+VALUES ('Raw'),
+       ('Reduced');
 
 -- calibration_type
 
@@ -203,21 +203,6 @@ CREATE INDEX data_request_artifact_data_request_fk ON data_request_artifact (dat
 
 COMMENT ON TABLE data_request_artifact IS 'Join table between data requests and artifacts.';
 
--- data_request_calibration_type
-
-DROP TABLE IF EXISTS data_request_calibration_type;
-
-CREATE TABLE data_request_calibration_type
-(
-    calibration_type_id      int REFERENCES calibration_type (calibration_type_id),
-    artifact_id              int REFERENCES observations.artifact (artifact_id)
-);
-
-CREATE INDEX data_request_calibration_type_calibration_type_fk ON data_request_calibration_type (calibration_type_id);
-CREATE INDEX data_request_calibration_type_artifact_fk ON data_request_artifact (artifact_id);
-
-COMMENT ON TABLE data_request_calibration_type IS 'Join table between data requests artifacts and data_request_calibration_type.';
-
 -- data_request_calibration_level
 
 DROP TABLE IF EXISTS data_request_calibration_level;
@@ -225,13 +210,30 @@ DROP TABLE IF EXISTS data_request_calibration_level;
 CREATE TABLE data_request_calibration_level
 (
     calibration_level_id     int REFERENCES calibration_level (calibration_level_id),
-    artifact_id              int REFERENCES observations.artifact (artifact_id)
+    data_request_id          int REFERENCES data_request (data_request_id)
 );
 
 CREATE INDEX data_request_calibration_level_calibration_level_fk ON data_request_calibration_level (calibration_level_id);
-CREATE INDEX data_request_calibration_level_artifact_fk ON data_request_artifact (artifact_id);
+CREATE INDEX data_request_calibration_level_data_request_fk ON data_request_calibration_level (data_request_id);
+CREATE UNIQUE INDEX data_request_calibration_level_data_request_unique ON data_request_calibration_level (calibration_level_id, data_request_id);
 
-COMMENT ON TABLE data_request_calibration_level IS 'Join table between data requests artifacts and data_request_calibration_level.';
+COMMENT ON TABLE data_request_calibration_level IS 'Join table between data requests and the calibration levels.';
+
+-- data_request_calibration_type
+
+DROP TABLE IF EXISTS data_request_calibration_type;
+
+CREATE TABLE data_request_calibration_type
+(
+    calibration_type_id      int REFERENCES calibration_type (calibration_type_id),
+    data_request_id          int REFERENCES data_request (data_request_id)
+);
+
+CREATE INDEX data_request_calibration_type_calibration_type_fk ON data_request_calibration_type (calibration_type_id);
+CREATE INDEX data_request_calibration_type_data_request_fk ON data_request_calibration_type (data_request_id);
+CREATE UNIQUE INDEX data_request_calibration_type_data_request_unique ON data_request_calibration_type (calibration_type_id, data_request_id);
+
+COMMENT ON TABLE data_request_calibration_type IS 'Join table between data requests and the calibration types.';
 
 -- institution_user
 
