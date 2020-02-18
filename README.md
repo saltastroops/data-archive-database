@@ -228,14 +228,6 @@ You can limit insertion to a set of instruments by using the `--instrument` opti
 ssda --task insert --mode production --fits-base-dir /path/to/fits/files --start yesterday --end today --instrument RSS --instrument Salticam
 ```
 
-If you want to create an entry for a single FITS file, you can use the `--file` option.
-
-```bash
-ssda --task insert --mode production --file /path/to/fits/files --instrument RSS
-```
-
-The `--start/--end` and `--file` option are mutually exclusive.
-
 ### Updating observation data
 
 [TBD]
@@ -257,20 +249,27 @@ As explained in the previous subsections, the `ssda` command accepts the followi
 Option | Explanation
 --- | ---
 --end | End date (exclusive) of the date range to consider.
---file | Use this FITS file.
 --fits-base-dir | Base directory containing all the FITS files.
 --instrument | Instrument whose FITS files shall be considered. This option may be used multiple times unless the `--file` flag is used.
 -h / --help | Display a help message.
 --start | Start date (inclusive) of the date range to consider.
 --skip-errors | Do not terminate if there is an error.
 
-## Logging in verbose mode
+## Logging in verbosity mode
 
-If you want to log in verbose mode, you can use the `--verbose` option before the subcommand.
+You can choose the degree of verbosity with the `--verbosity` option.
 
 ```bash
-python cli.py --verbose insert --start yesterday --end yesterday
+python cli.py --verbosity 1 insert --start yesterday --end yesterday
 ```
+
+#### Verbosity options
+
+Verbosity Option | Explanation
+--- | ---
+0 | Don't output anything.
+1 | Output the FITS file path and the error message.
+2 | Output the FITS file path and error stacktrace.
 
 ## Running the application as a cron job.
 
