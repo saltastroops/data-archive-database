@@ -60,7 +60,6 @@ def validate_options(
     An exception is raised if either of the following is true.
 
     * The start date or end date is missing.
-    * A date range not specified.
     * The start date is later than the end date.
     * A future date is specified.
 
