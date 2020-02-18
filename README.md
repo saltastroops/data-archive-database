@@ -257,10 +257,10 @@ Option | Explanation
 
 ## Logging in verbosity mode
 
-If you want to log in verbosity mode, you can use the `--verbosity` option.
+You can choose the degree of verbosity with the `--verbosity` option.
 
 ```bash
-python cli.py --verbosity 0 insert --start yesterday --end yesterday
+python cli.py --verbosity 1 insert --start yesterday --end yesterday
 ```
 
 #### Verbosity options

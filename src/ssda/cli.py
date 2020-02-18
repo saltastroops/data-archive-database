@@ -59,8 +59,7 @@ def validate_options(
 
     An exception is raised if either of the following is true.
 
-    * A start date but no end date is given.
-    * An end date but no start date is given.
+    * The start date or end date is missing.
     * A date range not specified.
     * The start date is later than the end date.
     * A future date is specified.
@@ -88,16 +87,16 @@ def validate_options(
             "You must also use the --start option if you use the --end option."
         )
 
-    # The --instrument is unknown
+    # The instrument is unknown
     if len(instruments) != len([instrument for instrument in Instrument]):
         raise click.UsageError(
             "The --instrument is unknown."
         )
 
     # A date range must be specified
-    if not start and not end:
+    if not start or not end:
         raise click.UsageError(
-            "You must either specify a date range (with the --start/--end options)."
+            "You must specify a date range (with the --start/--end options)."
         )
 
     # A date range requires a base directory
