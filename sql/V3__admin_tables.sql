@@ -23,6 +23,41 @@ INSERT INTO auth_provider (auth_provider, description)
 VALUES ('SSDA', 'SAAO/SALT Data Archive'),
        ('SDB', 'SALT Science Database');
 
+-- calibration_level
+
+DROP TABLE IF EXISTS calibration_level;
+
+CREATE TABLE calibration_level
+(
+    calibration_level_id serial PRIMARY KEY,
+    calibration_level    varchar(32) UNIQUE NOT NULL
+);
+
+COMMENT ON TABLE calibration_level IS 'Calibration levels.';
+
+INSERT INTO calibration_level (calibration_level)
+VALUES ('RAW'),
+       ('REDUCED');
+
+-- calibration_type
+
+DROP TABLE IF EXISTS calibration_type;
+
+CREATE TABLE calibration_type
+(
+    calibration_type_id serial PRIMARY KEY,
+    calibration_type    varchar(32) UNIQUE NOT NULL
+);
+
+COMMENT ON TABLE calibration_type IS 'Calibration types.';
+
+INSERT INTO calibration_type (calibration_type)
+VALUES ('Arc'),
+       ('Bias'),
+       ('Flat'),
+       ('Radial velocity standard'),
+       ('Spectrophotometric standard');
+
 -- data_request_status
 
 DROP TABLE IF EXISTS data_request_status;
@@ -167,6 +202,36 @@ CREATE INDEX data_request_artifact_artifact_fk ON data_request_artifact (artifac
 CREATE INDEX data_request_artifact_data_request_fk ON data_request_artifact (data_request_id);
 
 COMMENT ON TABLE data_request_artifact IS 'Join table between data requests and artifacts.';
+
+-- data_request_calibration_type
+
+DROP TABLE IF EXISTS data_request_calibration_type;
+
+CREATE TABLE data_request_calibration_type
+(
+    calibration_type_id      int REFERENCES calibration_type (calibration_type_id),
+    artifact_id              int REFERENCES observations.artifact (artifact_id)
+);
+
+CREATE INDEX data_request_calibration_type_calibration_type_fk ON data_request_calibration_type (calibration_type_id);
+CREATE INDEX data_request_calibration_type_artifact_fk ON data_request_artifact (artifact_id);
+
+COMMENT ON TABLE data_request_calibration_type IS 'Join table between data requests artifacts and data_request_calibration_type.';
+
+-- data_request_calibration_level
+
+DROP TABLE IF EXISTS data_request_calibration_level;
+
+CREATE TABLE data_request_calibration_level
+(
+    calibration_level_id     int REFERENCES calibration_level (calibration_level_id),
+    artifact_id              int REFERENCES observations.artifact (artifact_id)
+);
+
+CREATE INDEX data_request_calibration_level_calibration_level_fk ON data_request_calibration_level (calibration_level_id);
+CREATE INDEX data_request_calibration_level_artifact_fk ON data_request_artifact (artifact_id);
+
+COMMENT ON TABLE data_request_calibration_level IS 'Join table between data requests artifacts and data_request_calibration_level.';
 
 -- institution_user
 
