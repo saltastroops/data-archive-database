@@ -44,22 +44,22 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr .pytest_cache
 
 format: ## format code with black
-	 black src/ssda tests
+    black src/ssda tests
 
 lint: ## check style with flake8
-	 flake8 src tests
+    flake8 src tests
 
 test: ## run tests quickly with the default Python
-	 pytest
+    pytest
 
 types: ## run tests quickly with the default Python
-	 mypy --strict src/ssda
+    mypy --strict src/ssda
 
 tox: ## run tests on every Python version with tox
-	 tox
+    tox
 
 coverage: ## check code coverage quickly with the default Python
-	 coverage run --source salt_finder_charts -m pytest
-	 coverage report -m
-	 coverage html
-	$(BROWSER) htmlcov/index.html
+    coverage run --source salt_finder_charts -m pytest
+    coverage report -m
+    coverage html
+    $(BROWSER) htmlcov/index.html
