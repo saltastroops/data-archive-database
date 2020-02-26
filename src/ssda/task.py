@@ -24,7 +24,7 @@ def execute_task(
         if proposal_id == "JUNK":
             return
         # Do not store engineering data.
-        if "ENG" in proposal_id:
+        if not proposal_id.startswith("2") and "ENG_" in proposal_id:
             return
         
         observation_date = fits_file.header_value("DATE-OBS")

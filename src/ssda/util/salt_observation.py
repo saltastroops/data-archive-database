@@ -196,13 +196,13 @@ class SALTObservation:
     def _product_type(self) -> types.ProductType:
         observation_object = self.header_value("OBJECT")
         product_type = self.header_value("OBSTYPE")
-        if "ARC" in observation_object.upper() or "ARC" in product_type.upper():
+        if "ARC" in product_type.upper() or ((product_type.upper() is None or product_type.upper() == "ZERO") and (observation_object.upper() == "ARC" or "_ARC" in observation_object.upper())):
             return types.ProductType.ARC
-        elif "BIAS" in observation_object.upper() or "BIAS" in product_type.upper():
+        elif "BIAS" in product_type.upper() or ((product_type.upper() is None or product_type.upper() == "ZERO") and (observation_object.upper() == "BIAS" or "_BIAS" in observation_object.upper())):
             return types.ProductType.BIAS
-        elif "FLAT" in observation_object.upper() or "FLAT" in product_type.upper():
+        elif "FLAT" in product_type.upper() or ((product_type.upper() is None or product_type.upper() == "ZERO") and (observation_object.upper() == "FLAT" or "_FLAT" in observation_object.upper())):
             return types.ProductType.FLAT
-        elif "DARK" in observation_object.upper() or "DARK" in product_type.upper():
+        elif "DARK" in product_type.upper() or ((product_type.upper() is None or product_type.upper() == "ZERO") and (observation_object.upper() == "DARK" or "_DARK" in observation_object.upper())):
             return types.ProductType.DARK
         elif product_type.upper() == "OBJECT" or product_type.upper() == "SCIENCE":
             # TODO Check if there is any other product type for SALT instruments
@@ -216,16 +216,11 @@ class SALTObservation:
         observation_object = self.header_value("OBJECT")
         product_type = self.header_value("OBSTYPE")
         if (
-            "ARC" in observation_object.upper()
-            or "ARC" in product_type.upper()
-            or "BIAS" in observation_object.upper()
-            or "BIAS" in product_type.upper()
-            or "FLAT" in observation_object.upper()
-            or "FLAT" in product_type.upper()
-            or "DARK" in observation_object.upper()
-            or "DARK" in product_type.upper()
-            or "STANDARDS" in observation_object.upper()
-            or "STANDARDS" in product_type.upper()
+            "ARC" in product_type.upper() or ((product_type.upper() is None or product_type.upper() == "ZERO") and (observation_object.upper() == "ARC" or "_ARC" in observation_object.upper()))
+            or "BIAS" in product_type.upper() or ((product_type.upper() is None or product_type.upper() == "ZERO") and (observation_object.upper() == "BIAS" or "_BIAS" in observation_object.upper()))
+            or "FLAT" in product_type.upper() or ((product_type.upper() is None or product_type.upper() == "ZERO") and (observation_object.upper() == "FLAT" or "_FLAT" in observation_object.upper()))
+            or "DARK" in product_type.upper() or ((product_type.upper() is None or product_type.upper() == "ZERO") and (observation_object.upper() == "DARK" or "_DARK" in observation_object.upper()))
+            or "STANDARDS" in product_type.upper() or ((product_type.upper() is None or product_type.upper() == "ZERO") and (observation_object.upper() == "STANDARDS" or "_STANDARDS" in observation_object.upper()))
         ):
             return types.Intent.CALIBRATION
         elif product_type.upper() == "OBJECT" or product_type.upper() == "SCIENCE":
