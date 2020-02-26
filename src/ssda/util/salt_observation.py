@@ -55,7 +55,7 @@ class SALTObservation:
             plane_id=plane_id,
             paths=types.CalibrationLevelPaths(
                 raw=Path(raw_path).relative_to(get_fits_base_dir()),
-                reduced=Path(reduced_path).relative_to(get_fits_base_dir())
+                reduced=None if not reduced_path else Path(reduced_path).relative_to(get_fits_base_dir())
             ),
             product_type=self._product_type(),
         )
