@@ -2,7 +2,9 @@ from ssda.database.services import DatabaseServices
 from ssda.instrument.bcam_observation_properties import BcamObservationProperties
 from ssda.instrument.hrs_observation_properties import HrsObservationProperties
 from ssda.instrument.rss_observation_properties import RssObservationProperties
-from ssda.instrument.salticam_observation_properties import SalticamObservationProperties
+from ssda.instrument.salticam_observation_properties import (
+    SalticamObservationProperties,
+)
 from ssda.observation import ObservationProperties
 from ssda.util import types
 from ssda.util.fits import FitsFile

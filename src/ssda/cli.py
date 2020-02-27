@@ -88,9 +88,7 @@ def validate_options(
 
     # The instrument is unknown
     if len(instruments) != len([instrument for instrument in Instrument]):
-        raise click.UsageError(
-            "The --instrument is unknown."
-        )
+        raise click.UsageError("The --instrument is unknown.")
 
     # A date range must be specified
     if not start or not end:
@@ -141,9 +139,7 @@ def validate_options(
     help="Task to perform.",
 )
 @click.option(
-    "--verbosity",
-    type=click.Choice(["0", "1", "2"]),
-    help="Log more details."
+    "--verbosity", type=click.Choice(["0", "1", "2"]), help="Log more details."
 )
 def main(
     task: str,
@@ -157,11 +153,7 @@ def main(
 ) -> int:
     logging.basicConfig(level=logging.INFO)
 
-    verbosity_level = (
-        2
-        if not verbosity
-        else int(verbosity)
-    )
+    verbosity_level = 2 if not verbosity else int(verbosity)
 
     if not os.environ.get("SENTRY_DSN"):
         logging.warning(

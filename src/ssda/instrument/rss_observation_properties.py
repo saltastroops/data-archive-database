@@ -31,9 +31,9 @@ class RssObservationProperties(ObservationProperties):
         )
 
     def is_custom_mask(self, slit_barcode):
-        if slit_barcode == "OCKERT":
-            return True
         if self.database_service.is_mos(slit_barcode=slit_barcode):
+            return True
+        if slit_barcode == "OCKERT":
             return True
         return False
 

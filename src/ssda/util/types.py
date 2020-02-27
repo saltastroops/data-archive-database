@@ -1084,6 +1084,7 @@ class ProductType(Enum):
     NOISE = "Noise"
     PREVIEW = "Preview"
     SCIENCE = "Science"
+    STANDARD = "Standard"
     THUMBNAIL = "Thumbnail"
     WEIGHT = "Weight"
 

@@ -26,10 +26,12 @@ class SaltImagingCameraObservationProperties(ObservationProperties):
         if self.salt_observation.is_calibration():
             return None
         filter_name = self.header_value("FILTER")
-        return salt_imaging_camera_spectral_properties(plane_id, filter_name, self.instrument)
+        return salt_imaging_camera_spectral_properties(
+            plane_id, filter_name, self.instrument
+        )
 
     def instrument_keyword_values(
-            self, observation_id: int
+        self, observation_id: int
     ) -> List[types.InstrumentKeywordValue]:
         return []  # TODO Needs to be implemented
 
@@ -58,7 +60,7 @@ class SaltImagingCameraObservationProperties(ObservationProperties):
         )
 
     def observation(
-            self, observation_group_id: Optional[int], proposal_id: Optional[int]
+        self, observation_group_id: Optional[int], proposal_id: Optional[int]
     ) -> types.Observation:
         raise NotImplementedError
 
@@ -83,16 +85,16 @@ class SaltImagingCameraObservationProperties(ObservationProperties):
         return self.salt_observation.proposal()
 
     def proposal_investigators(
-            self, proposal_id: int
+        self, proposal_id: int
     ) -> List[types.ProposalInvestigator]:
         return self.salt_observation.proposal_investigators(proposal_id=proposal_id)
 
     def target(self, observation_id: int) -> Optional[types.Target]:
         proposal_id = self.header_value("PROPID")
         if (
-                proposal_id.upper() == "CAL_BIAS"
-                or proposal_id.upper() == "CAL_FLAT"
-                or proposal_id.upper() == "CAL_ARC"
+            proposal_id.upper() == "CAL_BIAS"
+            or proposal_id.upper() == "CAL_FLAT"
+            or proposal_id.upper() == "CAL_ARC"
         ):
             return None
         return self.salt_observation.target(observation_id=observation_id)

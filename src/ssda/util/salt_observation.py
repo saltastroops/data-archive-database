@@ -1,7 +1,5 @@
-import glob
 import uuid
-import os
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import Optional, List
 from datetime import timedelta, datetime, date, timezone
 from astropy.coordinates import Angle
@@ -31,9 +29,9 @@ class SALTObservation:
     def artifact(self, plane_id: int) -> types.Artifact:
         # Creates a file path of the reduced calibration level mapping a raw calibration level.
         def create_reduced_path(path: Path) -> Path:
-            reduced_dir = Path.joinpath(path.parent.parent, 'product')
+            reduced_dir = Path.joinpath(path.parent.parent, "product")
 
-            reduced_paths = reduced_dir.glob('*.fits')
+            reduced_paths = reduced_dir.glob("*.fits")
 
             _reduced_path = ""
 
@@ -55,7 +53,9 @@ class SALTObservation:
             plane_id=plane_id,
             paths=types.CalibrationLevelPaths(
                 raw=Path(raw_path).relative_to(get_fits_base_dir()),
-                reduced=None if not reduced_path else Path(reduced_path).relative_to(get_fits_base_dir())
+                reduced=None
+                if not reduced_path
+                else Path(reduced_path).relative_to(get_fits_base_dir()),
             ),
             product_type=self._product_type(),
         )
@@ -101,8 +101,10 @@ class SALTObservation:
         )
 
     def observation_time(self, plane_id: int) -> types.ObservationTime:
-        start_date_time_str = self.header_value("DATE-OBS") + " " + self.header_value("TIME-OBS")
-        start_date_time = datetime.strptime(start_date_time_str, '%Y-%m-%d %H:%M:%S.%f')
+        start_date_time_str = (
+            self.header_value("DATE-OBS") + " " + self.header_value("TIME-OBS")
+        )
+        start_date_time = datetime.strptime(start_date_time_str, "%Y-%m-%d %H:%M:%S.%f")
         start_time_tz = datetime(
             year=start_date_time.year,
             month=start_date_time.month,
@@ -196,15 +198,48 @@ class SALTObservation:
     def _product_type(self) -> types.ProductType:
         observation_object = self.header_value("OBJECT")
         product_type = self.header_value("OBSTYPE")
-        if "ARC" in product_type.upper() or ((product_type.upper() is None or product_type.upper() == "ZERO") and (observation_object.upper() == "ARC" or "_ARC" in observation_object.upper())):
+
+        if "ARC" in product_type.upper() or (
+            (product_type.upper() is None or product_type.upper() == "ZERO")
+            and (
+                observation_object.upper() == "ARC"
+                or "_ARC" in observation_object.upper()
+            )
+        ):
             return types.ProductType.ARC
-        elif "BIAS" in product_type.upper() or ((product_type.upper() is None or product_type.upper() == "ZERO") and (observation_object.upper() == "BIAS" or "_BIAS" in observation_object.upper())):
+        if "BIAS" in product_type.upper() or (
+            (product_type.upper() is None or product_type.upper() == "ZERO")
+            and (
+                observation_object.upper() == "BIAS"
+                or "_BIAS" in observation_object.upper()
+            )
+        ):
             return types.ProductType.BIAS
-        elif "FLAT" in product_type.upper() or ((product_type.upper() is None or product_type.upper() == "ZERO") and (observation_object.upper() == "FLAT" or "_FLAT" in observation_object.upper())):
+        if "FLAT" in product_type.upper() or (
+            (product_type.upper() is None or product_type.upper() == "ZERO")
+            and (
+                observation_object.upper() == "FLAT"
+                or "_FLAT" in observation_object.upper()
+            )
+        ):
             return types.ProductType.FLAT
-        elif "DARK" in product_type.upper() or ((product_type.upper() is None or product_type.upper() == "ZERO") and (observation_object.upper() == "DARK" or "_DARK" in observation_object.upper())):
+        if "DARK" in product_type.upper() or (
+            (product_type.upper() is None or product_type.upper() == "ZERO")
+            and (
+                observation_object.upper() == "DARK"
+                or "_DARK" in observation_object.upper()
+            )
+        ):
             return types.ProductType.DARK
-        elif product_type.upper() == "OBJECT" or product_type.upper() == "SCIENCE":
+        if "STANDARD" in product_type.upper() or (
+            (product_type.upper() is None or product_type.upper() == "ZERO")
+            and (
+                observation_object.upper() == "STANDARD"
+                or "_STANDARD" in observation_object.upper()
+            )
+        ):
+            return types.ProductType.DARK
+        if product_type.upper() == "OBJECT" or product_type.upper() == "SCIENCE":
             # TODO Check if there is any other product type for SALT instruments
             return types.ProductType.SCIENCE
         else:
@@ -213,17 +248,17 @@ class SALTObservation:
             )
 
     def _intent(self) -> types.Intent:
-        observation_object = self.header_value("OBJECT")
-        product_type = self.header_value("OBSTYPE")
+        product_type = self._product_type()
+
         if (
-            "ARC" in product_type.upper() or ((product_type.upper() is None or product_type.upper() == "ZERO") and (observation_object.upper() == "ARC" or "_ARC" in observation_object.upper()))
-            or "BIAS" in product_type.upper() or ((product_type.upper() is None or product_type.upper() == "ZERO") and (observation_object.upper() == "BIAS" or "_BIAS" in observation_object.upper()))
-            or "FLAT" in product_type.upper() or ((product_type.upper() is None or product_type.upper() == "ZERO") and (observation_object.upper() == "FLAT" or "_FLAT" in observation_object.upper()))
-            or "DARK" in product_type.upper() or ((product_type.upper() is None or product_type.upper() == "ZERO") and (observation_object.upper() == "DARK" or "_DARK" in observation_object.upper()))
-            or "STANDARDS" in product_type.upper() or ((product_type.upper() is None or product_type.upper() == "ZERO") and (observation_object.upper() == "STANDARDS" or "_STANDARDS" in observation_object.upper()))
+            product_type == "ARC"
+            or product_type == "BIAS"
+            or product_type == "FLAT"
+            or product_type == "DARK"
+            or product_type == "STANDARDS"
         ):
             return types.Intent.CALIBRATION
-        elif product_type.upper() == "OBJECT" or product_type.upper() == "SCIENCE":
+        elif product_type == "OBJECT" or product_type == "SCIENCE":
             return types.Intent.SCIENCE
         raise ValueError(f"Intent for file {self.file_path()} could not be determined")
 

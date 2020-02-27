@@ -191,9 +191,7 @@ class SSDADatabaseService:
             sql = """
             SELECT EXISTS(SELECT 1 FROM observations.artifact WHERE (paths).raw=%(path)s);
             """
-            cur.execute(
-                sql, dict(path=os.path.relpath(path, get_fits_base_dir()))
-            )
+            cur.execute(sql, dict(path=os.path.relpath(path, get_fits_base_dir())))
             return cur.fetchone()[0]
 
     def insert_artifact(self, artifact: types.Artifact) -> int:
