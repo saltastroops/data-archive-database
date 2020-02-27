@@ -248,17 +248,17 @@ class SALTObservation:
             )
 
     def _intent(self) -> types.Intent:
-        product_type = self._product_type().value.upper()
+        product_type = self._product_type()
 
         if (
-            product_type == "ARC"
-            or product_type == "BIAS"
-            or product_type == "FLAT"
-            or product_type == "DARK"
-            or product_type == "STANDARDS"
+            product_type == types.ProductType.ARC
+            or product_type == types.ProductType.BIAS
+            or product_type == types.ProductType.FLAT
+            or product_type == types.ProductType.DARK
+            or product_type == types.ProductType.STANDARD
         ):
             return types.Intent.CALIBRATION
-        elif product_type == "OBJECT" or product_type == "SCIENCE":
+        elif product_type == "SCIENCE":
             return types.Intent.SCIENCE
         raise ValueError(f"Intent for file {self.file_path()} could not be determined")
 
