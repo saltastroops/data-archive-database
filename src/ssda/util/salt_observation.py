@@ -171,20 +171,20 @@ class SALTObservation:
         ]
 
     def target(self, observation_id: int) -> Optional[types.Target]:
-        proposal_id = self.header_value("PROPID")
-        object_name = self.header_value("OBJECT")
+        proposal_id = self.header_value("PROPID").upper()
+        object_name = self.header_value("OBJECT").upper()
         if (
-            "ARC" in object_name.upper()
-            or "BIAS" in object_name.upper()
-            or "FLAT" in object_name.upper()
+            "ARC" in object_name
+            or "BIAS" in object_name
+            or "FLAT" in object_name
             or not self.block_visit_id
         ):
             return None
         is_standard = False
         if (
-            proposal_id.upper() == "CAL_SPST"
-            or proposal_id.upper() == "CAL_LICKST"
-            or proposal_id.upper() == "CAL_RVST"
+            proposal_id == "CAL_SPST"
+            or proposal_id == "CAL_LICKST"
+            or proposal_id == "CAL_RVST"
         ):
             is_standard = True
 
@@ -196,50 +196,51 @@ class SALTObservation:
         )
 
     def _product_type(self) -> types.ProductType:
-        observation_object = self.header_value("OBJECT")
-        product_type = self.header_value("OBSTYPE")
+        observation_object = self.header_value("OBJECT").upper()
+        product_type = self.header_value("OBSTYPE").upper()
+        product_type_unknown = not product_type or product_type == "ZERO"
 
-        if "ARC" in product_type.upper() or (
-            (not product_type.upper() or product_type.upper() == "ZERO")
+        if "ARC" in product_type or (
+            product_type_unknown
             and (
-                observation_object.upper() == "ARC"
-                or "_ARC" in observation_object.upper()
+                observation_object == "ARC"
+                or "_ARC" in observation_object
             )
         ):
             return types.ProductType.ARC
-        if "BIAS" in product_type.upper() or (
-            (not product_type.upper() or product_type.upper() == "ZERO")
+        if "BIAS" in product_type or (
+            product_type_unknown
             and (
-                observation_object.upper() == "BIAS"
-                or "_BIAS" in observation_object.upper()
+                observation_object == "BIAS"
+                or "_BIAS" in observation_object
             )
         ):
             return types.ProductType.BIAS
-        if "FLAT" in product_type.upper() or (
-            (not product_type.upper() or product_type.upper() == "ZERO")
+        if "FLAT" in product_type or (
+            product_type_unknown
             and (
-                observation_object.upper() == "FLAT"
-                or "_FLAT" in observation_object.upper()
+                observation_object == "FLAT"
+                or "_FLAT" in observation_object
             )
         ):
             return types.ProductType.FLAT
-        if "DARK" in product_type.upper() or (
-            (not product_type.upper() or product_type.upper() == "ZERO")
+        if "DARK" in product_type or (
+            product_type_unknown
             and (
-                observation_object.upper() == "DARK"
-                or "_DARK" in observation_object.upper()
+                observation_object == "DARK"
+                or "_DARK" in observation_object
             )
         ):
             return types.ProductType.DARK
-        if "STANDARD" in product_type.upper() or (
-            (not product_type.upper() or product_type.upper() == "ZERO")
+        if "STANDARD" in product_type or (
+            product_type_unknown
             and (
-                observation_object.upper() == "STANDARD"
-                or "_STANDARD" in observation_object.upper()
+                observation_object == "STANDARD"
+                or "_STANDARD" in observation_object
             )
         ):
             return types.ProductType.DARK
-        if product_type.upper() == "OBJECT" or product_type.upper() == "SCIENCE":
+        if product_type == "OBJECT" or product_type == "SCIENCE":
             # TODO Check if there is any other product type for SALT instruments
             return types.ProductType.SCIENCE
         else:
