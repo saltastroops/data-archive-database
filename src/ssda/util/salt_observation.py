@@ -200,7 +200,7 @@ class SALTObservation:
         product_type = self.header_value("OBSTYPE")
 
         if "ARC" in product_type.upper() or (
-            (product_type.upper() is None or product_type.upper() == "ZERO")
+            (not product_type.upper() or product_type.upper() == "ZERO")
             and (
                 observation_object.upper() == "ARC"
                 or "_ARC" in observation_object.upper()
@@ -208,7 +208,7 @@ class SALTObservation:
         ):
             return types.ProductType.ARC
         if "BIAS" in product_type.upper() or (
-            (product_type.upper() is None or product_type.upper() == "ZERO")
+            (not product_type.upper() or product_type.upper() == "ZERO")
             and (
                 observation_object.upper() == "BIAS"
                 or "_BIAS" in observation_object.upper()
@@ -216,7 +216,7 @@ class SALTObservation:
         ):
             return types.ProductType.BIAS
         if "FLAT" in product_type.upper() or (
-            (product_type.upper() is None or product_type.upper() == "ZERO")
+            (not product_type.upper() or product_type.upper() == "ZERO")
             and (
                 observation_object.upper() == "FLAT"
                 or "_FLAT" in observation_object.upper()
@@ -224,7 +224,7 @@ class SALTObservation:
         ):
             return types.ProductType.FLAT
         if "DARK" in product_type.upper() or (
-            (product_type.upper() is None or product_type.upper() == "ZERO")
+            (not product_type.upper() or product_type.upper() == "ZERO")
             and (
                 observation_object.upper() == "DARK"
                 or "_DARK" in observation_object.upper()
@@ -232,7 +232,7 @@ class SALTObservation:
         ):
             return types.ProductType.DARK
         if "STANDARD" in product_type.upper() or (
-            (product_type.upper() is None or product_type.upper() == "ZERO")
+            (not product_type.upper() or product_type.upper() == "ZERO")
             and (
                 observation_object.upper() == "STANDARD"
                 or "_STANDARD" in observation_object.upper()
