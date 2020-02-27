@@ -258,7 +258,7 @@ class SALTObservation:
             or product_type == types.ProductType.STANDARD
         ):
             return types.Intent.CALIBRATION
-        elif product_type == "SCIENCE":
+        elif product_type == types.ProductType.SCIENCE:
             return types.Intent.SCIENCE
         raise ValueError(f"Intent for file {self.file_path()} could not be determined")
 
