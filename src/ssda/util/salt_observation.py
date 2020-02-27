@@ -248,7 +248,7 @@ class SALTObservation:
             )
 
     def _intent(self) -> types.Intent:
-        product_type = self._product_type()
+        product_type = self._product_type().value.upper()
 
         if (
             product_type == "ARC"
