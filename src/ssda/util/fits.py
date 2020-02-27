@@ -209,7 +209,9 @@ def fits_file_paths(
     night = nights.start
     while night < nights.end:
         for instrument in instruments:
-            for path in sorted(Path(fits_file_dir(night, instrument, base_dir)).glob("*.fits")):
+            for path in sorted(
+                Path(fits_file_dir(night, instrument, base_dir)).glob("*.fits")
+            ):
                 yield str(path)
         night += timedelta(days=1)
 
@@ -253,7 +255,6 @@ def fits_file_dir(night: date, instrument: types.Instrument, base_dir: str) -> s
 
 
 class StandardFitsFile(FitsFile):
-
     def __init__(self, path: str) -> None:
         hdulist = fits.open(path)
         self.path = path
@@ -273,7 +274,9 @@ class StandardFitsFile(FitsFile):
         elif instrument_value.upper() == "BCAM":
             return types.Instrument.BCAM
         else:
-            raise ValueError(f"Unknown instrument in file {self.path}: {instrument_value}")
+            raise ValueError(
+                f"Unknown instrument in file {self.path}: {instrument_value}"
+            )
 
     def telescope(self) -> types.Telescope:
 
@@ -281,7 +284,9 @@ class StandardFitsFile(FitsFile):
         if telescope_value == "SALT":
             return types.Telescope.SALT
         else:
-            raise ValueError(f"Unknown telescope in file {self.path}: {telescope_value}")
+            raise ValueError(
+                f"Unknown telescope in file {self.path}: {telescope_value}"
+            )
 
     def file_path(self) -> str:
         return self.path

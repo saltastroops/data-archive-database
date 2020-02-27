@@ -20,10 +20,13 @@ def execute_task(
     if task_mode == TaskExecutionMode.PRODUCTION:
         fits_file = StandardFitsFile(fits_path)
         proposal_id = fits_file.header_value("PROPID")
-        # If the FITS file is junk, do not store its data
+        # If the FITS file is junk, do not store its data.
         if proposal_id == "JUNK":
             return
-        
+        # Do not store engineering data.
+        if not proposal_id.startswith("2") and "ENG_" in proposal_id:
+            return
+
         observation_date = fits_file.header_value("DATE-OBS")
         # If the FITS header does not include the observation date, do not store its data.
         if not observation_date:

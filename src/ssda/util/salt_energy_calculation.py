@@ -260,7 +260,9 @@ def rss_resolution(
     wavelength_resolution_element = rss_resolution_element(
         grating_frequency, grating_angle, slit_width
     )
-    return (wavelength / wavelength_resolution_element).to_value(u.dimensionless_unscaled)
+    return (wavelength / wavelength_resolution_element).to_value(
+        u.dimensionless_unscaled
+    )
 
 
 def rss_slit_width_from_barcode(barcode: str) -> Quantity:
@@ -475,13 +477,17 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
             return None
 
         if etalon_state.lower() == "s3 - etalon 2":
-            resolution = types.RSSFabryPerotMode.parse_fp_mode(header_value("ET2MODE").upper())  # TODO CHECK with encarni which one use ET2/1
+            resolution = types.RSSFabryPerotMode.parse_fp_mode(
+                header_value("ET2MODE").upper()
+            )  # TODO CHECK with encarni which one use ET2/1
             _lambda = float(header_value("ET2WAVE0")) * u.angstrom
         elif (
             etalon_state.lower() == "s2 - etalon 1"
             or etalon_state.lower() == "s4 - etalon 1 & 2"
         ):
-            resolution = types.RSSFabryPerotMode.parse_fp_mode(header_value("ET1MODE").upper())  # TODO CHECK with encarni which one use ET2/1
+            resolution = types.RSSFabryPerotMode.parse_fp_mode(
+                header_value("ET1MODE").upper()
+            )  # TODO CHECK with encarni which one use ET2/1
             _lambda = (
                 float(header_value("ET1WAVE0")) * u.angstrom
             )  # Todo what are this units?
@@ -500,7 +506,9 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
             max_wavelength=wavelength_interval[1],
             min_wavelength=wavelength_interval[0],
             plane_id=plane_id,
-            resolving_power=(_lambda / wavelength_interval_length).to_value(u.dimensionless_unscaled),
+            resolving_power=(_lambda / wavelength_interval_length).to_value(
+                u.dimensionless_unscaled
+            ),
             sample_size=wavelength_interval_length,
         )
 

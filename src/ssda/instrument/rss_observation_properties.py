@@ -24,11 +24,18 @@ class RssObservationProperties(ObservationProperties):
             return None
         slit_barcode = self.header_value("MASKID")
 
-        if self.database_service.is_mos(slit_barcode=slit_barcode):
+        if self.is_custom_mask(slit_barcode):
             return None
         return rss_spectral_properties(
             header_value=self.header_value, plane_id=plane_id
         )
+
+    def is_custom_mask(self, slit_barcode):
+        if self.database_service.is_mos(slit_barcode=slit_barcode):
+            return True
+        if slit_barcode == "OCKERT":
+            return True
+        return False
 
     def instrument_keyword_values(
         self, observation_id: int

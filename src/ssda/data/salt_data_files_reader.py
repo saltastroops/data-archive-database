@@ -10,9 +10,9 @@ dirname = os.path.dirname(__file__)
 
 def _parse_filter_name(_filter: str, instrument: types.Instrument) -> str:
     if instrument.value == "Salticam" or instrument.value == "BCAM":
-        if _filter == "Halpha-S1":
+        if _filter == "Halpha-S1" or _filter == "H-alpha":
             return "H-alpha"
-        if _filter == "SDSSr-S1":
+        if _filter == "SDSSr-S1" or _filter == "SDSS-r":
             return "SDSS_rp"
         if _filter == "SDSSi-S1":
             return "SDSS_ip"
@@ -28,6 +28,12 @@ def _parse_filter_name(_filter: str, instrument: types.Instrument) -> str:
             return "Johnson_B"
         if _filter == "R-S1":
             return "Cousins_R"
+        if _filter == "380-40":
+            return "380nm_40nm_FWHM"
+        if _filter == "Su-S1":
+            return "Stroemgren_u"
+        if _filter == "V-S1":
+            return "Johnson_v"
     return _filter
 
 
@@ -86,7 +92,10 @@ def fp_fwhm(rss_fp_mode: types.RSSFabryPerotMode) -> List[Tuple[Quantity, Quanti
                     "MR",
                     "HR",
                 ]:
-                    if types.RSSFabryPerotMode.parse_fp_mode(line.split()[0]) == rss_fp_mode:  # Resolution
+                    if (
+                        types.RSSFabryPerotMode.parse_fp_mode(line.split()[0])
+                        == rss_fp_mode
+                    ):  # Resolution
                         fp_modes.append(
                             (
                                 float(line.split()[2]) * u.nm,  # wavelength,

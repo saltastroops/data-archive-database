@@ -1,4 +1,6 @@
-from ssda.instrument.salt_imaging_camera_observation_properties import SaltImagingCameraObservationProperties
+from ssda.instrument.salt_imaging_camera_observation_properties import (
+    SaltImagingCameraObservationProperties,
+)
 from ssda.util import types
 from typing import Optional
 

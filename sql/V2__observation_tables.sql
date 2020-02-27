@@ -196,7 +196,8 @@ INSERT INTO polarization_mode (name, stokes_parameters)
 VALUES ('Linear', '{Q, U}'),
        ('Linear Hi', '{Q, U}'),
        ('Circular', '{V}'),
-       ('All Stokes', '{Q, U, V}');
+       ('All Stokes', '{Q, U, V}'),
+       ('Other', '{}');
 
 -- product_type
 
