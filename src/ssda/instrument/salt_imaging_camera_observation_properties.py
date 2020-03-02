@@ -90,11 +90,4 @@ class SaltImagingCameraObservationProperties(ObservationProperties):
         return self.salt_observation.proposal_investigators(proposal_id=proposal_id)
 
     def target(self, observation_id: int) -> Optional[types.Target]:
-        proposal_id = self.header_value("PROPID")
-        if (
-            proposal_id.upper() == "CAL_BIAS"
-            or proposal_id.upper() == "CAL_FLAT"
-            or proposal_id.upper() == "CAL_ARC"
-        ):
-            return None
         return self.salt_observation.target(observation_id=observation_id)

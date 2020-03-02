@@ -173,10 +173,14 @@ class SALTObservation:
     def target(self, observation_id: int) -> Optional[types.Target]:
         proposal_id = self.header_value("PROPID").upper()
         object_name = self.header_value("OBJECT").upper()
+
         if (
-            "ARC" in object_name
-            or "BIAS" in object_name
-            or "FLAT" in object_name
+            ("ARC" == object_name or "_ARC" in object_name)
+            or ("BIAS" == object_name or "_BIAS" in object_name)
+            or ("FLAT" == object_name or "_FLAT" in object_name)
+            or "CAL_ARC" == proposal_id
+            or "CAL_BIAS" == proposal_id
+            or "CAL_FLAT" == proposal_id
             or not self.block_visit_id
         ):
             return None
@@ -202,42 +206,27 @@ class SALTObservation:
 
         if "ARC" in product_type or (
             product_type_unknown
-            and (
-                observation_object == "ARC"
-                or "_ARC" in observation_object
-            )
+            and (observation_object == "ARC" or "_ARC" in observation_object)
         ):
             return types.ProductType.ARC
         if "BIAS" in product_type or (
             product_type_unknown
-            and (
-                observation_object == "BIAS"
-                or "_BIAS" in observation_object
-            )
+            and (observation_object == "BIAS" or "_BIAS" in observation_object)
         ):
             return types.ProductType.BIAS
         if "FLAT" in product_type or (
             product_type_unknown
-            and (
-                observation_object == "FLAT"
-                or "_FLAT" in observation_object
-            )
+            and (observation_object == "FLAT" or "_FLAT" in observation_object)
         ):
             return types.ProductType.FLAT
         if "DARK" in product_type or (
             product_type_unknown
-            and (
-                observation_object == "DARK"
-                or "_DARK" in observation_object
-            )
+            and (observation_object == "DARK" or "_DARK" in observation_object)
         ):
             return types.ProductType.DARK
         if "STANDARD" in product_type or (
             product_type_unknown
-            and (
-                observation_object == "STANDARD"
-                or "_STANDARD" in observation_object
-            )
+            and (observation_object == "STANDARD" or "_STANDARD" in observation_object)
         ):
             return types.ProductType.DARK
         if product_type == "OBJECT" or product_type == "SCIENCE":
