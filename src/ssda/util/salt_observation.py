@@ -258,7 +258,7 @@ class SALTObservation:
 
     def ignore_observation(self) -> bool:
         proposal_id = self.fits_file.header_value("PROPID")
-        # If the FITS file is junk or it is unknown, do not store its data.
+        # If the FITS file is junk or it is unknown, do not store the observation.
         if proposal_id == "JUNK" or proposal_id == "UNKNOWN":
             return True
         # Do not store engineering data.
@@ -279,11 +279,7 @@ class SALTObservation:
         )
 
         # Observations not belonging to a proposal are accepted by default.
-        status = (
-            Status.ACCEPTED
-            if not block_visit_id
-            else self.database_service.find_observation_status(block_visit_id)
-        )
+        status = self.database_service.find_observation_status(block_visit_id)
 
         # Do not store deleted or in a queue observation data.
         if status == Status.DELETED or status == Status.INQUEUE:
