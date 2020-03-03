@@ -33,7 +33,7 @@ def _parse_filter_name(_filter: str, instrument: types.Instrument) -> str:
         if _filter == "Su-S1":
             return "Stroemgren_u"
         if _filter == "V-S1":
-            return "Johnson_v"
+            return "Johnson_V"
     return _filter
 
 
