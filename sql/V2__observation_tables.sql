@@ -199,29 +199,58 @@ VALUES ('Linear', '{Q, U}'),
        ('All Stokes', '{Q, U, V}'),
        ('Other', '{}');
 
+-- product_category
+
+CREATE TABLE product_category
+(
+    product_category_id serial PRIMARY KEY,
+    product_category    varchar(30) UNIQUE NOT NULL
+);
+
+COMMENT ON TABLE product_category IS 'Category of product';
+
+INSERT INTO product_category (product_category_id, product_category)
+VALUES (1, 'Arc'),
+       (2, 'Bias'),
+       (3, 'Dark'),
+       (4, 'Flat'),
+       (5, 'Science'),
+       (6, 'Standard');
+
 -- product_type
 
 CREATE TABLE product_type
 (
     product_type_id serial PRIMARY KEY,
-    product_type    varchar(30) UNIQUE NOT NULL
+    product_type           varchar(50) UNIQUE NOT NULL,
+    product_category_id    int NOT NULL REFERENCES product_category (product_category_id)
 );
 
-COMMENT ON TABLE product_type IS 'Type of product, as listed in http://www.opencadc.org/caom2/ProductType/';
+CREATE UNIQUE INDEX product_type_product_category_unique ON product_type (product_type, product_category_id);
 
-INSERT INTO product_type (product_type)
-VALUES ('Arc'),
-       ('Auxiliary'),
-       ('Bias'),
-       ('Calibration'),
-       ('Dark'),
-       ('Flat'),
-       ('Info'),
-       ('Noise'),
-       ('Preview'),
-       ('Science'),
-       ('Thumbnail'),
-       ('Weight');
+CREATE INDEX product_type_product_category_id ON product_type (product_category_id);
+
+COMMENT ON TABLE product_type IS 'Type of product';
+
+INSERT INTO product_type (product_category_id, product_type)
+VALUES  (1, 'Arc - Calsys'),
+        (1, 'Arc - Internal'),
+        (2, 'Bias'),
+        (3, 'Dark'),
+        (4, 'Imaging Flat - Lamp'),
+        (4, 'Imaging Flat - Twilight'),
+        (4, 'Spectroscopic Flat - Lamp'),
+        (4, 'Spectroscopic Flat - Twilight'),
+        (5, 'Science'),
+        (6, 'Standard - Circular Polarimetric'),
+        (6, 'Standard - Lick'),
+        (6, 'Standard - Linear Polarimetric'),
+        (6, 'Standard - Photometric'),
+        (6, 'Standard - Radial Velocity'),
+        (6, 'Standard - Smooth Spectrum'),
+        (6, 'Standard - Spectrophotometric'),
+        (6, 'Standard - Spectroscopic'),
+        (6, 'Standard - Unpolarised');
 
 -- rss_fabry_perot_mode
 
