@@ -207,7 +207,7 @@ CREATE TABLE product_category
     product_category    varchar(30) UNIQUE NOT NULL
 );
 
-COMMENT ON TABLE product_category IS 'Category of product';
+COMMENT ON TABLE product_category IS 'A broad product category, such as arc or standard.';
 
 INSERT INTO product_category (product_category_id, product_category)
 VALUES (1, 'Arc'),
@@ -226,11 +226,9 @@ CREATE TABLE product_type
     product_category_id    int NOT NULL REFERENCES product_category (product_category_id)
 );
 
-CREATE UNIQUE INDEX product_type_product_category_unique ON product_type (product_type, product_category_id);
-
 CREATE INDEX product_type_product_category_id ON product_type (product_category_id);
 
-COMMENT ON TABLE product_type IS 'Type of product';
+COMMENT ON TABLE product_type IS 'A detailed product types, such as calsys arc or radial velocity standard.';
 
 INSERT INTO product_type (product_category_id, product_type)
 VALUES  (1, 'Arc - Calsys'),
