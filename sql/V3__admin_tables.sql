@@ -55,8 +55,8 @@ INSERT INTO calibration_type (calibration_type)
 VALUES ('Arc'),
        ('Bias'),
        ('Flat'),
-       ('Radial Velocity Standard'),
-       ('Spectrophotometric Standard');
+       ('Radial velocity standard'),
+       ('Spectrophotometric standard');
 
 -- data_request_status
 
