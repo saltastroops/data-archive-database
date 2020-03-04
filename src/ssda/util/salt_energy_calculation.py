@@ -494,23 +494,26 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
         else:
             raise ValueError("Unknown etalon state")
 
-        wavelength_interval_length = fabry_perot_fwhm(
-            rss_fp_mode=resolution, wavelength=_lambda
-        )
-        wavelength_interval = (
-            _lambda - wavelength_interval_length / 2,
-            _lambda + wavelength_interval_length / 2,
-        )
-        return types.Energy(
-            dimension=1,
-            max_wavelength=wavelength_interval[1],
-            min_wavelength=wavelength_interval[0],
-            plane_id=plane_id,
-            resolving_power=(_lambda / wavelength_interval_length).to_value(
-                u.dimensionless_unscaled
-            ),
-            sample_size=wavelength_interval_length,
-        )
+        try:
+            wavelength_interval_length = fabry_perot_fwhm(
+                rss_fp_mode=resolution, wavelength=_lambda
+            )
+            wavelength_interval = (
+                _lambda - wavelength_interval_length / 2,
+                _lambda + wavelength_interval_length / 2,
+            )
+            return types.Energy(
+                dimension=1,
+                max_wavelength=wavelength_interval[1],
+                min_wavelength=wavelength_interval[0],
+                plane_id=plane_id,
+                resolving_power=(_lambda / wavelength_interval_length).to_value(
+                    u.dimensionless_unscaled
+                ),
+                sample_size=wavelength_interval_length,
+            )
+        except ValueError:
+            return None
 
     raise ValueError(f"Unsupported observation mode: {observation_mode}")
 
