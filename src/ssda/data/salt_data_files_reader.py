@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import List, Tuple
 
 from astropy.units import Quantity
@@ -33,12 +34,12 @@ def _parse_filter_name(_filter: str, instrument: types.Instrument) -> str:
         if _filter == "Su-S1":
             return "Stroemgren_u"
         if _filter == "V-S1":
-            return "Johnson_v"
+            return "Johnson_V"
     return _filter
 
 
 def wavelengths_and_transmissions(
-    filter_name: str, instrument: types.Instrument
+  filter_name: str, instrument: types.Instrument
 ) -> List[Tuple[Quantity, float]]:
     wavelengths = []
     filt_name = _parse_filter_name(filter_name, instrument)
@@ -48,15 +49,22 @@ def wavelengths_and_transmissions(
         )
     instrument_path_name = instrument.value.lower()
     if instrument_path_name == "bcam":
-        instrument_path_name = "salticam"  # No filters for bcam it uses salticam's
-    filename = os.path.join(dirname, f"{instrument_path_name}/{filt_name}.txt")
+        instrument_path_name = "salticam"  # No filters for bcam it uses salticam'
+    if instrument_path_name == "rss":
+        file = Path(f"{dirname}/{instrument_path_name}/{filt_name}.txt")
+        # Rss may use a Salticam filter.
+        # If a Salticam filter is used, read the filter from the Salticam filters.
+        if not file.exists():
+            instrument_path_name = "salticam"
+
+    filename = Path(f"{dirname}/{instrument_path_name}/{filt_name}.txt")
     with open(filename, "r") as file:
         for line in file.readlines():
 
             if (
-                len(line.split()) == 2
-                and not line.startswith("!")
-                and not line.startswith("#")
+              len(line.split()) == 2
+              and not line.startswith("!")
+              and not line.startswith("#")
             ):
                 wavelengths.append(
                     (float(line.split()[0]) * u.angstrom, float(line.split()[1]))
@@ -93,8 +101,8 @@ def fp_fwhm(rss_fp_mode: types.RSSFabryPerotMode) -> List[Tuple[Quantity, Quanti
                     "HR",
                 ]:
                     if (
-                        types.RSSFabryPerotMode.parse_fp_mode(line.split()[0])
-                        == rss_fp_mode
+                      types.RSSFabryPerotMode.parse_fp_mode(line.split()[0])
+                      == rss_fp_mode
                     ):  # Resolution
                         fp_modes.append(
                             (
