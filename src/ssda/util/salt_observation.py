@@ -229,7 +229,7 @@ class SALTObservation:
             product_type_unknown
             and (observation_object == "STANDARD" or "_STANDARD" in observation_object)
         ):
-            return types.ProductType.DARK
+            return types.ProductType.STANDARD
         if product_type == "OBJECT" or product_type == "SCIENCE":
             # TODO Check if there is any other product type for SALT instruments
             return types.ProductType.SCIENCE
