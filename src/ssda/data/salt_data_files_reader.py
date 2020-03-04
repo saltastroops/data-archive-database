@@ -39,7 +39,7 @@ def _parse_filter_name(_filter: str, instrument: types.Instrument) -> str:
 
 
 def wavelengths_and_transmissions(
-  filter_name: str, instrument: types.Instrument
+    filter_name: str, instrument: types.Instrument
 ) -> List[Tuple[Quantity, float]]:
     wavelengths = []
     filt_name = _parse_filter_name(filter_name, instrument)
@@ -62,9 +62,9 @@ def wavelengths_and_transmissions(
         for line in file.readlines():
 
             if (
-              len(line.split()) == 2
-              and not line.startswith("!")
-              and not line.startswith("#")
+                len(line.split()) == 2
+                and not line.startswith("!")
+                and not line.startswith("#")
             ):
                 wavelengths.append(
                     (float(line.split()[0]) * u.angstrom, float(line.split()[1]))
@@ -101,8 +101,8 @@ def fp_fwhm(rss_fp_mode: types.RSSFabryPerotMode) -> List[Tuple[Quantity, Quanti
                     "HR",
                 ]:
                     if (
-                      types.RSSFabryPerotMode.parse_fp_mode(line.split()[0])
-                      == rss_fp_mode
+                        types.RSSFabryPerotMode.parse_fp_mode(line.split()[0])
+                        == rss_fp_mode
                     ):  # Resolution
                         fp_modes.append(
                             (

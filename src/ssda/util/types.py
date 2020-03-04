@@ -1065,6 +1065,23 @@ class Position:
         return self._ra
 
 
+class ProductCategory(Enum):
+    """
+    Enumeration of the available product category.
+
+    The enum values must be the same as the values of the product_category column in the
+    product_category table.
+
+    """
+
+    ARC = "Arc"
+    BIAS = "Bias"
+    DARK = "Dark"
+    FLAT = "Flat"
+    SCIENCE = "Science"
+    STANDARD = "Standard"
+
+
 class ProductType(Enum):
     """
     Enumeration of the available product types.
@@ -1074,19 +1091,24 @@ class ProductType(Enum):
 
     """
 
-    ARC = "Arc"
-    AUXILIARY = "Auxiliary"
+    ARC_CALSYS = "Arc - Calsys"
+    ARC_INTERNAL = "Arc - Internal"
     BIAS = "Bias"
-    CALIBRATION = "Calibration"
     DARK = "Dark"
-    FLAT = "Flat"
-    INFO = "Info"
-    NOISE = "Noise"
-    PREVIEW = "Preview"
+    IMAGING_FLAT_LAMP = "Imaging Flat - Lamp"
+    IMAGING_FLAT_TWILIGHT = "Imaging Flat - Twilight"
+    SPECTROSCOPIC_FLAT_LAMP = "Spectroscopic Flat - Lamp"
+    SPECTROSCOPIC_FLAT_TWILIGHT = "Spectroscopic Flat - Twilight"
     SCIENCE = "Science"
-    STANDARD = "Standard"
-    THUMBNAIL = "Thumbnail"
-    WEIGHT = "Weight"
+    STANDARD_CIRCULAR_POLARIMETRIC = "Standard - Circular Polarimetric"
+    STANDARD_LICK = "Standard - Lick"
+    STANDARD_LINEAR_POLARIMETRIC = "Standard - Linear Polarimetric"
+    STANDARD_PHOTOMETRIC = "Standard - Photometric"
+    STANDARD_RADIAL_VELOCITY = "Standard - Radial Velocity"
+    STANDARD_SMOOTH_SPECTRUM = "Standard - Smooth Spectrum"
+    STANDARD_SPECTROPHOTOMETRIC = "Standard - Spectrophotometric"
+    STANDARD_SPECTROSCOPIC = "Standard - Spectroscopic"
+    STANDARD_UNPOLARISED = "Standard - Unpolarised"
 
 
 class Proposal:
