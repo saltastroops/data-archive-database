@@ -248,6 +248,7 @@ VALUES  (1, 'Arc - Calsys'),
         (6, 'Standard - Smooth Spectrum'),
         (6, 'Standard - Spectrophotometric'),
         (6, 'Standard - Spectroscopic'),
+        (6, 'Standard - Telluric'),
         (6, 'Standard - Unpolarised');
 
 -- rss_fabry_perot_mode

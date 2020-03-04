@@ -1108,6 +1108,7 @@ class ProductType(Enum):
     STANDARD_SMOOTH_SPECTRUM = "Standard - Smooth Spectrum"
     STANDARD_SPECTROPHOTOMETRIC = "Standard - Spectrophotometric"
     STANDARD_SPECTROSCOPIC = "Standard - Spectroscopic"
+    STANDARD_TELLURIC = "Standard - Telluric"
     STANDARD_UNPOLARISED = "Standard - Unpolarised"
 
 

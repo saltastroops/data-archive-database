@@ -188,7 +188,6 @@ class SALTObservation:
             return None
         is_standard = False
         if (
-            # TODO ADD MORE WHEN ROS CONFIRMS STANDARD MAPPING
             product_category == types.ProductType.STANDARD_CIRCULAR_POLARIMETRIC
             or product_category == types.ProductType.STANDARD_LICK
             or product_category == types.ProductType.STANDARD_PHOTOMETRIC
@@ -300,12 +299,11 @@ class SALTObservation:
             return types.ProductType.IMAGING_FLAT_LAMP
         if product_category == types.ProductCategory.DARK:
             return types.ProductType.DARK
-        # TODO ADD MORE WHEN ROS CONFIRMS STANDARD MAPPING
         if (
             proposal_id == "CAL_POLST"
             and product_category == types.ProductCategory.STANDARD
         ):
-            return types.ProductType.STANDARD_CIRCULAR_POLARIMETRIC
+            return types.ProductType.STANDARD_LINEAR_POLARIMETRIC
         if (
             proposal_id == "CAL_LICKST"
             and product_category == types.ProductCategory.STANDARD
@@ -326,6 +324,11 @@ class SALTObservation:
             and product_category == types.ProductCategory.STANDARD
         ):
             return types.ProductType.STANDARD_SPECTROPHOTOMETRIC
+        if (
+            proposal_id == "CAL_TELLST"
+            and product_category == types.ProductCategory.STANDARD
+        ):
+            return types.ProductType.STANDARD_TELLURIC
         if (
             proposal_id == "CAL_UNPOLST"
             and product_category == types.ProductCategory.STANDARD
