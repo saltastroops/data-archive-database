@@ -49,8 +49,9 @@ WHERE BlockVisit_Id=%s;
 SELECT Title FROM  BlockVisit
     JOIN `Block` USING(Block_Id)
     JOIN Proposal ON `Block`.Proposal_Id=Proposal.Proposal_Id
-    JOIN ProposalText ON Proposal.ProposalCode_Id=ProposalText.ProposalCode_Id
-    AND Proposal.Semester_Id=ProposalText.Semester_Id
+    JOIN ProposalText 
+        ON Proposal.ProposalCode_Id=ProposalText.ProposalCode_Id 
+            AND Proposal.Semester_Id=ProposalText.Semester_Id
 WHERE BlockVisit_Id=%s;
         """
         results = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
@@ -59,7 +60,7 @@ WHERE BlockVisit_Id=%s;
         raise ValueError("Observation has no title")
 
     def find_observation_status(self, block_visit_id: int) -> types.Status:
-        if not block_visit_id:
+        if block_visit_id is not None:
             return types.Status.ACCEPTED
 
         sql = """
