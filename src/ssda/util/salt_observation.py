@@ -172,28 +172,28 @@ class SALTObservation:
 
     def target(self, observation_id: int) -> Optional[types.Target]:
         object_name = self.header_value("OBJECT").upper()
-        product_category = self._product_category()
+        product_type = self._product_type()
 
         if (
-            product_category == types.ProductType.ARC_CALSYS
-            or product_category == types.ProductType.ARC_INTERNAL
-            or product_category == types.ProductType.BIAS
-            or product_category == types.ProductType.IMAGING_FLAT_LAMP
-            or product_category == types.ProductType.IMAGING_FLAT_TWILIGHT
-            or product_category == types.ProductType.SPECTROSCOPIC_FLAT_LAMP
-            or product_category == types.ProductType.SPECTROSCOPIC_FLAT_TWILIGHT
-            or product_category == types.ProductType.DARK
+            product_type == types.ProductType.ARC_CALSYS
+            or product_type == types.ProductType.ARC_INTERNAL
+            or product_type == types.ProductType.BIAS
+            or product_type == types.ProductType.IMAGING_FLAT_LAMP
+            or product_type == types.ProductType.IMAGING_FLAT_TWILIGHT
+            or product_type == types.ProductType.SPECTROSCOPIC_FLAT_LAMP
+            or product_type == types.ProductType.SPECTROSCOPIC_FLAT_TWILIGHT
+            or product_type == types.ProductType.DARK
             or not self.block_visit_id
         ):
             return None
         is_standard = False
         if (
-            product_category == types.ProductType.STANDARD_CIRCULAR_POLARIMETRIC
-            or product_category == types.ProductType.STANDARD_LICK
-            or product_category == types.ProductType.STANDARD_PHOTOMETRIC
-            or product_category == types.ProductType.STANDARD_RADIAL_VELOCITY
-            or product_category == types.ProductType.STANDARD_SPECTROPHOTOMETRIC
-            or product_category == types.ProductType.STANDARD_UNPOLARISED
+            product_type == types.ProductType.STANDARD_CIRCULAR_POLARIMETRIC
+            or product_type == types.ProductType.STANDARD_LICK
+            or product_type == types.ProductType.STANDARD_PHOTOMETRIC
+            or product_type == types.ProductType.STANDARD_RADIAL_VELOCITY
+            or product_type == types.ProductType.STANDARD_SPECTROPHOTOMETRIC
+            or product_type == types.ProductType.STANDARD_UNPOLARISED
         ):
             is_standard = True
 
