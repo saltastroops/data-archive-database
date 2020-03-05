@@ -491,7 +491,7 @@ CREATE TABLE energy
     max_wavelength  double precision NOT NULL CHECK (max_wavelength > 0),
     min_wavelength  double precision NOT NULL CHECK (min_wavelength > 0),
     plane_id        int              NOT NULL REFERENCES Plane (plane_id) ON DELETE CASCADE,
-    resolving_power double precision,
+    resolving_power double precision CHECK (resolving_power IS NULL OR resolving_power >= 0),
     sample_size     double precision NOT NULL CHECK (sample_size >= 0),
     CONSTRAINT correct_wavelength_order_check CHECK (min_wavelength <= max_wavelength)
 );

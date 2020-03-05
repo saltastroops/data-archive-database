@@ -341,7 +341,7 @@ def hrs_resolving_power(arm: types.HRSArm, hrs_mode: types.HRSMode) -> Optional[
         if hrs_mode == types.HRSMode.HIGH_STABILITY:
             return 66900
         if hrs_mode == types.HRSMode.INT_CAL_FIBRE:
-            return
+            return None
 
     if types.HRSArm.RED == arm:
         if hrs_mode == types.HRSMode.LOW_RESOLUTION:
@@ -353,7 +353,7 @@ def hrs_resolving_power(arm: types.HRSArm, hrs_mode: types.HRSMode) -> Optional[
         if hrs_mode == types.HRSMode.HIGH_STABILITY:
             return 64600
         if hrs_mode == types.HRSMode.INT_CAL_FIBRE:
-            return
+            return None
 
     raise ValueError(f"Unknown HRS arm {arm.value}")
 
