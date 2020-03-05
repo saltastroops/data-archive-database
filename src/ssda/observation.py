@@ -56,3 +56,6 @@ class ObservationProperties(ABC):
 
     def target(self, observation_id: int) -> Optional[types.Target]:
         raise NotImplementedError
+
+    def ignore_observation(self) -> bool:
+        raise NotImplementedError
