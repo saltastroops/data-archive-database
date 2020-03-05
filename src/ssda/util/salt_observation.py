@@ -9,6 +9,7 @@ from ssda.database.sdb import SaltDatabaseService
 from ssda.util.fits import FitsFile, get_fits_base_dir
 
 from ssda.util import types
+from ssda.util.types import Status
 
 
 class SALTObservation:
@@ -344,3 +345,34 @@ class SALTObservation:
         product_category = self._product_category()
 
         return product_category == types.ProductCategory.STANDARD
+
+    def ignore_observation(self) -> bool:
+        proposal_id = self.fits_file.header_value("PROPID")
+        # If the FITS file is junk or it is unknown, do not store the observation.
+        if proposal_id == "JUNK" or proposal_id == "UNKNOWN":
+            return True
+        # Do not store engineering data.
+        if not proposal_id.startswith("2") and (
+            "ENG_" in proposal_id or proposal_id == "ENG" or proposal_id == "CAL_GAIN"
+        ):
+            return True
+
+        observation_date = self.fits_file.header_value("DATE-OBS")
+        # If the FITS header does not include the observation date, do not store its data.
+        if not observation_date:
+            return True
+
+        block_visit_id = (
+            None
+            if not self.fits_file.header_value("BVISITID")
+            else int(self.fits_file.header_value("BVISITID"))
+        )
+
+        # Observations not belonging to a proposal are accepted by default.
+        status = self.database_service.find_observation_status(block_visit_id)
+
+        # Do not store deleted or in a queue observation data.
+        if status == Status.DELETED or status == Status.INQUEUE:
+            return True
+
+        return False
