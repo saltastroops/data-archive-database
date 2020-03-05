@@ -314,7 +314,7 @@ def get_grating_frequency(grating: str) -> Quantity:
     return grating_table[grating.lower()] / u.mm
 
 
-def hrs_resolving_power(arm: types.HRSArm, hrs_mode: types.HRSMode) -> float:
+def hrs_resolving_power(arm: types.HRSArm, hrs_mode: types.HRSMode) -> Optional[float]:
     """
    The HRS wavelength interval (interval) as a 2D tuple where first entry being lower bound and second is the
    maximum  bound and resolving power (power)
@@ -327,7 +327,7 @@ def hrs_resolving_power(arm: types.HRSArm, hrs_mode: types.HRSMode) -> float:
         A full name of  the resolution like Low Resolution
    Return
    ------
-    power: float
+    power: float or None
         HRS resolving power
    """
 
@@ -340,6 +340,8 @@ def hrs_resolving_power(arm: types.HRSArm, hrs_mode: types.HRSMode) -> float:
             return 66700
         if hrs_mode == types.HRSMode.HIGH_STABILITY:
             return 66900
+        if hrs_mode == types.HRSMode.INT_CAL_FIBRE:
+            return
 
     if types.HRSArm.RED == arm:
         if hrs_mode == types.HRSMode.LOW_RESOLUTION:
@@ -350,6 +352,8 @@ def hrs_resolving_power(arm: types.HRSArm, hrs_mode: types.HRSMode) -> float:
             return 73700
         if hrs_mode == types.HRSMode.HIGH_STABILITY:
             return 64600
+        if hrs_mode == types.HRSMode.INT_CAL_FIBRE:
+            return
 
     raise ValueError(f"Unknown HRS arm {arm.value}")
 
