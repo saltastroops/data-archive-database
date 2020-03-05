@@ -125,6 +125,8 @@ class SALTObservation:
         )
 
     def position(self, plane_id: int) -> Optional[types.Position]:
+        if self.is_calibration() and not self.is_standard():
+            return None
         ra_header_value = self.header_value("RA")
         dec_header_value = self.header_value("DEC")
         if ra_header_value and not dec_header_value:
@@ -172,66 +174,77 @@ class SALTObservation:
 
     def target(self, observation_id: int) -> Optional[types.Target]:
         object_name = self.header_value("OBJECT").upper()
-        product_type = self._product_type()
 
-        if (
-            product_type == types.ProductType.ARC_CALSYS
-            or product_type == types.ProductType.ARC_INTERNAL
-            or product_type == types.ProductType.BIAS
-            or product_type == types.ProductType.IMAGING_FLAT_LAMP
-            or product_type == types.ProductType.IMAGING_FLAT_TWILIGHT
-            or product_type == types.ProductType.SPECTROSCOPIC_FLAT_LAMP
-            or product_type == types.ProductType.SPECTROSCOPIC_FLAT_TWILIGHT
-            or product_type == types.ProductType.DARK
-            or not self.block_visit_id
-        ):
+        if self.is_calibration() and not self.is_standard():
             return None
-        is_standard = False
-        if (
-            product_type == types.ProductType.STANDARD_CIRCULAR_POLARIMETRIC
-            or product_type == types.ProductType.STANDARD_LICK
-            or product_type == types.ProductType.STANDARD_PHOTOMETRIC
-            or product_type == types.ProductType.STANDARD_RADIAL_VELOCITY
-            or product_type == types.ProductType.STANDARD_SPECTROPHOTOMETRIC
-            or product_type == types.ProductType.STANDARD_UNPOLARISED
-        ):
-            is_standard = True
 
         return types.Target(
             name=object_name,
             observation_id=observation_id,
-            standard=is_standard,
+            standard=self.is_standard(),
             target_type=self.database_service.find_target_type(self.block_visit_id),
         )
 
     def _product_category(self):
         observation_object = self.header_value("OBJECT").upper()
         product_type = self.header_value("OBSTYPE").upper()
+        proposal_id = self.header_value("PROPID").upper()
         product_type_unknown = not product_type or product_type == "ZERO"
 
-        if "ARC" in product_type or (
-            product_type_unknown
-            and (observation_object == "ARC" or "_ARC" in observation_object)
+        if (
+            proposal_id in ["CAL_ARC", "CAL_STABLE"]
+            or "ARC" in product_type
+            or (
+                product_type_unknown
+                and (observation_object == "ARC" or "_ARC" in observation_object)
+            )
         ):
             return types.ProductCategory.ARC
-        if "BIAS" in product_type or (
-            product_type_unknown
-            and (observation_object == "BIAS" or "_BIAS" in observation_object)
+        if (
+            proposal_id == "CAL_BIAS"
+            or "BIAS" in product_type
+            or (
+                product_type_unknown
+                and (observation_object == "BIAS" or "_BIAS" in observation_object)
+            )
         ):
             return types.ProductCategory.BIAS
-        if "FLAT" in product_type or (
-            product_type_unknown
-            and (observation_object == "FLAT" or "_FLAT" in observation_object)
+        if (
+            proposal_id in ["CAL_FLAT", "CAL_SKYFLAT"]
+            or "FLAT" in product_type
+            or (
+                product_type_unknown
+                and (observation_object == "FLAT" or "_FLAT" in observation_object)
+            )
         ):
             return types.ProductCategory.FLAT
-        if "DARK" in product_type or (
-            product_type_unknown
-            and (observation_object == "DARK" or "_DARK" in observation_object)
+        if (
+            "DARK" in product_type
+            or (
+                product_type_unknown
+                and (observation_object == "DARK" or "_DARK" in observation_object)
+            )
         ):
             return types.ProductCategory.DARK
-        if "STANDARD" in product_type or (
-            product_type_unknown
-            and (observation_object == "STANDARD" or "_STANDARD" in observation_object)
+        if (
+            proposal_id
+            in [
+                "CAL_POLST",
+                "CAL_LICKST",
+                "CAL_PHOTST",
+                "CAL_RVST",
+                "CAL_SPST",
+                "CAL_TELLST",
+                "CAL_UNPOLST",
+            ]
+            or "STANDARD" in product_type
+            or (
+                product_type_unknown
+                and (
+                    observation_object == "STANDARD"
+                    or "_STANDARD" in observation_object
+                )
+            )
         ):
             return types.ProductCategory.STANDARD
         if product_type == "OBJECT" or product_type == "SCIENCE":
@@ -247,114 +260,87 @@ class SALTObservation:
         proposal_id = self.header_value("PROPID").upper()
         product_category = self._product_category()
 
-        if (
-            proposal_id != "CAL_STABLE"
-            and product_category == types.ProductCategory.ARC
-        ):
-            return types.ProductType.ARC_CALSYS
-        if (
-            proposal_id == "CAL_STABLE"
-            and product_category == types.ProductCategory.ARC
-        ):
-            return types.ProductType.ARC_INTERNAL
-        if proposal_id == "CAL_BIAS" and product_category == types.ProductCategory.BIAS:
+        if product_category == types.ProductCategory.ARC:
+            if proposal_id == "CAL_STABLE":
+                return types.ProductType.ARC_INTERNAL
+            else:
+                return types.ProductType.ARC_CALSYS
+
+        if product_category == types.ProductCategory.BIAS:
             return types.ProductType.BIAS
-        if (
-            (instrument == "SALTICAM" or instrument == "BCAM")
-            and proposal_id == "CAL_SKYFLAT"
-            and product_category == types.ProductCategory.FLAT
-        ):
-            return types.ProductType.IMAGING_FLAT_TWILIGHT
-        if (
-            (instrument == "SALTICAM" or instrument == "BCAM")
-            and proposal_id != "CAL_SKYFLAT"
-            and product_category == types.ProductCategory.FLAT
-        ):
-            return types.ProductType.IMAGING_FLAT_LAMP
-        if (
-            instrument == "HRS"
-            and proposal_id == "CAL_SKYFLAT"
-            and product_category == types.ProductCategory.FLAT
-        ):
-            return types.ProductType.IMAGING_FLAT_TWILIGHT
-        if (
-            instrument == "HRS"
-            and proposal_id != "CAL_SKYFLAT"
-            and product_category == types.ProductCategory.FLAT
-        ):
-            return types.ProductType.IMAGING_FLAT_LAMP
-        if (
-            instrument == "RSS"
-            and (obs_mode == "IMAGING" or obs_mode == "FABRY-PEROT")
-            and proposal_id == "CAL_SKYFLAT"
-            and product_category == types.ProductCategory.FLAT
-        ):
-            return types.ProductType.IMAGING_FLAT_TWILIGHT
-        if (
-            instrument == "RSS"
-            and (obs_mode == "IMAGING" or obs_mode == "FABRY-PEROT")
-            and proposal_id != "CAL_SKYFLAT"
-            and product_category == types.ProductCategory.FLAT
-        ):
-            return types.ProductType.IMAGING_FLAT_LAMP
+
+        if product_category == types.ProductCategory.FLAT:
+            if instrument == "SALTICAM" or instrument == "BCAM":
+                if proposal_id == "CAL_SKYFLAT":
+                    return types.ProductType.IMAGING_FLAT_TWILIGHT
+                else:
+                    return types.ProductType.IMAGING_FLAT_LAMP
+
+            if instrument == "HRS":
+                if proposal_id == "CAL_SKYFLAT":
+                    return types.ProductType.SPECTROSCOPIC_FLAT_TWILIGHT
+                else:
+                    return types.ProductType.SPECTROSCOPIC_FLAT_LAMP
+
+            if instrument == "RSS":
+                if obs_mode == "IMAGING" or obs_mode == "FABRY-PEROT":
+                    if proposal_id == "CAL_SKYFLAT":
+                        return types.ProductType.IMAGING_FLAT_TWILIGHT
+                    else:
+                        return types.ProductType.IMAGING_FLAT_LAMP
+                if obs_mode == "SPECTROSCOPY":
+                    if proposal_id == "CAL_SKYFLAT":
+                        return types.ProductType.SPECTROSCOPIC_FLAT_TWILIGHT
+                    else:
+                        return types.ProductType.SPECTROSCOPIC_FLAT_LAMP
+
         if product_category == types.ProductCategory.DARK:
             return types.ProductType.DARK
-        if (
-            proposal_id == "CAL_POLST"
-            and product_category == types.ProductCategory.STANDARD
-        ):
-            return types.ProductType.STANDARD_LINEAR_POLARIMETRIC
-        if (
-            proposal_id == "CAL_LICKST"
-            and product_category == types.ProductCategory.STANDARD
-        ):
-            return types.ProductType.STANDARD_LICK
-        if (
-            proposal_id == "CAL_PHOTST"
-            and product_category == types.ProductCategory.STANDARD
-        ):
-            return types.ProductType.STANDARD_PHOTOMETRIC
-        if (
-            proposal_id == "CAL_RVST"
-            and product_category == types.ProductCategory.STANDARD
-        ):
-            return types.ProductType.STANDARD_RADIAL_VELOCITY
-        if (
-            proposal_id == "CAL_SPST"
-            and product_category == types.ProductCategory.STANDARD
-        ):
-            return types.ProductType.STANDARD_SPECTROPHOTOMETRIC
-        if (
-            proposal_id == "CAL_TELLST"
-            and product_category == types.ProductCategory.STANDARD
-        ):
-            return types.ProductType.STANDARD_TELLURIC
-        if (
-            proposal_id == "CAL_UNPOLST"
-            and product_category == types.ProductCategory.STANDARD
-        ):
-            return types.ProductType.STANDARD_UNPOLARISED
+
+        if product_category == types.ProductCategory.STANDARD:
+            if proposal_id == "CAL_LICKST":
+                return types.ProductType.STANDARD_LICK
+            if proposal_id == "CAL_PHOTST":
+                return types.ProductType.STANDARD_PHOTOMETRIC
+            if proposal_id == "CAL_POLST":
+                return types.ProductType.STANDARD_LINEAR_POLARIMETRIC
+            if proposal_id == "CAL_RVST":
+                return types.ProductType.STANDARD_RADIAL_VELOCITY
+            if proposal_id == "CAL_SPST":
+                return types.ProductType.STANDARD_SPECTROPHOTOMETRIC
+            if proposal_id == "CAL_TELLST":
+                return types.ProductType.STANDARD_TELLURIC
+            if proposal_id == "CAL_UNPOLST":
+                return types.ProductType.STANDARD_UNPOLARISED
+
         if product_category == types.ProductCategory.SCIENCE:
             return types.ProductType.SCIENCE
-        else:
-            raise ValueError(
-                f"Product type of file ${self.fits_file.file_path()} could not be determined"
-            )
+
+        raise ValueError(
+            f"Product type of file ${self.fits_file.file_path()} could not be determined"
+        )
 
     def _intent(self) -> types.Intent:
         product_category = self._product_category()
 
-        if (
-            product_category == types.ProductCategory.ARC
-            or product_category == types.ProductCategory.BIAS
-            or product_category == types.ProductCategory.FLAT
-            or product_category == types.ProductCategory.DARK
-            or product_category == types.ProductCategory.STANDARD
-        ):
+        if self.is_calibration():
             return types.Intent.CALIBRATION
         elif product_category == types.ProductCategory.SCIENCE:
             return types.Intent.SCIENCE
         raise ValueError(f"Intent for file {self.file_path()} could not be determined")
 
     def is_calibration(self):
-        return "CAL_" in self.header_value("PROPID")
+        product_category = self._product_category()
+
+        return (
+            product_category == types.ProductCategory.ARC
+            or product_category == types.ProductCategory.BIAS
+            or product_category == types.ProductCategory.DARK
+            or product_category == types.ProductCategory.FLAT
+            or product_category == types.ProductCategory.STANDARD
+        )
+
+    def is_standard(self):
+        product_category = self._product_category()
+
+        return product_category == types.ProductCategory.STANDARD
