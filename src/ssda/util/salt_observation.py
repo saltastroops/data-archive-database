@@ -250,10 +250,10 @@ class SALTObservation:
             return types.ProductCategory.STANDARD
         if product_type == "OBJECT" or product_type == "SCIENCE":
             return types.ProductCategory.SCIENCE
-        else:
-            raise ValueError(
-                f"Product category of file ${self.fits_file.file_path()} could not be determined"
-            )
+
+        raise ValueError(
+            f"Product category of file ${self.fits_file.file_path()} could not be determined"
+        )
 
     def _product_type(self) -> types.ProductType:
         obs_mode = self.header_value("OBSMODE").upper()
