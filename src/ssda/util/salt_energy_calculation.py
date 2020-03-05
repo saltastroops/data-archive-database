@@ -100,7 +100,7 @@ def filter_wavelength_interval(
 
 def fabry_perot_fwhm(
     rss_fp_mode: types.RSSFabryPerotMode, wavelength: Quantity
-) -> Quantity:
+) -> Optional[Quantity]:
     """
     The wavelength interval for a Fabry-Perot resolution and wavelength.
 
@@ -126,7 +126,7 @@ def fabry_perot_fwhm(
         wavelength < min(fp_fwhm_intervals, key=lambda item: item[0])[0]
         or wavelength > max(fp_fwhm_intervals, key=lambda item: item[0])[0]
     ):
-        raise ValueError("Wavelength is out of range")
+        return None
     sorted_points = sorted(fp_fwhm_intervals, key=lambda element: element[0])
     for i, w in enumerate(sorted_points):
         #  sorted_points defines a function f of the FWHM as a function of the wavelength.
@@ -494,26 +494,26 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
         else:
             raise ValueError("Unknown etalon state")
 
-        try:
-            wavelength_interval_length = fabry_perot_fwhm(
-                rss_fp_mode=resolution, wavelength=_lambda
-            )
-            wavelength_interval = (
-                _lambda - wavelength_interval_length / 2,
-                _lambda + wavelength_interval_length / 2,
-            )
-            return types.Energy(
-                dimension=1,
-                max_wavelength=wavelength_interval[1],
-                min_wavelength=wavelength_interval[0],
-                plane_id=plane_id,
-                resolving_power=(_lambda / wavelength_interval_length).to_value(
-                    u.dimensionless_unscaled
-                ),
-                sample_size=wavelength_interval_length,
-            )
-        except ValueError:
+        wavelength_interval_length = fabry_perot_fwhm(
+            rss_fp_mode=resolution, wavelength=_lambda
+        )
+        if wavelength_interval_length is None:
             return None
+
+        wavelength_interval = (
+            _lambda - wavelength_interval_length / 2,
+            _lambda + wavelength_interval_length / 2,
+        )
+        return types.Energy(
+            dimension=1,
+            max_wavelength=wavelength_interval[1],
+            min_wavelength=wavelength_interval[0],
+            plane_id=plane_id,
+            resolving_power=(_lambda / wavelength_interval_length).to_value(
+                u.dimensionless_unscaled
+            ),
+            sample_size=wavelength_interval_length,
+        )
 
     raise ValueError(f"Unsupported observation mode: {observation_mode}")
 
