@@ -219,12 +219,9 @@ class SALTObservation:
             )
         ):
             return types.ProductCategory.FLAT
-        if (
-            "DARK" in product_type
-            or (
-                product_type_unknown
-                and (observation_object == "DARK" or "_DARK" in observation_object)
-            )
+        if "DARK" in product_type or (
+            product_type_unknown
+            and (observation_object == "DARK" or "_DARK" in observation_object)
         ):
             return types.ProductCategory.DARK
         if (
