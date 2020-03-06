@@ -60,7 +60,7 @@ WHERE BlockVisit_Id=%s;
         raise ValueError("Observation has no title")
 
     def find_observation_status(self, block_visit_id: int) -> types.Status:
-        if block_visit_id is not None:
+        if block_visit_id is None:
             return types.Status.ACCEPTED
 
         sql = """
@@ -113,6 +113,10 @@ WHERE BlockVisit_Id=%s;
         raise ValueError("Observation has no Investigators")
 
     def find_target_type(self, block_visit_id: int) -> str:
+        # If there is no block visit, return the Unknown target type
+        if block_visit_id is None:
+            return "00.00.00.00"
+
         sql = """
 SELECT TargetSubType.NumericCode as NumericCode FROM BlockVisit
     JOIN `Block` ON BlockVisit.Block_Id=`Block`.Block_Id
