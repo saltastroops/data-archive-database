@@ -70,24 +70,6 @@ def get_fits_base_dir():
     return _fits_base_dir
 
 
-class LogData:
-    def __init__(
-            self,
-            proposal_code,
-            observation_type,
-            block_visit_id,
-            observation_mode,
-            object,
-            observation_time
-    ):
-        self.block_visit_id: str = block_visit_id
-        self.object: str = object
-        self.observation_mode: str = observation_mode
-        self.observation_time: str = observation_time
-        self.observation_type: str = observation_type
-        self.proposal_code: str = proposal_code
-
-
 class FitsFile(ABC):
     """
     A FITS file interface.
@@ -322,24 +304,11 @@ class StandardFitsFile(FitsFile):
         return md5_returned
 
     def header_value(self, keyword: str) -> Optional[str]:
-        try:
-            value = str(self.headers[keyword]).strip()
-            return None if value.upper() == "NONE" else value
-        except KeyError:
-            return None
-
-
-def get_data_to_log(path: str) -> LogData:
-    fits_file = StandardFitsFile(path)
-    log_data = LogData(
-        proposal_code=fits_file.header_value("PROPID"),
-        block_visit_id=fits_file.header_value("BVISITID"),
-        observation_type=fits_file.header_value("OBSTYPE"),
-        observation_mode=fits_file.header_value("OBSMODE"),
-        object=fits_file.header_value("OBJECT"),
-        observation_time=fits_file.header_value("TIME-OBS")
-    )
-    return log_data
+        # try:
+        #     value = str(self.headers[keyword]).strip()
+        #     return None if value.upper() == "NONE" else value
+        # except KeyError:
+            return "ALLO"
 
 
 class DummyFitsFile(FitsFile):

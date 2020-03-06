@@ -12,7 +12,8 @@ from ssda.database.ssda import SSDADatabaseService
 from ssda.database.services import DatabaseServices
 from ssda.task import execute_task
 from ssda.util import types
-from ssda.util.fits import fits_file_paths, set_fits_base_dir, get_night_date, get_data_to_log
+from ssda.util.errors import get_salt_data_to_log
+from ssda.util.fits import fits_file_paths, set_fits_base_dir, get_night_date
 from ssda.util.types import Instrument, DateRange, TaskName, TaskExecutionMode
 
 # Log with Sentry
@@ -239,24 +240,30 @@ def main(
                 # don't output anything
                 pass
             # output the FITS file path and the error message.
-            data_to_log = get_data_to_log(path)
-            msg = f"Error in {path}.\n" \
-                  f"Proposal code: {data_to_log.proposal_code}\n" \
-                  f"Object: {data_to_log.object}\n" \
-                  f"Block visit id: {data_to_log.block_visit_id}\n" \
-                  f"Observation type: {data_to_log.observation_type}\n" \
-                  f"Observation mode: {data_to_log.observation_mode}\n" \
-                  f"Observation time: {data_to_log.observation_time}\n" \
-                  f"{error_msg}"
+            data_to_log = get_salt_data_to_log(path)
+
             if verbosity_level == 1 and error_msg not in flagged_errors:
+                msg = f"""
+Error in {path}.
+{error_msg}
+"""
                 # Add error to already flagged errors.
                 flagged_errors.add(error_msg)
                 logging.error(msg)
             if verbosity_level == 2:
+                msg = f"""
+Error in {path}.
+Proposal code: {data_to_log.proposal_code}
+Object: {data_to_log.object}
+Block visit id: {data_to_log.block_visit_id}
+Observation type: {data_to_log.observation_type}
+Observation mode: {data_to_log.observation_mode}
+Observation time: {data_to_log.observation_time}
+{error_msg}
+"""
                 # output the FITS file path and error stacktrace.
-                msg = f"Error in {path}:\n{error_msg}"
                 logging.error(msg, exc_info=True)
-
+            print("_________________________________________________________________________________________________\n")
             if not skip_errors:
                 ssda_connection.close()
                 return -1
