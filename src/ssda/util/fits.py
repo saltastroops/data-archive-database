@@ -304,11 +304,11 @@ class StandardFitsFile(FitsFile):
         return md5_returned
 
     def header_value(self, keyword: str) -> Optional[str]:
-        # try:
-        #     value = str(self.headers[keyword]).strip()
-        #     return None if value.upper() == "NONE" else value
-        # except KeyError:
-            return "ALLO"
+        try:
+            value = str(self.headers[keyword]).strip()
+            return None if value.upper() == "NONE" else value
+        except KeyError:
+            return None
 
 
 class DummyFitsFile(FitsFile):
