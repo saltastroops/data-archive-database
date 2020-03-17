@@ -283,9 +283,14 @@ class StandardFitsFile(FitsFile):
 
         telescope_value = self.header_value("OBSERVAT").upper()
         proposal_id = self.header_value("PROPID").upper()
-        # Raise ignore observation error when telescope value is empty and PROPID is Junk or Unknown
+        # Raise ignore observation error when telescope value is empty and PROPID is Junk, Unknown, ENG or CAL_GAIN
         if not telescope_value:
             if proposal_id == "JUNK" or proposal_id == "UNKNOWN":
+                raise IgnoreObservationError
+            # Do not store engineering data.
+            if not proposal_id.startswith("2") and (
+              "ENG_" in proposal_id or proposal_id == "ENG" or proposal_id == "CAL_GAIN"
+            ):
                 raise IgnoreObservationError
         if telescope_value == "SALT":
             return types.Telescope.SALT
