@@ -1,7 +1,7 @@
 from ssda.database.services import DatabaseServices
 from ssda.exceptions import IgnoreObservationError
 from ssda.repository import insert, delete
-from ssda.salt_observation_properties import observation_properties
+from ssda.observation_properties import observation_properties
 from ssda.util.dummy import DummyObservationProperties
 from ssda.util.fits import StandardFitsFile, DummyFitsFile
 from ssda.util.types import TaskName, TaskExecutionMode
