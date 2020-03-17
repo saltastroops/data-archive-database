@@ -1,6 +1,7 @@
 from typing import cast
 
 from ssda.database.ssda import SSDADatabaseService
+from ssda.exceptions import IgnoreObservationError
 from ssda.observation import ObservationProperties
 
 
@@ -179,5 +180,8 @@ def insert(
         # commit the changes
         ssda_database_service.commit_transaction()
     except BaseException as e:
+        ssda_database_service.rollback_transaction()
+        raise e
+    except IgnoreObservationError as e:
         ssda_database_service.rollback_transaction()
         raise e

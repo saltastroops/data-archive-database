@@ -6,6 +6,7 @@ from astropy.coordinates import Angle
 
 import astropy.units as u
 from ssda.database.sdb import SaltDatabaseService
+from ssda.exceptions import IgnoreObservationError
 from ssda.util.fits import FitsFile, get_fits_base_dir
 
 from ssda.util import types
@@ -150,6 +151,17 @@ class SALTObservation:
         return types.Position(dec=dec, equinox=equinox, plane_id=plane_id, ra=ra)
 
     def proposal(self) -> Optional[types.Proposal]:
+        proposal_id = self.fits_file.header_value("PROPID")
+        # If the FITS file is junk or it is unknown raise ignore observation error.
+        if proposal_id == "JUNK" or proposal_id == "UNKNOWN":
+            raise IgnoreObservationError
+
+        # If FITS file is ENG or CAL_GAIN raise ignore observation error.
+        if not proposal_id.startswith("2") and (
+          "ENG_" in proposal_id or proposal_id == "ENG" or proposal_id == "CAL_GAIN"
+        ):
+            raise IgnoreObservationError
+
         if not self.fits_file.header_value("BVISITID"):
             return None
 
