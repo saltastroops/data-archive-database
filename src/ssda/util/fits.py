@@ -12,9 +12,12 @@ from astropy.units import Quantity
 from astropy.io import fits
 from ssda.exceptions import IgnoreObservationError
 from ssda.util import types
+from ssda.database.services import DatabaseServices
 
 
 # The path of the base directory where all FITS files are stored.
+from ssda.util.types import Status
+
 _fits_base_dir = ""
 
 
@@ -266,6 +269,10 @@ class StandardFitsFile(FitsFile):
 
     def instrument(self) -> types.Instrument:
         instrument_value = self.header_value("INSTRUME").upper()
+        # Raise ignore observation error when instrument value is empty and ignore file is true
+        if not instrument_value:
+            if self.ignore_file():
+                raise IgnoreObservationError
         if instrument_value == "RSS":
             return types.Instrument.RSS
         elif instrument_value.upper() == "HRS":
@@ -279,13 +286,29 @@ class StandardFitsFile(FitsFile):
                 f"Unknown instrument in file {self.path}: {instrument_value}"
             )
 
-    def telescope(self) -> types.Telescope:
+    def ignore_file(self) -> bool:
+        proposal_id = self.header_value("PROPID")
+        # If the FITS file is junk or it is unknown, do not store the observation.
+        if proposal_id == "JUNK" or proposal_id == "UNKNOWN":
+            return True
+        # Do not store engineering data.
+        if not proposal_id.startswith("2") and (
+            "ENG_" in proposal_id or proposal_id == "ENG" or proposal_id == "CAL_GAIN"
+        ):
+            return True
 
+        observation_date = self.header_value("DATE-OBS")
+        # If the FITS header does not include the observation date, do not store its data.
+        if not observation_date:
+            return True
+
+        return False
+
+    def telescope(self) -> types.Telescope:
         telescope_value = self.header_value("OBSERVAT").upper()
-        proposal_id = self.header_value("PROPID").upper()
-        # Raise ignore observation error when telescope value is empty and PROPID is Junk or Unknown
+        # Raise ignore observation error when telescope value is empty and ignore file is true
         if not telescope_value:
-            if proposal_id == "JUNK" or proposal_id == "UNKNOWN":
+            if self.ignore_file():
                 raise IgnoreObservationError
         if telescope_value == "SALT":
             return types.Telescope.SALT

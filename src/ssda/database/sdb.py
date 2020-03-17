@@ -2,7 +2,7 @@ import datetime
 import pandas as pd
 from typing import Optional, List
 from pymysql import connect
-
+from ssda.exceptions import IgnoreObservationError
 from ssda.util import types
 
 
@@ -72,10 +72,11 @@ SELECT BlockVisitStatus FROM BlockVisit JOIN BlockVisitStatus USING(BlockVisitSt
             return types.Status.ACCEPTED
         if results["BlockVisitStatus"].lower() == "rejected":
             return types.Status.REJECTED
-        if results["BlockVisitStatus"].lower() == "deleted":
-            return types.Status.DELETED
-        if results["BlockVisitStatus"].lower() == "in queue":
-            return types.Status.INQUEUE
+        if (
+            results["BlockVisitStatus"].lower() == "deleted"
+            or results["BlockVisitStatus"].lower() == "in queue"
+        ):
+            raise IgnoreObservationError
         raise ValueError("Observation has an unknown status.")
 
     def find_release_date(self, block_visit_id: int) -> datetime.datetime:

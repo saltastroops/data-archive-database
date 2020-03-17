@@ -25,10 +25,6 @@ def execute_task(
             _observation_properties = observation_properties(
                 fits_file, database_services
             )
-
-            # Check if the FITS file is to be ignored
-            if _observation_properties.ignore_observation():
-                return
         except IgnoreObservationError:
             return
 
