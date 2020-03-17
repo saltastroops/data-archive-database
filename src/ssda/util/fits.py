@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Iterator, Set, Optional
 from astropy.units import Quantity
 from astropy.io import fits
+from ssda.exceptions import IgnoreObservationError
 from ssda.util import types
 
 
@@ -281,6 +282,11 @@ class StandardFitsFile(FitsFile):
     def telescope(self) -> types.Telescope:
 
         telescope_value = self.header_value("OBSERVAT").upper()
+        proposal_id = self.header_value("PROPID").upper()
+        # Raise ignore observation error when telescope value is empty and PROPID is Junk or Unknown
+        if not telescope_value:
+            if proposal_id == "JUNK" or proposal_id == "UNKNOWN":
+                raise IgnoreObservationError
         if telescope_value == "SALT":
             return types.Telescope.SALT
         else:

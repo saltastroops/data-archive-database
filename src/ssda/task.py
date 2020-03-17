@@ -1,4 +1,5 @@
 from ssda.database.services import DatabaseServices
+from ssda.exceptions import IgnoreObservationError
 from ssda.repository import insert, delete
 from ssda.observation_properties import observation_properties
 from ssda.util.dummy import DummyObservationProperties
@@ -18,12 +19,17 @@ def execute_task(
 
     # Get the observation properties.
     if task_mode == TaskExecutionMode.PRODUCTION:
-        fits_file = StandardFitsFile(fits_path)
+        try:
+            fits_file = StandardFitsFile(fits_path)
 
-        _observation_properties = observation_properties(fits_file, database_services)
+            _observation_properties = observation_properties(
+                fits_file, database_services
+            )
 
-        # Check if the FITS file is to be ignored
-        if _observation_properties.ignore_observation():
+            # Check if the FITS file is to be ignored
+            if _observation_properties.ignore_observation():
+                return
+        except IgnoreObservationError:
             return
 
     elif task_mode == TaskExecutionMode.DUMMY:
