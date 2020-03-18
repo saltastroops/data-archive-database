@@ -19,9 +19,8 @@ def execute_task(
 
     # Get the observation properties.
     if task_mode == TaskExecutionMode.PRODUCTION:
+        fits_file = StandardFitsFile(fits_path)
         try:
-            fits_file = StandardFitsFile(fits_path)
-
             _observation_properties = observation_properties(
                 fits_file, database_services
             )
@@ -29,8 +28,19 @@ def execute_task(
             # Check if the FITS file is to be ignored
             if _observation_properties.ignore_observation():
                 return
-        except IgnoreObservationError:
-            return
+        except Exception as e:
+            proposal_id = (
+                fits_file.header_value("PROPID").upper()
+                if fits_file.header_value("PROPID")
+                else fits_file.header_value("PROPID")
+            )
+            # If the FITS file is Junk, Unknown, ENG or CAL_GAIN, do not store the observation.
+            if proposal_id in ("JUNK", "UNKNOWN", "ENG", "CAL_GAIN"):
+                return
+            # Do not store engineering data.
+            if "ENG_" in proposal_id:
+                return
+            raise e
 
     elif task_mode == TaskExecutionMode.DUMMY:
         _observation_properties = DummyObservationProperties(

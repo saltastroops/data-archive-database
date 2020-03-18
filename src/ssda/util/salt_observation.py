@@ -344,7 +344,11 @@ class SALTObservation:
         return product_category == types.ProductCategory.STANDARD
 
     def ignore_observation(self) -> bool:
-        proposal_id = self.fits_file.header_value("PROPID")
+        proposal_id = (
+            self.fits_file.header_value("PROPID").upper()
+            if self.fits_file.header_value("PROPID")
+            else self.fits_file.header_value("PROPID")
+        )
         # If the FITS file is Junk, Unknown, ENG or CAL_GAIN, do not store the observation.
         if proposal_id in ("JUNK", "UNKNOWN", "ENG", "CAL_GAIN"):
             return True
@@ -364,7 +368,6 @@ class SALTObservation:
             else int(self.fits_file.header_value("BVISITID"))
         )
 
-        # Observations not belonging to a proposal are accepted by default.
         status = self.database_service.find_observation_status(block_visit_id)
 
         # Do not store deleted or in a queue observation data.
