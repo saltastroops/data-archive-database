@@ -30,9 +30,9 @@ def execute_task(
                 return
         except Exception as e:
             proposal_id = (
-                fits_file.header_value("PROPID")
+                fits_file.header_value("PROPID").upper()
                 if fits_file.header_value("PROPID")
-                else fits_file.header_value("PROPID").upper()
+                else fits_file.header_value("PROPID")
             )
             # If the FITS file is Junk, Unknown, ENG or CAL_GAIN, do not store the observation.
             if proposal_id in ("JUNK", "UNKNOWN", "ENG", "CAL_GAIN"):

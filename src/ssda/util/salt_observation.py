@@ -345,9 +345,9 @@ class SALTObservation:
 
     def ignore_observation(self) -> bool:
         proposal_id = (
-            self.fits_file.header_value("PROPID")
+            self.fits_file.header_value("PROPID").upper()
             if self.fits_file.header_value("PROPID")
-            else self.fits_file.header_value("PROPID").upper()
+            else self.fits_file.header_value("PROPID")
         )
         # If the FITS file is Junk, Unknown, ENG or CAL_GAIN, do not store the observation.
         if proposal_id in ("JUNK", "UNKNOWN", "ENG", "CAL_GAIN"):
