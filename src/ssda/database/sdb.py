@@ -60,6 +60,7 @@ WHERE BlockVisit_Id=%s;
         raise ValueError("Observation has no title")
 
     def find_observation_status(self, block_visit_id: int) -> types.Status:
+        # Observations not belonging to a proposal are accepted by default.
         if block_visit_id is None:
             return types.Status.ACCEPTED
 

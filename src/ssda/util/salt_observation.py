@@ -368,7 +368,6 @@ class SALTObservation:
             else int(self.fits_file.header_value("BVISITID"))
         )
 
-        # Observations not belonging to a proposal are accepted by default.
         status = self.database_service.find_observation_status(block_visit_id)
 
         # Do not store deleted or in a queue observation data.
