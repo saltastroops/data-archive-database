@@ -345,13 +345,12 @@ class SALTObservation:
 
     def ignore_observation(self) -> bool:
         proposal_id = self.fits_file.header_value("PROPID")
-        # If the FITS file is junk or it is unknown, do not store the observation.
-        if proposal_id == "JUNK" or proposal_id == "UNKNOWN":
+        # If the FITS file is Junk, Unknown, ENG or CAL_GAIN, do not store the observation.
+        if proposal_id in ("JUNK", "UNKNOWN", "ENG", "CAL_GAIN"):
             return True
         # Do not store engineering data.
-        if not proposal_id.startswith("2") and (
-            "ENG_" in proposal_id or proposal_id == "ENG" or proposal_id == "CAL_GAIN"
-        ):
+        # Proposal ids referring to an actual proposal will always start with a "2" (as in 2020-1-SCI-014).
+        if not proposal_id.startswith("2") and "ENG_" in proposal_id:
             return True
 
         observation_date = self.fits_file.header_value("DATE-OBS")

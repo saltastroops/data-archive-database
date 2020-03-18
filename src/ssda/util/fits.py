@@ -290,7 +290,7 @@ class StandardFitsFile(FitsFile):
 
             # Do not store engineering data.
             # Proposal ids referring to an actual proposal will always start with a "2" (as in 2020-1-SCI-014).
-            if not proposal_id.startswith("2") and "ENG_" in proposal_id:
+            if "ENG_" in proposal_id:
                 raise IgnoreObservationError
         if telescope_value == "SALT":
             return types.Telescope.SALT
