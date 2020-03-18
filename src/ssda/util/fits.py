@@ -280,17 +280,12 @@ class StandardFitsFile(FitsFile):
             )
 
     def telescope(self) -> types.Telescope:
+        telescope_value = (
+            self.header_value("OBSERVAT")
+            if not self.header_value("OBSERVAT")
+            else self.header_value("OBSERVAT").upper()
+        )
 
-        telescope_value = self.header_value("OBSERVAT").upper()
-        proposal_id = self.header_value("PROPID").upper()
-        # Raise ignore observation error when telescope value is empty and PROPID is Junk, Unknown, ENG or CAL_GAIN
-        if not telescope_value:
-            if proposal_id in ("JUNK", "UNKNOWN", "ENG", "CAL_GAIN"):
-                raise IgnoreObservationError
-
-            # Do not store engineering data.
-            if "ENG_" in proposal_id:
-                raise IgnoreObservationError
         if telescope_value == "SALT":
             return types.Telescope.SALT
         else:

@@ -38,9 +38,6 @@ class HrsObservationProperties(ObservationProperties):
         hrs_mode = self._mode()
         return hrs_spectral_properties(plane_id, arm, hrs_mode)
 
-    def ignore_observation(self) -> bool:
-        return self.salt_observation.ignore_observation()
-
     def instrument_keyword_values(
         self, observation_id: int
     ) -> List[types.InstrumentKeywordValue]:

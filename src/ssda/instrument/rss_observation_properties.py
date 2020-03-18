@@ -30,9 +30,6 @@ class RssObservationProperties(ObservationProperties):
             header_value=self.header_value, plane_id=plane_id
         )
 
-    def ignore_observation(self) -> bool:
-        return self.salt_observation.ignore_observation()
-
     def is_custom_mask(self, slit_barcode):
         if self.database_service.is_mos(slit_barcode=slit_barcode):
             return True

@@ -30,9 +30,6 @@ class SaltImagingCameraObservationProperties(ObservationProperties):
             plane_id, filter_name, self.instrument
         )
 
-    def ignore_observation(self) -> bool:
-        return self.salt_observation.ignore_observation()
-
     def instrument_keyword_values(
         self, observation_id: int
     ) -> List[types.InstrumentKeywordValue]:
