@@ -354,7 +354,7 @@ class SALTObservation:
             return True
         # Do not store engineering data.
         # Proposal ids referring to an actual proposal will always start with a "2" (as in 2020-1-SCI-014).
-        if not proposal_id.startswith("2") and "ENG_" in proposal_id:
+        if not proposal_id.startswith("2") and ("ENG_" in proposal_id or "ENG-" in proposal_id):
             return True
 
         observation_date = self.fits_file.header_value("DATE-OBS")

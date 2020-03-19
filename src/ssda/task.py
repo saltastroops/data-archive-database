@@ -38,7 +38,7 @@ def execute_task(
             if proposal_id in ("JUNK", "UNKNOWN", "NONE", "ENG", "CAL_GAIN"):
                 return
             # Do not store engineering data.
-            if "ENG_" in proposal_id:
+            if "ENG_" in proposal_id or "ENG-" in proposal_id:
                 return
             raise e
 
