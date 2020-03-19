@@ -35,10 +35,10 @@ def execute_task(
                 else fits_file.header_value("PROPID")
             )
             # If the FITS file is Junk, Unknown, ENG or CAL_GAIN, do not store the observation.
-            if proposal_id in ("JUNK", "UNKNOWN", "ENG", "CAL_GAIN"):
+            if proposal_id in ("JUNK", "UNKNOWN", "NONE", "ENG", "CAL_GAIN"):
                 return
             # Do not store engineering data.
-            if "ENG_" in proposal_id:
+            if "ENG_" in proposal_id or "ENG-" in proposal_id:
                 return
             raise e
 
