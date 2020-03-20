@@ -191,7 +191,7 @@ class SALTObservation:
         product_type = self.header_value("OBSTYPE").upper()
         proposal_id = self.header_value("PROPID").upper()
 
-        # CCDTYPE is regarded as the OBSTYPE.
+        # CCDTYPE is a copy of OBSTYPE
         if not product_type:
             product_type = self.header_value("CCDTYPE").upper()
 
