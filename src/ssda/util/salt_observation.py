@@ -190,6 +190,11 @@ class SALTObservation:
         observation_object = self.header_value("OBJECT").upper()
         product_type = self.header_value("OBSTYPE").upper()
         proposal_id = self.header_value("PROPID").upper()
+
+        # CCDTYPE is regarded as the OBSTYPE.
+        if not product_type:
+            product_type = self.header_value("CCDTYPE").upper()
+
         product_type_unknown = not product_type or product_type == "ZERO"
 
         if (
