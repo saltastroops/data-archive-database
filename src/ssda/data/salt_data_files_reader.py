@@ -13,15 +13,15 @@ def _parse_filter_name(_filter: str, instrument: types.Instrument) -> str:
     if instrument.value == "Salticam" or instrument.value == "BCAM":
         if _filter == "Halpha-S1" or _filter == "H-alpha":
             return "H-alpha"
-        if _filter == "SDSSr-S1" or _filter == "SDSS-r":
+        if _filter == "SDSSr-S1" or _filter.replace("'", "") == "SDSS-r":
             return "SDSS_rp"
-        if _filter == "SDSSi-S1":
+        if _filter == "SDSSi-S1" or _filter.replace("'", "") == "SDSS-i":
             return "SDSS_ip"
-        if _filter == "SDSSg-S1":
+        if _filter == "SDSSg-S1" or _filter.replace("'", "") == "SDSS-g":
             return "SDSS_gp"
-        if _filter == "SDSSu-S1":
+        if _filter == "SDSSu-S1" or _filter.replace("'", "") == "SDSS-u":
             return "SDSS_up"
-        if _filter == "SDSSz-S1":
+        if _filter == "SDSSz-S1" or _filter.replace("'", "") == "SDSS-z":
             return "SDSS_zp"
         if _filter == "CLR-S1":
             return "Fused_silica_clear"
@@ -35,6 +35,12 @@ def _parse_filter_name(_filter: str, instrument: types.Instrument) -> str:
             return "Stroemgren_u"
         if _filter == "V-S1":
             return "Johnson_V"
+        if _filter == "Sv-S1":
+            return "Stroemgren_v"
+        if _filter == "Sb-S1":
+            return "Stroemgren_b"
+        if _filter == "Sy-S1":
+            return "Stroemgren_y"
     return _filter
 
 
