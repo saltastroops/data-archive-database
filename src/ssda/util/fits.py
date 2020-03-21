@@ -280,18 +280,20 @@ class StandardFitsFile(FitsFile):
             )
 
     def telescope(self) -> types.Telescope:
-        telescope_value = (
-            self.header_value("OBSERVAT")
-            if not self.header_value("OBSERVAT")
-            else self.header_value("OBSERVAT").upper()
-        )
-
-        if telescope_value == "SALT":
-            return types.Telescope.SALT
-        else:
-            raise ValueError(
-                f"Unknown telescope in file {self.path}: {telescope_value}"
-            )
+        # TODO UPDATE
+        return types.Telescope.SALT
+        # telescope_value = (
+        #     self.header_value("OBSERVAT")
+        #     if not self.header_value("OBSERVAT")
+        #     else self.header_value("OBSERVAT").upper()
+        # )
+        #
+        # if telescope_value == "SALT":
+        #     return types.Telescope.SALT
+        # else:
+        #     raise ValueError(
+        #         f"Unknown telescope in file {self.path}: {telescope_value}"
+        #     )
 
     def file_path(self) -> str:
         return self.path

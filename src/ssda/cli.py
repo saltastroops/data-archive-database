@@ -152,6 +152,9 @@ def main(
     verbosity: Optional[str],
 ) -> int:
     logging.basicConfig(level=logging.INFO)
+    logging.warning(
+        "SALT is always assumed to be the telescope."
+    )
 
     verbosity_level = 2 if not verbosity else int(verbosity)
 
