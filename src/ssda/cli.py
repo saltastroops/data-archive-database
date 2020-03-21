@@ -152,7 +152,7 @@ def main(
     verbosity: Optional[str],
 ) -> int:
     logging.basicConfig(level=logging.INFO)
-    logging.warning(
+    logging.error(
         "SALT is always assumed to be the telescope."
     )
 
