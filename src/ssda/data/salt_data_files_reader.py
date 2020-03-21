@@ -27,6 +27,10 @@ def _parse_filter_name(_filter: str, instrument: types.Instrument) -> str:
             return "Fused_silica_clear"
         if _filter == "B-S1":
             return "Johnson_B"
+        if _filter == "U-S1":
+            return "Johnson_U"
+        if _filter == "I-S1":
+            return "Cousins_I"
         if _filter == "R-S1":
             return "Cousins_R"
         if _filter == "380-40":
