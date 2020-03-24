@@ -380,3 +380,8 @@ class SALTObservation:
             return True
 
         return False
+
+    def bad_observation(self) -> None:
+        # do not insert if file marked as science and no block visti id
+        if not observation_properties.block_visit_id and self._intent() = types.Intent.SCIENCE:
+            raise ValueError("The observation have a no block visit is but marked as science")
