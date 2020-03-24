@@ -22,9 +22,11 @@ if os.environ.get("SENTRY_DSN"):
 
 
 def parse_date(value: str, now: Callable[[], datetime]) -> date:
-    """Parse a date string.
+    """
+    Parse a date string.
     The value must be a date of the form yyyy-mm-dd. Alternatively, you can use the
     keywords today and yesterday.
+
     Parameters
     ----------
     value : str
@@ -239,6 +241,7 @@ def main(
             if verbosity_level == 0:
                 # don't output anything
                 pass
+            # TODO Please note that data_to_log is only for SALT need to be updated in the future
             # output the FITS file path and the error message.
             data_to_log = get_salt_data_to_log(path)
 
@@ -249,18 +252,22 @@ def main(
                 logging.error(msg)
             if verbosity_level == 2:
                 msg = f"""
-Error in {path}.
+FiITS file details
+------------------
 Proposal code: {data_to_log.proposal_code}
 Object: {data_to_log.object}
 Block visit id: {data_to_log.block_visit_id}
 Observation type: {data_to_log.observation_type}
 Observation mode: {data_to_log.observation_mode}
 Observation time: {data_to_log.observation_time}
+
+Stack trace
+-----------
 {error_msg}
+_________________________________________________________________________________________________
 """
                 # output the FITS file path and error stacktrace.
                 logging.error(msg, exc_info=True)
-            print("_________________________________________________________________________________________________\n")
             if not skip_errors:
                 ssda_connection.close()
                 return -1
