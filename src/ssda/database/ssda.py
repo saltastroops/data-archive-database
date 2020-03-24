@@ -447,11 +447,6 @@ class SSDADatabaseService:
             i (intent_id) AS (
                 SELECT intent_id FROM intent WHERE intent.intent=%(intent)s
             ),
-            ot (observation_type_id) AS (
-                SELECT observation_type_id
-                FROM observation_type
-                WHERE observation_type.observation_type=%(observation_type)s
-            ),
             st (status_id) AS (
                 SELECT status_id FROM status WHERE status.status=%(status)s
             ),
@@ -462,8 +457,7 @@ class SSDADatabaseService:
                                      instrument_id,
                                      intent_id,
                                      meta_release,
-                                     observation_group_id, 
-                                     observation_type_id,
+                                     observation_group_id,
                                      proposal_id,
                                      status_id,
                                      telescope_id)
@@ -473,7 +467,6 @@ class SSDADatabaseService:
                 (SELECT intent_id FROM i),
                 %(meta_release)s,
                 %(observation_group_id)s,
-                (SELECT observation_type_id FROM ot),
                 %(proposal_id)s,
                 (SELECT status_id FROM st),
                 (SELECT telescope_id FROM tel)
@@ -489,7 +482,6 @@ class SSDADatabaseService:
                     intent=observation.intent.value,
                     meta_release=observation.meta_release,
                     observation_group_id=observation.observation_group_id,
-                    observation_type=observation.observation_type.value,
                     proposal_id=observation.proposal_id,
                     status=observation.status.value,
                     telescope=observation.telescope.value,

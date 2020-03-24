@@ -87,7 +87,6 @@ class SALTObservation:
             intent=self._intent(),
             meta_release=release_date,
             observation_group_id=observation_group_id,
-            observation_type=types.ObservationType.OBJECT,
             proposal_id=proposal_id,
             status=status,
             telescope=types.Telescope.SALT,
