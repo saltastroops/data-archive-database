@@ -21,9 +21,6 @@ class HrsObservationProperties(ObservationProperties):
     def artifact(self, plane_id: int) -> types.Artifact:
         return self.salt_observation.artifact(plane_id)
 
-    def ignore_observation(self) -> bool:
-        return self.salt_observation.bad_observation()
-
     def energy(self, plane_id: int) -> Optional[types.Energy]:
         if self.salt_observation.is_calibration():
             return None

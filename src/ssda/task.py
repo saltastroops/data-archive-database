@@ -28,8 +28,7 @@ def execute_task(
             # Check if the FITS file is to be ignored
             if _observation_properties.ignore_observation():
                 return
-            # check if observation is a bad observation
-            _observation_properties.bad_observation()
+
         except Exception as e:
             proposal_id = (
                 fits_file.header_value("PROPID").upper()
