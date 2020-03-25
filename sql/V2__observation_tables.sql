@@ -168,19 +168,6 @@ INSERT INTO intent (intent)
 VALUES ('Calibration'),
        ('Science');
 
--- observation_type
-
-CREATE TABLE observation_type
-(
-    observation_type_id serial PRIMARY KEY,
-    observation_type    varchar(32) UNIQUE NOT NULL
-);
-
-COMMENT ON TABLE observation_type IS 'An observation type, as given by the value for the OBSTYPE FITS header keyword.';
-
-INSERT INTO observation_type (observation_type)
-VALUES ('Object');
-
 -- polarization_mode
 
 CREATE TABLE polarization_mode
@@ -375,7 +362,6 @@ CREATE TABLE observation
     intent_id            int  NOT NULL REFERENCES intent (intent_id),
     meta_release         date NOT NULL,
     observation_group_id int REFERENCES observation_group (observation_group_id),
-    observation_type_id  int REFERENCES observation_type (observation_type_id),
     proposal_id          int REFERENCES proposal (proposal_id) ON DELETE CASCADE,
     status_id            int  NOT NULL REFERENCES status (status_id),
     telescope_id         int  NOT NULL REFERENCES Telescope (telescope_id),
@@ -383,7 +369,6 @@ CREATE TABLE observation
 );
 
 CREATE INDEX observation_group_idx ON observation (observation_group_id);
-CREATE INDEX observation_type_idx ON observation (observation_type_id);
 CREATE INDEX observation_status_idx ON status (status_id);
 
 COMMENT ON TABLE observation IS 'An observation in the sense of data taken for a single FITS file.';
