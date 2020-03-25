@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from ssda.util.fits import StandardFitsFile
 
+
 @dataclass
 class LogData:
     block_visit_id: str
@@ -19,6 +20,6 @@ def get_salt_data_to_log(path: str) -> LogData:
         observation_type=fits_file.header_value("OBSTYPE"),
         observation_mode=fits_file.header_value("OBSMODE"),
         object=fits_file.header_value("OBJECT"),
-        observation_time=fits_file.header_value("TIME-OBS")
+        observation_time=fits_file.header_value("TIME-OBS"),
     )
     return log_data

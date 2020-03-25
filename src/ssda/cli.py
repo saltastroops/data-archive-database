@@ -51,10 +51,10 @@ def parse_date(value: str, now: Callable[[], datetime]) -> date:
 
 
 def validate_options(
-        start: Optional[date],
-        end: Optional[date],
-        instruments: Set[Instrument],
-        fits_base_dir: Optional[str],
+    start: Optional[date],
+    end: Optional[date],
+    instruments: Set[Instrument],
+    fits_base_dir: Optional[str],
 ) -> None:
     """
     Validate the command line options.
@@ -144,19 +144,17 @@ def validate_options(
     "--verbosity", type=click.Choice(["0", "1", "2"]), help="Log more details."
 )
 def main(
-        task: str,
-        start: Optional[str],
-        end: Optional[str],
-        instruments: Tuple[str],
-        fits_base_dir: Optional[str],
-        mode: str,
-        skip_errors: bool,
-        verbosity: Optional[str],
+    task: str,
+    start: Optional[str],
+    end: Optional[str],
+    instruments: Tuple[str],
+    fits_base_dir: Optional[str],
+    mode: str,
+    skip_errors: bool,
+    verbosity: Optional[str],
 ) -> int:
     logging.basicConfig(level=logging.INFO)
-    logging.error(
-        "SALT is always assumed to be the telescope."
-    )
+    logging.error("SALT is always assumed to be the telescope.")
 
     verbosity_level = 2 if not verbosity else int(verbosity)
 
