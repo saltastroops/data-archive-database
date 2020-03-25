@@ -725,7 +725,6 @@ class Observation:
         Date when the metadata for this observation becomes public.
     observation_group_id : int
         Identifier of the observation group to which the observation belongs.
-    observation_type : ObservationType
         Observation type.
     proposal_id : int
         Database id of the proposal to which this observation belongs.
@@ -743,7 +742,6 @@ class Observation:
         intent: Intent,
         meta_release: date,
         observation_group_id: Optional[int],
-        observation_type: ObservationType,
         proposal_id: Optional[int],
         status: Status,
         telescope: Telescope,
@@ -758,7 +756,6 @@ class Observation:
         self._intent = intent
         self._meta_release = meta_release
         self._observation_group_id = observation_group_id
-        self._observation_type = observation_type
         self._proposal_id = proposal_id
         self._status = status
         self._telescope = telescope
@@ -782,10 +779,6 @@ class Observation:
     @property
     def observation_group_id(self) -> int:
         return self._observation_group_id
-
-    @property
-    def observation_type(self) -> ObservationType:
-        return self._observation_type
 
     @property
     def proposal_id(self) -> Optional[int]:
@@ -903,18 +896,6 @@ class ObservationTime:
     @property
     def start_time(self) -> datetime:
         return self._start_time
-
-
-class ObservationType(Enum):
-    """
-    Enumeration of the available observation types.
-
-    The enum values must be the same as the values of the observation_type column in the
-    observation_type table.
-
-    """
-
-    OBJECT = "object"
 
 
 class Plane:
