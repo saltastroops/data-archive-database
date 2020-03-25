@@ -1,9 +1,8 @@
-import json
+from datetime import timedelta
 from typing import cast, Any, Dict, Optional
 import os
 
 import astropy.units as u
-import psycopg2
 from psycopg2 import connect
 
 from ssda.util import types
@@ -563,7 +562,7 @@ class SSDADatabaseService:
                 dict(
                     end_time=observation_time.end_time,
                     exposure_time=observation_time.exposure_time.to_value(u.second),
-                    night=observation_time.start_time.date(),
+                    night=(observation_time.start_time - timedelta(hours=12)).date(),
                     plane_id=observation_time.plane_id,
                     resolution=observation_time.resolution.to_value(u.second),
                     start_time=observation_time.start_time,
