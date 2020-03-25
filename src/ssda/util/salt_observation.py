@@ -190,6 +190,7 @@ class SALTObservation:
         observation_object = self.header_value("OBJECT").upper()
         product_type = self.header_value("OBSTYPE").upper()
         proposal_id = self.header_value("PROPID").upper()
+        block_visit_id = self.header_value("BVISITID")
 
         # CCDTYPE is a copy of OBSTYPE
         if not product_type:
@@ -251,6 +252,9 @@ class SALTObservation:
         ):
             return types.ProductCategory.STANDARD
         if product_type == "OBJECT" or product_type == "SCIENCE":
+            # Science file with no block visit id are not populated
+            if not block_visit_id:
+                raise ValueError("The observation is marked as science but has no block visit id.")
             return types.ProductCategory.SCIENCE
 
         raise ValueError(
@@ -380,3 +384,4 @@ class SALTObservation:
             return True
 
         return False
+
