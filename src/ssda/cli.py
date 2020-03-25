@@ -24,6 +24,7 @@ if os.environ.get("SENTRY_DSN"):
 def parse_date(value: str, now: Callable[[], datetime]) -> date:
     """
     Parse a date string.
+
     The value must be a date of the form yyyy-mm-dd. Alternatively, you can use the
     keywords today and yesterday.
 
@@ -33,6 +34,7 @@ def parse_date(value: str, now: Callable[[], datetime]) -> date:
          Date string
     now : func
          Function returning the current datetime.
+
     """
 
     if value == "today":
@@ -241,16 +243,15 @@ def main(
             if verbosity_level == 0:
                 # don't output anything
                 pass
-            # TODO Please note that data_to_log is only for SALT need to be updated in the future
-            # output the FITS file path and the error message.
-            data_to_log = get_salt_data_to_log(path)
-
             if verbosity_level == 1 and error_msg not in flagged_errors:
                 msg = f"\nError in {path}. \n{error_msg}"
                 # Add error to already flagged errors.
                 flagged_errors.add(error_msg)
                 logging.error(msg)
             if verbosity_level == 2:
+                # TODO Please note that data_to_log is only for SALT need to be updated in the future
+                # output the FITS file path and the error message.
+                data_to_log = get_salt_data_to_log(path)
                 msg = f"""
 FiITS file details
 ------------------
