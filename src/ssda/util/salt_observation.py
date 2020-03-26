@@ -253,7 +253,9 @@ class SALTObservation:
         if product_type == "OBJECT" or product_type == "SCIENCE":
             # Science file with no block visit id are not populated
             if not block_visit_id:
-                raise ValueError("The observation is marked as science but has no block visit id.")
+                raise ValueError(
+                    "The observation is marked as science but has no block visit id."
+                )
             return types.ProductCategory.SCIENCE
 
         raise ValueError(
@@ -362,7 +364,9 @@ class SALTObservation:
             return True
         # Do not store engineering data.
         # Proposal ids referring to an actual proposal will always start with a "2" (as in 2020-1-SCI-014).
-        if not proposal_id.startswith("2") and ("ENG_" in proposal_id or "ENG-" in proposal_id):
+        if not proposal_id.startswith("2") and (
+            "ENG_" in proposal_id or "ENG-" in proposal_id
+        ):
             return True
 
         observation_date = self.fits_file.header_value("DATE-OBS")
@@ -383,4 +387,3 @@ class SALTObservation:
             return True
 
         return False
-
