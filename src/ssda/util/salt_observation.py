@@ -369,6 +369,12 @@ class SALTObservation:
         ):
             return True
 
+        # Do not store commissioning data that pretends to be science.
+        if "COM-" in proposal_id and "COM_" in proposal_id:
+            observation_object = self.header_value("OBJECT").upper()
+            if observation_object == "DUMMY":
+                return True
+
         observation_date = self.fits_file.header_value("DATE-OBS")
         # If the FITS header does not include the observation date, do not store its data.
         if not observation_date:
