@@ -16,7 +16,9 @@ class SaltDatabaseService:
         )
         self._cursor = self._connection.cursor()
 
-    def find_block_visit_id(self, proposal_id: str, target_name: str, observing_night: datetime) -> Optional[int]:
+    def find_block_visit_id(
+        self, proposal_id: str, target_name: str, observing_night: datetime
+    ) -> Optional[int]:
         sql = """
         SELECT BlockVisit_Id
 FROM NightInfo
@@ -31,9 +33,11 @@ WHERE ProposalCode.Proposal_Code =%s
 AND Target.Target_Name=%s
 AND NightInfo.Date=%s;
         """
-        results = pd.read_sql(sql, self._connection, params=(proposal_id, target_name, observing_night,)).iloc[0]
+        results = pd.read_sql(
+            sql, self._connection, params=(proposal_id, target_name, observing_night,)
+        ).iloc[0]
         if results["BlockVisit_Id"]:
-            return int(results['BlockVisit_Id'])
+            return int(results["BlockVisit_Id"])
         return None
 
     def find_pi(self, block_visit_id: int) -> str:

@@ -105,13 +105,12 @@ class SALTObservation:
         if bv_id is None:
             return None
         return types.ObservationGroup(
-            group_identifier=str(bv_id),
-            name="SALT-" + str(bv_id),
+            group_identifier=str(bv_id), name="SALT-" + str(bv_id),
         )
 
     def observation_start_time(self) -> datetime:
         start_date_time_str = (
-                self.header_value("DATE-OBS") + " " + self.header_value("TIME-OBS")
+            self.header_value("DATE-OBS") + " " + self.header_value("TIME-OBS")
         )
         start_date_time = datetime.strptime(start_date_time_str, "%Y-%m-%d %H:%M:%S.%f")
         start_time_tz = datetime(
