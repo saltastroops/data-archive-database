@@ -370,7 +370,7 @@ class SALTObservation:
             return True
 
         # Do not store commissioning data that pretends to be science.
-        if "COM-" in proposal_id and "COM_" in proposal_id:
+        if "COM-" in proposal_id or "COM_" in proposal_id:
             observation_object = self.header_value("OBJECT").upper()
             if observation_object == "DUMMY":
                 return True
