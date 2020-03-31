@@ -21,11 +21,6 @@ class SALTObservation:
         self.fits_file = fits_file
         self.file_path = fits_file.file_path
         self.database_service = database_service
-        self.block_visit_id = (
-            None
-            if not fits_file.header_value("BVISITID")
-            else int(fits_file.header_value("BVISITID"))
-        )
 
     def artifact(self, plane_id: int) -> types.Artifact:
         # Creates a file path of the reduced calibration level mapping a raw calibration level.
@@ -61,14 +56,27 @@ class SALTObservation:
             product_type=self._product_type(),
         )
 
+    def _block_visit_id(self) -> Optional[int]:
+        proposal_id = self.header_value("PROPID").upper()
+        object_name = self.header_value("OBJECT").upper()
+        night = (self.observation_start_time() - timedelta(hours=12)).date()
+
+        block_visit_id = (
+            self.database_service.find_block_visit_id(proposal_id, object_name, night)
+            if not self.fits_file.header_value("BVISITID")
+            else int(self.fits_file.header_value("BVISITID"))
+        )
+
+        return block_visit_id
+
     def observation(
         self,
         observation_group_id: Optional[int],
         proposal_id: Optional[int],
         instrument: types.Instrument,
     ) -> types.Observation:
-
-        if not self.block_visit_id:
+        bv_id = self._block_visit_id()
+        if bv_id is None:
             observation_date = datetime.strptime(
                 self.header_value("DATE-OBS"), "%Y-%m-%d"
             ).date()
@@ -79,8 +87,8 @@ class SALTObservation:
             )
             status = types.Status.ACCEPTED
         else:
-            release_date = self.database_service.find_release_date(self.block_visit_id)
-            status = self.database_service.find_observation_status(self.block_visit_id)
+            release_date = self.database_service.find_release_date(bv_id)
+            status = self.database_service.find_observation_status(bv_id)
         return types.Observation(
             data_release=release_date,
             instrument=instrument,
@@ -93,16 +101,17 @@ class SALTObservation:
         )
 
     def observation_group(self) -> Optional[types.ObservationGroup]:
-        if not self.header_value("BVISITID"):
+        bv_id = self._block_visit_id()
+        if bv_id is None:
             return None
         return types.ObservationGroup(
-            group_identifier=self.header_value("BVISITID"),
-            name="SALT-" + self.header_value("BVISITID"),
+            group_identifier=str(bv_id),
+            name="SALT-" + str(bv_id),
         )
 
-    def observation_time(self, plane_id: int) -> types.ObservationTime:
+    def observation_start_time(self) -> datetime:
         start_date_time_str = (
-            self.header_value("DATE-OBS") + " " + self.header_value("TIME-OBS")
+                self.header_value("DATE-OBS") + " " + self.header_value("TIME-OBS")
         )
         start_date_time = datetime.strptime(start_date_time_str, "%Y-%m-%d %H:%M:%S.%f")
         start_time_tz = datetime(
@@ -115,13 +124,16 @@ class SALTObservation:
             tzinfo=timezone.utc,
         )
 
+        return start_time_tz
+
+    def observation_time(self, plane_id: int) -> types.ObservationTime:
         exposure_time = float(self.header_value("EXPTIME"))
         return types.ObservationTime(
-            end_time=start_time_tz + timedelta(seconds=exposure_time),
+            end_time=self.observation_start_time() + timedelta(seconds=exposure_time),
             exposure_time=exposure_time * u.second,
             plane_id=plane_id,
             resolution=exposure_time * u.second,
-            start_time=start_time_tz,
+            start_time=self.observation_start_time(),
         )
 
     def position(self, plane_id: int) -> Optional[types.Position]:
@@ -149,21 +161,22 @@ class SALTObservation:
         return types.Position(dec=dec, equinox=equinox, plane_id=plane_id, ra=ra)
 
     def proposal(self) -> Optional[types.Proposal]:
-        if not self.fits_file.header_value("BVISITID"):
+        bv_id = self._block_visit_id()
+        if bv_id is None:
             return None
 
         return types.Proposal(
             institution=types.Institution.SALT,
-            pi=self.database_service.find_pi(self.block_visit_id),
-            proposal_code=self.database_service.find_proposal_code(self.block_visit_id),
-            title=self.database_service.find_proposal_title(self.block_visit_id),
+            pi=self.database_service.find_pi(bv_id),
+            proposal_code=self.database_service.find_proposal_code(bv_id),
+            title=self.database_service.find_proposal_title(bv_id),
         )
 
     def proposal_investigators(
         self, proposal_id: int
     ) -> List[types.ProposalInvestigator]:
         investigators = self.database_service.find_proposal_investigators(
-            self.block_visit_id
+            self._block_visit_id()
         )
         return [
             types.ProposalInvestigator(
@@ -182,14 +195,13 @@ class SALTObservation:
             name=object_name,
             observation_id=observation_id,
             standard=self.is_standard(),
-            target_type=self.database_service.find_target_type(self.block_visit_id),
+            target_type=self.database_service.find_target_type(self._block_visit_id()),
         )
 
     def _product_category(self):
         observation_object = self.header_value("OBJECT").upper()
         product_type = self.header_value("OBSTYPE").upper()
         proposal_id = self.header_value("PROPID").upper()
-        block_visit_id = self.header_value("BVISITID")
 
         # CCDTYPE is a copy of OBSTYPE
         if not product_type:
@@ -252,7 +264,7 @@ class SALTObservation:
             return types.ProductCategory.STANDARD
         if product_type == "OBJECT" or product_type == "SCIENCE":
             # Science file with no block visit id are not populated
-            if not block_visit_id:
+            if self._block_visit_id() is None:
                 raise ValueError(
                     "The observation is marked as science but has no block visit id."
                 )
@@ -369,9 +381,9 @@ class SALTObservation:
         ):
             return True
 
+        observation_object = self.header_value("OBJECT").upper()
         # Do not store commissioning data that pretends to be science.
         if "COM-" in proposal_id or "COM_" in proposal_id:
-            observation_object = self.header_value("OBJECT").upper()
             if observation_object == "DUMMY":
                 return True
 
@@ -380,13 +392,9 @@ class SALTObservation:
         if not observation_date:
             return True
 
-        block_visit_id = (
-            None
-            if not self.fits_file.header_value("BVISITID")
-            else int(self.fits_file.header_value("BVISITID"))
-        )
+        bv_id = self._block_visit_id()
 
-        status = self.database_service.find_observation_status(block_visit_id)
+        status = self.database_service.find_observation_status(bv_id)
 
         # Do not store deleted or in a queue observation data.
         if status == Status.DELETED or status == Status.INQUEUE:

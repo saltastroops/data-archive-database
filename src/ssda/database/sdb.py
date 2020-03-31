@@ -1,6 +1,6 @@
 import datetime
 import pandas as pd
-from typing import Optional, List
+from typing import Optional, List, cast
 from pymysql import connect
 
 from ssda.util import types
@@ -15,6 +15,26 @@ class SaltDatabaseService:
             passwd=database_config.password(),
         )
         self._cursor = self._connection.cursor()
+
+    def find_block_visit_id(self, proposal_id: str, target_name: str, observing_night: datetime) -> Optional[int]:
+        sql = """
+        SELECT BlockVisit_Id
+FROM NightInfo
+JOIN BlockVisit ON NightInfo.NightInfo_Id = BlockVisit.NightInfo_Id
+JOIN Block ON BlockVisit.Block_Id = Block.Block_Id
+JOIN Pointing ON BlockVisit.Block_Id = Pointing.Block_Id
+JOIN Observation ON Pointing.Pointing_Id = Observation.Pointing_Id
+JOIN Target ON Observation.Target_Id = Target.Target_Id
+JOIN Proposal ON Block.Proposal_Id = Proposal.Proposal_Id
+JOIN ProposalCode ON Proposal.ProposalCode_Id = ProposalCode.ProposalCode_Id
+WHERE ProposalCode.Proposal_Code =%s
+AND Target.Target_Name=%s
+AND NightInfo.Date=%s;
+        """
+        results = pd.read_sql(sql, self._connection, params=(proposal_id, target_name, observing_night,)).iloc[0]
+        if results["BlockVisit_Id"]:
+            return int(results['BlockVisit_Id'])
+        return None
 
     def find_pi(self, block_visit_id: int) -> str:
         sql = """
