@@ -28,13 +28,6 @@ def set_fits_base_dir(path: str) -> None:
         Path of the base directory.
 
     """
-    if not path:
-        path = os.environ.get("FITS_BASE_DIR")
-    if not path:
-        raise ValueError(
-            "You must specify the base directory for the FITS files (with the "
-            "--fits-base-dir option) or set and environments variable \"FITS_BASE_DIR\"."
-        )
     global _fits_base_dir
     _fits_base_dir = path
 

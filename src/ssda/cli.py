@@ -84,10 +84,18 @@ def validate_options(
 
     """
 
+    if not fits_base_dir:
+        fits_base_dir = os.environ.get("FITS_BASE_DIR")
+    if not fits_base_dir:
+        raise ValueError(
+            "You must specify the base directory for the FITS files (with the "
+            "--fits-base-dir option) or set and environments variable \"FITS_BASE_DIR\"."
+        )
+
     # Can not run insert for a single file
     if task_name == TaskName.INSERT and file:
         raise click.UsageError(
-            "You can not use task name insert with a --file option."
+            "You cannot use the --file option with the insert task."
         )
 
     # A start date requires an end date, and vice versa
@@ -105,7 +113,7 @@ def validate_options(
         raise click.UsageError("The --instrument is unknown.")
 
     # Either a date range or a FITS file must be specified
-    if not start and not end and not file:
+    if not (start and end) and not end:
         raise click.UsageError(
             "You must either specify a date range (with the --start/--end options) or "
             "a FITS file (with the --file option)."
