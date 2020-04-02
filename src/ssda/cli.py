@@ -88,10 +88,6 @@ def validate_options(
             "You must also use the --start option if you use the --end option."
         )
 
-    # The instrument is unknown
-    if len(instruments) != len([instrument for instrument in Instrument]):
-        raise click.UsageError("The --instrument is unknown.")
-
     # A date range must be specified
     if not start or not end:
         raise click.UsageError(
