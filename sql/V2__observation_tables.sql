@@ -573,6 +573,33 @@ COMMENT ON COLUMN artifact.identifier IS 'Unique identifier string for this arti
 COMMENT ON COLUMN artifact.name IS 'The name of the artifact.';
 COMMENT ON COLUMN artifact.paths IS 'An object indicating where are the calibration level artifacts stored.';
 
+-- view for hiding target coordinates
+
+CREATE MATERIALIZED VIEW position AS
+SELECT pos.position_id AS position_id,
+       case
+           when o.meta_release<now() then pos.dec
+           else NULL
+           end AS dec,
+       pos.equinox AS equinox,
+       pos.plane_id AS plane_id,
+       case
+           when o.meta_release<now() then pos.ra
+           else NULL
+           end AS ra
+FROM _position pos
+         JOIN plane p on pos.plane_id = p.plane_id
+         JOIN observation o on p.observation_id = o.observation_id;
+
+CREATE INDEX position_dec_idx ON position (dec);
+CREATE INDEX position_plane_idx ON position (plane_id);
+CREATE INDEX position_point_idx ON position USING GIST(spoint(radians(ra), radians(dec)));
+CREATE INDEX position_ra_idx ON position (ra);
+
+COMMENT ON MATERIALIZED VIEW position IS 'The target position.';
+COMMENT ON COLUMN position.dec IS 'Declination, in degrees between -90 and 90.';
+COMMENT ON COLUMN position.ra IS 'Right ascension, in degrees between 0 and 360.';
+
 -- Insert filters
 
 INSERT INTO filter (name)
