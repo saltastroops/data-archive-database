@@ -6,7 +6,6 @@ GRANT USAGE ON SCHEMA observations, admin, extensions TO observations_editor;
 GRANT SELECT, USAGE ON ALL SEQUENCES IN SCHEMA observations TO observations_editor;
 
 GRANT SELECT ON ALL TABLES IN SCHEMA observations TO observations_editor;
-GRANT SELECT ON ALL SEQUENCES IN SCHEMA observations TO observations_editor;
 
 GRANT DELETE, INSERT ON TABLE admin.proposal_investigator TO observations_editor;
 GRANT DELETE, INSERT ON TABLE observations.artifact TO observations_editor;
