@@ -1,3 +1,14 @@
+-- Data archive user
+
+CREATE ROLE archive_user;
+
+GRANT USAGE ON SCHEMA observations, admin, extensions TO archive_user;
+GRANT SELECT, USAGE ON ALL SEQUENCES IN SCHEMA observations TO archive_user;
+
+GRANT SELECT ON ALL TABLES IN SCHEMA observations TO archive_user;
+
+REVOKE SELECT ON observations._position FROM archive_user;
+
 -- Editing observation data
 
 CREATE ROLE observations_editor;
