@@ -573,7 +573,7 @@ COMMENT ON COLUMN artifact.identifier IS 'Unique identifier string for this arti
 COMMENT ON COLUMN artifact.name IS 'The name of the artifact.';
 COMMENT ON COLUMN artifact.paths IS 'An object indicating where are the calibration level artifacts stored.';
 
--- view for hiding target coordinates
+-- view for hiding target coordinates of proprietary observations
 
 CREATE MATERIALIZED VIEW position AS
 SELECT pos.position_id AS position_id,
