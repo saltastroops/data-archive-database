@@ -109,6 +109,7 @@ def validate_options(
             "You must also use the --start option if you use the --end option."
         )
 
+    # Either a date range or a FITS file must be specified
     if not (start and end) and not file:
         raise click.UsageError(
             "You must either specify a date range (with the --start/--end options) or "
