@@ -28,7 +28,6 @@ def set_fits_base_dir(path: str) -> None:
         Path of the base directory.
 
     """
-
     global _fits_base_dir
     _fits_base_dir = path
 
