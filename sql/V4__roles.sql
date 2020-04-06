@@ -1,3 +1,14 @@
+-- Data archive user
+
+CREATE ROLE archive_user;
+
+GRANT USAGE ON SCHEMA observations, admin, extensions TO archive_user;
+GRANT SELECT, USAGE ON ALL SEQUENCES IN SCHEMA observations TO archive_user;
+
+GRANT SELECT ON ALL TABLES IN SCHEMA observations TO archive_user;
+
+REVOKE SELECT ON observations._position FROM archive_user;
+
 -- Editing observation data
 
 CREATE ROLE observations_editor;
@@ -6,7 +17,6 @@ GRANT USAGE ON SCHEMA observations, admin, extensions TO observations_editor;
 GRANT SELECT, USAGE ON ALL SEQUENCES IN SCHEMA observations TO observations_editor;
 
 GRANT SELECT ON ALL TABLES IN SCHEMA observations TO observations_editor;
-GRANT SELECT ON ALL SEQUENCES IN SCHEMA observations TO observations_editor;
 
 GRANT DELETE, INSERT ON TABLE admin.proposal_investigator TO observations_editor;
 GRANT DELETE, INSERT ON TABLE observations.artifact TO observations_editor;
