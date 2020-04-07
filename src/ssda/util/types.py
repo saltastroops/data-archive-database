@@ -1182,9 +1182,7 @@ class ProposalType(Enum):
     """
 
     COMMISSIONING = "Commissioning"
-    DDT = "Director Discretionary Time (DDT)"
     ENGINEERING = "Engineering"
-    GWE = "Gravitational Wave Event"
     SCIENCE_VERIFICATION = "Science Verification"
 
 

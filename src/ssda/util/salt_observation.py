@@ -68,16 +68,16 @@ class SALTObservation:
         instrument: types.Instrument,
     ) -> types.Observation:
 
-        proposal_code_id = self.header_value("PROPID").upper()
+        proposal_code = self.header_value("PROPID").upper()
         if not self.block_visit_id:
             status = types.Status.ACCEPTED
         else:
             status = self.database_service.find_observation_status(self.block_visit_id)
         return types.Observation(
-            data_release=self.database_service.find_release_date(proposal_code_id),
+            data_release=self.database_service.find_release_date(proposal_code)[0],
             instrument=instrument,
             intent=self._intent(),
-            meta_release=self.database_service.find_release_date(proposal_code_id),
+            meta_release=self.database_service.find_release_date(proposal_code)[1],
             observation_group_id=observation_group_id,
             proposal_id=proposal_id,
             status=status,

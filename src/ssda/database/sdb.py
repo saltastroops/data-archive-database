@@ -1,8 +1,8 @@
-from datetime import datetime
+from datetime import datetime, date
 
-import dateutil
+from dateutil import relativedelta
 import pandas as pd
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from pymysql import connect
 
 from ssda.util import types
@@ -81,8 +81,7 @@ SELECT BlockVisitStatus FROM BlockVisit JOIN BlockVisitStatus USING(BlockVisitSt
             return types.Status.INQUEUE
         raise ValueError("Observation has an unknown status.")
 
-    def find_release_date(self, proposal_id: str) -> datetime:
-        # Get proposal's end semester
+    def find_release_date(self, proposal_code: str) -> Tuple[date, date]:
         sql = """
 SELECT MAX(EndSemester) AS EndSemester, ProposalType
 FROM ProposalGeneralInfo
@@ -92,36 +91,18 @@ JOIN ProposalType ON ProposalGeneralInfo.ProposalType_Id=ProposalType.ProposalTy
 JOIN Semester ON Proposal.Semester_Id=Semester.Semester_Id
 WHERE ProposalCode.Proposal_Code=%s;
         """
-        results = pd.read_sql(sql, self._connection, params=(proposal_id,)).iloc[0]
+        results = pd.read_sql(sql, self._connection, params=(proposal_code,)).iloc[0]
 
         end_semester = results["EndSemester"]
         proposal_type = results["ProposalType"]
 
-        # Commissioning proposals proprietary period is 36 months after the end of the semester
-        if proposal_type == types.ProposalType.COMMISSIONING:
-            release_date = (end_semester + dateutil.relativedelta.relativedelta(months=36)).date()
-
-            return release_date
-
-        # Director Discretionary Time (DDT) proposals proprietary period is 6 months after the end of the semester
-        if proposal_type == types.ProposalType.DDT:
-            release_date = (end_semester + dateutil.relativedelta.relativedelta(months=6)).date()
-
-            return release_date
-
-        # Science Verification proposals proprietary period is 12 months after the end of the semester
-        if proposal_type == types.ProposalType.SCIENCE_VERIFICATION:
-            release_date = (end_semester + dateutil.relativedelta.relativedelta(months=12)).date()
-
-            return release_date
-
-        # Gravitational Wave Event proposals have no proprietary period for SALT affiliated persons
-        if proposal_type == types.ProposalType.GWE:
+        # Gravitational wave event proposals proprietary period is set at 2100-01-01
+        if proposal_type == "Gravitational Wave Event":
             release_date = datetime.strptime("2100-01-01", "%Y-%m-%d")
+            meta_release_date = datetime.today().date()
 
-            return release_date
+            return release_date, meta_release_date
 
-        # Get science proposal's proprietary period
         sql = """
 SELECT ProprietaryPeriod, MAX(EndSemester)
 FROM ProposalGeneralInfo
@@ -131,16 +112,17 @@ JOIN Semester ON Proposal.Semester_Id=Semester.Semester_Id
 WHERE ProposalCode.Proposal_Code=%s
         """
 
-        results = pd.read_sql(sql, self._connection, params=(proposal_id,)).iloc[0]
+        results = pd.read_sql(sql, self._connection, params=(proposal_code,)).iloc[0]
 
-        proprietary_period = results['ProprietaryPeriod']
+        proprietary_period = results["ProprietaryPeriod"]
 
-        release_date = end_semester + dateutil.relativedelta.relativedelta(months=proprietary_period)
+        release_date = (
+            end_semester
+            + relativedelta.relativedelta(days=1)
+            + relativedelta.relativedelta(months=proprietary_period)
+        )
 
-        return release_date
-
-    def find_meta_release_date(self, proposal_id: str) -> datetime:
-        return self.find_release_date(proposal_id)
+        return release_date, release_date
 
     def find_proposal_investigators(self, block_visit_id: int) -> List[str]:
         sql = """
