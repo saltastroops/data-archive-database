@@ -1,7 +1,7 @@
 import uuid
 from pathlib import Path
 from typing import Optional, List
-from datetime import timedelta, datetime, date, timezone
+from datetime import timedelta, datetime, timezone
 from astropy.coordinates import Angle
 
 import astropy.units as u
@@ -68,24 +68,16 @@ class SALTObservation:
         instrument: types.Instrument,
     ) -> types.Observation:
 
+        proposal_code_id = self.header_value("PROPID").upper()
         if not self.block_visit_id:
-            observation_date = datetime.strptime(
-                self.header_value("DATE-OBS"), "%Y-%m-%d"
-            ).date()
-            release_date = date(
-                year=observation_date.year,
-                month=observation_date.month,
-                day=observation_date.day,
-            )
             status = types.Status.ACCEPTED
         else:
-            release_date = self.database_service.find_release_date(self.block_visit_id)
             status = self.database_service.find_observation_status(self.block_visit_id)
         return types.Observation(
-            data_release=release_date,
+            data_release=self.database_service.find_release_date(proposal_code_id),
             instrument=instrument,
             intent=self._intent(),
-            meta_release=release_date,
+            meta_release=self.database_service.find_release_date(proposal_code_id),
             observation_group_id=observation_group_id,
             proposal_id=proposal_id,
             status=status,

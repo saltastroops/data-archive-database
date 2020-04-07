@@ -1172,6 +1172,22 @@ class ProposalInvestigator:
         return self._investigator_id
 
 
+class ProposalType(Enum):
+    """
+    Enumeration of the available proposal type.
+
+    The enum values must be the same as the values of the ProposalType column in the
+    ProposalType table from the sdb.
+
+    """
+
+    COMMISSIONING = "Commissioning"
+    DDT = "Director Discretionary Time (DDT)"
+    ENGINEERING = "Engineering"
+    GWE = "Gravitational Wave Event"
+    SCIENCE_VERIFICATION = "Science Verification"
+
+
 class RSSFabryPerotMode(Enum):
     """
     Enumeration of the RSS Fabry-Perot modes.
