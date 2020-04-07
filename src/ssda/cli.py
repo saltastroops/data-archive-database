@@ -51,10 +51,12 @@ def parse_date(value: str, now: Callable[[], datetime]) -> date:
 
 
 def validate_options(
-    start: Optional[date],
-    end: Optional[date],
-    instruments: Set[Instrument],
-    fits_base_dir: Optional[str],
+        start: Optional[date],
+        end: Optional[date],
+        file: Optional[str],
+        instruments: Set[Instrument],
+        fits_base_dir: Optional[str],
+        task_name:Optional[TaskName]
 ) -> None:
     """
     Validate the command line options.
@@ -71,12 +73,31 @@ def validate_options(
         Start date.
     end : datetime
         End date.
+    file : str
+        FITS file (path).
     instruments : set of Instrument
         Set of instruments.
     fits_base_dir: str
         The base directory to data files
+    task_name: TaskName
+        The task to be run
 
     """
+
+    if not fits_base_dir:
+        fits_base_dir = os.environ.get("FITS_BASE_DIR")
+    if not fits_base_dir:
+        raise ValueError(
+            "You must specify the base directory for the FITS files "
+            "(either with the --fits-base-dir option or by setting an environment "
+            "variable FITS_BASE_DIR)."
+        )
+
+    # Can not run insert for a single file
+    if task_name == TaskName.INSERT and file:
+        raise click.UsageError(
+            "You cannot use the --file option with the insert task."
+        )
 
     # A start date requires an end date, and vice versa
     if start and not end:
@@ -88,12 +109,18 @@ def validate_options(
             "You must also use the --start option if you use the --end option."
         )
 
-    # A date range must be specified
-    if not start or not end:
+    # Either a date range or a FITS file must be specified
+    if not (start and end) and not file:
         raise click.UsageError(
-            "You must specify a date range (with the --start/--end options)."
+            "You must either specify a date range (with the --start/--end options) or "
+            "a FITS file (with the --file option)."
         )
 
+    # Date ranges and the --file option are mutually exclusive
+    if (start or end) and file:
+        raise click.UsageError(
+            "The --start/--end and --file options are mutually exclusive."
+        )
     # A date range requires a base directory
     if start and not fits_base_dir:
         raise click.UsageError(
@@ -108,6 +135,11 @@ def validate_options(
 
 @click.command()
 @click.option("--end", type=str, help="Start date of the last night to consider.")
+@click.option(
+    "--file",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    help="FITS file to map to the database.",
+)
 @click.option(
     "--fits-base-dir",
     type=click.Path(exists=True, file_okay=False, dir_okay=True),
@@ -144,6 +176,7 @@ def main(
     start: Optional[str],
     end: Optional[str],
     instruments: Tuple[str],
+    file: Optional[str],
     fits_base_dir: Optional[str],
     mode: str,
     skip_errors: bool,
@@ -174,8 +207,10 @@ def main(
     validate_options(
         start=start_date,
         end=end_date,
+        file=file,
         instruments=instruments_set,
         fits_base_dir=fits_base_dir,
+        task_name=task_name,
     )
 
     # store the base directory
@@ -188,6 +223,8 @@ def main(
             instruments=instruments_set,
             base_dir=fits_base_dir,
         )
+    elif file:
+        paths = iter([file])
     else:
         raise click.UsageError(
             "The command line options do not allow the FITS file paths to be found."
