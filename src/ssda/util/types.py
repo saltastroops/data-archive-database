@@ -1183,6 +1183,7 @@ class ProposalType(Enum):
 
     COMMISSIONING = "Commissioning"
     ENGINEERING = "Engineering"
+    SCIENCE = "Science"
     SCIENCE_VERIFICATION = "Science Verification"
 
 

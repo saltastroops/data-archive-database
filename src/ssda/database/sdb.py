@@ -83,39 +83,33 @@ SELECT BlockVisitStatus FROM BlockVisit JOIN BlockVisitStatus USING(BlockVisitSt
 
     def find_release_date(self, proposal_code: str) -> Tuple[date, date]:
         sql = """
-SELECT MAX(EndSemester) AS EndSemester, ProposalType
-FROM ProposalGeneralInfo
-JOIN Proposal ON ProposalGeneralInfo.ProposalCode_Id=Proposal.ProposalCode_Id
-JOIN ProposalCode ON ProposalCode.ProposalCode_Id=Proposal.ProposalCode_Id
+SELECT Max(EndSemester) AS EndSemester, ProposalType, ProprietaryPeriod
+FROM BlockVisit
+JOIN Block ON BlockVisit.Block_Id=Block.Block_Id
+JOIN ProposalCode ON Block.ProposalCode_Id=ProposalCode.ProposalCode_Id
+JOIN ProposalGeneralInfo ON Block.ProposalCode_Id=ProposalGeneralInfo.ProposalCode_Id
 JOIN ProposalType ON ProposalGeneralInfo.ProposalType_Id=ProposalType.ProposalType_Id
-JOIN Semester ON Proposal.Semester_Id=Semester.Semester_Id
-WHERE ProposalCode.Proposal_Code=%s;
+JOIN NightInfo ON BlockVisit.NightInfo_Id=NightInfo.NightInfo_Id
+JOIN Semester ON (Date > Semester.StartSemester) AND (Date <= Semester.EndSemester)
+WHERE Proposal_Code=%s;
         """
         results = pd.read_sql(sql, self._connection, params=(proposal_code,)).iloc[0]
 
         end_semester = results["EndSemester"]
         proposal_type = results["ProposalType"]
 
-        # Gravitational wave event proposals proprietary period is set at 2100-01-01
+        # Gravitational wave proposals never become public (and are only accessible by SALT partners).
+        # However, their meta data becomes public immediately.
         if proposal_type == "Gravitational Wave Event":
             release_date = datetime.strptime("2100-01-01", "%Y-%m-%d")
             meta_release_date = datetime.today().date()
 
             return release_date, meta_release_date
 
-        sql = """
-SELECT ProprietaryPeriod, MAX(EndSemester)
-FROM ProposalGeneralInfo
-JOIN Proposal ON ProposalGeneralInfo.ProposalCode_Id=Proposal.ProposalCode_Id
-JOIN ProposalCode ON ProposalCode.ProposalCode_Id=Proposal.ProposalCode_Id
-JOIN Semester ON Proposal.Semester_Id=Semester.Semester_Id
-WHERE ProposalCode.Proposal_Code=%s
-        """
-
-        results = pd.read_sql(sql, self._connection, params=(proposal_code,)).iloc[0]
-
         proprietary_period = results["ProprietaryPeriod"]
 
+        # Data is also taken on the end of a semester date,
+        # so we should a day to counter for the last day of the latest semester when the data was taken.
         release_date = (
             end_semester
             + relativedelta.relativedelta(days=1)
