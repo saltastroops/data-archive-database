@@ -6,6 +6,18 @@ SET search_path TO admin, observations;
 
 -- LOOKUP TABLES
 
+-- access
+DROP TABLE IF EXISTS access;
+CREATE TABLE access(
+    access_id  serial PRIMARY KEY,
+    access  varchar(32) NOT NULL
+);
+
+
+INSERT INTO access(access)
+values ( 'PUBLIC_OR_OWNER'),
+       ('PUBLIC_OR_INSTITUTION_MEMBER');
+
 -- auth_provider
 
 DROP TABLE IF EXISTS auth_provider;
@@ -242,7 +254,8 @@ DROP TABLE IF EXISTS institution_user;
 CREATE TABLE institution_user (
     institution_id int NOT NULL REFERENCES observations.institution (institution_id),
     institution_user_id varchar(50) NOT NULL,
-    ssda_user_id int NOT NULL REFERENCES ssda_user (ssda_user_id)
+    ssda_user_id int NOT NULL REFERENCES ssda_user (ssda_user_id),
+    institution_member boolean NOT NULL
 );
 
 CREATE INDEX institution_user_institution_idx ON institution_user (institution_id);
@@ -266,3 +279,15 @@ CREATE INDEX proposal_investigator_proposal_idx ON proposal_investigator (propos
 
 COMMENT ON TABLE proposal_investigator IS 'Investigator on a proposal.';
 COMMENT ON COLUMN proposal_investigator.institution_user_id IS 'Id used to identify the investigator by the institution to which the proposal was submitted.';
+
+-- proposal_access
+
+DROP TABLE IF EXISTS proposal_access;
+
+CREATE TABLE proposal_access(
+    proposal_id int NOT NULL REFERENCES observations.proposal(proposal_id),
+    access_id int NOT NULL REFERENCES access(access_id)
+);
+
+COMMENT ON TABLE proposal_access IS 'Helps with handling Gravitational Wave proposal.'
+
