@@ -66,12 +66,12 @@ def execute_task(
         raise NotImplementedError
 
 def update_task(
+    start_date: date,
+    end_date: date,
     task_name: TaskName,
     database_services: DatabaseServices
 ) -> None:
     if task_name == TaskName.UPDATE:
-        end_date = date.today()
-        start_date = date(2018, 5, 17)
         update(database_services, start_date, end_date)
     else:
         raise NotImplementedError

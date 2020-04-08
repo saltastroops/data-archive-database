@@ -265,6 +265,8 @@ def main(
     # execute the requested task
     if task_name == TaskName.UPDATE:
         update_task(
+            start_date=start_date,
+            end_date=end_date,
             task_name=task_name,
             database_services=database_services,
         )
