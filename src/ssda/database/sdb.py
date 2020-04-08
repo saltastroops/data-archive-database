@@ -87,10 +87,10 @@ SELECT Max(EndSemester) AS EndSemester, ProposalType, ProprietaryPeriod
 FROM BlockVisit
 JOIN Block ON BlockVisit.Block_Id=Block.Block_Id
 JOIN ProposalCode ON Block.ProposalCode_Id=ProposalCode.ProposalCode_Id
-JOIN ProposalGeneralInfo ON Block.ProposalCode_Id=ProposalGeneralInfo.ProposalCode_Id
+JOIN ProposalGeneralInfo ON ProposalCode.ProposalCode_Id=ProposalGeneralInfo.ProposalCode_Id
 JOIN ProposalType ON ProposalGeneralInfo.ProposalType_Id=ProposalType.ProposalType_Id
 JOIN NightInfo ON BlockVisit.NightInfo_Id=NightInfo.NightInfo_Id
-JOIN Semester ON (Date > Semester.StartSemester) AND (Date <= Semester.EndSemester)
+JOIN Semester ON Date BETWEEN Semester.StartSemester AND Semester.EndSemester
 WHERE Proposal_Code=%s;
         """
         results = pd.read_sql(sql, self._connection, params=(proposal_code,)).iloc[0]
@@ -108,8 +108,9 @@ WHERE Proposal_Code=%s;
 
         proprietary_period = results["ProprietaryPeriod"]
 
-        # Data is also taken on the end of a semester date,
-        # so we should a day to counter for the last day of the latest semester when the data was taken.
+        # The semester end date in the SDB is the last day of a month.
+        # However, it is easier (and more correct) to use the first of the following month.
+        # We therefore add a day in addition to the proprietary period.
         release_date = (
             end_semester
             + relativedelta.relativedelta(days=1)
