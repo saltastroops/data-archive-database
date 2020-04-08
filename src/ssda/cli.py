@@ -10,15 +10,15 @@ import sentry_sdk
 from ssda.database.sdb import SaltDatabaseService
 from ssda.database.ssda import SSDADatabaseService
 from ssda.database.services import DatabaseServices
-from ssda.task import execute_task
+from ssda.task import execute_task, update_task
 from ssda.util import types
 from ssda.util.errors import get_salt_data_to_log
 from ssda.util.fits import fits_file_paths, set_fits_base_dir, get_night_date
 from ssda.util.types import Instrument, DateRange, TaskName, TaskExecutionMode
 
 # Log with Sentry
-if os.environ.get("SENTRY_DSN"):
-    sentry_sdk.init(os.environ.get("SENTRY_DSN"))  # type: ignore
+# if os.environ.get("SENTRY_DSN"):
+#     sentry_sdk.init(os.environ.get("SENTRY_DSN"))  # type: ignore
 
 
 def parse_date(value: str, now: Callable[[], datetime]) -> date:
@@ -168,10 +168,11 @@ def validate_options(
 @click.option("--start", type=str, help="Start date of the last night to consider.")
 @click.option(
     "--task",
-    type=click.Choice(["delete", "insert"]),
+    type=click.Choice(["delete", "insert", "update"]),
     required=True,
     help="Task to perform.",
 )
+
 @click.option(
     "--verbosity", type=click.Choice(["0", "1", "2"]), help="Log more details."
 )
@@ -262,51 +263,57 @@ def main(
     flagged_errors = set()
     night_date = ""
     # execute the requested task
-    for path in paths:
-        try:
-            if verbosity_level >= 1 and night_date != get_night_date(path):
-                night_date = get_night_date(path)
-                click.echo(f"Mapping files for {get_night_date(path)}")
-            execute_task(
-                task_name=task_name,
-                fits_path=path,
-                task_mode=task_mode,
-                database_services=database_services,
-            )
-        except BaseException as e:
-            error_msg = str(e)
-            if verbosity_level == 0:
-                # don't output anything
-                pass
-            if verbosity_level == 1 and error_msg not in flagged_errors:
-                msg = f"\nError in {path}. \n{error_msg}"
-                # Add error to already flagged errors.
-                flagged_errors.add(error_msg)
-                logging.error(msg)
-            if verbosity_level == 2:
-                # TODO Please note that data_to_log is only for SALT need to be updated in the future
-                # output the FITS file path and the error message.
-                data_to_log = get_salt_data_to_log(path)
-                msg = f"""
-FiITS file details
-------------------
-Proposal code: {data_to_log.proposal_code}
-Object: {data_to_log.object}
-Block visit id: {data_to_log.block_visit_id}
-Observation type: {data_to_log.observation_type}
-Observation mode: {data_to_log.observation_mode}
-Observation time: {data_to_log.observation_time}
+    if task_name == TaskName.UPDATE:
+        update_task(
+            task_name=task_name,
+            database_services=database_services,
+        )
+    else:
+        for path in paths:
+            try:
+                if verbosity_level >= 1 and night_date != get_night_date(path):
+                    night_date = get_night_date(path)
+                    click.echo(f"Mapping files for {get_night_date(path)}")
+                execute_task(
+                    task_name=task_name,
+                    fits_path=path,
+                    task_mode=task_mode,
+                    database_services=database_services,
+                )
+            except BaseException as e:
+                error_msg = str(e)
+                if verbosity_level == 0:
+                    # don't output anything
+                    pass
+                if verbosity_level == 1 and error_msg not in flagged_errors:
+                    msg = f"\nError in {path}. \n{error_msg}"
+                    # Add error to already flagged errors.
+                    flagged_errors.add(error_msg)
+                    logging.error(msg)
+                if verbosity_level == 2:
+                    # TODO Please note that data_to_log is only for SALT need to be updated in the future
+                    # output the FITS file path and the error message.
+                    data_to_log = get_salt_data_to_log(path)
+                    msg = f"""
+    FiITS file details
+    ------------------
+    Proposal code: {data_to_log.proposal_code}
+    Object: {data_to_log.object}
+    Block visit id: {data_to_log.block_visit_id}
+    Observation type: {data_to_log.observation_type}
+    Observation mode: {data_to_log.observation_mode}
+    Observation time: {data_to_log.observation_time}
 
-Stack trace
------------
-{error_msg}
-_________________________________________________________________________________________________
-"""
-                # output the FITS file path and error stacktrace.
-                logging.error(msg, exc_info=True)
-            if not skip_errors:
-                ssda_connection.close()
-                return -1
+    Stack trace
+    -----------
+    {error_msg}
+    _________________________________________________________________________________________________
+    """
+                    # output the FITS file path and error stacktrace.
+                    logging.error(msg, exc_info=True)
+                if not skip_errors:
+                    ssda_connection.close()
+                    return -1
 
     ssda_connection.close()
 

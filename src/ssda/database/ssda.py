@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, date
 from typing import cast, Any, Dict, Optional
 import os
 
@@ -134,6 +134,31 @@ class SSDADatabaseService:
             else:
                 return None
 
+    def find_observations_to_update(self, start_date: date, end_date: date) -> list:
+        with self._connection.cursor() as cur:
+            sql = """
+SELECT o.observation_id,
+        s.status,
+        og.group_identifier
+FROM
+    observation  AS o
+    JOIN plane ON plane.observation_id = o.observation_id
+    JOIN observation_time AS ot ON ot.plane_id = plane.plane_id
+    JOIN status AS s ON s.status_id = o.status_id
+    JOIN observation_group AS og ON og.observation_group_id = o.observation_group_id
+WHERE ot.night > %(start_date)s AND ot.night < %(end_date)s
+                    """
+            cur.execute(
+                sql, dict(start_date=start_date, end_date=end_date)
+            )
+            results = cur.fetchall()
+            return [
+                types.UpdatableObservation(
+                    observation_id=result[0],
+                    status=result[1],
+                    group_identifier=result[2],
+                ) for result in results] if results else None
+
     def find_proposal_id(
         self, proposal_code: str, institution: types.Institution
     ) -> Optional[int]:
@@ -170,6 +195,50 @@ class SSDADatabaseService:
                 return cast(int, result[0])
             else:
                 return None
+
+    def find_proposal_investigators(self, proposal_code: str) -> list:
+        with self._connection.cursor() as cur:
+            sql = """
+            SELECT institution_user_id
+            FROM admin.proposal_investigator AS pi
+                JOIN observations.proposal AS p ON pi.proposal_id = p.proposal_id
+            WHERE proposal_code = %(proposal_code)s
+            """
+
+            cur.execute(
+                sql, dict(proposal_code=proposal_code)
+            )
+            results = cur.fetchall()
+            return [int(result[0]) for result in results] if results else None
+
+    def find_proposals_to_update(self, start_date: date, end_date: date) -> list:
+        with self._connection.cursor() as cur:
+            sql = """
+SELECT DISTINCT
+    p.proposal_code,
+    p.title,
+    p.pi,
+    o.data_release,
+    o.meta_release
+FROM observation  AS o
+    JOIN plane ON plane.observation_id = o.observation_id
+    JOIN observation_time AS ot ON ot.plane_id = plane.plane_id
+    JOIN proposal AS p ON o.proposal_id = p.proposal_id
+WHERE ot.night > %(start_date)s AND ot.night < %(end_date)s
+            """
+            cur.execute(
+                sql, dict(start_date=start_date, end_date=end_date)
+            )
+            results = cur.fetchall()
+            return [
+                types.UpdatableProposal(
+                    pi=result[2],
+                    proposal_code=result[0],
+                    title=result[1],
+                    date_release=result[3],
+                    meta_release=result[4]
+                )
+                for result in results] if results else None
 
     def file_exists(self, path: str) -> bool:
         """
@@ -736,15 +805,18 @@ class SSDADatabaseService:
 
         with self._connection.cursor() as cur:
             sql = """
+            WITH pid (proposal_id) AS (
+                SELECT proposal_id FROM observations.proposal WHERE proposal_code=%(proposal_code)s
+            )
             INSERT INTO admin.proposal_investigator (institution_user_id, proposal_id)
-            VALUES (%(user_id)s, %(proposal_id)s)
+            VALUES (%(user_id)s, (SELECT pid.proposal_id FROM pid))
             """
 
             cur.execute(
                 sql,
                 dict(
                     user_id=proposal_investigator.investigator_id,
-                    proposal_id=proposal_investigator.proposal_id,
+                    proposal_code=proposal_investigator.proposal_code,
                 ),
             )
 
@@ -788,6 +860,81 @@ class SSDADatabaseService:
             )
 
             return cast(int, cur.fetchone()[0])
+
+    def update_pi(self, pi: str, proposal_code: int):
+        with self._connection.cursor() as cur:
+            sql = """
+            UPDATE proposal
+                SET pi=%(pi)s
+            WHERE proposal_id=%(proposal_code)s
+            """
+            cur.execute(
+                sql,
+                dict(pi=pi, proposal_code=proposal_code)
+            )
+
+    def update_title(self, title: str, proposal_code: int):
+        with self._connection.cursor() as cur:
+            sql = """
+            UPDATE proposal
+                SET title=%(title)s
+            WHERE proposal_code=%(proposal_code)s
+            """
+            cur.execute(
+                sql,
+                dict(title=title, proposal_id=proposal_code)
+            )
+
+    def update_status(self, status: str, observation_id: int):
+        with self._connection.cursor() as cur:
+            sql = """
+             WITH st (status_id) AS (
+                SELECT status_id FROM status WHERE status=%(status)s
+            )
+            UPDATE observation
+                SET status_id=(SELECT st.status_id FROM st)
+            WHERE observation_id=%(observation_group_id)s
+            """
+            cur.execute(
+                sql,
+                dict(status=status, observation_id=observation_id)
+            )
+
+    def update_release_date(self, proposal_code:int, release_date: date, meta_release_date: date) -> None:
+        if not meta_release_date:
+            meta_release_date = release_date
+        with self._connection.cursor() as cur:
+            sql = """
+            UPDATE proposal
+                SET data_release=%(release_date)s, meta_release=%(meta_release_date)s
+            WHERE proposal_code=%(proposal_code)s
+            """
+            cur.execute(
+                sql,
+                dict(release_date=release_date, meta_release_date=meta_release_date, proposal_code=proposal_code)
+            )
+
+    def update_investigators(self, proposal_code, proposal_investigators):
+        with self._connection.cursor() as cur:
+            sql = """
+            WITH pid (proposal_id) AS (
+                SELECT proposal_id FROM observations.proposal WHERE proposal_code=%(proposal_code)s
+            )
+
+            DELETE FROM admin.proposal_investigator
+            WHERE proposal_id = (SELECT pid.proposal_id FROM pid)
+            """
+            cur.execute(
+                sql,
+                dict(proposal_code=proposal_code)
+            )
+            for investigator in proposal_investigators:
+                self.insert_proposal_investigator(
+                    proposal_investigator=types.ProposalInvestigator(
+                        investigator_id=str(investigator),
+                        proposal_code=proposal_code
+                    )
+                )
 
     def rollback_transaction(self) -> None:
         """

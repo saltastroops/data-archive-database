@@ -1148,24 +1148,24 @@ class ProposalInvestigator:
 
     Parameters
     ----------
-    proposal_id : int
-        Database id of the proposal.
+    proposal_code : str
+        The proposal code.
     investigator_id : str
         The unique id of the investigator, as determined by the institution to which the
         proposal was submitted.
 
     """
 
-    def __init__(self, proposal_id: int, investigator_id: str):
+    def __init__(self, proposal_code: str, investigator_id: str):
         if len(investigator_id) > 50:
             raise ValueError("The investigator id must have at most 30 characters.")
 
-        self._proposal_id = proposal_id
+        self._proposal_code = proposal_code
         self._investigator_id = investigator_id
 
     @property
-    def proposal_id(self) -> int:
-        return self._proposal_id
+    def proposal_code(self) -> str:
+        return self._proposal_code
 
     @property
     def investigator_id(self) -> str:
@@ -1300,6 +1300,7 @@ class TaskName(Enum):
 
     DELETE = "delete"
     INSERT = "insert"
+    UPDATE = "update"
 
     @staticmethod
     def for_name(name: str) -> TaskName:
@@ -1367,3 +1368,91 @@ class Telescope(Enum):
     LESEDI = "LESEDI"
     ONE_DOT_NINE = "1.9 m"
     SALT = "SALT"
+
+class UpdatableObservation:
+    """
+    An observation with updateble fields.
+
+    Parameters
+    ----------
+
+    observation_group_id : int
+        Identifier of the observation group to which the observation belongs.
+        Observation type.
+    group_identifier : int
+        Database id of the proposal to which this observation belongs.
+    status : Status
+        Status (accepted or rejected) of the observation.
+
+    """
+
+    def __init__(
+        self,
+        observation_id: int,
+        group_identifier: int,
+        status: Status
+    ):
+        self._observation_id = observation_id
+        self._group_identifier = group_identifier
+        self._status = status
+
+    @property
+    def observation_id(self) -> int:
+        return self._observation_id
+
+    @property
+    def group_identifier(self) -> Optional[int]:
+        return self._group_identifier
+
+    @property
+    def status(self) -> Status:
+        return self._status
+
+
+class UpdatableProposal:
+    """
+    A proposal for an updatable fields.
+
+    Parameters
+    ----------
+    pi : str
+        Principal Investigator.
+    proposal_code : str
+        Proposal identifier, which is unique within an institution.
+    title : str
+        Proposal title.
+    date_release: str
+        Data release date
+    meta_release: str
+        Data release date
+
+    """
+
+    def __init__(
+        self, pi: str, proposal_code: str, title: str,  date_release: str,  meta_release:str
+    ):
+        self._pi = pi
+        self._proposal_code = proposal_code
+        self._title = title
+        self._date_release = date_release
+        self._meta_release = meta_release
+
+    @property
+    def date_release(self) -> str:
+        return self._date_release
+
+    @property
+    def meta_release(self) -> str:
+        return self._meta_release
+
+    @property
+    def pi(self) -> str:
+        return self._pi
+
+    @property
+    def proposal_code(self) -> str:
+        return self._proposal_code
+
+    @property
+    def title(self) -> str:
+        return self._title

@@ -16,17 +16,16 @@ class SaltDatabaseService:
         )
         self._cursor = self._connection.cursor()
 
-    def find_pi(self, block_visit_id: int) -> str:
+    def find_pi(self, proposal_code: int) -> str:
         sql = """
-SELECT CONCAT(FirstName, " ", Surname) as FullName FROM  BlockVisit
-    JOIN `Block` USING(Block_Id)
-    JOIN Proposal ON `Block`.Proposal_Id=Proposal.Proposal_Id
+SELECT CONCAT(FirstName, " ", Surname) as FullName FROM Proposal
     JOIN ProposalCode ON Proposal.ProposalCode_Id=ProposalCode.ProposalCode_Id
     JOIN ProposalContact ON ProposalCode.ProposalCode_Id=ProposalContact.ProposalCode_Id
     JOIN Investigator ON ProposalContact.Leader_Id=Investigator.Investigator_Id
-WHERE BlockVisit_Id=%s;
+WHERE Proposal_Code = %s AND Current = 1
+ORDER BY Proposal.Semester_Id DESC
         """
-        results = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
+        results = pd.read_sql(sql, self._connection, params=(proposal_code,)).iloc[0]
         if results["FullName"]:
             return results["FullName"]
         raise ValueError("Observation have no Principal Investigator")
@@ -44,17 +43,18 @@ WHERE BlockVisit_Id=%s;
             return f"{results['Proposal_Code']}"
         raise ValueError("Observation has no proposal code")
 
-    def find_proposal_title(self, block_visit_id: int) -> str:
+    def find_proposal_title(self, proposal_code: str) -> str:
         sql = """
-SELECT Title FROM  BlockVisit
-    JOIN `Block` USING(Block_Id)
-    JOIN Proposal ON `Block`.Proposal_Id=Proposal.Proposal_Id
-    JOIN ProposalText 
-        ON Proposal.ProposalCode_Id=ProposalText.ProposalCode_Id 
-            AND Proposal.Semester_Id=ProposalText.Semester_Id
-WHERE BlockVisit_Id=%s;
+SELECT Title FROM  Proposal
+	JOIN ProposalCode using (ProposalCode_Id)
+    JOIN ProposalText
+        ON Proposal.ProposalCode_Id=ProposalText.ProposalCode_Id
+        AND Proposal.Semester_Id=ProposalText.Semester_Id
+WHERE Proposal_Code = %s
+	AND Current = 1
+    ORDER BY Proposal.Semester_Id DESC;
         """
-        results = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
+        results = pd.read_sql(sql, self._connection, params=(proposal_code,)).iloc[0]
         if results["Title"]:
             return f"{results['Title']}"
         raise ValueError("Observation has no title")
@@ -95,17 +95,17 @@ WHERE BlockVisit_Id=%s;
     def find_meta_release_date(self, block_visit_id: int) -> datetime.datetime:
         return self.find_release_date(block_visit_id)
 
-    def find_proposal_investigators(self, block_visit_id: int) -> List[str]:
+    def find_proposal_investigators(self, proposal_code: int) -> List[str]:
         sql = """
-SELECT PiptUser.PiptUser_Id FROM  BlockVisit
-    JOIN `Block` USING(Block_Id)
-    JOIN Proposal ON `Block`.Proposal_Id=Proposal.Proposal_Id
+SELECT PiptUser.PiptUser_Id FROM Proposal
+	JOIN ProposalCode ON Proposal.ProposalCode_Id=ProposalCode.ProposalCode_Id
     JOIN ProposalInvestigator ON Proposal.ProposalCode_Id=ProposalInvestigator.ProposalCode_Id
     JOIN Investigator ON ProposalInvestigator.Investigator_Id=Investigator.Investigator_Id
     JOIN PiptUser ON Investigator.PiptUser_Id=PiptUser.PiptUser_Id
-WHERE BlockVisit_Id=%s;
+WHERE Proposal_Code = %s
+	AND Current = 1;
         """
-        results = pd.read_sql(sql, self._connection, params=(block_visit_id,))
+        results = pd.read_sql(sql, self._connection, params=(proposal_code,))
         if len(results):
             ps = []
             for index, row in results.iterrows():

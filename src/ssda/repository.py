@@ -1,7 +1,11 @@
 from typing import cast
+from datetime import date
+import numpy as np
 
 from ssda.database.ssda import SSDADatabaseService
+from ssda.database.services import DatabaseServices
 from ssda.observation import ObservationProperties
+from ssda.util import types
 
 
 def delete(
@@ -181,3 +185,62 @@ def insert(
     except BaseException as e:
         ssda_database_service.rollback_transaction()
         raise e
+
+
+def update(
+    database_service: DatabaseServices,
+    start_date: date,
+    end_date: date
+) -> None:
+    ssda_database_service = database_service.ssda
+    sdb_database_service = database_service.sdb
+    #  TODO get observations for this semester @ SSDA
+    proposals_to_update = ssda_database_service.find_proposals_to_update(start_date, end_date)
+    # Compare proposal and update
+    for proposal in proposals_to_update:
+        ssda_database_service.begin_transaction()
+
+        # Proposal code
+        proposal_code =  proposal.proposal_code
+
+        sdb_title = sdb_database_service.find_proposal_title(proposal_code=proposal_code)
+
+        if proposal.title != sdb_title:
+            ssda_database_service.update_title(proposal_code=proposal_code, title=sdb_title)
+
+        # compare proposal PI
+        sdb_pi = sdb_database_service.find_pi(proposal_code)
+        if proposal.pi != sdb_pi:
+            ssda_database_service.update_pi(proposal_code=proposal_code, pi=sdb_pi)
+
+        # compare proposal date release
+        sdb_date_release = sdb_database_service.find_release_date(proposal_code)
+        # if proposal.date_release != sdb_date_release[0] or proposal.meta_release != sdb_date_release[1]:
+        #     ssda_database_service.update_date_release(
+        #         proposal_code=proposal_code,
+        #         release_date=sdb_date_release[0],
+        #         meta_release_date=sdb_date_release[1]
+        #     )
+
+        # compare proposal proposal investigators
+        proposal_investigators = ssda_database_service.find_proposal_investigators(proposal_code=proposal_code)
+        sdb_proposal_investigators = sdb_database_service.find_proposal_investigators(proposal_code=proposal_code)
+
+        if not np.array_equal(sorted(proposal_investigators), sorted(sdb_proposal_investigators)):
+            ssda_database_service.update_investigators(
+                proposal_code=proposal_code,
+                proposal_investigators=sdb_proposal_investigators
+            )
+        ssda_database_service.commit_transaction()
+    observations_to_update = ssda_database_service.find_observations_to_update(start_date, end_date)
+
+    for observation in observations_to_update:
+        sdb_observation_status = sdb_database_service.find_observation_status(observation.group_identifier)
+        if observation.status != sdb_observation_status.value:
+
+            ssda_database_service.update_status(
+                status=observation.status,
+                observation_id=observation.observation_id
+            )
+
+

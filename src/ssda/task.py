@@ -1,6 +1,8 @@
+from datetime import date
+from typing import Optional
+
 from ssda.database.services import DatabaseServices
-from ssda.exceptions import IgnoreObservationError
-from ssda.repository import insert, delete
+from ssda.repository import insert, delete, update
 from ssda.observation_properties import observation_properties
 from ssda.util.dummy import DummyObservationProperties
 from ssda.util.fits import StandardFitsFile, DummyFitsFile
@@ -9,7 +11,7 @@ from ssda.util.types import TaskName, TaskExecutionMode
 
 def execute_task(
     task_name: TaskName,
-    fits_path: str,
+    fits_path: Optional[str],
     task_mode: TaskExecutionMode,
     database_services: DatabaseServices,
 ) -> None:
@@ -60,5 +62,16 @@ def execute_task(
             observation_properties=_observation_properties,
             database_service=database_services.ssda,
         )
+    else:
+        raise NotImplementedError
+
+def update_task(
+    task_name: TaskName,
+    database_services: DatabaseServices
+) -> None:
+    if task_name == TaskName.UPDATE:
+        end_date = date.today()
+        start_date = date(2018, 5, 17)
+        update(database_services, start_date, end_date)
     else:
         raise NotImplementedError
