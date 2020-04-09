@@ -109,7 +109,7 @@ WHERE Proposal_Code=%s;
         proprietary_period = results["ProprietaryPeriod"]
 
         # The semester end date in the SDB is the last day of a month.
-        # However, it is easier (and more correct) to use the first of the following month.
+        # However, it is easier (and more correct) to use the first day of the following month.
         # We therefore add a day in addition to the proprietary period.
         release_date = (
             end_semester
