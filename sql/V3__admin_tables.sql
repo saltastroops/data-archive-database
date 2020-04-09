@@ -6,9 +6,9 @@ SET search_path TO admin, observations;
 
 -- LOOKUP TABLES
 
--- access
+-- access_rule
 
-DROP TABLE IF EXISTS access;
+DROP TABLE IF EXISTS access_rule;
 
 CREATE TABLE access_rule(
     access_rule_id  serial PRIMARY KEY,
@@ -17,7 +17,7 @@ CREATE TABLE access_rule(
 
 COMMENT ON TABLE access_rule IS 'Rules for data access.'
 
-INSERT INTO access_rule(access_rule)
+INSERT INTO access_rule (access_rule)
 values  ('PUBLIC_OR_INSTITUTION_MEMBER'),
         ('PUBLIC_OR_OWNER');
 
@@ -273,14 +273,14 @@ COMMENT ON COLUMN institution_user.institution_user_id IS 'Id used by the instit
 DROP TABLE IF EXISTS proposal_access_rule;
 
 CREATE TABLE proposal_access_rule (
-    proposal_id      int NOT NULL REFERENCES observations.proposal(proposal_id),
-    access_rule_id   int NOT NULL REFERENCES access_rule(access_rule_id)
+    proposal_id      int NOT NULL REFERENCES observations.proposal (proposal_id),
+    access_rule_id   int NOT NULL REFERENCES access_rule (access_rule_id)
 );
 
-CREATE INDEX proposal_access_rule_proposal_idx      ON proposal_access_rule(proposal_id);
-CREATE INDEX proposal_access_rule.access_rule_idx   ON proposal_access_rule(access_rule_id);
+CREATE INDEX proposal_access_rule_proposal_idx ON proposal_access_rule(proposal_id);
+CREATE INDEX proposal_access_rule.access_rule_idx ON proposal_access_rule(access_rule_id);
 
-COMMENT ON TABLE proposal_access IS 'Join table between proposal and access'.
+COMMENT ON TABLE proposal_access IS 'Join table between proposals and access rules'.
 
 -- proposal_investigator
 
