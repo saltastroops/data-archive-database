@@ -83,7 +83,7 @@ SELECT BlockVisitStatus FROM BlockVisit JOIN BlockVisitStatus USING(BlockVisitSt
 
     def find_release_date(self, proposal_code: str) -> Tuple[date, date]:
         sql = """
-SELECT Max(EndSemester) AS EndSemester, ProposalType, ProprietaryPeriod
+SELECT MAX(EndSemester) AS EndSemester, ProposalType, ProprietaryPeriod
 FROM BlockVisit
 JOIN Block ON BlockVisit.Block_Id=Block.Block_Id
 JOIN ProposalCode ON Block.ProposalCode_Id=ProposalCode.ProposalCode_Id
