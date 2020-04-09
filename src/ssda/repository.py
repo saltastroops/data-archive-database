@@ -5,7 +5,6 @@ import numpy as np
 from ssda.database.ssda import SSDADatabaseService
 from ssda.database.services import DatabaseServices
 from ssda.observation import ObservationProperties
-from ssda.util import types
 
 
 def delete(
@@ -194,7 +193,6 @@ def update(
 ) -> None:
     ssda_database_service = database_service.ssda
     sdb_database_service = database_service.sdb
-    #  TODO get observations for this semester @ SSDA
     proposals_to_update = ssda_database_service.find_proposals_to_update(start_date, end_date)
     # Compare proposal and update
     for proposal in proposals_to_update:
@@ -215,12 +213,12 @@ def update(
 
         # compare proposal date release
         sdb_date_release = sdb_database_service.find_release_date(proposal_code)
-        # if proposal.date_release != sdb_date_release[0] or proposal.meta_release != sdb_date_release[1]:
-        #     ssda_database_service.update_date_release(
-        #         proposal_code=proposal_code,
-        #         release_date=sdb_date_release[0],
-        #         meta_release_date=sdb_date_release[1]
-        #     )
+        if proposal.date_release != sdb_date_release[0] or proposal.meta_release != sdb_date_release[1]:
+            ssda_database_service.update_date_release(
+                proposal_code=proposal_code,
+                release_date=sdb_date_release[0],
+                meta_release_date=sdb_date_release[1]
+            )
 
         # compare proposal proposal investigators
         proposal_investigators = ssda_database_service.find_proposal_investigators(proposal_code=proposal_code)
@@ -228,7 +226,7 @@ def update(
 
         if not np.array_equal(sorted(proposal_investigators), sorted(sdb_proposal_investigators)):
             ssda_database_service.update_investigators(
-                proposal_code=proposal_code,
+                proposal_id=proposal.id,
                 proposal_investigators=sdb_proposal_investigators
             )
         ssda_database_service.commit_transaction()

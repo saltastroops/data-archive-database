@@ -16,7 +16,7 @@ class SaltDatabaseService:
         )
         self._cursor = self._connection.cursor()
 
-    def find_pi(self, proposal_code: int) -> str:
+    def find_pi(self, proposal_code: str) -> str:
         sql = """
 SELECT CONCAT(FirstName, " ", Surname) as FullName FROM Proposal
     JOIN ProposalCode ON Proposal.ProposalCode_Id=ProposalCode.ProposalCode_Id
@@ -95,7 +95,7 @@ WHERE BlockVisit_Id=%s;
     def find_meta_release_date(self, block_visit_id: int) -> datetime.datetime:
         return self.find_release_date(block_visit_id)
 
-    def find_proposal_investigators(self, proposal_code: int) -> List[str]:
+    def find_proposal_investigators(self, proposal_code: str) -> List[str]:
         sql = """
 SELECT PiptUser.PiptUser_Id FROM Proposal
 	JOIN ProposalCode ON Proposal.ProposalCode_Id=ProposalCode.ProposalCode_Id

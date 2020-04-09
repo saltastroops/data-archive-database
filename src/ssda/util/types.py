@@ -1156,16 +1156,16 @@ class ProposalInvestigator:
 
     """
 
-    def __init__(self, proposal_code: str, investigator_id: str):
+    def __init__(self, proposal_id: int, investigator_id: str):
         if len(investigator_id) > 50:
             raise ValueError("The investigator id must have at most 30 characters.")
 
-        self._proposal_code = proposal_code
+        self._proposal_id = proposal_id
         self._investigator_id = investigator_id
 
     @property
-    def proposal_code(self) -> str:
-        return self._proposal_code
+    def proposal_id(self) -> int:
+        return self._proposal_id
 
     @property
     def investigator_id(self) -> str:
@@ -1429,8 +1429,9 @@ class UpdatableProposal:
     """
 
     def __init__(
-        self, pi: str, proposal_code: str, title: str,  date_release: str,  meta_release:str
+        self,id: int, pi: str, proposal_code: str, title: str,  date_release: str,  meta_release:str
     ):
+        self._id = id
         self._pi = pi
         self._proposal_code = proposal_code
         self._title = title
@@ -1440,6 +1441,10 @@ class UpdatableProposal:
     @property
     def date_release(self) -> str:
         return self._date_release
+
+    @property
+    def id(self) -> int:
+        return self._id
 
     @property
     def meta_release(self) -> str:

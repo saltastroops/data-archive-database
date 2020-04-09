@@ -215,6 +215,7 @@ WHERE ot.night > %(start_date)s AND ot.night < %(end_date)s
         with self._connection.cursor() as cur:
             sql = """
 SELECT DISTINCT
+    p.proposal_id,
     p.proposal_code,
     p.title,
     p.pi,
@@ -232,11 +233,12 @@ WHERE ot.night > %(start_date)s AND ot.night < %(end_date)s
             results = cur.fetchall()
             return [
                 types.UpdatableProposal(
-                    pi=result[2],
-                    proposal_code=result[0],
-                    title=result[1],
-                    date_release=result[3],
-                    meta_release=result[4]
+                    id=result[0],
+                    pi=result[3],
+                    proposal_code=result[1],
+                    title=result[2],
+                    date_release=result[4],
+                    meta_release=result[5]
                 )
                 for result in results] if results else None
 
@@ -882,7 +884,7 @@ WHERE ot.night > %(start_date)s AND ot.night < %(end_date)s
             """
             cur.execute(
                 sql,
-                dict(title=title, proposal_id=proposal_code)
+                dict(title=title, proposal_code=proposal_code)
             )
 
     def update_status(self, status: str, observation_id: int):
@@ -914,25 +916,21 @@ WHERE ot.night > %(start_date)s AND ot.night < %(end_date)s
                 dict(release_date=release_date, meta_release_date=meta_release_date, proposal_code=proposal_code)
             )
 
-    def update_investigators(self, proposal_code, proposal_investigators):
+    def update_investigators(self, proposal_id: int, proposal_investigators: list):
         with self._connection.cursor() as cur:
             sql = """
-            WITH pid (proposal_id) AS (
-                SELECT proposal_id FROM observations.proposal WHERE proposal_code=%(proposal_code)s
-            )
-
             DELETE FROM admin.proposal_investigator
-            WHERE proposal_id = (SELECT pid.proposal_id FROM pid)
+            WHERE proposal_id = %(proposal_id)s
             """
             cur.execute(
                 sql,
-                dict(proposal_code=proposal_code)
+                dict(proposal_id=proposal_id)
             )
             for investigator in proposal_investigators:
                 self.insert_proposal_investigator(
                     proposal_investigator=types.ProposalInvestigator(
                         investigator_id=str(investigator),
-                        proposal_code=proposal_code
+                        proposal_id=proposal_id
                     )
                 )
 

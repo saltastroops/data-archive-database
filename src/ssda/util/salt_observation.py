@@ -26,6 +26,7 @@ class SALTObservation:
             if not fits_file.header_value("BVISITID")
             else int(fits_file.header_value("BVISITID"))
         )
+        self.proposal_code = fits_file.header_value("PROPID")
 
     def artifact(self, plane_id: int) -> types.Artifact:
         # Creates a file path of the reduced calibration level mapping a raw calibration level.
@@ -154,16 +155,16 @@ class SALTObservation:
 
         return types.Proposal(
             institution=types.Institution.SALT,
-            pi=self.database_service.find_pi(self.block_visit_id),
-            proposal_code=self.database_service.find_proposal_code(self.block_visit_id),
-            title=self.database_service.find_proposal_title(self.block_visit_id),
+            pi=self.database_service.find_pi(self.proposal_code),
+            proposal_code=self.proposal_code,
+            title=self.database_service.find_proposal_title(self.proposal_code),
         )
 
     def proposal_investigators(
         self, proposal_id: int
     ) -> List[types.ProposalInvestigator]:
         investigators = self.database_service.find_proposal_investigators(
-            self.block_visit_id
+            self.proposal_code
         )
         return [
             types.ProposalInvestigator(
@@ -186,6 +187,7 @@ class SALTObservation:
         )
 
     def _product_category(self):
+        print(self.file_path())
         observation_object = self.header_value("OBJECT").upper()
         product_type = self.header_value("OBSTYPE").upper()
         proposal_id = self.header_value("PROPID").upper()
