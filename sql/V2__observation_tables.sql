@@ -356,7 +356,7 @@ CREATE INDEX proposal_proposal_type_id ON Proposal (proposal_type_id);
 COMMENT ON TABLE proposal IS 'A proposal.';
 COMMENT ON COLUMN proposal.institution_id IS 'The institution to which the proposal was submitted.';
 COMMENT ON COLUMN proposal.pi IS 'The Principal Investigator of the proposal.';
-COMMENT ON COLUMN proposal.proposal_type_id IS 'The type of the proposal';
+COMMENT ON COLUMN proposal.proposal_type_id IS 'The type of the proposal.';
 COMMENT ON COLUMN proposal.title IS 'The proposal title.';
 
 -- observation_group
