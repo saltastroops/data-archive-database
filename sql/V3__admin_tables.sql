@@ -277,10 +277,10 @@ CREATE TABLE proposal_access_rule (
   proposal_id      int NOT NULL REFERENCES observations.proposal (proposal_id)
 );
 
-CREATE INDEX proposal_access_rule_proposal_idx ON proposal_access_rule (proposal_id);
 CREATE INDEX proposal_access_rule.access_rule_idx ON proposal_access_rule (access_rule_id);
+CREATE INDEX proposal_access_rule_proposal_idx ON proposal_access_rule (proposal_id);
 
-COMMENT ON TABLE proposal_access IS 'Join table between proposals and access rules'.
+COMMENT ON TABLE proposal_access_rule IS 'Join table between proposals and access rules.';
 
 -- proposal_investigator
 
