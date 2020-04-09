@@ -273,12 +273,12 @@ COMMENT ON COLUMN institution_user.institution_user_id IS 'Id used by the instit
 DROP TABLE IF EXISTS proposal_access_rule;
 
 CREATE TABLE proposal_access_rule (
-    proposal_id      int NOT NULL REFERENCES observations.proposal (proposal_id),
-    access_rule_id   int NOT NULL REFERENCES access_rule (access_rule_id)
+  access_rule_id   int NOT NULL REFERENCES access_rule (access_rule_id),
+  proposal_id      int NOT NULL REFERENCES observations.proposal (proposal_id)
 );
 
-CREATE INDEX proposal_access_rule_proposal_idx ON proposal_access_rule(proposal_id);
-CREATE INDEX proposal_access_rule.access_rule_idx ON proposal_access_rule(access_rule_id);
+CREATE INDEX proposal_access_rule_proposal_idx ON proposal_access_rule (proposal_id);
+CREATE INDEX proposal_access_rule.access_rule_idx ON proposal_access_rule (access_rule_id);
 
 COMMENT ON TABLE proposal_access IS 'Join table between proposals and access rules'.
 
