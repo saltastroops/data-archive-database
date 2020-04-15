@@ -17,7 +17,6 @@ class SaltDatabaseService:
         self._cursor = self._connection.cursor()
 
     def find_pi(self, proposal_code: str) -> str:
-        print("XXX: ", proposal_code)
         sql = """
 SELECT CONCAT(FirstName, " ", Surname) as FullName FROM ProposalCode
     JOIN ProposalContact ON ProposalCode.ProposalCode_Id=ProposalContact.ProposalCode_Id
