@@ -17,18 +17,17 @@ class SaltDatabaseService:
         self._cursor = self._connection.cursor()
 
     def find_pi(self, proposal_code: str) -> str:
+        print("XXX: ", proposal_code)
         sql = """
-SELECT CONCAT(FirstName, " ", Surname) as FullName FROM Proposal
-    JOIN ProposalCode ON Proposal.ProposalCode_Id=ProposalCode.ProposalCode_Id
+SELECT CONCAT(FirstName, " ", Surname) as FullName FROM ProposalCode
     JOIN ProposalContact ON ProposalCode.ProposalCode_Id=ProposalContact.ProposalCode_Id
     JOIN Investigator ON ProposalContact.Leader_Id=Investigator.Investigator_Id
-WHERE Proposal_Code = %s AND Current = 1
-ORDER BY Proposal.Semester_Id DESC
+WHERE Proposal_Code = %s
         """
         results = pd.read_sql(sql, self._connection, params=(proposal_code,)).iloc[0]
         if results["FullName"]:
             return results["FullName"]
-        raise ValueError("Observation have no Principal Investigator")
+        raise ValueError("The observation has no Principal Investigator")
 
     def find_proposal_code(self, block_visit_id: int) -> str:
         sql = """
@@ -41,7 +40,7 @@ WHERE BlockVisit_Id=%s;
         results = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
         if results["Proposal_Code"]:
             return f"{results['Proposal_Code']}"
-        raise ValueError("Observation has no proposal code")
+        raise ValueError("The observation has no proposal code")
 
     def find_proposal_title(self, proposal_code: str) -> str:
         sql = """
@@ -52,12 +51,12 @@ SELECT Title FROM  Proposal
         AND Proposal.Semester_Id=ProposalText.Semester_Id
 WHERE Proposal_Code = %s
 	AND Current = 1
-    ORDER BY Proposal.Semester_Id DESC;
+    ORDER BY Proposal.Semester_Id DESC
         """
         results = pd.read_sql(sql, self._connection, params=(proposal_code,)).iloc[0]
         if results["Title"]:
             return f"{results['Title']}"
-        raise ValueError("Observation has no title")
+        raise ValueError("The observation has no title")
 
     def find_observation_status(self, block_visit_id: int) -> types.Status:
         # Observations not belonging to a proposal are accepted by default.
@@ -97,13 +96,11 @@ WHERE BlockVisit_Id=%s;
 
     def find_proposal_investigators(self, proposal_code: str) -> List[str]:
         sql = """
-SELECT PiptUser.PiptUser_Id FROM Proposal
-	JOIN ProposalCode ON Proposal.ProposalCode_Id=ProposalCode.ProposalCode_Id
-    JOIN ProposalInvestigator ON Proposal.ProposalCode_Id=ProposalInvestigator.ProposalCode_Id
-    JOIN Investigator ON ProposalInvestigator.Investigator_Id=Investigator.Investigator_Id
-    JOIN PiptUser ON Investigator.PiptUser_Id=PiptUser.PiptUser_Id
+SELECT pu.PiptUser_Id FROM ProposalCode AS pc
+    JOIN ProposalInvestigator AS pi ON pc.ProposalCode_Id=pi.ProposalCode_Id
+    JOIN Investigator AS i ON pi.Investigator_Id=i.Investigator_Id
+    JOIN PiptUser AS pu ON i.PiptUser_Id=pu.PiptUser_Id
 WHERE Proposal_Code = %s
-	AND Current = 1;
         """
         results = pd.read_sql(sql, self._connection, params=(proposal_code,))
         if len(results):

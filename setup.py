@@ -8,6 +8,6 @@ setup(
     setup_requires=['pytest-runner'],
     install_requires=['astropy', 'click', 'dsnparse', 'python-dateutil', 'faker', 'psycopg2', 'sentry-sdk'],
     tests_require=['mypy', 'pytest', 'pytest-mock'],
-    entry_points={"console_scripts": ["ssda = ssda.cli:main"]},
+    entry_points={"console_scripts": ["ssda = ssda.cli:main", "ssda_sync = ssda.ssda_sync:main"]},
     version="0.1.0"
 )

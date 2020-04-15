@@ -1,5 +1,5 @@
 from datetime import timedelta, date
-from typing import cast, Any, Dict, Optional
+from typing import cast, Any, Dict, Optional, List
 import os
 
 import astropy.units as u
@@ -134,7 +134,7 @@ class SSDADatabaseService:
             else:
                 return None
 
-    def find_observations_to_update(self, start_date: date, end_date: date) -> list:
+    def find_observations(self, start_date: date, end_date: date) -> list:
         with self._connection.cursor() as cur:
             sql = """
 SELECT o.observation_id,
@@ -146,7 +146,7 @@ FROM
     JOIN observation_time AS ot ON ot.plane_id = plane.plane_id
     JOIN status AS s ON s.status_id = o.status_id
     JOIN observation_group AS og ON og.observation_group_id = o.observation_group_id
-WHERE ot.night > %(start_date)s AND ot.night < %(end_date)s
+WHERE ot.night >= %(start_date)s AND ot.night <= %(end_date)s
                     """
             cur.execute(
                 sql, dict(start_date=start_date, end_date=end_date)
@@ -200,8 +200,8 @@ WHERE ot.night > %(start_date)s AND ot.night < %(end_date)s
         with self._connection.cursor() as cur:
             sql = """
             SELECT institution_user_id
-            FROM admin.proposal_investigator AS pi
-                JOIN observations.proposal AS p ON pi.proposal_id = p.proposal_id
+            FROM admin.proposal_investigator AS proi
+                JOIN observations.proposal AS p ON proi.proposal_id = p.proposal_id
             WHERE proposal_code = %(proposal_code)s
             """
 
@@ -225,7 +225,7 @@ FROM observation  AS o
     JOIN plane ON plane.observation_id = o.observation_id
     JOIN observation_time AS ot ON ot.plane_id = plane.plane_id
     JOIN proposal AS p ON o.proposal_id = p.proposal_id
-WHERE ot.night > %(start_date)s AND ot.night < %(end_date)s
+WHERE ot.night >= %(start_date)s AND ot.night <= %(end_date)s
             """
             cur.execute(
                 sql, dict(start_date=start_date, end_date=end_date)
@@ -233,7 +233,7 @@ WHERE ot.night > %(start_date)s AND ot.night < %(end_date)s
             results = cur.fetchall()
             return [
                 types.UpdatableProposal(
-                    id=result[0],
+                    proposal_id=result[0],
                     pi=result[3],
                     proposal_code=result[1],
                     title=result[2],
@@ -807,20 +807,18 @@ WHERE ot.night > %(start_date)s AND ot.night < %(end_date)s
 
         with self._connection.cursor() as cur:
             sql = """
-            WITH pid (proposal_id) AS (
-                SELECT proposal_id FROM observations.proposal WHERE proposal_code=%(proposal_code)s
-            )
             INSERT INTO admin.proposal_investigator (institution_user_id, proposal_id)
-            VALUES (%(user_id)s, (SELECT pid.proposal_id FROM pid))
+            VALUES (%(user_id)s, %(proposal_id)s)
             """
 
             cur.execute(
                 sql,
                 dict(
                     user_id=proposal_investigator.investigator_id,
-                    proposal_code=proposal_investigator.proposal_code,
+                    proposal_id=proposal_investigator.proposal_id,
                 ),
             )
+
 
     def insert_target(self, target: types.Target) -> int:
         """
@@ -863,28 +861,28 @@ WHERE ot.night > %(start_date)s AND ot.night < %(end_date)s
 
             return cast(int, cur.fetchone()[0])
 
-    def update_pi(self, pi: str, proposal_code: int):
+    def update_pi(self, pi: str, proposal_id: int):
         with self._connection.cursor() as cur:
             sql = """
             UPDATE proposal
                 SET pi=%(pi)s
-            WHERE proposal_id=%(proposal_code)s
+            WHERE proposal_id=%(proposal_id)s
             """
             cur.execute(
                 sql,
-                dict(pi=pi, proposal_code=proposal_code)
+                dict(pi=pi, proposal_id=proposal_id)
             )
 
-    def update_title(self, title: str, proposal_code: int):
+    def update_title(self, title: str, proposal_id: int):
         with self._connection.cursor() as cur:
             sql = """
             UPDATE proposal
                 SET title=%(title)s
-            WHERE proposal_code=%(proposal_code)s
+            WHERE proposal_id=%(proposal_id)s
             """
             cur.execute(
                 sql,
-                dict(title=title, proposal_code=proposal_code)
+                dict(title=title, proposal_id=proposal_id)
             )
 
     def update_status(self, status: str, observation_id: int):
@@ -895,28 +893,28 @@ WHERE ot.night > %(start_date)s AND ot.night < %(end_date)s
             )
             UPDATE observation
                 SET status_id=(SELECT st.status_id FROM st)
-            WHERE observation_id=%(observation_group_id)s
+            WHERE observation_id=%(observation_id)s
             """
             cur.execute(
                 sql,
                 dict(status=status, observation_id=observation_id)
             )
 
-    def update_release_date(self, proposal_code:int, release_date: date, meta_release_date: date) -> None:
+    def update_release_date(self, proposal_id:int, release_date: date, meta_release_date: date) -> None:
         if not meta_release_date:
             meta_release_date = release_date
         with self._connection.cursor() as cur:
             sql = """
-            UPDATE proposal
+            UPDATE observation
                 SET data_release=%(release_date)s, meta_release=%(meta_release_date)s
-            WHERE proposal_code=%(proposal_code)s
+            WHERE proposal_id=%(proposal_id)s
             """
             cur.execute(
                 sql,
-                dict(release_date=release_date, meta_release_date=meta_release_date, proposal_code=proposal_code)
+                dict(release_date=release_date, meta_release_date=meta_release_date, proposal_id=proposal_id)
             )
 
-    def update_investigators(self, proposal_id: int, proposal_investigators: list):
+    def update_investigators(self, proposal_id: int, proposal_investigators:  List[types.ProposalInvestigator]):
         with self._connection.cursor() as cur:
             sql = """
             DELETE FROM admin.proposal_investigator

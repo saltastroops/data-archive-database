@@ -187,7 +187,6 @@ class SALTObservation:
         )
 
     def _product_category(self):
-        print(self.file_path())
         observation_object = self.header_value("OBJECT").upper()
         product_type = self.header_value("OBSTYPE").upper()
         proposal_id = self.header_value("PROPID").upper()

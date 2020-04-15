@@ -1144,12 +1144,12 @@ class Proposal:
 
 class ProposalInvestigator:
     """
-    An investigator on a proposal.
+     An investigator on a proposal.
 
     Parameters
     ----------
-    proposal_code : str
-        The proposal code.
+    proposal_id : int
+        Database id of the proposal.
     investigator_id : str
         The unique id of the investigator, as determined by the institution to which the
         proposal was submitted.
@@ -1300,7 +1300,6 @@ class TaskName(Enum):
 
     DELETE = "delete"
     INSERT = "insert"
-    UPDATE = "update"
 
     @staticmethod
     def for_name(name: str) -> TaskName:
@@ -1369,6 +1368,8 @@ class Telescope(Enum):
     ONE_DOT_NINE = "1.9 m"
     SALT = "SALT"
 
+
+@dataclass
 class UpdatableObservation:
     """
     An observation with updateble fields.
@@ -1386,29 +1387,12 @@ class UpdatableObservation:
 
     """
 
-    def __init__(
-        self,
-        observation_id: int,
-        group_identifier: int,
-        status: Status
-    ):
-        self._observation_id = observation_id
-        self._group_identifier = group_identifier
-        self._status = status
-
-    @property
-    def observation_id(self) -> int:
-        return self._observation_id
-
-    @property
-    def group_identifier(self) -> Optional[int]:
-        return self._group_identifier
-
-    @property
-    def status(self) -> Status:
-        return self._status
+    observation_id: int
+    group_identifier: Optional[int]
+    status: Status
 
 
+@dataclass
 class UpdatableProposal:
     """
     A proposal for an updatable fields.
@@ -1419,6 +1403,8 @@ class UpdatableProposal:
         Principal Investigator.
     proposal_code : str
         Proposal identifier, which is unique within an institution.
+    proposal_id : int
+        Proposal identifier, which is unique within an institution.
     title : str
         Proposal title.
     date_release: str
@@ -1428,36 +1414,9 @@ class UpdatableProposal:
 
     """
 
-    def __init__(
-        self,id: int, pi: str, proposal_code: str, title: str,  date_release: str,  meta_release:str
-    ):
-        self._id = id
-        self._pi = pi
-        self._proposal_code = proposal_code
-        self._title = title
-        self._date_release = date_release
-        self._meta_release = meta_release
-
-    @property
-    def date_release(self) -> str:
-        return self._date_release
-
-    @property
-    def id(self) -> int:
-        return self._id
-
-    @property
-    def meta_release(self) -> str:
-        return self._meta_release
-
-    @property
-    def pi(self) -> str:
-        return self._pi
-
-    @property
-    def proposal_code(self) -> str:
-        return self._proposal_code
-
-    @property
-    def title(self) -> str:
-        return self._title
+    date_release: str
+    proposal_id: int
+    meta_release: str
+    pi: str
+    proposal_code: str
+    title: str
