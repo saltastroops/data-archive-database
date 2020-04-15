@@ -43,7 +43,7 @@ WHERE BlockVisit_Id=%s;
 
     def find_proposal_title(self, proposal_code: str) -> str:
         sql = """
-SELECT Title FROM  Proposal
+SELECT Title FROM Proposal
 	JOIN ProposalCode using (ProposalCode_Id)
     JOIN ProposalText
         ON Proposal.ProposalCode_Id=ProposalText.ProposalCode_Id

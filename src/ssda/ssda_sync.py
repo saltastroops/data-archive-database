@@ -46,8 +46,6 @@ def main(start, end):
     )
     ssda_connection = database_services.ssda.connection()
 
-#_______________________________________________________________________________________________________________________
-
     proposals_to_update = ssda_database_service.find_proposals_to_update(start_date, end_date)
     # Compare proposal and update
     for proposal in proposals_to_update:
@@ -96,6 +94,5 @@ def main(start, end):
                 status=observation.status,
                 observation_id=observation.observation_id
             )
-#_______________________________________________________________________________________________________________________
 
     ssda_connection.close()
