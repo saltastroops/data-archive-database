@@ -1,10 +1,11 @@
 import datetime
 import uuid
+from collections import defaultdict
 from dataclasses import dataclass
+from typing import Callable, Dict, Generator, List, Optional, Set, Union
 
 import pandas as pd
 import pytz
-from typing import Dict, List, Optional, Tuple, Union
 from pymysql import connect
 
 from ssda.util import types
@@ -12,11 +13,27 @@ from ssda.util import types
 
 @dataclass
 class FileDataItem:
-    UTStart: datetime
-    FileName: str
-    BlockVisit_Id: int
-    Target_Name: str
-    Proposal_Code: str
+    """
+    Details from a FileData table entry.
+
+    """
+
+    ut_start: datetime
+    file_name: str
+    block_visit_id: Optional[int]
+    target_name: str
+    proposal_code: str
+
+
+@dataclass(frozen=True)
+class BlockKey:
+    """
+    A proposal code and a target name, which together are used top identify a block.
+
+    """
+
+    proposal_code: str
+    target_name: str
 
 
 class SaltDatabaseService:
@@ -28,12 +45,11 @@ class SaltDatabaseService:
             passwd=database_config.password(),
         )
         self._cursor = self._connection.cursor()
+        self._proposal_codes_existing: Dict[str, bool] = {}
 
-    @staticmethod
-    def is_real_proposal_code(proposal_code: str) -> bool:
-        return proposal_code.startswith('20')
-
-    def find_block_visit_ids(self, night: datetime.date) -> Dict[str, Optional[Union[int, str]]]:
+    def find_block_visit_ids(
+        self, night: datetime.date
+    ) -> Dict[str, Optional[Union[int, str]]]:
         """
         Find the block visit ids fromm the SDB.
 
@@ -64,9 +80,71 @@ class SaltDatabaseService:
 
         """
 
+        file_data = self._find_raw_file_data(night)
+
+        block_visit_ids = self._find_raw_block_visit_ids(night)
+
+        # Now that we have all the data, we can try to fill the gaps in file_data.
+        self._fill_block_visit_id_gaps(night, file_data, block_visit_ids)
+
+        # Collect the start times and corresponding block visit ids
+        return {fd.file_name: fd.block_visit_id for fd in file_data}
+
+    def is_existing_proposal_code(self, proposal_code: str) -> bool:
+        """
+        Does a proposal code exist?
+
+        Parameters
+        ----------
+        proposal_code : str
+            Proposal code.
+
+        Returns
+        -------
+        bool
+            Whether the proposal code exists.
+
+        """
+
+        if proposal_code in self._proposal_codes_existing:
+            return self._proposal_codes_existing[proposal_code]
+
+        sql = """
+SELECT COUNT(*) AS ProposalCount
+FROM Proposal
+JOIN ProposalCode ON Proposal.ProposalCode_Id=ProposalCode.ProposalCode_Id
+WHERE Proposal_Code=%s
+        """
+        results = pd.read_sql(sql, self._connection, params=(proposal_code,))
+
+        existing = results.ProposalCount[0] > 0
+        self._proposal_codes_existing[proposal_code] = existing
+
+        return existing
+
+    def _find_raw_file_data(self, night: datetime.date) -> List[FileDataItem]:
+        """
+        Extract file data from the FileData.
+
+        Some database inconsistencies are corrected, but missing block visit ids are
+        not addressed.
+
+        Parameters
+        ----------
+        night : date
+            Observing night.
+
+        Returns
+        -------
+        List[FileDataItem[
+            Raw file data.
+
+        """
+
         # Extract data from the FileData table.
-        night_date = datetime.datetime(night.year, night.month, night.day)
-        start_time = datetime.datetime(night.year, night.month, night.day, 12, 0, 0, 0, tzinfo=pytz.utc)
+        start_time = datetime.datetime(
+            night.year, night.month, night.day, 12, 0, 0, 0, tzinfo=pytz.utc
+        )
         end_time = start_time + datetime.timedelta(hours=24)
         file_data_sql = """
 SELECT FileData.UTStart, FileData.FileName, ProposalCode.Proposal_Code, FileData.Target_Name, FileData.BlockVisit_Id
@@ -75,14 +153,18 @@ JOIN ProposalCode ON FileData.ProposalCode_Id = ProposalCode.ProposalCode_Id
 WHERE UTStart BETWEEN %s AND %s
 ORDER BY UTStart
         """
-        file_data_results = pd.read_sql(file_data_sql, self._connection, params=(start_time, end_time))
+        file_data_results = pd.read_sql(
+            file_data_sql, self._connection, params=(start_time, end_time)
+        )
         file_data = [
             FileDataItem(
-                UTStart=row.UTStart.to_pydatetime(),
-                FileName=row.FileName,
-                Proposal_Code=row.Proposal_Code,
-                Target_Name=row.Target_Name.strip(),
-                BlockVisit_Id=int(row.BlockVisit_Id) if not pd.isna(row.BlockVisit_Id) else None,
+                ut_start=row.UTStart.to_pydatetime(),
+                file_name=row.FileName,
+                proposal_code=row.Proposal_Code,
+                target_name=row.Target_Name.strip(),
+                block_visit_id=int(row.BlockVisit_Id)
+                if not pd.isna(row.BlockVisit_Id)
+                else None,
             )
             for row in file_data_results.itertuples()
         ]
@@ -90,32 +172,56 @@ ORDER BY UTStart
         # Correct for multiple target names in the same block visit.
         if night == datetime.date(2016, 10, 20):
             for fd in file_data:
-                if fd.Proposal_Code == "2016-1-SCI-049" and fd.Target_Name.startswith("N132D-pos"):
-                    fd.Target_Name = "N132D-pos1"
+                if fd.proposal_code == "2016-1-SCI-049" and fd.target_name.startswith(
+                    "N132D-pos"
+                ):
+                    fd.target_name = "N132D-pos1"
 
         # Fix incorrect block visit id.
         if night == datetime.date(2015, 2, 25):
             for fd in file_data:
-                if fd.BlockVisit_Id == 8082:
-                    fd.BlockVisit_Id = 8092
+                if fd.block_visit_id == 8082:
+                    fd.block_visit_id = 8092
 
         # Ignore block visit ids of other dates
         if night == datetime.date(2016, 2, 22):
             for fd in file_data:
-                if fd.BlockVisit_Id == 10906:
-                    fd.BlockVisit_Id = None
+                if fd.block_visit_id == 10906:
+                    fd.block_visit_id = None
         if night == datetime.date(2018, 4, 16):
             for fd in file_data:
-                if fd.BlockVisit_Id == 18937:
-                    fd.BlockVisit_Id = None
+                if fd.block_visit_id == 18937:
+                    fd.block_visit_id = None
 
         # There might be calibration files not belonging to any proposal which still
         # have a block visit id, although they shouldn't.
         for fd in file_data:
-            if not SaltDatabaseService.is_real_proposal_code(fd.Proposal_Code):
-                fd.BlockVisit_Id = None
+            if not self.is_existing_proposal_code(fd.proposal_code):
+                fd.block_visit_id = None
+
+        return file_data
+
+    def _find_raw_block_visit_ids(
+        self, night: datetime.date
+    ) -> Dict[BlockKey, List[int]]:
+        """
+        Extract block visit ids from database tables other than FileData.
+
+        Parameters
+        ----------
+        night : datetime.date
+
+        Returns
+        -------
+
+        """
 
         # Get the block visit ids independently from the proposal code and target name.
+        night_date = datetime.datetime(night.year, night.month, night.day)
+        start_time = datetime.datetime(
+            night.year, night.month, night.day, 12, 0, 0, 0, tzinfo=pytz.utc
+        )
+        end_time = start_time + datetime.timedelta(hours=24)
         block_visits_sql = """
 SELECT DISTINCT ProposalCode.Proposal_Code, Target.Target_Name, BlockVisit.BlockVisit_Id, BlockVisitStatus.BlockVisitStatus
 FROM BlockVisit
@@ -130,7 +236,11 @@ JOIN FileData ON FileData.ProposalCode_Id = ProposalCode.ProposalCode_Id AND Fil
 WHERE FileData.UTStart BETWEEN %s AND %s AND NightInfo.Date=%s
 ORDER BY ProposalCode.Proposal_Code, Target.Target_Name, BlockVisit.BlockVisit_Id
         """
-        block_visits_results = pd.read_sql(block_visits_sql, self._connection, params=(start_time, end_time, night_date))
+        block_visits_results = pd.read_sql(
+            block_visits_sql,
+            self._connection,
+            params=(start_time, end_time, night_date),
+        )
 
         # We'd miss some block visits if we don't change their status from "Deleted" or
         # "In queue".
@@ -151,214 +261,237 @@ ORDER BY ProposalCode.Proposal_Code, Target.Target_Name, BlockVisit.BlockVisit_I
         # The following code implicitly assumes that a block visit with a smaller id
         # value has been observed earlier. This is not a good assumption, but it is
         # correct and we don't have much of a choice.
-        block_visit_ids = {}
+        block_visit_ids: Dict[BlockKey, List[int]] = defaultdict(list)
         for row in block_visits_results.itertuples():
             block_visit_status = correct_block_visit_status(row)
-            if block_visit_status == 'In queue':
+            if block_visit_status == "In queue":
                 continue
-            key = (row.Proposal_Code, row.Target_Name.strip())
-            if key not in block_visit_ids:
-                block_visit_ids[key] = {'current_index': 0, 'ids': [], 'deleted_ids': []}
-            if block_visit_status in ('Accepted', 'Rejected'):
-                block_visit_ids[key]['ids'].append(row.BlockVisit_Id)
-            elif block_visit_status == 'Deleted':
-                block_visit_ids[key]['deleted_ids'].append(row.BlockVisit_Id)
+            key = BlockKey(
+                proposal_code=row.Proposal_Code, target_name=row.Target_Name.strip()
+            )
+            if block_visit_status in ("Accepted", "Rejected", "Deleted"):
+                block_visit_ids[key].append(row.BlockVisit_Id)
             else:
-                raise ValueError(f"Unsupported block visit status: {block_visit_status}")
+                raise ValueError(
+                    f"Unsupported block visit status: {block_visit_status}"
+                )
 
-        # Sometimes a block visit has been added twice to the OCS and one of these has
-        # been deleted afterwards. But there is no guarantee that the correct one has
-        # been deleted. Hence we must replace a "deleted" block visit in file_data with
-        # the one block visit id (for this proposal and target) that is not in
-        # file_data.
-        #
-        # We start by figuring out which block visit ids aren't used in file_data...
-        for key in block_visit_ids:
-            # Start by assigning all ids. We'll remove the used ones in the next for
-            # loop.
-            block_visit_ids[key]['unused_ids'] = set(block_visit_ids[key]['ids'])
-        for i, fd in enumerate(file_data):
-            key = (fd.Proposal_Code, fd.Target_Name)
-            if fd.BlockVisit_Id and key in block_visit_ids:
-                block_visit_ids[key]['unused_ids'].discard(fd.BlockVisit_Id)
+        return block_visit_ids
 
-        # ... and now replace the wrong block visit ids.
+    def create_block_visit_id_provider(
+        self,
+        night: datetime.date,
+        file_data: List[FileDataItem],
+        block_visit_ids: Dict[BlockKey, List[int]],
+    ) -> Callable[[BlockKey], Union[int, str]]:
+        """
+        Create a function for requesting block visit id value.
 
-        def is_deleted(block_visit_id):
-            for key in block_visit_ids:
-                if block_visit_id in block_visit_ids[key]['deleted_ids']:
-                    return True
+        The function accepts a BlockVisitKey as its only parameter.
 
-            return False
+        If for a combination of proposal code there exist block visit ids not used by
+        any other file, the first of these is returned by the function. A returned value
+        won't be returned again. If there is no block visit id available a UUID is
+        returned instead.
 
-        def unused_alternatives(block_visit_id):
-            for key in block_visit_ids:
-                if block_visit_id in block_visit_ids[key]['deleted_ids']:
-                    return block_visit_ids[key]['unused_ids']
+        Parameters
+        ----------
+        night : datetime.date
+            Observing night.
+        file_data : List[FileDataItem]
+            File data.
+        block_visit_ids : Dict[BlockKey]
+            Block visit ids.
 
-            return set()
+        Returns
+        -------
+        Callable[[BlockVisitsKey], Union[int, str]]
+            A function for requesting block visit ids.
 
-        def block_visit_details(block_visit_id):
-            for key in block_visit_ids:
-                bvd = block_visit_ids[key]
-                if block_visit_id in bvd['ids'] or block_visit_id in bvd['deleted_ids']:
-                    return bvd
+        """
 
-            return None
+        # Get the block visit ids not used already.
+        available_ids: Dict[BlockKey, List[int]] = defaultdict(list)
+
+        for key, ids in block_visit_ids.items():
+            available_ids[key] = sorted(ids)
 
         for fd in file_data:
-            if is_deleted(fd.BlockVisit_Id):
-                unused_ids = unused_alternatives(fd.BlockVisit_Id)
-                if len(unused_ids) == 1:
-                    fd.BlockVisit_Id = list(unused_ids)[0]
-                elif len(unused_ids) == 0:
-                    # There should be no deleted block visit with data (without another
-                    # block visit, that is. Hence we should raise an error. But in fact
-                    # there are such blocks, and thus we just use one of their ids.
-                    bvd = block_visit_details(fd.BlockVisit_Id)
-                    bvd['deleted_ids'].remove(fd.BlockVisit_Id)
-                    bvd['ids'].append(fd.BlockVisit_Id)
-                    bvd['ids'] = sorted(bvd['ids'])
-                else:
-                    continue
-
-        # Now that we have all the data, we can try to fill the gaps in file_data.
-        previous_key = (None, None)
-        for index, fd in enumerate(file_data):
-            # If the proposal code or target has changed, generally a new block has
-            # started. However, if the proposal code has remained the same and the old
-            # target has no block visit id, it is a calibration. We then must assume we
-            # are still in the same block.
-            key = (fd.Proposal_Code, fd.Target_Name)
-            if index > 0 and key != previous_key and not (previous_key[0] == key[0] and (previous_key not in block_visit_ids or key not in block_visit_ids)):
-                if previous_key in block_visit_ids:
-                    block_visit_ids[previous_key]['current_index'] += 1
-            previous_key = key
-
-            if fd.BlockVisit_Id and key in block_visit_ids:
-                # Update the current id index
+            if not self.is_existing_proposal_code(fd.proposal_code):
+                continue
+            key = BlockKey(proposal_code=fd.proposal_code, target_name=fd.target_name)
+            if key in available_ids:
                 try:
-                    real_index = block_visit_ids[key]['ids'].index(fd.BlockVisit_Id)
+                    available_ids[key].remove(fd.block_visit_id)
                 except ValueError:
-                    raise Exception(f"The block visit id {fd.BlockVisit_Id} could not be found.")
-                if block_visit_ids[key]['current_index'] < real_index:
-                    # We might have to catch up with the real index.
-                    block_visit_ids[key]['current_index'] = real_index
-                # In principle we should raise an error if the current index is ahead of
-                # the real index, as this should never happen. However, in practice it
-                # might be that other calibrations are taken before files for the
-                # proposal and target are resumed. So the real index may indeed be
-                # behind the current index.
+                    pass  # id was not in list
+
+        # Define the function for requesting block visit id values.
+        def f(key: BlockKey):
+            if key in available_ids and available_ids[key]:
+                return available_ids[key].pop(0)
             else:
-                # Update the block visit id.
-                if key in block_visit_ids:
-                    current_index = block_visit_ids[key]['current_index']
-                    if current_index >= len(block_visit_ids[key]['ids']):
-                        # This shouldn't happen, but it does. Sometimes a block is
-                        # attempted again after several other observations, but without
-                        # a new block visit id. So we shrug our shoulders and do the
-                        # best we, taking the last available id.
-                        current_index = len(block_visit_ids[key]['ids']) - 1
+                return str(uuid.uuid4())
 
-                        # But it might also be that there simply is no block visit id,
-                        # in which case there isn't terribly much we can do.
-                        if current_index < 0:
-                            continue
+        return f
 
-                    fd.BlockVisit_Id = block_visit_ids[key]['ids'][current_index]
+    def _fill_block_visit_id_gaps(
+        self,
+        night: datetime.date,
+        file_data: List[FileDataItem],
+        block_visit_ids: Dict[BlockKey, List[id]],
+    ):
+        """
+        Fill in missing block visit ids for files that contain target observations.
 
-        def previous_block_visit_id(index: int) -> Optional[int]:
-            proposal_code = file_data[index].Proposal_Code
-            target_name = file_data[index].Target_Name
-            i = index - 1
-            while i >= 0 and file_data[i].Proposal_Code == proposal_code:
-                key_in_block_visits =  (proposal_code, target_name) in block_visit_ids
-                if key_in_block_visits and file_data[i].Target_Name != target_name:
+        This is done by looping over all file data, starting from the earliest. Files
+        that have the same proposal code and target are deemed to belong to the same
+        block visit if there are no other proposal code - target combinations between
+        them, ignoring calibration files with the same proposal code.
+
+        So, for example, in
+
+        File A: NGC 123 --- 2020-1-SCI-042
+        File B: ARC     --- 2020-1-SCI-042
+        File C: NGC 123 --- 2020-1-SCI-042
+
+        A and B are considered to belong to the same block visit, whereas in all the
+        following cases they are not:
+
+        File A: NGC 123 --- 2020-1-SCI-042
+        File B: ARC     --- 2020-1-SCI-042
+        File C: NGC 765 --- 2020-1-SCI-042
+
+        File A: NGC 123 --- 2020-1-SCI-042
+        File B: ARC     --- 2020-1-SCI-042
+        File C: NGC 123 --- 2020-1-SCI-314
+
+        File A: NGC 123 --- 2020-1-SCI-042
+        File B: ARC     --- 2020-1-SCI-512
+        File C: NGC 123 --- 2020-1-SCI-042
+
+        This can lead to ambiguity, as in the following case:
+
+        File A: NGC 123 --- 2020-1-SCI-042 (block visit id: 12)
+        File B: NGC 123 --- 2020-1-SCI-042 (block visit id missing)
+        File C: NGC 123 --- 2020-1-SCI-042 (block vist id: 12)
+
+        File B might belong to either the first or the second block visit. In this case
+        the following rules are used:
+
+        1. If the ambiguous file is a Salticam file, it is considered to belong to the
+           later block visit.
+        2. Otherwise it gets its own block visit id.
+
+        Parameters
+        ----------
+        file_data : list
+            File data.
+        block_visit_ids : dict
+            Block visit ids.
+
+        """
+
+        block_visit_ids = self._find_raw_block_visit_ids(night)
+
+        block_visit_id_provider = self.create_block_visit_id_provider(
+            night, file_data, block_visit_ids
+        )
+
+        def block_visit_id_for_file(index: int, forward_search: bool) -> Optional[int]:
+            """
+            What is the block visit id of the nearest earlier file which has a block
+            visit id and could belong to the same block?
+
+            """
+
+            proposal_code = file_data[index].proposal_code
+            target_name = file_data[index].target_name
+            key_in_block_visit_ids = (
+                BlockKey(proposal_code=proposal_code, target_name=target_name)
+                in block_visit_ids
+            )
+            i = index + 1 if forward_search else index - 1
+            while (
+                0 <= i < len(file_data) and file_data[i].proposal_code == proposal_code
+            ):
+                # A file may belong to the same block if it has the same proposal code
+                # and either has the same target name or is a calibration. In case of
+                # the latter that file has no corresponding block visit id entry as its
+                # target is not a real one.
+                other_key_in_block_visits = (
+                    BlockKey(
+                        proposal_code=file_data[i].proposal_code,
+                        target_name=file_data[i].target_name,
+                    )
+                    in block_visit_ids
+                )
+                if (
+                    key_in_block_visit_ids
+                    and other_key_in_block_visits
+                    and file_data[i].target_name != target_name
+                ):
+                    # Both files have a real target, but they are different. So they
+                    # belong to different block visits.
                     return None
-                block_visit_id = file_data[i].BlockVisit_Id
-                if block_visit_id:
-                    if key_in_block_visits or file_data[i].Target_Name == target_name:
-                        return block_visit_id
-                i -= 1
-            return None
-
-        def next_block_visit_id(index: int) -> Optional[int]:
-            proposal_code = file_data[index].Proposal_Code
-            target_name = file_data[index].Target_Name
-            i = index + 1
-            while i < len(file_data) and file_data[i].Proposal_Code == proposal_code:
-                key_in_block_visits =  (proposal_code, target_name) in block_visit_ids
-                if key_in_block_visits and file_data[i].Target_Name != target_name:
-                    return None
-                block_visit_id = file_data[i].BlockVisit_Id
-                if block_visit_id:
-                    if (proposal_code, target_name) not in block_visit_ids or file_data[i].Target_Name == target_name:
-                        return block_visit_id
-                i += 1
-            return None
-
-        # There might have been calibration files which belong to a proposal but have no
-        # block visit id. We'll assign block visit ids if possible, but record an error
-        # if there is any ambiguity.
-        for i, fd in enumerate(file_data):
-            if not SaltDatabaseService.is_real_proposal_code(fd.Proposal_Code):
-                # This file does not belong to a proposal
-                continue
-            if fd.BlockVisit_Id:
-                continue
-
-            # Proposals such as engineering proposals might have no block visits in the
-            # database.
-            proposal_code_found = False
-            for key in block_visit_ids.keys():
-                if key[0] == fd.Proposal_Code:
-                    proposal_code_found = True
-                    break
-            if not proposal_code_found:
-                continue
-
-            previous_id = previous_block_visit_id(i)
-            next_id = next_block_visit_id(i)
-            if previous_id and next_id and previous_id != next_id:
-                # Oh dear. The same target is observed before and after for different
-                # block visits. We thus have to guess or throw up our arms in despair.
-                # If the file is a Salticam one, it likely is an acquisition image, and
-                # we guess it belongs to the next observation...
-                if fd.FileName.startswith("S2"):
-                    previous_id = None
-                else:
-                    # ... but otherwise we give up.
-                    continue
-            if not previous_id and not next_id:
-                # Oops. All the files have no block visit id... So we have to guess,
-                # take the current index and hope for the best.
-                if (fd.Proposal_Code, fd.Target_Name) in block_visit_ids:
-                    previous_id = block_visit_ids[(fd.Proposal_Code, fd.Target_Name)]['current_index']
-                else:
-                    # Well, if there is no current index, there is nothing we can do.
-                    # We'll try again below, though,
-                    continue
-            if previous_id:
-                fd.BlockVisit_Id = previous_id
-            else:
-                fd.BlockVisit_Id = next_id
-
-        # We might still have files attached to a proposal without a block visit id.
-        # As we still want to group these, we assign a random block visit id to them.
-        for index, fd in enumerate(file_data):
-            proposal_code = fd.Proposal_Code
-            if SaltDatabaseService.is_real_proposal_code(proposal_code) and fd.BlockVisit_Id is None:
-                random_block_visit_id = str(uuid.uuid4())
-
-                # Assign the random id to this file and all neighbouring files of the
-                # same proposal.
-                i = index
-                while i < len(file_data) and file_data[i].Proposal_Code == proposal_code:
-                    file_data[i].BlockVisit_Id = random_block_visit_id
+                block_visit_id = file_data[i].block_visit_id
+                if block_visit_id and (
+                    not key_in_block_visit_ids
+                    or not other_key_in_block_visits
+                    or file_data[i].target_name == target_name
+                ):
+                    # At least one of the two files is a calibration or both files have
+                    # the same target. So we've found a block visit id!
+                    return block_visit_id
+                if forward_search:
                     i += 1
+                else:
+                    i -= 1
 
-        # Collect the start times and corresponding block visit ids
-        return {fd.FileName: fd.BlockVisit_Id for fd in file_data}
+            # There are no files left.
+            return None
+
+        for index, fd in enumerate(file_data):
+            # If there is a block visit id already, there is nothing to do.
+            if fd.block_visit_id:
+                continue
+
+            # Files which don't belong to a proposal have no block visit id.
+            if not self.is_existing_proposal_code(fd.proposal_code):
+                continue
+
+            # Figure out the possible block visit ids
+            previous_id = block_visit_id_for_file(index, False)
+            next_id = block_visit_id_for_file(index, True)
+            key = BlockKey(proposal_code=fd.proposal_code, target_name=fd.target_name)
+
+            if previous_id is None and next_id is None:
+                # There is no block visit id to be found, so we have to ask for one.
+                fd.block_visit_id = block_visit_id_provider(key)
+                continue
+
+            if previous_id is None and next_id is not None:
+                # As there is no previous id, we can safely group with the later file.
+                fd.block_visit_id = next_id
+                continue
+
+            if previous_id is not None and next_id is None:
+                # As there is no next id, we can safely group with the earlier file.
+                fd.block_visit_id = previous_id
+                continue
+
+            if previous_id == next_id:
+                fd.block_visit_id = previous_id
+                continue
+            else:
+                # The file could belong to two block visits. So if it's a Salticam file,
+                # we group with the later file, otherwise we use a new block visit id.
+                if fd.file_name.startswith("S2"):
+                    fd.block_visit_id = next_id
+                    continue
+                else:
+                    fd.block_visit_id = block_visit_id_provider(key)
+                    continue
 
     def find_block_visit_id(
         self, proposal_id: str, target_name: str, observing_night: datetime
@@ -378,7 +511,7 @@ AND Target.Target_Name=%s
 AND NightInfo.Date=%s;
         """
         results = pd.read_sql(
-            sql, self._connection, params=(proposal_id, target_name, observing_night,)
+            sql, self._connection, params=(proposal_id, target_name, observing_night)
         ).iloc[0]
         if results["BlockVisit_Id"]:
             return int(results["BlockVisit_Id"])

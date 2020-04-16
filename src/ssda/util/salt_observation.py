@@ -105,7 +105,7 @@ class SALTObservation:
         if bv_id is None:
             return None
         return types.ObservationGroup(
-            group_identifier=str(bv_id), name="SALT-" + str(bv_id),
+            group_identifier=str(bv_id), name="SALT-" + str(bv_id)
         )
 
     def observation_start_time(self) -> datetime:
