@@ -28,7 +28,7 @@ class FileDataItem:
 @dataclass(frozen=True)
 class BlockKey:
     """
-    A proposal code and a target name, which together are used top identify a block.
+    A proposal code and a target name, which together are used to identify a block.
 
     """
 
@@ -279,10 +279,7 @@ ORDER BY ProposalCode.Proposal_Code, Target.Target_Name, BlockVisit.BlockVisit_I
         return block_visit_ids
 
     def create_block_visit_id_provider(
-        self,
-        night: datetime.date,
-        file_data: List[FileDataItem],
-        block_visit_ids: Dict[BlockKey, List[int]],
+        self, file_data: List[FileDataItem], block_visit_ids: Dict[BlockKey, List[int]]
     ) -> Callable[[BlockKey], Union[int, str]]:
         """
         Create a function for requesting block visit id value.
@@ -296,8 +293,6 @@ ORDER BY ProposalCode.Proposal_Code, Target.Target_Name, BlockVisit.BlockVisit_I
 
         Parameters
         ----------
-        night : datetime.date
-            Observing night.
         file_data : List[FileDataItem]
             File data.
         block_visit_ids : Dict[BlockKey]
@@ -327,13 +322,13 @@ ORDER BY ProposalCode.Proposal_Code, Target.Target_Name, BlockVisit.BlockVisit_I
                     pass  # id was not in list
 
         # Define the function for requesting block visit id values.
-        def f(key: BlockKey):
+        def request_block_visit_id(key: BlockKey):
             if key in available_ids and available_ids[key]:
                 return available_ids[key].pop(0)
             else:
                 return str(uuid.uuid4())
 
-        return f
+        return request_block_visit_id
 
     def _fill_block_visit_id_gaps(
         self,
@@ -374,7 +369,7 @@ ORDER BY ProposalCode.Proposal_Code, Target.Target_Name, BlockVisit.BlockVisit_I
 
         File A: NGC 123 --- 2020-1-SCI-042 (block visit id: 12)
         File B: NGC 123 --- 2020-1-SCI-042 (block visit id missing)
-        File C: NGC 123 --- 2020-1-SCI-042 (block vist id: 12)
+        File C: NGC 123 --- 2020-1-SCI-042 (block visit id: 12)
 
         File B might belong to either the first or the second block visit. In this case
         the following rules are used:
@@ -395,7 +390,7 @@ ORDER BY ProposalCode.Proposal_Code, Target.Target_Name, BlockVisit.BlockVisit_I
         block_visit_ids = self._find_raw_block_visit_ids(night)
 
         block_visit_id_provider = self.create_block_visit_id_provider(
-            night, file_data, block_visit_ids
+            file_data, block_visit_ids
         )
 
         def block_visit_id_for_file(index: int, forward_search: bool) -> Optional[int]:
