@@ -4,7 +4,7 @@ This application lets you populate (and update) the SAAO/SALT Data Archive datab
 
 ## Installation and configuration
 
-Ensure that Python 3.7 is running on your machine. You can check this with the `--version` flag.
+Ensure that **Python 3.7** is running on your machine. You can check this with the `--version` flag.
 
 ```bash
 python3 --version
@@ -113,6 +113,7 @@ Run the install command with -y flag to quickly install the packages and depende
 ```bash
 sudo apt-get install -y postgresql-10-pgsphere
 ```
+For detailed installation instructions [here](https://zoomadmin.com/HowToInstall/UbuntuPackage/postgresql-10-pgsphere).
 
 ### Creating and initialising the database
 
@@ -230,11 +231,17 @@ ssda --task insert --mode production --fits-base-dir /path/to/fits/files --start
 
 ### Updating observation data
 
-[TBD]
+You can update the database by syncing it with the salt database by running the `ssda_sync` command, example below.
+
+```bash
+ssda_sync --start 2019-06-25 --end 2019-06-27
+```
 
 ### Deleting observations
 
-You can use the `delete` task to delete database entries and their corresponding preview files. The usage is the same as for the `insert` task. For example, the following command will delete all observation entries for the night starting on 8 June 2019.
+You can use the `delete` task to delete database entries and their corresponding preview files. 
+The usage is the same as for the `insert` task. For example, the following command will delete all observation 
+entries for the night starting on 8 June 2019.
 
 ```bash
 ssda --task delete --mode production --fits-base-dir /Users/christian/Desktop/FITS_FILES --start 2019-06-08 --end 2019-06-09
