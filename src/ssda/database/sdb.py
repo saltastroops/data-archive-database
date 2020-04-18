@@ -737,7 +737,7 @@ WHERE BlockVisit_Id=%s;
             return f"{results['Title']}"
         raise ValueError("Observation has no title")
 
-    def find_observation_status(self, block_visit_id: int) -> types.Status:
+    def find_observation_status(self, block_visit_id: Optional[str]) -> types.Status:
         # Observations not belonging to a proposal are accepted by default.
         if block_visit_id is None:
             return types.Status.ACCEPTED
@@ -745,7 +745,12 @@ WHERE BlockVisit_Id=%s;
         sql = """
 SELECT BlockVisitStatus FROM BlockVisit JOIN BlockVisitStatus USING(BlockVisitStatus_Id) WHERE BlockVisit_Id=%s
         """
-        results = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
+        results = pd.read_sql(sql, self._connection, params=(block_visit_id,))
+
+        if not len(results):
+            return types.Status.REJECTED
+
+        results = results.iloc[0]
 
         if results["BlockVisitStatus"].lower() == "accepted":
             return types.Status.ACCEPTED

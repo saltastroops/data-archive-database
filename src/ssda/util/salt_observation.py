@@ -81,10 +81,7 @@ class SALTObservation:
     ) -> types.Observation:
         proposal_code = self.header_value("PROPID").upper()
         data_release_dates = self.database_service.find_release_date(proposal_code)
-        if not self.block_visit_id:
-            status = types.Status.ACCEPTED
-        else:
-            status = self.database_service.find_observation_status(self.block_visit_id)
+        status = self.database_service.find_observation_status(self._block_visit_id())
         return types.Observation(
             data_release=data_release_dates[0],
             instrument=instrument,
