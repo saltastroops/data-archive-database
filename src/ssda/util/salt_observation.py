@@ -157,18 +157,21 @@ class SALTObservation:
         if bv_id is None:
             return None
 
+        proposal_code = self.header_value("PROPID").upper()
+
         return types.Proposal(
-            institution=types.Institution.SALT,
-            pi=self.database_service.find_pi(bv_id),
-            proposal_code=self.database_service.find_proposal_code(bv_id),
-            title=self.database_service.find_proposal_title(bv_id),
-        )
+                institution=types.Institution.SALT,
+                pi=self.database_service.find_pi(proposal_code),
+                proposal_code=proposal_code,
+                title=self.database_service.find_proposal_title(proposal_code),
+            )
 
     def proposal_investigators(
         self, proposal_id: int
     ) -> List[types.ProposalInvestigator]:
+        proposal_code = self.header_value("PROPID").upper()
         investigators = self.database_service.find_proposal_investigators(
-            self._block_visit_id()
+            proposal_code
         )
         return [
             types.ProposalInvestigator(
