@@ -1,23 +1,11 @@
-import datetime
-import functools
-import uuid
-from collections import defaultdict
-from dataclasses import dataclass
-from enum import Enum
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from datetime import datetime, date
 
+from dateutil import relativedelta
 import pandas as pd
-import pytz
+from typing import Optional, List, Tuple
 from pymysql import connect
 
 from ssda.util import types
-
-
-class BlockVisitIdStatus(Enum):
-    CONFIRMED = 1
-    GUESSED = 2
-    INFERRED = 3
-    RANDOM = 4
 
 
 @dataclass
@@ -30,7 +18,6 @@ class FileDataItem:
     ut_start: datetime
     file_name: str
     block_visit_id: Optional[int]
-    block_visit_id_status: Optional[BlockVisitIdStatus]
     target_name: str
     proposal_code: str
 
@@ -57,7 +44,9 @@ class SaltDatabaseService:
         self._cursor = self._connection.cursor()
         self._proposal_codes_existing: Dict[str, bool] = {}
 
-    def find_block_visit_ids(self, night: datetime.date) -> Dict[str, FileDataItem]:
+    def find_block_visit_ids(
+        self, night: datetime.date
+    ) -> Dict[str, Optional[Union[int, str]]]:
         """
         Find the block visit ids fromm the SDB.
 
@@ -90,31 +79,13 @@ class SaltDatabaseService:
 
         file_data = self._find_raw_file_data(night)
 
-        # Find the (accepted ad rejected) block visit ids as well as the ignored
-        # deleted or queued) block visit ids.
-        block_visit_ids = self._find_raw_block_visit_ids(
-            night, ["Accepted", "Rejected"]
-        )
-        ignored_block_visit_ids = self._find_raw_block_visit_ids(
-            night, ["Deleted", "In queue"]
-        )
+        block_visit_ids = self._find_raw_block_visit_ids(night)
 
-        # Remove all block visit ids which don't exist for this night.
-        SaltDatabaseService._ignore_wrong_block_visit_ids(
-            file_data, block_visit_ids, ignored_block_visit_ids
-        )
-
-        # Mark the existing block visit ids as confirmed.
-        SaltDatabaseService._mark_confirmed_block_visit_ids(file_data)
-
-        # Try to fill the gaps in the file data.
+        # Now that we have all the data, we can try to fill the gaps in file_data.
         self._fill_block_visit_id_gaps(night, file_data, block_visit_ids)
 
-        # Update the status of the guessed and inferred block visit ids.
-        SaltDatabaseService._update_block_visit_id_status_values(file_data, block_visit_ids)
-
-        # Return a dictionary of filenames and corresponding file data.
-        return {fd.file_name: fd for fd in file_data}
+        # Collect the start times and corresponding block visit ids
+        return {fd.file_name: fd.block_visit_id for fd in file_data}
 
     def is_existing_proposal_code(self, proposal_code: str) -> bool:
         """
@@ -162,7 +133,7 @@ WHERE Proposal_Code=%s
 
         Returns
         -------
-        List[FileDataItem]
+        List[FileDataItem[
             Raw file data.
 
         """
@@ -191,7 +162,6 @@ ORDER BY UTStart
                 block_visit_id=int(row.BlockVisit_Id)
                 if not pd.isna(row.BlockVisit_Id)
                 else None,
-                block_visit_id_status=None,
             )
             for row in file_data_results.itertuples()
         ]
@@ -229,8 +199,8 @@ ORDER BY UTStart
         return file_data
 
     def _find_raw_block_visit_ids(
-        self, night: datetime.date, status_values: List[str]
-    ) -> Dict[BlockKey, List[id]]:
+        self, night: datetime.date
+    ) -> Dict[BlockKey, List[int]]:
         """
         Extract block visit ids from database tables other than FileData.
 
@@ -259,7 +229,7 @@ JOIN Pointing ON Block.Block_Id = Pointing.Block_Id
 JOIN Observation ON Pointing.Pointing_Id = Observation.Pointing_Id
 JOIN Target ON Observation.Target_Id = Target.Target_Id
 JOIN ProposalCode ON Block.ProposalCode_Id = ProposalCode.ProposalCode_Id
-JOIN FileData ON FileData.ProposalCode_Id = ProposalCode.ProposalCode_Id
+JOIN FileData ON FileData.ProposalCode_Id = ProposalCode.ProposalCode_Id AND FileData.Target_Name = Target.Target_Name
 WHERE FileData.UTStart BETWEEN %s AND %s AND NightInfo.Date=%s
 ORDER BY ProposalCode.Proposal_Code, Target.Target_Name, BlockVisit.BlockVisit_Id
         """
@@ -291,81 +261,25 @@ ORDER BY ProposalCode.Proposal_Code, Target.Target_Name, BlockVisit.BlockVisit_I
         block_visit_ids: Dict[BlockKey, List[int]] = defaultdict(list)
         for row in block_visits_results.itertuples():
             block_visit_status = correct_block_visit_status(row)
-            if block_visit_status in status_values:
-                key = BlockKey(
-                    proposal_code=row.Proposal_Code, target_name=row.Target_Name.strip()
-                )
+            if block_visit_status == "In queue":
+                continue
+            key = BlockKey(
+                proposal_code=row.Proposal_Code, target_name=row.Target_Name.strip()
+            )
+            if block_visit_status in ("Accepted", "Rejected", "Deleted"):
                 block_visit_ids[key].append(row.BlockVisit_Id)
+            else:
+                raise ValueError(
+                    f"Unsupported block visit status: {block_visit_status}"
+                )
 
         return block_visit_ids
-
-    @staticmethod
-    def _ignore_wrong_block_visit_ids(
-            file_data: List[FileDataItem],
-            block_visit_ids: Dict[BlockKey, List[int]],
-            ignored_block_visit_ids: Dict[BlockKey, List[int]],
-    ):
-        """
-        Ignore invalid block visit ids.
-
-        A block visit id is invalid if it isn't in the list of block visit ids or
-        ignored block visit ids, which means that the block visit is associated with
-        another night.
-
-        If an invalid block visit id is found, it is replaced with None in the file
-        data.
-
-        Parameters
-        ----------
-        file_data : List[FileDataItem]
-            File data.
-        block_visit_ids : Dict[BlockKey, List[int]]
-            Block visit ids.
-        ignored_block_visit_ids : Dict[BlockKey, List[int]]
-            Ignored block visit ids.
-
-        """
-
-        # Extract all id values from the block visit id and ignored block visit id
-        # dictionaries.
-        id_values = sorted(
-            functools.reduce(
-                lambda x, y: [*x, *y],
-                [*block_visit_ids.values(), *ignored_block_visit_ids.values()],
-                [],
-            )
-        )
-
-        # Replace ids that cannot be found among the id values with None.
-        for fd in file_data:
-            if fd.block_visit_id and fd.block_visit_id not in id_values:
-                fd.block_visit_id = None
-                fd.block_visit_id_status = None
-
-    @staticmethod
-    def _mark_confirmed_block_visit_ids(
-            file_data: List[FileDataItem],
-    ):
-        """
-        Mark all non-None block visit ids as being confirmed, i.e not guessed, inferred
-        or random.
-
-        Parameters
-        ----------
-        file_data : List[FileDataItem]
-            File data.
-
-        """
-
-        for fd in file_data:
-            if fd.block_visit_id:
-                fd.block_visit_id_status = BlockVisitIdStatus.CONFIRMED
 
     def create_block_visit_id_provider(
         self, file_data: List[FileDataItem], block_visit_ids: Dict[BlockKey, List[int]]
     ) -> Callable[[BlockKey], Union[int, str]]:
         """
-        Create a function for requesting block visit id values.
+        Create a function for requesting block visit id value.
 
         The function accepts a BlockVisitKey as its only parameter.
 
@@ -373,9 +287,6 @@ ORDER BY ProposalCode.Proposal_Code, Target.Target_Name, BlockVisit.BlockVisit_I
         any other file, the first of these is returned by the function. A returned value
         won't be returned again. If there is no block visit id available a UUID is
         returned instead.
-
-        This implies that the returned block visit id is a string if and only if it is
-        not an existing block visit id (i.e. a UUID).
 
         Parameters
         ----------
@@ -420,7 +331,7 @@ ORDER BY ProposalCode.Proposal_Code, Target.Target_Name, BlockVisit.BlockVisit_I
         self,
         night: datetime.date,
         file_data: List[FileDataItem],
-        block_visit_ids: Dict[BlockKey, List[int]],
+        block_visit_ids: Dict[BlockKey, List[id]],
     ):
         """
         Fill in missing block visit ids for files that contain target observations.
@@ -473,6 +384,8 @@ ORDER BY ProposalCode.Proposal_Code, Target.Target_Name, BlockVisit.BlockVisit_I
 
         """
 
+        block_visit_ids = self._find_raw_block_visit_ids(night)
+
         block_visit_id_provider = self.create_block_visit_id_provider(
             file_data, block_visit_ids
         )
@@ -486,25 +399,10 @@ ORDER BY ProposalCode.Proposal_Code, Target.Target_Name, BlockVisit.BlockVisit_I
 
             proposal_code = file_data[index].proposal_code
             target_name = file_data[index].target_name
-
-            def is_calibration(target: str):
-                """
-                Is the target a calibration?
-
-                As target names in the FileData and Target table may differ for the same
-                block visit, we cannot rely on block_visit_ids to decide the question.
-
-                """
-
-                return (
-                    target == "ARC"
-                    or target == "BIAS"
-                    or target == "FLAT"
-                    or target.startswith("FLAT ")
-                    or target.startswith("FLAT-")
-                )
-
-            file_is_calibration = is_calibration(target_name)
+            key_in_block_visit_ids = (
+                BlockKey(proposal_code=proposal_code, target_name=target_name)
+                in block_visit_ids
+            )
             i = index + 1 if forward_search else index - 1
             while (
                 0 <= i < len(file_data) and file_data[i].proposal_code == proposal_code
@@ -513,10 +411,16 @@ ORDER BY ProposalCode.Proposal_Code, Target.Target_Name, BlockVisit.BlockVisit_I
                 # and either has the same target name or is a calibration. In case of
                 # the latter that file has no corresponding block visit id entry as its
                 # target is not a real one.
-                other_file_is_calibration = is_calibration(file_data[i].target_name)
+                other_key_in_block_visits = (
+                    BlockKey(
+                        proposal_code=file_data[i].proposal_code,
+                        target_name=file_data[i].target_name,
+                    )
+                    in block_visit_ids
+                )
                 if (
-                    not file_is_calibration
-                    and not other_file_is_calibration
+                    key_in_block_visit_ids
+                    and other_key_in_block_visits
                     and file_data[i].target_name != target_name
                 ):
                     # Both files have a real target, but they are different. So they
@@ -524,8 +428,8 @@ ORDER BY ProposalCode.Proposal_Code, Target.Target_Name, BlockVisit.BlockVisit_I
                     return None
                 block_visit_id = file_data[i].block_visit_id
                 if block_visit_id and (
-                    file_is_calibration
-                    or other_file_is_calibration
+                    not key_in_block_visit_ids
+                    or not other_key_in_block_visits
                     or file_data[i].target_name == target_name
                 ):
                     # At least one of the two files is a calibration or both files have
@@ -556,118 +460,30 @@ ORDER BY ProposalCode.Proposal_Code, Target.Target_Name, BlockVisit.BlockVisit_I
             if previous_id is None and next_id is None:
                 # There is no block visit id to be found, so we have to ask for one.
                 fd.block_visit_id = block_visit_id_provider(key)
-                fd.block_visit_id_status = (
-                    BlockVisitIdStatus.RANDOM
-                    if type(fd.block_visit_id) == str
-                    else BlockVisitIdStatus.GUESSED
-                )
                 continue
 
             if previous_id is None and next_id is not None:
                 # As there is no previous id, we can safely group with the later file.
                 fd.block_visit_id = next_id
-                fd.block_visit_id_status = BlockVisitIdStatus.INFERRED
                 continue
 
             if previous_id is not None and next_id is None:
                 # As there is no next id, we can safely group with the earlier file.
                 fd.block_visit_id = previous_id
-                fd.block_visit_id_status = BlockVisitIdStatus.INFERRED
                 continue
 
             if previous_id == next_id:
                 fd.block_visit_id = previous_id
-                fd.block_visit_id_status = BlockVisitIdStatus.INFERRED
                 continue
             else:
                 # The file could belong to two block visits. So if it's a Salticam file,
                 # we group with the later file, otherwise we use a new block visit id.
                 if fd.file_name.startswith("S2"):
                     fd.block_visit_id = next_id
-                    fd.block_visit_id_status = BlockVisitIdStatus.INFERRED
                     continue
                 else:
                     fd.block_visit_id = block_visit_id_provider(key)
-                    fd.block_visit_id_status = (
-                        BlockVisitIdStatus.RANDOM
-                        if type(fd.block_visit_id) == str
-                        else BlockVisitIdStatus.GUESSED
-                    )
                     continue
-
-    @staticmethod
-    def _update_block_visit_id_status_values(file_data, block_visit_ids):
-        """
-        Update the block visit id status value from GUESSED or INFERRED to CONFIRMED
-        or RANDOM where possible.
-
-        Replacement with CONFIRMED is deemed possible if the sequence of block visit ids
-        for the proposal code - target combination is the same irrespective of whether
-        it is inferred from the BlockVisit table or from the FileData table.
-
-        Only accepted and rejected block visits are used for inferring block visit
-        sequences from the BlockVisit table.
-
-        The INFERRED status is replaced with the status of the block visit id which has
-        been inferred.
-
-        Parameters
-        ----------
-        file_data : List[FileDataItem]
-            File data.
-        block_visit_ids : Dict[BlockKey, List[int]]
-            Block visit ids.
-
-        """
-
-        # Get the sequence of block visits in the file data
-        fd_sequences: Dict[BlockKey, List[int]] = defaultdict(list)
-        for fd in file_data:
-            key = BlockKey(proposal_code=fd.proposal_code, target_name=fd.target_name)
-            if key in block_visit_ids:
-                # Add the id to the ebd of the sequence, if it isn't the last sequence
-                # item already.
-                if (
-                        not len(fd_sequences[key])
-                        or fd_sequences[key][-1] != fd.block_visit_id
-                ):
-                    fd_sequences[key].append(fd.block_visit_id)
-
-        # Check whether we can assume that guessed values are correct
-        for fd in file_data:
-            if fd.block_visit_id_status == BlockVisitIdStatus.GUESSED:
-                key = BlockKey(
-                    proposal_code=fd.proposal_code, target_name=fd.target_name
-                )
-                if key in fd_sequences and block_visit_ids[key] == fd_sequences[key]:
-                    fd.block_visit_id_status = BlockVisitIdStatus.CONFIRMED
-
-        # Check which ids have been deemed guessed, random or real...
-        status_values: Dict[int, BlockVisitIdStatus] = {}
-        for fd in file_data:
-            if fd.block_visit_id_status in (
-                    BlockVisitIdStatus.CONFIRMED,
-                    BlockVisitIdStatus.GUESSED,
-                    BlockVisitIdStatus.RANDOM,
-            ):
-                # Make sure that the status values are consistent.
-                if (
-                        fd.block_visit_id in status_values
-                        and status_values[fd.block_visit_id] != fd.block_visit_id_status
-                ):
-                    raise Exception(
-                        f"The block visit id {fd.block_visit_id} has been marked both as {status_values[fd.block_visit_id]} and {fd.block_visit_id_status}."
-                    )
-                status_values[fd.block_visit_id] = fd.block_visit_id_status
-
-        # ... and update the inferred and guessed status values accordingly.
-        for fd in file_data:
-            if (
-                    fd.block_visit_id_status
-                    in (BlockVisitIdStatus.GUESSED, BlockVisitIdStatus.INFERRED)
-                    and fd.block_visit_id in status_values
-            ):
-                fd.block_visit_id_status = status_values[fd.block_visit_id]
 
     def find_block_visit_id(
         self, proposal_id: str, target_name: str, observing_night: datetime
@@ -756,21 +572,43 @@ SELECT BlockVisitStatus FROM BlockVisit JOIN BlockVisitStatus USING(BlockVisitSt
             return types.Status.INQUEUE
         raise ValueError("Observation has an unknown status.")
 
-    def find_release_date(self, block_visit_id: int) -> datetime.datetime:
+    def find_release_date(self, proposal_code: str) -> Tuple[date, date]:
         sql = """
-SELECT ReleaseDate FROM  BlockVisit
-    JOIN `Block` USING(Block_Id)
-    JOIN Proposal ON `Block`.Proposal_Id=Proposal.Proposal_Id
-    JOIN ProposalGeneralInfo ON Proposal.ProposalCode_Id=ProposalGeneralInfo.ProposalCode_Id
-WHERE BlockVisit_Id=%s;
+SELECT MAX(EndSemester) AS EndSemester, ProposalType, ProprietaryPeriod
+FROM BlockVisit
+JOIN Block ON BlockVisit.Block_Id=Block.Block_Id
+JOIN ProposalCode ON Block.ProposalCode_Id=ProposalCode.ProposalCode_Id
+JOIN ProposalGeneralInfo ON ProposalCode.ProposalCode_Id=ProposalGeneralInfo.ProposalCode_Id
+JOIN ProposalType ON ProposalGeneralInfo.ProposalType_Id=ProposalType.ProposalType_Id
+JOIN NightInfo ON BlockVisit.NightInfo_Id=NightInfo.NightInfo_Id
+JOIN Semester ON Date BETWEEN Semester.StartSemester AND Semester.EndSemester
+WHERE Proposal_Code=%s;
         """
-        results = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
-        if results["ReleaseDate"]:
-            return results["ReleaseDate"]
-        raise ValueError("Observation has no release date.")
+        results = pd.read_sql(sql, self._connection, params=(proposal_code,)).iloc[0]
 
-    def find_meta_release_date(self, block_visit_id: int) -> datetime.datetime:
-        return self.find_release_date(block_visit_id)
+        end_semester = results["EndSemester"]
+        proposal_type = results["ProposalType"]
+
+        # Gravitational wave proposals never become public (and are only accessible by SALT partners).
+        # However, their meta data becomes public immediately.
+        if proposal_type == "Gravitational Wave Event":
+            release_date = datetime.strptime("2100-01-01", "%Y-%m-%d")
+            meta_release_date = datetime.today().date()
+
+            return release_date, meta_release_date
+
+        proprietary_period = results["ProprietaryPeriod"]
+
+        # The semester end date in the SDB is the last day of a month.
+        # However, it is easier (and more correct) to use the first day of the following month.
+        # We therefore add a day in addition to the proprietary period.
+        release_date = (
+            end_semester
+            + relativedelta.relativedelta(days=1)
+            + relativedelta.relativedelta(months=proprietary_period)
+        )
+
+        return release_date, release_date
 
     def find_proposal_investigators(self, block_visit_id: int) -> List[str]:
         sql = """
