@@ -63,18 +63,15 @@ class SALTObservation:
             product_type=self._product_type(),
         )
 
-    def _block_visit_id(self) -> Optional[int]:
-        proposal_id = self.header_value("PROPID").upper()
-        object_name = self.header_value("OBJECT").upper()
+    def _block_visit_id(self) -> Optional[str]:
         night = (self.observation_start_time() - timedelta(hours=12)).date()
+        if self.file_data.night != night:
+            self.file_data = FileData(self.database_service.find_block_visit_ids(night), night)
+        filename = Path(self.fits_file.file_path()).name
+        if filename not in self.file_data:
+            raise Exception(f"The filename {filename} is not included in the FileData table.")
 
-        block_visit_id = (
-            self.database_service.find_block_visit_id(proposal_id, object_name, night)
-            if not self.fits_file.header_value("BVISITID")
-            else int(self.fits_file.header_value("BVISITID"))
-        )
-
-        return block_visit_id
+        return self.file_data.data[filename].block_visit_id
 
     def observation(
         self,
