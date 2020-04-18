@@ -1,26 +1,33 @@
 import uuid
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, List
-from datetime import timedelta, datetime, timezone
+from typing import Dict, Optional, List
+from datetime import timedelta, date, datetime, timezone
 from astropy.coordinates import Angle
 
 import astropy.units as u
-from ssda.database.sdb import SaltDatabaseService
+from ssda.database.sdb import SaltDatabaseService, FileDataItem
 from ssda.util.fits import FitsFile, get_fits_base_dir
 
 from ssda.util import types
 from ssda.util.types import Status
 
 
+@dataclass
+class FileData:
+    data: Dict[str, FileDataItem]
+    night: Optional[date]
+
+
 class SALTObservation:
     def __init__(self, fits_file: FitsFile, database_service: SaltDatabaseService):
-        self.headers = fits_file.headers
         self.header_value = fits_file.header_value
         self.size = fits_file.size()
         self.checksum = fits_file.checksum
         self.fits_file = fits_file
         self.file_path = fits_file.file_path
         self.database_service = database_service
+        self.file_data = FileData({}, None)
 
     def artifact(self, plane_id: int) -> types.Artifact:
         # Creates a file path of the reduced calibration level mapping a raw calibration level.
