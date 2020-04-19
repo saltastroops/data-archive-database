@@ -671,30 +671,6 @@ class SaltDatabaseService:
             ):
                 fd.block_visit_id_status = status_values[fd.block_visit_id]
 
-    def find_block_visit_id(
-        self, proposal_id: str, target_name: str, observing_night: datetime.date
-    ) -> Optional[int]:
-        sql = """
-        SELECT BlockVisit_Id
-FROM NightInfo
-JOIN BlockVisit ON NightInfo.NightInfo_Id = BlockVisit.NightInfo_Id
-JOIN Block ON BlockVisit.Block_Id = Block.Block_Id
-JOIN Pointing ON BlockVisit.Block_Id = Pointing.Block_Id
-JOIN Observation ON Pointing.Pointing_Id = Observation.Pointing_Id
-JOIN Target ON Observation.Target_Id = Target.Target_Id
-JOIN Proposal ON Block.Proposal_Id = Proposal.Proposal_Id
-JOIN ProposalCode ON Proposal.ProposalCode_Id = ProposalCode.ProposalCode_Id
-WHERE ProposalCode.Proposal_Code =%s
-AND Target.Target_Name=%s
-AND NightInfo.Date=%s;
-        """
-        results = pd.read_sql(
-            sql, self._connection, params=(proposal_id, target_name, observing_night)
-        ).iloc[0]
-        if results["BlockVisit_Id"]:
-            return int(results["BlockVisit_Id"])
-        return None
-
     def find_pi(self, proposal_code: str) -> str:
         sql = """
 SELECT CONCAT(FirstName, " ", Surname) as FullName
@@ -842,20 +818,6 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
             return False
 
         return results.iloc[0]["RssMaskType"] == "MOS"
-
-    def find_block_code(self, block_visit_id) -> Optional[str]:
-        sql = """ 
-SELECT BlockCode FROM  BlockCode
-    JOIN `Block` USING(BlockCode_Id)
-    JOIN BlockVisit ON `Block`.Block_Id=BlockVisit.Block_Id
-WHERE BlockVisit_Id=%s;
-        """
-        block_code = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[
-            0
-        ]
-        if block_code["BlockCode"]:
-            return block_code["BlockCode"]
-        return None
 
     def find_proposal_type(self, proposal_code: str) -> ProposalType:
         with self._connection.cursor() as cur:
