@@ -68,7 +68,7 @@ class SALTObservation:
         if self.file_data.night != night:
             self.file_data = FileData(self.database_service.find_block_visit_ids(night), night)
         filename = Path(self.fits_file.file_path()).name
-        if filename not in self.file_data:
+        if filename not in self.file_data.data:
             raise Exception(f"The filename {filename} is not included in the FileData table.")
 
         return self.file_data.data[filename].block_visit_id
@@ -163,6 +163,7 @@ class SALTObservation:
                 institution=types.Institution.SALT,
                 pi=self.database_service.find_pi(proposal_code),
                 proposal_code=proposal_code,
+                proposal_type=self.database_service.find_proposal_type(proposal_code),
                 title=self.database_service.find_proposal_title(proposal_code),
             )
 

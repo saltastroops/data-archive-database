@@ -12,6 +12,7 @@ import pandas as pd
 from pymysql import connect
 
 from ssda.util import types
+from ssda.util.types import ProposalType
 
 
 class BlockVisitIdStatus(Enum):
@@ -789,7 +790,7 @@ WHERE Proposal_Code=%s;
         sql = """
 SELECT PiptUser.PiptUser_Id
 FROM ProposalInvestigator
-    JOIN ProposalCode ON Proposalnvestigator.ProposalCode_Id=ProposalCode.ProposalCode_Id
+    JOIN ProposalCode ON ProposalInvestigator.ProposalCode_Id=ProposalCode.ProposalCode_Id
     JOIN Investigator ON ProposalInvestigator.Investigator_Id=Investigator.Investigator_Id
     JOIN PiptUser ON Investigator.PiptUser_Id=PiptUser.PiptUser_Id
 WHERE ProposalCode.ProposalCode_Id=%s;
@@ -855,3 +856,41 @@ WHERE BlockVisit_Id=%s;
         if block_code["BlockCode"]:
             return block_code["BlockCode"]
         return None
+
+    def find_proposal_type(self, proposal_code: str) -> ProposalType:
+        with self._connection.cursor() as cur:
+            sql = """
+            SELECT ProposalType
+            FROM ProposalType
+            JOIN ProposalGeneralInfo ON ProposalType.ProposalType_Id = ProposalGeneralInfo.ProposalType_Id
+            JOIN ProposalCode ON ProposalGeneralInfo.ProposalCode_Id = ProposalCode.ProposalCode_Id
+            WHERE ProposalCode.Proposal_Code=%s
+            """
+            results = pd.read_sql(sql, self._connection, params=(proposal_code,))
+
+            if not len(results):
+                raise ValueError(f"No proposal type could be found for the proposal code {proposal_code}.")
+
+            results = results.iloc[0]
+            db_proposal_type = str(results['ProposalType'])
+
+            commissioning_types = ('Commissioning',)
+            engineering_types = ('Engineering',)
+            science_types = ("Director Discretionary Time (DDT)",
+                             "Gravitational Wave Event",
+                             "Key Science Program",
+                             "Large Science Proposal",
+                             "Science",
+                             "Science - Long Term")
+            science_verification_types = ("Science Verification",)
+
+            if db_proposal_type in commissioning_types:
+                return ProposalType.COMMISSIONING
+            elif db_proposal_type in engineering_types:
+                return ProposalType.ENGINEERING
+            elif db_proposal_type in science_types:
+                return ProposalType.SCIENCE
+            elif db_proposal_type in science_verification_types:
+                return ProposalType.SCIENCE_VERIFICATION
+            else:
+                raise ValueError(f'The SDB proposal type {db_proposal_type} is not supported.')
