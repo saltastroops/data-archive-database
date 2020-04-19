@@ -1,1 +1,5 @@
-ALTER DATABASE ssda SET search_path = observations, admin, extensions, public;
+DO $$
+    BEGIN
+        execute 'alter database '||current_database()||' set search_path = observations, admin, extensions, public';
+    END
+$$;
