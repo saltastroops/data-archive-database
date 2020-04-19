@@ -769,7 +769,7 @@ FROM ProposalInvestigator
     JOIN ProposalCode ON ProposalInvestigator.ProposalCode_Id=ProposalCode.ProposalCode_Id
     JOIN Investigator ON ProposalInvestigator.Investigator_Id=Investigator.Investigator_Id
     JOIN PiptUser ON Investigator.PiptUser_Id=PiptUser.PiptUser_Id
-WHERE ProposalCode.ProposalCode_Id=%s;
+WHERE ProposalCode.Proposal_Code=%s;
         """
         results = pd.read_sql(sql, self._connection, params=(proposal_code,))
         if len(results):
