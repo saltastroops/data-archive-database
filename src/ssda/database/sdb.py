@@ -31,7 +31,7 @@ class FileDataItem:
 
     ut_start: datetime
     file_name: str
-    block_visit_id: Optional[int]
+    block_visit_id: Optional[Union[int, str]]
     block_visit_id_status: Optional[BlockVisitIdStatus]
     target_name: str
     proposal_code: str
@@ -699,10 +699,16 @@ LIMIT 1
             return f"{results['Title']}"
         raise ValueError("Observation has no title")
 
-    def find_observation_status(self, block_visit_id: Optional[str]) -> types.Status:
+    def find_observation_status(self, block_visit_id: Optional[Union[int, str]]) -> types.Status:
         # Observations not belonging to a proposal are accepted by default.
         if block_visit_id is None:
             return types.Status.ACCEPTED
+
+        # Observations with an unknown block visit are rejected by default.
+        try:
+            block_visit_id = int(block_visit_id)
+        except ValueError:
+            return types.Status.REJECTED
 
         sql = """
 SELECT BlockVisitStatus FROM BlockVisit JOIN BlockVisitStatus USING(BlockVisitStatus_Id) WHERE BlockVisit_Id=%s
@@ -779,9 +785,15 @@ WHERE ProposalCode.Proposal_Code=%s;
             return ps
         raise ValueError("Observation has no Investigators")
 
-    def find_target_type(self, block_visit_id: int) -> str:
+    def find_target_type(self, block_visit_id: Union[int, str]) -> str:
         # If there is no block visit, return the Unknown target type
         if block_visit_id is None:
+            return "00.00.00.00"
+
+        # If the block visit id is no integer, return the Unknown target type
+        try:
+            block_visit_id = int(block_visit_id)
+        except ValueError:
             return "00.00.00.00"
 
         sql = """

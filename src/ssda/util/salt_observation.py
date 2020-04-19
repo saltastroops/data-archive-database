@@ -80,7 +80,10 @@ class SALTObservation:
         instrument: types.Instrument,
     ) -> types.Observation:
         proposal_code = self.header_value("PROPID").upper()
-        data_release_dates = self.database_service.find_release_date(proposal_code)
+        if not self.is_calibration():
+            data_release_dates = self.database_service.find_release_date(proposal_code)
+        else:
+            data_release_dates = (self.observation_start_time().date(), self.observation_start_time().date())
         status = self.database_service.find_observation_status(self._block_visit_id())
         return types.Observation(
             data_release=data_release_dates[0],
@@ -97,8 +100,11 @@ class SALTObservation:
         bv_id = self._block_visit_id()
         if bv_id is None:
             return None
+        name="SALT-" + str(bv_id)
+        if len(name) > 40:
+            name = name[:40]
         return types.ObservationGroup(
-            group_identifier=str(bv_id), name="SALT-" + str(bv_id)
+            group_identifier=str(bv_id), name=name
         )
 
     def observation_start_time(self) -> datetime:
