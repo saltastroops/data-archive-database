@@ -733,7 +733,7 @@ WHERE ot.night >= %(start_date)s AND ot.night <= %(end_date)s
 
         with self._connection.cursor() as cur:
             sql = """
-            INSERT INTO position (dec, equinox, plane_id, ra)
+            INSERT INTO _position (dec, equinox, plane_id, ra)
             VALUES (%(dec)s, %(equinox)s, %(plane_id)s, %(ra)s)
             RETURNING position_id
             """

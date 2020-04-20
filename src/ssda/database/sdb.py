@@ -1,6 +1,8 @@
-import datetime
+from datetime import datetime, date
+
+from dateutil import relativedelta
 import pandas as pd
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from pymysql import connect
 
 from ssda.util import types
@@ -77,21 +79,43 @@ SELECT BlockVisitStatus FROM BlockVisit JOIN BlockVisitStatus USING(BlockVisitSt
             return types.Status.INQUEUE
         raise ValueError("Observation has an unknown status.")
 
-    def find_release_date(self, block_visit_id: int) -> datetime.datetime:
+    def find_release_date(self, proposal_code: str) -> Tuple[date, date]:
         sql = """
-SELECT ReleaseDate FROM  BlockVisit
-    JOIN `Block` USING(Block_Id)
-    JOIN Proposal ON `Block`.Proposal_Id=Proposal.Proposal_Id
-    JOIN ProposalGeneralInfo ON Proposal.ProposalCode_Id=ProposalGeneralInfo.ProposalCode_Id
-WHERE BlockVisit_Id=%s;
+SELECT MAX(EndSemester) AS EndSemester, ProposalType, ProprietaryPeriod
+FROM BlockVisit
+JOIN Block ON BlockVisit.Block_Id=Block.Block_Id
+JOIN ProposalCode ON Block.ProposalCode_Id=ProposalCode.ProposalCode_Id
+JOIN ProposalGeneralInfo ON ProposalCode.ProposalCode_Id=ProposalGeneralInfo.ProposalCode_Id
+JOIN ProposalType ON ProposalGeneralInfo.ProposalType_Id=ProposalType.ProposalType_Id
+JOIN NightInfo ON BlockVisit.NightInfo_Id=NightInfo.NightInfo_Id
+JOIN Semester ON Date BETWEEN Semester.StartSemester AND Semester.EndSemester
+WHERE Proposal_Code=%s;
         """
-        results = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
-        if results["ReleaseDate"]:
-            return results["ReleaseDate"]
-        raise ValueError("Observation has no release date.")
+        results = pd.read_sql(sql, self._connection, params=(proposal_code,)).iloc[0]
 
-    def find_meta_release_date(self, block_visit_id: int) -> datetime.datetime:
-        return self.find_release_date(block_visit_id)
+        end_semester = results["EndSemester"]
+        proposal_type = results["ProposalType"]
+
+        # Gravitational wave proposals never become public (and are only accessible by SALT partners).
+        # However, their meta data becomes public immediately.
+        if proposal_type == "Gravitational Wave Event":
+            release_date = datetime.strptime("2100-01-01", "%Y-%m-%d")
+            meta_release_date = datetime.today().date()
+
+            return release_date, meta_release_date
+
+        proprietary_period = results["ProprietaryPeriod"]
+
+        # The semester end date in the SDB is the last day of a month.
+        # However, it is easier (and more correct) to use the first day of the following month.
+        # We therefore add a day in addition to the proprietary period.
+        release_date = (
+            end_semester
+            + relativedelta.relativedelta(days=1)
+            + relativedelta.relativedelta(months=proprietary_period)
+        )
+
+        return release_date, release_date
 
     def find_proposal_investigators(self, proposal_code: str) -> List[str]:
         sql = """
