@@ -167,7 +167,7 @@ def validate_options(
     help="Task to perform.",
 )
 @click.option(
-    "--verbosity", type=click.Choice(["0", "1", "2"]), help="Log more details."
+    "--verbosity", type=click.Choice(["0", "1", "2", "3"]), help="Log more details."
 )
 def main(
     task: str,
@@ -277,28 +277,34 @@ def main(
                 # Add error to already flagged errors.
                 flagged_errors.add(error_msg)
                 logging.error(msg)
-            if verbosity_level == 2:
+            if verbosity_level == 2 or verbosity_level == 3:
                 # TODO Please note that data_to_log is only for SALT need to be updated in the future
                 # output the FITS file path and the error message.
                 data_to_log = get_salt_data_to_log(path)
                 msg = f"""
+Error message
+-------------
+{error_msg}
+
 FITS file details
 ------------------
-Filename: {data_to_log.filename}
+File path: {data_to_log.path}
 Proposal code: {data_to_log.proposal_code}
 Object: {data_to_log.object}
 Block visit id: {data_to_log.block_visit_id}
 Observation type: {data_to_log.observation_type}
 Observation mode: {data_to_log.observation_mode}
 Observation time: {data_to_log.observation_time}
-
+"""
+                if verbosity_level == 3:
+                    msg += f"""
 Stack trace
 -----------
-{error_msg}
-_________________________________________________________________________________________________
+"""
+                msg += """_________________________________________________________________________________________________
 """
                 # output the FITS file path and error stacktrace.
-                logging.error(msg, exc_info=True)
+                logging.error(msg, exc_info=verbosity_level == 3)
             if not skip_errors:
                 ssda_connection.close()
                 return -1
