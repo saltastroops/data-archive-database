@@ -46,13 +46,14 @@ WHERE BlockVisit_Id=%s;
     def find_proposal_title(self, proposal_code: str) -> str:
         sql = """
 SELECT Title FROM Proposal
-	JOIN ProposalCode using (ProposalCode_Id)
+	JOIN ProposalCode USING (ProposalCode_Id)
+	JOIN Semester USING (Semester_Id)
     JOIN ProposalText
         ON Proposal.ProposalCode_Id=ProposalText.ProposalCode_Id
         AND Proposal.Semester_Id=ProposalText.Semester_Id
 WHERE Proposal_Code = %s
 	AND Current = 1
-    ORDER BY Proposal.Semester_Id DESC
+    ORDER BY Year DESC, Semester DESC;
         """
         results = pd.read_sql(sql, self._connection, params=(proposal_code,)).iloc[0]
         if results["Title"]:

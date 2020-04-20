@@ -1,25 +1,28 @@
 import click
 from datetime import datetime
 import dsnparse
+import logging
 
-from ssda.cli import parse_date
 from ssda.database.sdb import SaltDatabaseService
 from ssda.database.services import DatabaseServices
 from ssda.database.ssda import SSDADatabaseService
 
-from ssda.util import types
+from ssda.util import types, parse_date
+
 
 @click.command()
-@click.option('--start', type=str, help='Start date of the last night to consider.')
-@click.option('--end', type=str, help='Start date of the last night to consider.')
+@click.option('--start', type=str, required=True, help='Start date of the last night to consider. Date is inclusive.')
+@click.option('--end', type=str, required=True, help='Start date of the last night to consider. Date is inclusive.')
 
-def main(start, end):
-    """Simple program that greets NAME for a total of COUNT times."""
-
+def main(start, end) -> int:
+    logging.basicConfig(level=logging.INFO)
+    logging.error("SALT is always assumed to be the telescope.")
     # convert options as required and validate them
     now = datetime.now
     start_date = parse_date(start, now) if start else None
     end_date = parse_date(end, now) if end else None
+    if not start_date == None or end_date == None:
+        raise ValueError ("--start/--end options should be a valid date")
 
     # database access
     ssda_db_config = dsnparse.parse_environ("SSDA_DSN")
@@ -66,15 +69,6 @@ def main(start, end):
         if proposal.pi != sdb_pi:
             ssda_database_service.update_pi(proposal_id=proposal_id, pi=sdb_pi)
 
-        # compare proposal date release
-        sdb_date_release = sdb_database_service.find_release_date(proposal_code)
-        if proposal.date_release != sdb_date_release[0] or proposal.meta_release != sdb_date_release[1]:
-            ssda_database_service.update_release_date(
-                proposal_code=proposal_code,
-                release_date=sdb_date_release[0],
-                meta_release_date=sdb_date_release[1]
-            )
-
         # compare proposal proposal investigators
         proposal_investigators = ssda_database_service.find_proposal_investigators(proposal_code=proposal_code)
         sdb_proposal_investigators = sdb_database_service.find_proposal_investigators(proposal_code=proposal_code)
@@ -88,11 +82,23 @@ def main(start, end):
     observations_to_update = ssda_database_service.find_observations(start_date, end_date)
 
     for observation in observations_to_update:
+        # compare proposal date release
+        sdb_date_release = sdb_database_service.find_release_date(observation.proposal_code)
+        if proposal.date_release != sdb_date_release[0] or proposal.meta_release != sdb_date_release[1]:
+            ssda_database_service.update_release_date(
+                observation_id=observation.observation_id,
+                release_date=sdb_date_release[0],
+                meta_release_date=sdb_date_release[1]
+            )
+
         sdb_observation_status = sdb_database_service.find_observation_status(observation.group_identifier)
         if observation.status != sdb_observation_status.value:
             ssda_database_service.update_status(
-                status=observation.status,
+                status=types.Status.status_for(observation.status),
                 observation_id=observation.observation_id
             )
 
     ssda_connection.close()
+
+    # Success!
+    return 0

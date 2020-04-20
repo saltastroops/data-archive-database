@@ -138,12 +138,13 @@ class SSDADatabaseService:
         with self._connection.cursor() as cur:
             sql = """
 SELECT o.observation_id,
-        s.status,
-        og.group_identifier
-FROM
-    observation  AS o
+    s.status,
+    og.group_identifier,
+    p.proposal_code
+FROM observation  AS o
     JOIN plane ON plane.observation_id = o.observation_id
     JOIN observation_time AS ot ON ot.plane_id = plane.plane_id
+    JOIN proposal AS p ON p.proposal_id = o.proposal_id
     JOIN status AS s ON s.status_id = o.status_id
     JOIN observation_group AS og ON og.observation_group_id = o.observation_group_id
 WHERE ot.night >= %(start_date)s AND ot.night <= %(end_date)s
@@ -196,12 +197,12 @@ WHERE ot.night >= %(start_date)s AND ot.night <= %(end_date)s
             else:
                 return None
 
-    def find_proposal_investigators(self, proposal_code: str) -> list:
+    def find_proposal_investigators(self, proposal_code: str) -> List[str]:
         with self._connection.cursor() as cur:
             sql = """
             SELECT institution_user_id
-            FROM admin.proposal_investigator AS proi
-                JOIN observations.proposal AS p ON proi.proposal_id = p.proposal_id
+            FROM admin.proposal_investigator AS propinv
+                JOIN observations.proposal AS p ON propinv.proposal_id = p.proposal_id
             WHERE proposal_code = %(proposal_code)s
             """
 
@@ -885,7 +886,7 @@ WHERE ot.night >= %(start_date)s AND ot.night <= %(end_date)s
                 dict(title=title, proposal_id=proposal_id)
             )
 
-    def update_status(self, status: str, observation_id: int):
+    def update_status(self, status: types.Status, observation_id: int):
         with self._connection.cursor() as cur:
             sql = """
              WITH st (status_id) AS (
@@ -900,14 +901,14 @@ WHERE ot.night >= %(start_date)s AND ot.night <= %(end_date)s
                 dict(status=status, observation_id=observation_id)
             )
 
-    def update_release_date(self, proposal_id:int, release_date: date, meta_release_date: date) -> None:
+    def update_release_date(self, observation_id:int, release_date: date, meta_release_date: date) -> None:
         if not meta_release_date:
             meta_release_date = release_date
         with self._connection.cursor() as cur:
             sql = """
             UPDATE observation
                 SET data_release=%(release_date)s, meta_release=%(meta_release_date)s
-            WHERE proposal_id=%(proposal_id)s
+            WHERE observation_id=%(observation_id)s
             """
             cur.execute(
                 sql,

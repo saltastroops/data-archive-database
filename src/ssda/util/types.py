@@ -1246,6 +1246,28 @@ class Status(Enum):
     INQUEUE = "In queue"
     REJECTED = "Rejected"
 
+    @staticmethod
+    def status_for(value: str) -> Status:
+        """The status for.
+
+        Parameters
+        ----------
+        value : str
+            Instrument name.
+
+        Returns
+        -------
+        Status :
+            Status.
+
+        """
+
+        for status in Status:
+            if value.lower() == str(status.value).lower():
+                return status
+
+        raise ValueError(f"Unknown instrument name: {value}")
+
 
 class StokesParameter(Enum):
     """
