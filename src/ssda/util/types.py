@@ -1113,7 +1113,12 @@ class Proposal:
     """
 
     def __init__(
-        self, institution: Institution, pi: str, proposal_code: str, proposal_type: ProposalType, title: str
+        self,
+        institution: Institution,
+        pi: str,
+        proposal_code: str,
+        proposal_type: ProposalType,
+        title: str,
     ):
         if len(pi) > 100:
             raise ValueError("The PI must have at most 100 characters.")

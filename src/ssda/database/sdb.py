@@ -113,7 +113,9 @@ class SaltDatabaseService:
         self._fill_block_visit_id_gaps(night, file_data, block_visit_ids)
 
         # Update the status of the guessed and inferred block visit ids.
-        SaltDatabaseService._update_block_visit_id_status_values(file_data, block_visit_ids)
+        SaltDatabaseService._update_block_visit_id_status_values(
+            file_data, block_visit_ids
+        )
 
         # Return a dictionary of filenames and corresponding file data.
         return {fd.file_name: fd for fd in file_data}
@@ -202,7 +204,7 @@ class SaltDatabaseService:
         if night == datetime.date(2016, 10, 20):
             for fd in file_data:
                 if fd.proposal_code == "2016-1-SCI-049" and fd.target_name.startswith(
-                        "N132D-pos"
+                    "N132D-pos"
                 ):
                     fd.target_name = "N132D-pos1"
 
@@ -231,7 +233,7 @@ class SaltDatabaseService:
         return file_data
 
     def _find_raw_block_visit_ids(
-            self, night: datetime.date, status_values: List[str]
+        self, night: datetime.date, status_values: List[str]
     ) -> Dict[BlockKey, List[id]]:
         """
         Extract block visit ids from database tables other than FileData.
@@ -303,9 +305,9 @@ class SaltDatabaseService:
 
     @staticmethod
     def _ignore_wrong_block_visit_ids(
-            file_data: List[FileDataItem],
-            block_visit_ids: Dict[BlockKey, List[int]],
-            ignored_block_visit_ids: Dict[BlockKey, List[int]],
+        file_data: List[FileDataItem],
+        block_visit_ids: Dict[BlockKey, List[int]],
+        ignored_block_visit_ids: Dict[BlockKey, List[int]],
     ):
         """
         Ignore invalid block visit ids.
@@ -345,9 +347,7 @@ class SaltDatabaseService:
                 fd.block_visit_id_status = None
 
     @staticmethod
-    def _mark_confirmed_block_visit_ids(
-            file_data: List[FileDataItem],
-    ):
+    def _mark_confirmed_block_visit_ids(file_data: List[FileDataItem],):
         """
         Mark all non-None block visit ids as being confirmed, i.e not guessed, inferred
         or random.
@@ -364,7 +364,7 @@ class SaltDatabaseService:
                 fd.block_visit_id_status = BlockVisitIdStatus.CONFIRMED
 
     def create_block_visit_id_provider(
-            self, file_data: List[FileDataItem], block_visit_ids: Dict[BlockKey, List[int]]
+        self, file_data: List[FileDataItem], block_visit_ids: Dict[BlockKey, List[int]]
     ) -> Callable[[BlockKey], Union[int, str]]:
         """
         Create a function for requesting block visit id values.
@@ -419,10 +419,10 @@ class SaltDatabaseService:
         return request_block_visit_id
 
     def _fill_block_visit_id_gaps(
-            self,
-            night: datetime.date,
-            file_data: List[FileDataItem],
-            block_visit_ids: Dict[BlockKey, List[int]],
+        self,
+        night: datetime.date,
+        file_data: List[FileDataItem],
+        block_visit_ids: Dict[BlockKey, List[int]],
     ):
         """
         Fill in missing block visit ids for files that contain target observations.
@@ -499,17 +499,17 @@ class SaltDatabaseService:
                 """
 
                 return (
-                        target == "ARC"
-                        or target == "BIAS"
-                        or target == "FLAT"
-                        or target.startswith("FLAT ")
-                        or target.startswith("FLAT-")
+                    target == "ARC"
+                    or target == "BIAS"
+                    or target == "FLAT"
+                    or target.startswith("FLAT ")
+                    or target.startswith("FLAT-")
                 )
 
             file_is_calibration = is_calibration(target_name)
             i = index + 1 if forward_search else index - 1
             while (
-                    0 <= i < len(file_data) and file_data[i].proposal_code == proposal_code
+                0 <= i < len(file_data) and file_data[i].proposal_code == proposal_code
             ):
                 # A file may belong to the same block if it has the same proposal code
                 # and either has the same target name or is a calibration. In case of
@@ -517,18 +517,18 @@ class SaltDatabaseService:
                 # target is not a real one.
                 other_file_is_calibration = is_calibration(file_data[i].target_name)
                 if (
-                        not file_is_calibration
-                        and not other_file_is_calibration
-                        and file_data[i].target_name != target_name
+                    not file_is_calibration
+                    and not other_file_is_calibration
+                    and file_data[i].target_name != target_name
                 ):
                     # Both files have a real target, but they are different. So they
                     # belong to different block visits.
                     return None
                 block_visit_id = file_data[i].block_visit_id
                 if block_visit_id and (
-                        file_is_calibration
-                        or other_file_is_calibration
-                        or file_data[i].target_name == target_name
+                    file_is_calibration
+                    or other_file_is_calibration
+                    or file_data[i].target_name == target_name
                 ):
                     # At least one of the two files is a calibration or both files have
                     # the same target. So we've found a block visit id!
@@ -630,8 +630,8 @@ class SaltDatabaseService:
                 # Add the id to the end of the sequence, if it isn't the last sequence
                 # item already.
                 if (
-                        not len(fd_sequences[key])
-                        or fd_sequences[key][-1] != fd.block_visit_id
+                    not len(fd_sequences[key])
+                    or fd_sequences[key][-1] != fd.block_visit_id
                 ):
                     fd_sequences[key].append(fd.block_visit_id)
 
@@ -648,14 +648,14 @@ class SaltDatabaseService:
         status_values: Dict[int, BlockVisitIdStatus] = {}
         for fd in file_data:
             if fd.block_visit_id_status in (
-                    BlockVisitIdStatus.CONFIRMED,
-                    BlockVisitIdStatus.GUESSED,
-                    BlockVisitIdStatus.RANDOM,
+                BlockVisitIdStatus.CONFIRMED,
+                BlockVisitIdStatus.GUESSED,
+                BlockVisitIdStatus.RANDOM,
             ):
                 # Make sure that the status values are consistent.
                 if (
-                        fd.block_visit_id in status_values
-                        and status_values[fd.block_visit_id] != fd.block_visit_id_status
+                    fd.block_visit_id in status_values
+                    and status_values[fd.block_visit_id] != fd.block_visit_id_status
                 ):
                     raise Exception(
                         f"The block visit id {fd.block_visit_id} has been marked both as {status_values[fd.block_visit_id]} and {fd.block_visit_id_status}."
@@ -665,9 +665,9 @@ class SaltDatabaseService:
         # ... and update the inferred and guessed status values accordingly.
         for fd in file_data:
             if (
-                    fd.block_visit_id_status
-                    in (BlockVisitIdStatus.GUESSED, BlockVisitIdStatus.INFERRED)
-                    and fd.block_visit_id in status_values
+                fd.block_visit_id_status
+                in (BlockVisitIdStatus.GUESSED, BlockVisitIdStatus.INFERRED)
+                and fd.block_visit_id in status_values
             ):
                 fd.block_visit_id_status = status_values[fd.block_visit_id]
 
@@ -699,7 +699,9 @@ LIMIT 1
             return f"{results['Title']}"
         raise ValueError("Observation has no title")
 
-    def find_observation_status(self, block_visit_id: Optional[Union[int, str]]) -> types.Status:
+    def find_observation_status(
+        self, block_visit_id: Optional[Union[int, str]]
+    ) -> types.Status:
         # Observations not belonging to a proposal are accepted by default.
         if block_visit_id is None:
             return types.Status.ACCEPTED
@@ -730,7 +732,9 @@ SELECT BlockVisitStatus FROM BlockVisit JOIN BlockVisitStatus USING(BlockVisitSt
             return types.Status.INQUEUE
         raise ValueError("Observation has an unknown status.")
 
-    def find_release_date(self, proposal_code: str) -> Tuple[datetime.date, datetime.date]:
+    def find_release_date(
+        self, proposal_code: str
+    ) -> Tuple[datetime.date, datetime.date]:
         sql = """
 SELECT MAX(EndSemester) AS EndSemester, ProposalType, ProprietaryPeriod
 FROM BlockVisit
@@ -843,19 +847,23 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
             results = pd.read_sql(sql, self._connection, params=(proposal_code,))
 
             if not len(results):
-                raise ValueError(f"No proposal type could be found for the proposal code {proposal_code}.")
+                raise ValueError(
+                    f"No proposal type could be found for the proposal code {proposal_code}."
+                )
 
             results = results.iloc[0]
-            db_proposal_type = str(results['ProposalType'])
+            db_proposal_type = str(results["ProposalType"])
 
-            commissioning_types = ('Commissioning',)
-            engineering_types = ('Engineering',)
-            science_types = ("Director Discretionary Time (DDT)",
-                             "Gravitational Wave Event",
-                             "Key Science Program",
-                             "Large Science Proposal",
-                             "Science",
-                             "Science - Long Term")
+            commissioning_types = ("Commissioning",)
+            engineering_types = ("Engineering",)
+            science_types = (
+                "Director Discretionary Time (DDT)",
+                "Gravitational Wave Event",
+                "Key Science Program",
+                "Large Science Proposal",
+                "Science",
+                "Science - Long Term",
+            )
             science_verification_types = ("Science Verification",)
 
             if db_proposal_type in commissioning_types:
@@ -867,4 +875,6 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
             elif db_proposal_type in science_verification_types:
                 return ProposalType.SCIENCE_VERIFICATION
             else:
-                raise ValueError(f'The SDB proposal type {db_proposal_type} is not supported.')
+                raise ValueError(
+                    f"The SDB proposal type {db_proposal_type} is not supported."
+                )

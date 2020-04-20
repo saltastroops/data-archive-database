@@ -51,12 +51,12 @@ def parse_date(value: str, now: Callable[[], datetime]) -> date:
 
 
 def validate_options(
-        start: Optional[date],
-        end: Optional[date],
-        file: Optional[str],
-        instruments: Set[Instrument],
-        fits_base_dir: Optional[str],
-        task_name:Optional[TaskName]
+    start: Optional[date],
+    end: Optional[date],
+    file: Optional[str],
+    instruments: Set[Instrument],
+    fits_base_dir: Optional[str],
+    task_name: Optional[TaskName],
 ) -> None:
     """
     Validate the command line options.
@@ -95,9 +95,7 @@ def validate_options(
 
     # Can not run insert for a single file
     if task_name == TaskName.INSERT and file:
-        raise click.UsageError(
-            "You cannot use the --file option with the insert task."
-        )
+        raise click.UsageError("You cannot use the --file option with the insert task.")
 
     # A start date requires an end date, and vice versa
     if start and not end:
