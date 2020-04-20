@@ -71,9 +71,7 @@ class SALTObservation:
             )
         filename = Path(self.fits_file.file_path()).name
         if filename not in self.file_data.data:
-            raise Exception(
-                f"The filename {filename} is not included in the FileData table."
-            )
+            return None
 
         return self.file_data.data[filename].block_visit_id
 
