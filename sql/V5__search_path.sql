@@ -1,5 +1,5 @@
 DO $$
     BEGIN
-        execute 'alter database '||current_database()||' set search_path = observations, admin, extensions, public';
+        EXECUTE 'ALTER DATABASE '||current_database()||' SET search_path = observations, admin, extensions, public';
     END
 $$;
