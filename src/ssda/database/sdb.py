@@ -92,7 +92,7 @@ class SaltDatabaseService:
 
         file_data = self._find_raw_file_data(night)
 
-        # Find the (accepted ad rejected) block visit ids as well as the ignored
+        # Find the (accepted and rejected) block visit ids as well as the ignored
         # deleted or queued) block visit ids.
         block_visit_ids = self._find_raw_block_visit_ids(
             night, ["Accepted", "Rejected"]
@@ -627,7 +627,7 @@ class SaltDatabaseService:
         for fd in file_data:
             key = BlockKey(proposal_code=fd.proposal_code, target_name=fd.target_name)
             if key in block_visit_ids:
-                # Add the id to the ebd of the sequence, if it isn't the last sequence
+                # Add the id to the end of the sequence, if it isn't the last sequence
                 # item already.
                 if (
                         not len(fd_sequences[key])
