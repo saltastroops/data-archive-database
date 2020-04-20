@@ -282,8 +282,9 @@ def main(
                 # output the FITS file path and the error message.
                 data_to_log = get_salt_data_to_log(path)
                 msg = f"""
-FiITS file details
+FITS file details
 ------------------
+Filename: {data_to_log.filename}
 Proposal code: {data_to_log.proposal_code}
 Object: {data_to_log.object}
 Block visit id: {data_to_log.block_visit_id}
