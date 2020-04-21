@@ -110,7 +110,7 @@ class SaltDatabaseService:
         SaltDatabaseService._mark_confirmed_block_visit_ids(file_data)
 
         # Try to fill the gaps in the file data.
-        self._fill_block_visit_id_gaps(night, file_data, block_visit_ids)
+        self._fill_block_visit_id_gaps(file_data, block_visit_ids)
 
         # Update the status of the guessed and inferred block visit ids.
         SaltDatabaseService._update_block_visit_id_status_values(
@@ -275,11 +275,11 @@ class SaltDatabaseService:
 
         # We'd miss some block visits if we don't change their status from "Deleted" or
         # "In queue".
-        def correct_block_visit_status(row):
-            if row.BlockVisit_Id in (8595, 9582, 9584, 11308, 11314, 12252, 14317):
+        def correct_block_visit_status(_row):
+            if _row.BlockVisit_Id in (8595, 9582, 9584, 11308, 11314, 12252, 14317):
                 return "Rejected"
             else:
-                return row.BlockVisitStatus
+                return _row.BlockVisitStatus
 
         # Each combination of proposal code and target name is linked to a list of
         # corresponding block visit ids. We also link them to an index variable, so
@@ -410,19 +410,16 @@ class SaltDatabaseService:
                     pass  # id was not in list
 
         # Define the function for requesting block visit id values.
-        def request_block_visit_id(key: BlockKey):
-            if key in available_ids and available_ids[key]:
-                return available_ids[key].pop(0)
+        def request_block_visit_id(_key: BlockKey):
+            if _key in available_ids and available_ids[_key]:
+                return available_ids[_key].pop(0)
             else:
                 return str(uuid.uuid4())
 
         return request_block_visit_id
 
     def _fill_block_visit_id_gaps(
-        self,
-        night: datetime.date,
-        file_data: List[FileDataItem],
-        block_visit_ids: Dict[BlockKey, List[int]],
+        self, file_data: List[FileDataItem], block_visit_ids: Dict[BlockKey, List[int]]
     ):
         """
         Fill in missing block visit ids for files that contain target observations.
@@ -479,15 +476,15 @@ class SaltDatabaseService:
             file_data, block_visit_ids
         )
 
-        def block_visit_id_for_file(index: int, forward_search: bool) -> Optional[int]:
+        def block_visit_id_for_file(_index: int, forward_search: bool) -> Optional[int]:
             """
             What is the block visit id of the nearest earlier file which has a block
             visit id and could belong to the same block?
 
             """
 
-            proposal_code = file_data[index].proposal_code
-            target_name = file_data[index].target_name
+            proposal_code = file_data[_index].proposal_code
+            target_name = file_data[_index].target_name
 
             def is_calibration(target: str):
                 """
@@ -507,7 +504,7 @@ class SaltDatabaseService:
                 )
 
             file_is_calibration = is_calibration(target_name)
-            i = index + 1 if forward_search else index - 1
+            i = _index + 1 if forward_search else _index - 1
             while (
                 0 <= i < len(file_data) and file_data[i].proposal_code == proposal_code
             ):
@@ -658,7 +655,9 @@ class SaltDatabaseService:
                     and status_values[fd.block_visit_id] != fd.block_visit_id_status
                 ):
                     raise Exception(
-                        f"The block visit id {fd.block_visit_id} has been marked both as {status_values[fd.block_visit_id]} and {fd.block_visit_id_status}."
+                        f"The block visit id {fd.block_visit_id} has been "
+                        f"marked both as {status_values[fd.block_visit_id]} "
+                        f"and {fd.block_visit_id_status}."
                     )
                 status_values[fd.block_visit_id] = fd.block_visit_id_status
 
@@ -751,8 +750,9 @@ WHERE Proposal_Code=%s;
         end_semester = results["EndSemester"]
         proposal_type = results["ProposalType"]
 
-        # Gravitational wave proposals never become public (and are only accessible by SALT partners).
-        # However, their meta data becomes public immediately.
+        # Gravitational wave proposals never become public (and are only
+        # accessible by SALT partners). However, their meta data becomes public
+        # immediately.
         if proposal_type == "Gravitational Wave Event":
             release_date = datetime.datetime.strptime("2100-01-01", "%Y-%m-%d")
             meta_release_date = datetime.datetime.today().date()
@@ -762,7 +762,8 @@ WHERE Proposal_Code=%s;
         proprietary_period = results["ProprietaryPeriod"]
 
         # The semester end date in the SDB is the last day of a month.
-        # However, it is easier (and more correct) to use the first day of the following month.
+        # However, it is easier (and more correct) to use the first day of the
+        # following month.
         # We therefore add a day in addition to the proprietary period.
         release_date = (
             end_semester
@@ -821,7 +822,8 @@ WHERE BlockVisit.BlockVisit_Id=%s
         if results["NumericCode"]:
             return results["NumericCode"]
         raise ValueError(
-            f"No numeric code defined for the target type of block visit {block_visit_id}"
+            f"No numeric code defined for the target type of block visit "
+            f"{block_visit_id}"
         )
 
     def is_mos(self, slit_barcode: str) -> bool:
