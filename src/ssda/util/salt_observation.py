@@ -65,10 +65,10 @@ class SALTObservation:
 
     def _block_visit_id(self) -> Optional[str]:
         # The block visit id from the FITS header...
-        bvid_from_fits = self.fits_file.header_value('BVISITID')
+        bvid_from_fits = self.fits_file.header_value("BVISITID")
 
         # ... must be discarded if this observation is not part of a proposal
-        proposal_code = self.fits_file.header_value('PROPID')
+        proposal_code = self.fits_file.header_value("PROPID")
         if not self.database_service.is_existing_proposal_code(proposal_code):
             bvid_from_fits = None
 
@@ -85,9 +85,17 @@ class SALTObservation:
             bvid_from_db = None
 
         # If the FITS file has a block visit id, it must be the same as that from
-        # the database.
-        if bvid_from_fits and str(bvid_from_fits) != str(bvid_from_db):
-            raise Exception(f'The block visit ids from the FITS header ({bvid_from_fits}) and the database ({bvid_from_db}) are different.')
+        # the database, unless the block visit belongs to another night and has
+        # been replaced with a random value by the database search.
+        if (bvid_from_fits and str(bvid_from_fits) != str(bvid_from_db)) and not (
+            type(bvid_from_db) == str
+            and not self.database_service.is_block_visit_in_night(
+                int(bvid_from_fits), night
+            )
+        ):
+            raise Exception(
+                f"The block visit ids from the FITS header ({bvid_from_fits}) and the database ({bvid_from_db}) are different."
+            )
 
         # Some block visit ids don't exist in the FITS header but can be inferred
         # from the database.

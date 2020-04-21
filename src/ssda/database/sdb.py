@@ -878,3 +878,37 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
                 raise ValueError(
                     f"The SDB proposal type {db_proposal_type} is not supported."
                 )
+
+    def is_block_visit_in_night(
+        self, block_visit_id: int, night: datetime.date
+    ) -> bool:
+        """
+        Check whether a block visit was done in a given night.
+
+        Parameters
+        ----------
+        block_visit_id : int
+            Block visit id.
+        night : datetime.date
+            Observing night.
+
+        Returns
+        -------
+        bool
+            Whether the block visit was done in the night.
+
+        """
+
+        sql = """
+        SELECT COUNT(*) AS BlockVisitCount
+        FROM BlockVisit
+        JOIN NightInfo ON BlockVisit.NightInfo_Id = NightInfo.NightInfo_Id
+        WHERE BlockVisit.BlockVisit_Id=%(block_visit_id)s AND NightInfo.Date=%(night)s
+        """
+        results = pd.read_sql(
+            sql,
+            self._connection,
+            params={"block_visit_id": block_visit_id, "night": night},
+        ).iloc[0]
+
+        return results["BlockVisitCount"] > 0
