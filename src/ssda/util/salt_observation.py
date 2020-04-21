@@ -271,16 +271,7 @@ class SALTObservation:
         ):
             return types.ProductCategory.DARK
         if (
-            proposal_id
-            in [
-                "CAL_POLST",
-                "CAL_LICKST",
-                "CAL_PHOTST",
-                "CAL_RVST",
-                "CAL_SPST",
-                "CAL_TELLST",
-                "CAL_UNPOLST",
-            ]
+            proposal_id.startswith("CAL_")
             or "STANDARD" in product_type
             or (
                 product_type_unknown
