@@ -15,6 +15,7 @@ from faker import Faker
 from ssda.observation import ObservationProperties
 from ssda.util import types
 from ssda.util.fits import FitsFile, get_fits_base_dir
+from ssda.util.types import ProposalType
 
 
 class FilenameDeterminedProperties(NamedTuple):
@@ -330,6 +331,7 @@ class DummyObservationProperties(ObservationProperties):
                 institution=self._institution,
                 pi=self._faker.name(),
                 proposal_code=self._proposal_code,
+                proposal_type=ProposalType.SCIENCE,
                 title=self._faker.text(max_nb_chars=100),
             )
         else:

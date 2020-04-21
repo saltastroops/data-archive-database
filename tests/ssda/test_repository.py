@@ -8,7 +8,7 @@ import ssda.database.ssda
 from ssda.observation import ObservationProperties
 from ssda.repository import delete, insert
 from ssda.util import types
-
+from ssda.util.types import ProposalType
 
 INSTRUMENT_SETUP_ID = 492
 
@@ -143,6 +143,7 @@ class ObservationPropertiesStub(ObservationProperties):
             institution=types.Institution.SALT,
             pi="John Doe",
             proposal_code="2019-1-SCI-042",
+            proposal_type=ProposalType.SCIENCE,
             title="Om testing a proposal",
         )
 
