@@ -761,6 +761,19 @@ WHERE Proposal_Code=%s;
 
         proprietary_period = results["ProprietaryPeriod"]
 
+        # If there is no end semester (probably because there is no block visit for the
+        # proposal) we assume the end of the current semester.
+        if not end_semester:
+            end_semester_sql = """
+            SELECT EndSemester
+            FROM Semester
+            WHERE DATE(NOW()) BETWEEN Semester.StartSemester AND Semester.EndSemester
+            """
+            end_semester_results = pd.read_sql(end_semester_sql, self._connection).iloc[
+                0
+            ]
+            end_semester = end_semester_results["EndSemester"]
+
         # The semester end date in the SDB is the last day of a month.
         # However, it is easier (and more correct) to use the first day of the
         # following month.
