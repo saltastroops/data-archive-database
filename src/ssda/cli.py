@@ -253,7 +253,7 @@ def main(
     )
     ssda_connection = database_services.ssda.connection()
 
-    flagged_errors = set()
+    errors = list()
     night_date = ""
     # execute the requested task
     for path in paths:
@@ -269,13 +269,13 @@ def main(
             )
         except BaseException as e:
             error_msg = str(e)
+            msg = ""
             if verbosity_level == 0:
                 # don't output anything
                 pass
-            if verbosity_level == 1 and error_msg not in flagged_errors:
+            if verbosity_level == 1:
                 msg = f"\nError in {path}. \n{error_msg}"
                 # Add error to already flagged errors.
-                flagged_errors.add(error_msg)
                 logging.error(msg)
             if verbosity_level == 2 or verbosity_level == 3:
                 # TODO Please note that data_to_log is only for SALT need to be updated in the future
@@ -305,11 +305,20 @@ Stack trace
 """
                 # output the FITS file path and error stacktrace.
                 logging.error(msg, exc_info=verbosity_level == 3)
+
+            errors.append(msg)
+
             if not skip_errors:
                 ssda_connection.close()
                 return -1
 
     ssda_connection.close()
+
+    if verbosity_level >= 1:
+        for error in errors:
+            print(error)
+            print()
+        print(f"Total number of errors: {len(errors)}")
 
     # Success!
     return 0
