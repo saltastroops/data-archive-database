@@ -16,7 +16,7 @@ from ssda.util.errors import get_salt_data_to_log
 from ssda.util.fits import fits_file_paths, set_fits_base_dir, get_night_date
 from ssda.util.types import Instrument, DateRange, TaskName, TaskExecutionMode
 
-Log with Sentry
+# Log with Sentry
 if os.environ.get("SENTRY_DSN"):
     sentry_sdk.init(os.environ.get("SENTRY_DSN"))  # type: ignore
 

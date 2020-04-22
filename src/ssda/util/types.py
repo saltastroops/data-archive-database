@@ -1247,13 +1247,13 @@ class Status(Enum):
     REJECTED = "Rejected"
 
     @staticmethod
-    def status_for(value: str) -> Status:
+    def for_value(value: str) -> Status:
         """The status for.
 
         Parameters
         ----------
         value : str
-            Instrument name.
+            The status value.
 
         Returns
         -------
@@ -1266,7 +1266,7 @@ class Status(Enum):
             if value.lower() == str(status.value).lower():
                 return status
 
-        raise ValueError(f"Unknown instrument name: {value}")
+        raise ValueError(f"Unknown status: {value}")
 
 
 class StokesParameter(Enum):
@@ -1413,10 +1413,6 @@ class UpdatableObservation:
 
     Parameters
     ----------
-
-    observation_group_id : int
-        Identifier of the observation group to which the observation belongs.
-        Observation type.
     group_identifier : int
         Database id of the proposal to which this observation belongs.
     status : Status
@@ -1424,8 +1420,7 @@ class UpdatableObservation:
 
     """
 
-    observation_id: int
-    group_identifier: Optional[int]
+    group_identifier: Optional[str]
     status: Status
 
 
@@ -1452,8 +1447,54 @@ class UpdatableProposal:
     """
 
     date_release: str
-    proposal_id: int
     meta_release: str
     pi: str
     proposal_code: str
     title: str
+
+
+@dataclass
+class ComparableProposal:
+    """
+    A proposal with comparable fields.
+
+    Parameters
+    ----------
+    pi : str
+        Principal Investigator.
+    proposal_code : str
+        Proposal identifier, which is unique within an institution.
+    title : str
+        Proposal title.
+
+    """
+
+    pi: str
+    proposal_code: str
+    proposal_id: int
+    title: str
+
+
+@dataclass
+class ComparableObservation:
+    """
+    An observation with comparable fields.
+
+    Parameters
+    ----------
+
+    observation_group_id : int
+        Identifier of the observation group to which the observation belongs.
+        Observation type.
+    group_identifier : int
+        Database id of the proposal to which this observation belongs.
+    status : Status
+        Status (accepted or rejected) of the observation.
+
+    """
+
+    group_identifier: Optional[int]
+    status: Status
+    meta_release: date
+    data_release: date
+

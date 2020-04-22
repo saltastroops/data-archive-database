@@ -244,7 +244,7 @@ The usage is the same as for the `insert` task. For example, the following comma
 entries for the night starting on 8 June 2019.
 
 ```bash
-ssda --task delete --mode production --fits-base-dir /Users/christian/Desktop/FITS_FILES --start 2019-06-08 --end 2019-06-09
+ssda --task delete --mode production --fits-base-dir /Users/christian/Desktop/FITS_FILES --start 2019-06-08 --end 2019-06-08
 ``` 
 
 Note that no proposal entries are deleted, even if none of their associated observations are left.

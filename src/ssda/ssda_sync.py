@@ -11,18 +11,27 @@ from ssda.util import types, parse_date
 
 
 @click.command()
-@click.option('--start', type=str, required=True, help='Start date of the last night to consider. Date is inclusive.')
-@click.option('--end', type=str, required=True, help='Start date of the last night to consider. Date is inclusive.')
+@click.option('--start', type=str, required=True, help='Start date of the last night to consider. The date is inclusive.')
+@click.option('--end', type=str, required=True, help='Start date of the last night to consider. The date is inclusive.')
 
 def main(start, end) -> int:
+    """
+    The script to sync SSDA database with main databases
+
+    :param start: date
+        The start date to which you wish to check if SSDA database is still in sync with other databases.The date is inclusive
+    :param end: date
+        The end date to which you wish to check if SSDA database is still in sync with other databases.The date is inclusive
+    :return: 0
+        On successful sync
+
+    """
     logging.basicConfig(level=logging.INFO)
     logging.error("SALT is always assumed to be the telescope.")
     # convert options as required and validate them
     now = datetime.now
     start_date = parse_date(start, now) if start else None
     end_date = parse_date(end, now) if end else None
-    if not start_date == None or end_date == None:
-        raise ValueError ("--start/--end options should be a valid date")
 
     # database access
     ssda_db_config = dsnparse.parse_environ("SSDA_DSN")
@@ -49,54 +58,63 @@ def main(start, end) -> int:
     )
     ssda_connection = database_services.ssda.connection()
 
-    proposals_to_update = ssda_database_service.find_proposals_to_update(start_date, end_date)
+    proposals_to_update = sdb_database_service.find_proposals_to_update(start_date, end_date)
+
+    ssda_database_service.begin_transaction()
     # Compare proposal and update
     for proposal in proposals_to_update:
-        ssda_database_service.begin_transaction()
-
-        # Proposal id
-        proposal_id = proposal.proposal_id
-        # Proposal code
-        proposal_code = proposal.proposal_code
-        # Proposal title
-        sdb_title = sdb_database_service.find_proposal_title(proposal_code=proposal_code)
-
-        if proposal.title != sdb_title:
-            ssda_database_service.update_title(proposal_id=proposal_id, title=sdb_title)
-
-        # compare proposal PI
-        sdb_pi = sdb_database_service.find_pi(proposal_code=proposal_code)
-        if proposal.pi != sdb_pi:
-            ssda_database_service.update_pi(proposal_id=proposal_id, pi=sdb_pi)
-
-        # compare proposal proposal investigators
-        proposal_investigators = ssda_database_service.find_proposal_investigators(proposal_code=proposal_code)
-        sdb_proposal_investigators = sdb_database_service.find_proposal_investigators(proposal_code=proposal_code)
-
-        if not (sorted(proposal_investigators) == sorted(sdb_proposal_investigators)):
-            ssda_database_service.update_investigators(
-                proposal_id=proposal.proposal_id,
-                proposal_investigators=sdb_proposal_investigators
+        try:
+            # Proposal to compare
+            proposal_ = ssda_database_service.find_proposal_to_compare(
+                proposal_code=proposal.proposal_code,
+                institution=types.Institution.SALT
             )
-        ssda_database_service.commit_transaction()
-    observations_to_update = ssda_database_service.find_observations(start_date, end_date)
+            if not proposal_:
+                continue
+            # Proposal id
+            proposal_id = proposal_.proposal_id
 
-    for observation in observations_to_update:
-        # compare proposal date release
-        sdb_date_release = sdb_database_service.find_release_date(observation.proposal_code)
-        if proposal.date_release != sdb_date_release[0] or proposal.meta_release != sdb_date_release[1]:
-            ssda_database_service.update_release_date(
-                observation_id=observation.observation_id,
-                release_date=sdb_date_release[0],
-                meta_release_date=sdb_date_release[1]
+            # Compare proposal title
+            if proposal.title != proposal_.title:
+                ssda_database_service.update_title(proposal_id=proposal_id, title=proposal.title)
+
+            # Compare proposal PI
+            if proposal.pi != proposal_.pi:
+                ssda_database_service.update_pi(proposal_id=proposal_id, pi=proposal.pi)
+
+            # compare proposal investigators
+            proposal_investigators = ssda_database_service.find_proposal_investigators(proposal_code=proposal.proposal_code)
+            sdb_proposal_investigators = sdb_database_service.find_proposal_investigators(proposal_code=proposal.proposal_code)
+
+            if not (sorted(proposal_investigators) == sorted(sdb_proposal_investigators)):
+                ssda_database_service.update_investigators(
+                    proposal_id=proposal.proposal_id,
+                    proposal_investigators=sdb_proposal_investigators
+                )
+            observations_to_update = sdb_database_service.find_observations_to_update(
+                proposal_code=proposal.proposal_code
+            )
+            observations_to_compare = ssda_database_service.find_observations_to_compare(
+                proposal_code=proposal.proposal_code
             )
 
-        sdb_observation_status = sdb_database_service.find_observation_status(observation.group_identifier)
-        if observation.status != sdb_observation_status.value:
-            ssda_database_service.update_status(
-                status=types.Status.status_for(observation.status),
-                observation_id=observation.observation_id
-            )
+            # compare observation status.
+            for obs in observations_to_update:
+                for c in observations_to_compare:
+                    if c.group_identifier == obs.group_identifier:
+                        if proposal.meta_release != c.meta_release or \
+                           proposal.meta_release !=c.data_release or \
+                           obs.status != c.status:
+                            ssda_database_service.update_release_date(
+                                group_identifier=obs.group_identifier,
+                                data_release_date=proposal.date_release,
+                                meta_release_date=proposal.meta_release
+                            )
+                        break
+
+            ssda_database_service.commit_transaction()
+        except AttributeError as e:
+            ssda_database_service.rollback_transaction()
 
     ssda_connection.close()
 

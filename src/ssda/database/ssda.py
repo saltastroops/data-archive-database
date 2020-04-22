@@ -160,6 +160,40 @@ WHERE ot.night >= %(start_date)s AND ot.night <= %(end_date)s
                     group_identifier=result[2],
                 ) for result in results] if results else None
 
+    def find_observations_to_compare(self, proposal_code) -> Optional[List[types.ComparableObservation]]:
+        """
+        An observation to check if it is still in sync with SDB
+
+        Parameters
+        ----------
+        proposal_code: str
+            The proposal code
+        Returns
+        -------
+        list
+            A list of proposals that contains what can change in a proposal
+        """
+        with self._connection.cursor() as cur:
+            sql = """
+SELECT status, meta_release, data_release, group_identifier
+FROM observations.observation
+    JOIN observations.proposal ON proposal.proposal_id = observation.proposal_id
+    JOIN observations.status ON status.status_id = observation.status_id
+    JOIN observations.observation_group ON observation_group.observation_group_id = observation.observation_group_id
+Where proposal_code = %(proposal_code)s
+            """
+            cur.execute(
+                sql, dict(proposal_code=proposal_code)
+            )
+            results = cur.fetchall()
+            return [
+                types.ComparableObservation(
+                    status=result[0],
+                    group_identifier=result[3],
+                    meta_release=result[1],
+                    data_release=result[2],
+                ) for result in results] if results else None
+
     def find_proposal_id(
         self, proposal_code: str, institution: types.Institution
     ) -> Optional[int]:
@@ -210,7 +244,47 @@ WHERE ot.night >= %(start_date)s AND ot.night <= %(end_date)s
                 sql, dict(proposal_code=proposal_code)
             )
             results = cur.fetchall()
-            return [int(result[0]) for result in results] if results else None
+            return [result[0] for result in results] if results else None
+
+    def find_proposal_to_compare(self, proposal_code: str, institution: types.Institution) -> Optional[types.UpdatableProposal]:
+        """
+        Find a proposal proposal to compare for an update.
+
+        Parameters
+        ----------
+        proposal_code : str
+            Proposal code.
+        institution
+            Institution to which the proposal was submitted.
+
+        Returns
+        -------
+        Optional[int]
+            The database id of the proposal, or None if there is no proposal for the
+            proposal code abd institution.
+
+        """
+
+        with self._connection.cursor() as cur:
+            sql = """
+SELECT pi, proposal_code, title, proposal_id
+FROM observations.proposal
+    JOIN observations.institution ON proposal.institution_id = institution.institution_id
+WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
+                    """
+            cur.execute(
+                sql, dict(proposal_code=proposal_code, institution=institution.value)
+            )
+            result = cur.fetchone()
+            if result:
+                return types.ComparableProposal(
+                    pi=result[0],
+                    proposal_code=result[1],
+                    title=result[2],
+                    proposal_id=result[3],
+                )
+            else:
+                return None
 
     def find_proposals_to_update(self, start_date: date, end_date: date) -> list:
         with self._connection.cursor() as cur:
@@ -901,21 +975,39 @@ WHERE ot.night >= %(start_date)s AND ot.night <= %(end_date)s
                 dict(status=status, observation_id=observation_id)
             )
 
-    def update_release_date(self, observation_id:int, release_date: date, meta_release_date: date) -> None:
-        if not meta_release_date:
-            meta_release_date = release_date
+    def update_release_date(self, group_identifier:int, data_release_date: date, meta_release_date: date) -> None:
         with self._connection.cursor() as cur:
             sql = """
-            UPDATE observation
-                SET data_release=%(release_date)s, meta_release=%(meta_release_date)s
-            WHERE observation_id=%(observation_id)s
+WITH
+    obs_id (observation_group_id) AS (
+	    SELECT observation.observation_group_id
+	    FROM observations.observation
+		    JOIN observations.observation_group ON
+			    observation_group.observation_group_id = observation.observation_group_id
+	    WHERE group_identifier=%(group_identifier)s LIMIT 1
+	),
+    stat (status_id) AS (
+	    SELECT status_id
+	    FROM observations.status
+	    WHERE status='Accepted'
+	)
+UPDATE observation
+SET
+    meta_release=%(meta_release_date)s,
+    data_release=%(data_release_date)s,
+    status_id=(SELECT status_id FROM stat)
+WHERE observation_group_id=(SELECT observation_group_id FROM obs_id)
             """
             cur.execute(
                 sql,
-                dict(release_date=release_date, meta_release_date=meta_release_date, proposal_id=proposal_id)
+                dict(
+                    data_release_date=data_release_date,
+                    meta_release_date=meta_release_date,
+                    group_identifier=group_identifier
+                )
             )
 
-    def update_investigators(self, proposal_id: int, proposal_investigators:  List[types.ProposalInvestigator]):
+    def update_investigators(self, proposal_id: int, proposal_investigators:  List[str]):
         with self._connection.cursor() as cur:
             sql = """
             DELETE FROM admin.proposal_investigator
@@ -928,7 +1020,7 @@ WHERE ot.night >= %(start_date)s AND ot.night <= %(end_date)s
             for investigator in proposal_investigators:
                 self.insert_proposal_investigator(
                     proposal_investigator=types.ProposalInvestigator(
-                        investigator_id=str(investigator),
+                        investigator_id=investigator,
                         proposal_id=proposal_id
                     )
                 )

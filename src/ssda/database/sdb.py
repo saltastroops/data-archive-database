@@ -60,6 +60,98 @@ WHERE Proposal_Code = %s
             return f"{results['Title']}"
         raise ValueError("The observation has no title")
 
+    def find_observations_to_update(self, proposal_code) -> List[types.UpdatableProposal]:
+        """
+        The part of an observations that contains what would have change on SDB
+        Parameters
+        ----------
+        proposal_code: str
+            The proposal code
+
+        Returns
+        -------
+            The list of observations
+
+        """
+
+        sql = """
+SELECT  BlockVisit_Id, BlockVisitStatus
+FROM BlockVisit
+    JOIN `Block` USING(Block_Id)
+    JOIN BlockVisitStatus USING(BlockVisitStatus_Id)
+    JOIN ProposalCode USING(ProposalCode_Id)
+WHERE Proposal_Code = %s
+        """
+        results = pd.read_sql(sql, self._connection, params=(proposal_code,))
+        ps = []
+        if len(results):
+            for index, row in results.iterrows():
+                ps.append(
+                    types.UpdatableObservation(
+                        group_identifier=str(row["BlockVisit_Id"]),
+                        status=row["BlockVisitStatus"]
+                    )
+                )
+        return ps
+
+    def find_proposals_to_update(self, start_date: date, end_date: date) -> List[types.UpdatableProposal]:
+        """
+        The part of a proposal that contains what would have change on SDB.
+
+        Parameters
+        ----------
+        start_date: date
+            The start date
+        end_date:date
+            The end date
+        Returns
+        -------
+        The list of proposals
+
+        """
+
+        sql = """
+SELECT Proposal_Code, ReleaseDate, Title, CONCAT(FirstName, " ", Surname) as FullName
+FROM Proposal
+	JOIN ProposalCode USING(ProposalCode_Id)
+    JOIN ProposalText USING(ProposalCode_Id)
+    JOIN ProposalContact USING(ProposalCode_Id)
+    JOIN Investigator ON Leader_Id = Investigator_Id
+    JOIN ProposalGeneralInfo USING(ProposalCode_Id)
+	JOIN Semester ON Proposal.Semester_Id= Semester.Semester_Id
+WHERE Current = 1
+	AND Semester.StartSemester >= (
+		SELECT StartSemester FROM Semester WHERE StartSemester <= %s ORDER BY StartSemester DESC LIMIT 1
+		)
+	AND Semester.EndSemester <=(
+		SELECT EndSemester FROM Semester WHERE StartSemester >= %s ORDER BY StartSemester ASC LIMIT 1
+    )
+        """
+        results = pd.read_sql(sql, self._connection, params=(start_date, end_date))
+        if len(results):
+            ps = []
+            for index, row in results.iterrows():
+                ps.append(
+                    types.UpdatableProposal(
+                        pi=row["FullName"],
+                        proposal_code=row["Proposal_Code"],
+                        title=row["Title"],
+                        date_release=row["ReleaseDate"],
+                        meta_release=row["ReleaseDate"]
+                    )
+                )
+            return ps
+
+        return [
+            types.UpdatableProposal(
+                pi=result[3],
+                proposal_code=result[1],
+                title=result[2],
+                date_release=result[4],
+                meta_release=result[5]
+            )
+            for result in results] if results else None
+
     def find_observation_status(self, block_visit_id: int) -> types.Status:
         # Observations not belonging to a proposal are accepted by default.
         if block_visit_id is None:
@@ -84,12 +176,12 @@ SELECT BlockVisitStatus FROM BlockVisit JOIN BlockVisitStatus USING(BlockVisitSt
         sql = """
 SELECT MAX(EndSemester) AS EndSemester, ProposalType, ProprietaryPeriod
 FROM BlockVisit
-JOIN Block ON BlockVisit.Block_Id=Block.Block_Id
-JOIN ProposalCode ON Block.ProposalCode_Id=ProposalCode.ProposalCode_Id
-JOIN ProposalGeneralInfo ON ProposalCode.ProposalCode_Id=ProposalGeneralInfo.ProposalCode_Id
-JOIN ProposalType ON ProposalGeneralInfo.ProposalType_Id=ProposalType.ProposalType_Id
-JOIN NightInfo ON BlockVisit.NightInfo_Id=NightInfo.NightInfo_Id
-JOIN Semester ON Date BETWEEN Semester.StartSemester AND Semester.EndSemester
+    JOIN Block ON BlockVisit.Block_Id=Block.Block_Id
+    JOIN ProposalCode ON Block.ProposalCode_Id=ProposalCode.ProposalCode_Id
+    JOIN ProposalGeneralInfo ON ProposalCode.ProposalCode_Id=ProposalGeneralInfo.ProposalCode_Id
+    JOIN ProposalType ON ProposalGeneralInfo.ProposalType_Id=ProposalType.ProposalType_Id
+    JOIN NightInfo ON BlockVisit.NightInfo_Id=NightInfo.NightInfo_Id
+    JOIN Semester ON Date BETWEEN Semester.StartSemester AND Semester.EndSemester
 WHERE Proposal_Code=%s;
         """
         results = pd.read_sql(sql, self._connection, params=(proposal_code,)).iloc[0]
@@ -130,7 +222,7 @@ WHERE Proposal_Code = %s
         if len(results):
             ps = []
             for index, row in results.iterrows():
-                ps.append(row["PiptUser_Id"])
+                ps.append(str(row["PiptUser_Id"]))
             return ps
         raise ValueError("Observation has no Investigators")
 
