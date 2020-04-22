@@ -110,7 +110,7 @@ class SALTObservation:
         instrument: types.Instrument,
     ) -> types.Observation:
         proposal_code = self.header_value("PROPID").upper()
-        if not self.database_service.is_existing_proposal_code(proposal_code):
+        if self.database_service.is_existing_proposal_code(proposal_code):
             data_release_dates = self.database_service.find_release_date(proposal_code)
         else:
             data_release_dates = (
