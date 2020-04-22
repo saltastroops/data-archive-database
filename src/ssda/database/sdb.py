@@ -363,8 +363,9 @@ class SaltDatabaseService:
             if fd.block_visit_id:
                 fd.block_visit_id_status = BlockVisitIdStatus.CONFIRMED
 
+    @staticmethod
     def create_block_visit_id_provider(
-        self, file_data: List[FileDataItem], block_visit_ids: Dict[BlockKey, List[int]]
+        file_data: List[FileDataItem], block_visit_ids: Dict[BlockKey, List[int]]
     ) -> Callable[[BlockKey], Union[int, str]]:
         """
         Create a function for requesting block visit id values.
@@ -399,15 +400,12 @@ class SaltDatabaseService:
         for key, ids in block_visit_ids.items():
             available_ids[key] = sorted(ids)
 
+        # All block visit ids used in the file data are unavailable.
         for fd in file_data:
-            if not self.is_existing_proposal_code(fd.proposal_code):
-                continue
-            key = BlockKey(proposal_code=fd.proposal_code, target_name=fd.target_name)
-            if key in available_ids:
-                try:
-                    available_ids[key].remove(fd.block_visit_id)
-                except ValueError:
-                    pass  # id was not in list
+            if fd.block_visit_id:
+                for key in available_ids:
+                    if fd.block_visit_id in available_ids[key]:
+                        available_ids[key].remove(fd.block_visit_id)
 
         # Define the function for requesting block visit id values.
         def request_block_visit_id(_key: BlockKey):
