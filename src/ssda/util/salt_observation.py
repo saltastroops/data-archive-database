@@ -1,3 +1,4 @@
+import logging
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -93,12 +94,13 @@ class SALTObservation:
                 int(bvid_from_fits), night
             )
         ):
-            raise Exception(
+            logging.warning(
                 f"The block visit ids from the FITS header ({bvid_from_fits}) and the database ({bvid_from_db}) are different."
             )
 
         # Some block visit ids don't exist in the FITS header but can be inferred
-        # from the database.
+        # from the database. Also, if the two differ, the database inferred one is the
+        # more conservative (and hence safer) bet.
         return bvid_from_db
 
     def observation(
