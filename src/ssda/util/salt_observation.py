@@ -21,6 +21,8 @@ class FileData:
 
 
 class SALTObservation:
+    file_data = FileData({}, None)
+
     def __init__(self, fits_file: FitsFile, database_service: SaltDatabaseService):
         self.header_value = fits_file.header_value
         self.size = fits_file.size()
@@ -28,13 +30,6 @@ class SALTObservation:
         self.fits_file = fits_file
         self.file_path = fits_file.file_path
         self.database_service = database_service
-        self.file_data = FileData({}, None)
-        self.block_visit_id = (
-            None
-            if not fits_file.header_value("BVISITID")
-            else int(fits_file.header_value("BVISITID"))
-        )
-        self.proposal_code = fits_file.header_value("PROPID")
 
     def artifact(self, plane_id: int) -> types.Artifact:
         # Creates a file path of the reduced calibration level mapping a raw calibration level.
@@ -81,13 +76,13 @@ class SALTObservation:
 
         # Get the block visit id from the database
         night = (self.observation_start_time() - timedelta(hours=12)).date()
-        if self.file_data.night != night:
-            self.file_data = FileData(
+        if SALTObservation.file_data.night != night:
+            SALTObservation.file_data = FileData(
                 self.database_service.find_block_visit_ids(night), night
             )
         filename = Path(self.fits_file.file_path()).name
-        if filename in self.file_data.data:
-            bvid_from_db = self.file_data.data[filename].block_visit_id
+        if filename in SALTObservation.file_data.data:
+            bvid_from_db = SALTObservation.file_data.data[filename].block_visit_id
         else:
             bvid_from_db = None
 
@@ -116,7 +111,7 @@ class SALTObservation:
         instrument: types.Instrument,
     ) -> types.Observation:
         proposal_code = self.header_value("PROPID").upper()
-        if not self.is_calibration():
+        if self.database_service.is_existing_proposal_code(proposal_code):
             data_release_dates = self.database_service.find_release_date(proposal_code)
         else:
             data_release_dates = (

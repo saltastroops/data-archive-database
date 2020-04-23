@@ -1,7 +1,8 @@
 from datetime import datetime, date, timedelta
 import functools
+import hashlib
+
 import pytz
-import uuid
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
@@ -76,7 +77,8 @@ class SaltDatabaseService:
         henceforth.
 
         Due to issues with the SDB and FITS files, sometimes this function cannot find a
-        block visit id. In this case a random UUID value is assigned instead.
+        block visit id. In this case a hashcode based on night, proposal code and target
+        name is used.
 
         Parameters
         ----------
@@ -110,7 +112,7 @@ class SaltDatabaseService:
         SaltDatabaseService._mark_confirmed_block_visit_ids(file_data)
 
         # Try to fill the gaps in the file data.
-        self._fill_block_visit_id_gaps(file_data, block_visit_ids)
+        self._fill_block_visit_id_gaps(file_data, block_visit_ids, night)
 
         # Update the status of the guessed and inferred block visit ids.
         SaltDatabaseService._update_block_visit_id_status_values(
@@ -365,7 +367,7 @@ class SaltDatabaseService:
 
     @staticmethod
     def create_block_visit_id_provider(
-        file_data: List[FileDataItem], block_visit_ids: Dict[BlockKey, List[int]]
+        file_data: List[FileDataItem], block_visit_ids: Dict[BlockKey, List[int]], night: datetime.date
     ) -> Callable[[BlockKey], Union[int, str]]:
         """
         Create a function for requesting block visit id values.
@@ -374,11 +376,11 @@ class SaltDatabaseService:
 
         If for a combination of proposal code there exist block visit ids not used by
         any other file, the first of these is returned by the function. A returned value
-        won't be returned again. If there is no block visit id available a UUID is
-        returned instead.
+        won't be returned again. If there is no block visit id available a hashcode
+        based on night, proposal code and target name is returned instead.
 
         This implies that the returned block visit id is a string if and only if it is
-        not an existing block visit id (i.e. a UUID).
+        not an existing block visit id (i.e. a hashcode).
 
         Parameters
         ----------
@@ -386,6 +388,8 @@ class SaltDatabaseService:
             File data.
         block_visit_ids : Dict[BlockKey]
             Block visit ids.
+        night : datetime.date
+            Observing night.
 
         Returns
         -------
@@ -412,12 +416,14 @@ class SaltDatabaseService:
             if _key in available_ids and available_ids[_key]:
                 return available_ids[_key].pop(0)
             else:
-                return str(uuid.uuid4())
+                id_string = f"{night.isoformat()}{fd.proposal_code}{fd.target_name}"
+                fake_id = hashlib.md5(id_string.encode("UTF-8")).hexdigest()
+                return fake_id
 
         return request_block_visit_id
 
     def _fill_block_visit_id_gaps(
-        self, file_data: List[FileDataItem], block_visit_ids: Dict[BlockKey, List[int]]
+        self, file_data: List[FileDataItem], block_visit_ids: Dict[BlockKey, List[int]], night: datetime.date
     ):
         """
         Fill in missing block visit ids for files that contain target observations.
@@ -467,11 +473,13 @@ class SaltDatabaseService:
             File data.
         block_visit_ids : dict
             Block visit ids.
+        night : datetime.date
+            Observing night.
 
         """
 
         block_visit_id_provider = self.create_block_visit_id_provider(
-            file_data, block_visit_ids
+            file_data, block_visit_ids, night
         )
 
         def block_visit_id_for_file(_index: int, forward_search: bool) -> Optional[int]:
