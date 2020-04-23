@@ -1,129 +1,95 @@
 import os
-import pymysql
+import MySQLdb
+import pprint
 import smtplib
 import psycopg2
 import psycopg2.extras
 import datetime
-import logging
 import click
 
-database_host = os.environ.get("sdb_host")
-database_user = os.environ.get("sdb_database_user")
-database_password = os.environ.get("sdb_database_password")
-database_name = os.environ.get("sdb_database_name")
+mail_port = os.environ.get("MAIL_PORT")
+mail_server = os.environ.get("MAIL_SERVER")
+mail_username = os.environ.get("MAIL_USERNAME")
+mail_password = os.environ.get("MAIL_PASSWORD")
 
-psql_database_host = os.environ.get("psql_host")
-psql_database_user = os.environ.get("psql_user")
-psql_database_password = os.environ.get("psql_password")
-psql_database_name = os.environ.get("psql_database")
 
-mail_port = os.environ.get("mail_port")
-mail_server = os.environ.get("mail_server")
-mail_username = os.environ.get("mail_user")
-mail_password = os.environ.get("mail_password")
+def sdb_database_connection():
+    database_host = os.environ.get("SDB_HOST")
+    database_user = os.environ.get("SDB_DATABASE_USER")
+    database_password = os.environ.get("SDB_DATABASE_PASSWORD")
+    database_name = os.environ.get("SDB_DATABASE_NAME")
 
-sdb_connection = pymysql.connect(
-    host=database_host,
-    user=database_user,
-    password=database_password,
-    database=database_name,
-    cursorclass=pymysql.cursors.DictCursor,
-)
+    sdb_connection = MySQLdb.connect(
+        host=database_host,
+        user=database_user,
+        password=database_password,
+        database=database_name,
+    )
+    return sdb_connection
 
-ssda_connection = psycopg2.connect(
-    host=psql_database_host,
-    user=psql_database_user,
-    password=psql_database_password,
-    database=psql_database_name,
-)
+
+def ssda_database_connection():
+    psql_database_host = os.environ.get("PSQL_HOST")
+    psql_database_user = os.environ.get("PSQL_USER")
+    psql_database_password = os.environ.get("PSQL_PASSWORD")
+    psql_database_name = os.environ.get("PSQL_DATABASE")
+
+    ssda_connection = psycopg2.connect(
+        host=psql_database_host,
+        user=psql_database_user,
+        password=psql_database_password,
+        database=psql_database_name,
+    )
+    return ssda_connection
+
 
 date_today = datetime.datetime.now().date()
 
 
+#
 # We get all PIs and their proposals
-def all_pi():
-    with sdb_connection.cursor() as database_connection:
-        pi_query = """SELECT Proposal_Code, Email, CONCAT(FirstName," ", Surname) AS Name
+def all_pi_and_proposals():
+    with sdb_database_connection().cursor(MySQLdb.cursors.DictCursor) as database_connection:
+        pi_query = """SELECT Proposal_Code, Email, CONCAT(FirstName," ", Surname) AS FullName
                       FROM ProposalContact AS propCon
                       JOIN ProposalCode ON ProposalCode.ProposalCode_Id = propCon.ProposalCode_Id
-                      JOIN ProposalInvestigator ON ProposalInvestigator.ProposalCode_Id=propCon.ProposalCode_Id
-                      JOIN Investigator ON Investigator.Investigator_Id = ProposalInvestigator.Investigator_Id"""
+                      JOIN Investigator ON Investigator.Investigator_Id = propCon.Leader_Id"""
         database_connection.execute(pi_query)
         results = database_connection.fetchall()
         return results
 
 
-# We add the release dates to the all_pi function
-def proposal_and_release_dates():
-    with ssda_connection.cursor(
+# getting the release dates for the proposals in ssda
+def proposal_release_dates():
+    with ssda_database_connection().cursor(
             cursor_factory=psycopg2.extras.DictCursor
     ) as ssda_cursor:
-        psql_query = """SELECT
-                        DISTINCT (proposal_code), data_release
+        psql_query = """SELECT DISTINCT (proposal_code), data_release
                         FROM observations.proposal prop
-                        JOIN observations.observation obs on prop.proposal_id=obs.proposal_id"""
-        ssda_cursor.execute(psql_query)
+                        JOIN observations.observation obs on prop.proposal_id=obs.proposal_id
+                        WHERE telescope_id=%(telescope_id)s"""
+        ssda_cursor.execute(psql_query, dict(telescope_id=3))
         results = ssda_cursor.fetchall()
         return results
 
 
-# We create a dictionary of the proposal and release date for each PI
-all_data = {}
-for pi in all_pi():
-    all_data[pi["Name"]] = {
-        "proposal code": pi["Proposal_Code"],
-        "Email": pi["Email"]
-    }
-
-pi_information = {}
-for data in proposal_and_release_dates():
-    for key, value in all_data.items():
-        if value["proposal code"] == data["proposal_code"]:
-            pi_information[key] = {
-                "proposal code": value["proposal code"],
-                "Email": value["Email"],
-                "data release": data["data_release"],
-            }
-
-message = """
-Subject: Release of data
-To: {receiver}
-From: {sender}
-The proposal with proposal code {proposal_code} is due to
-be released soon with its release date being {release_date}.
-Please let us know if you wish to extend the release date. """
-
-sender = "Salt help<salthelp@saao.ac.za>"
-logging.basicConfig(filename="email.log", level=logging.INFO, format="%(message)s")
-
-
-# read the log file
-def read_log_file():
-    with open("email.log", "r") as email_log:
-        array = []
-        endl = os.linesep
-        email_content = email_log.readlines()
-        for line in email_content:
-            array.append(line.strip(endl))
-    return array
+def proposals_and_release_dates():
+    ssda_query_results = proposal_release_dates()
+    sdb_query_results = all_pi_and_proposals()
+    all_data = dict()
+    for pi in sdb_query_results:
+        for data in ssda_query_results:
+            if pi["Proposal_Code"] == data["proposal_code"]:
+                if pi["Email"] not in all_data:
+                    all_data[pi["Email"]] = {"proposals": {}, "FullName": pi["FullName"]}
+                all_data[pi["Email"]]["proposals"].update({pi["Proposal_Code"]: data["data_release"]})
+    return all_data
 
 
 @click.command()
 @click.option("--public-within", type=int, help="Number of days until release of proposal")
 def send_email(public_within):
-    for user, information in pi_information.items():
-        if information['data release'] - public_within <= date_today:
-            name_and_proposal = user + " " + information["proposal code"]
-            if name_and_proposal not in read_log_file():
-                with smtplib.SMTP(mail_server, mail_port) as server:
-                    server.login(mail_username, mail_password)
-                    server.sendmail(
-                        sender,
-                        information["Email"],
-                        message.format(receiver=information["Email"],
-                                       sender=sender,
-                                       proposal_code=information["proposal code"],
-                                       release_date=information["data release"],
-                                       )
-                    )
-                logging.info(f"{user} {information['proposal code']}")
+    for key, value in proposals_and_release_dates().items():
+        for proposal, release_date in value["proposals"].items():
+            pass
+
