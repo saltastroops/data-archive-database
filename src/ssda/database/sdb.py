@@ -784,6 +784,34 @@ WHERE Proposal_Code=%s;
 
         return release_date, release_date
 
+    def find_proposal_code(self, filename: str) -> Optional[str]:
+        """
+        Use the FileData table to find the proposal code flor a FITS file.
+
+        Parameters
+        ----------
+        filename : str
+            Filename of the FITS file.
+
+        Returns
+        -------
+        str
+            The proposal code.
+
+        """
+
+        sql = """
+SELECT Proposal_Code
+FROM FileData
+JOIN ProposalCode ON FileData.ProposalCode_Id = ProposalCode.ProposalCode_Id
+WHERE FileData.FileName=%s
+        """
+        results = pd.read_sql(sql, self._connection, params=(filename,))
+        if len(results):
+            return results['Proposal_Code'][0]
+        else:
+            return None
+
     def find_proposal_investigators(self, proposal_code: str) -> List[str]:
         sql = """
 SELECT PiptUser.PiptUser_Id
