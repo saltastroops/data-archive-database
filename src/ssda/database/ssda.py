@@ -840,7 +840,7 @@ WHERE ot.night >= %(start_date)s AND ot.night <= %(end_date)s
             The database id of the inserted proposal.
 
         """
-
+        print("CC: ", proposal.proposal_type.value)
         with self._connection.cursor() as cur:
             sql = """
             WITH inst (institution_id) AS (

@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, date, timedelta
 import functools
 import pytz
 import uuid
@@ -59,7 +59,7 @@ class SaltDatabaseService:
         self._cursor = self._connection.cursor()
         self._proposal_codes_existing: Dict[str, bool] = {}
 
-    def find_block_visit_ids(self, night: datetime.date) -> Dict[str, FileDataItem]:
+    def find_block_visit_ids(self, night: date) -> Dict[str, FileDataItem]:
         """
         Find the block visit ids fromm the SDB.
 
@@ -152,7 +152,7 @@ class SaltDatabaseService:
 
         return existing
 
-    def _find_raw_file_data(self, night: datetime.date) -> List[FileDataItem]:
+    def _find_raw_file_data(self, night: date) -> List[FileDataItem]:
         """
         Extract file data from the FileData.
 
@@ -172,10 +172,10 @@ class SaltDatabaseService:
         """
 
         # Extract data from the FileData table.
-        start_time = datetime.datetime(
+        start_time = datetime(
             night.year, night.month, night.day, 12, 0, 0, 0, tzinfo=pytz.utc
         )
-        end_time = start_time + datetime.timedelta(hours=24)
+        end_time = start_time + timedelta(hours=24)
         file_data_sql = """
     SELECT FileData.UTStart, FileData.FileName, ProposalCode.Proposal_Code, FileData.Target_Name, FileData.BlockVisit_Id
     FROM FileData
@@ -201,7 +201,7 @@ class SaltDatabaseService:
         ]
 
         # Correct for multiple target names in the same block visit.
-        if night == datetime.date(2016, 10, 20):
+        if night == date(2016, 10, 20):
             for fd in file_data:
                 if fd.proposal_code == "2016-1-SCI-049" and fd.target_name.startswith(
                     "N132D-pos"
@@ -209,17 +209,17 @@ class SaltDatabaseService:
                     fd.target_name = "N132D-pos1"
 
         # Fix incorrect block visit id.
-        if night == datetime.date(2015, 2, 25):
+        if night == date(2015, 2, 25):
             for fd in file_data:
                 if fd.block_visit_id == 8082:
                     fd.block_visit_id = 8092
 
         # Ignore block visit ids of other dates
-        if night == datetime.date(2016, 2, 22):
+        if night == date(2016, 2, 22):
             for fd in file_data:
                 if fd.block_visit_id == 10906:
                     fd.block_visit_id = None
-        if night == datetime.date(2018, 4, 16):
+        if night == date(2018, 4, 16):
             for fd in file_data:
                 if fd.block_visit_id == 18937:
                     fd.block_visit_id = None
@@ -233,14 +233,14 @@ class SaltDatabaseService:
         return file_data
 
     def _find_raw_block_visit_ids(
-        self, night: datetime.date, status_values: List[str]
+        self, night: date, status_values: List[str]
     ) -> Dict[BlockKey, List[id]]:
         """
         Extract block visit ids from database tables other than FileData.
 
         Parameters
         ----------
-        night : datetime.date
+        night : date
 
         Returns
         -------
@@ -248,11 +248,11 @@ class SaltDatabaseService:
         """
 
         # Get the block visit ids independently from the proposal code and target name.
-        night_date = datetime.datetime(night.year, night.month, night.day)
-        start_time = datetime.datetime(
+        night_date = datetime(night.year, night.month, night.day)
+        start_time = datetime(
             night.year, night.month, night.day, 12, 0, 0, 0, tzinfo=pytz.utc
         )
-        end_time = start_time + datetime.timedelta(hours=24)
+        end_time = start_time + timedelta(hours=24)
         block_visits_sql = """
     SELECT DISTINCT ProposalCode.Proposal_Code, Target.Target_Name, BlockVisit.BlockVisit_Id, BlockVisitStatus.BlockVisitStatus
     FROM BlockVisit
@@ -676,7 +676,7 @@ FROM ProposalCode
     JOIN Investigator ON ProposalContact.Leader_Id=Investigator.Investigator_Id
 WHERE ProposalCode.Proposal_Code=%s;
         """
-        results = pd.read_sql(sql, self._connection, params=(block_visit_id,)).iloc[0]
+        results = pd.read_sql(sql, self._connection, params=(proposal_code,)).iloc[0]
         if results["FullName"]:
             return results["FullName"]
         raise ValueError("Observation have no Principal Investigator")
@@ -823,7 +823,7 @@ SELECT BlockVisitStatus FROM BlockVisit JOIN BlockVisitStatus USING(BlockVisitSt
 
     def find_release_date(
         self, proposal_code: str
-    ) -> Tuple[datetime.date, datetime.date]:
+    ) -> Tuple[date, date]:
         sql = """
 SELECT MAX(EndSemester) AS EndSemester, ProposalType, ProprietaryPeriod
 FROM BlockVisit
@@ -844,8 +844,8 @@ WHERE Proposal_Code=%s;
         # accessible by SALT partners). However, their meta data becomes public
         # immediately.
         if proposal_type == "Gravitational Wave Event":
-            release_date = datetime.datetime.strptime("2100-01-01", "%Y-%m-%d")
-            meta_release_date = datetime.datetime.today().date()
+            release_date = datetime.strptime("2100-01-01", "%Y-%m-%d")
+            meta_release_date = datetime.today().date()
 
             return release_date, meta_release_date
 
@@ -985,7 +985,7 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
                 )
 
     def is_block_visit_in_night(
-        self, block_visit_id: int, night: datetime.date
+        self, block_visit_id: int, night: date
     ) -> bool:
         """
         Check whether a block visit was done in a given night.
@@ -994,7 +994,7 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
         ----------
         block_visit_id : int
             Block visit id.
-        night : datetime.date
+        night : date
             Observing night.
 
         Returns

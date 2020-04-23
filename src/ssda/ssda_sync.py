@@ -7,7 +7,8 @@ from ssda.database.sdb import SaltDatabaseService
 from ssda.database.services import DatabaseServices
 from ssda.database.ssda import SSDADatabaseService
 
-from ssda.util import types, parse_date
+from ssda.util import types
+from ssda.util.parser_date import parse_date
 
 
 @click.command()

@@ -11,9 +11,10 @@ from ssda.database.sdb import SaltDatabaseService
 from ssda.database.ssda import SSDADatabaseService
 from ssda.database.services import DatabaseServices
 from ssda.task import execute_task
-from ssda.util import types, parse_date
+from ssda.util import types
 from ssda.util.errors import get_salt_data_to_log
 from ssda.util.fits import fits_file_paths, set_fits_base_dir, get_night_date
+from ssda.util.parser_date import parse_date
 from ssda.util.types import Instrument, DateRange, TaskName, TaskExecutionMode
 
 # Log with Sentry
@@ -157,10 +158,10 @@ def main(
 
     verbosity_level = 2 if not verbosity else int(verbosity)
 
-    if not os.environ.get("SENTRY_DSN"):
-        logging.warning(
-            "Environment variable SENTRY_DSN for logging with Sentry not " "set."
-        )
+    # if not os.environ.get("SENTRY_DSN"):
+    #     logging.warning(
+    #         "Environment variable SENTRY_DSN for logging with Sentry not " "set."
+    #     )
 
     # convert options as required and validate them
     now = datetime.now
