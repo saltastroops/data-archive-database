@@ -1,4 +1,5 @@
 import logging
+import os
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -394,7 +395,10 @@ class SALTObservation:
             else self.fits_file.header_value("PROPID")
         )
         # If the FITS file is Junk, Unknown, ENG or CAL_GAIN, do not store the observation.
-        if proposal_id in ("JUNK", "UNKNOWN", "NONE", "ENG", "CAL_GAIN"):
+        filename = os.path.basename(self.file_path())
+        proposal_id_from_filename = self.database_service.find_proposal_code(filename)
+        ignored_proposal_ids = ("JUNK", "UNKNOWN", "NONE", "ENG", "CAL_GAIN")
+        if proposal_id in ignored_proposal_ids or proposal_id_from_filename in ignored_proposal_ids:
             return True
         # Do not store engineering data.
         # Proposal ids referring to an actual proposal will always start with a "2" (as in 2020-1-SCI-014).
