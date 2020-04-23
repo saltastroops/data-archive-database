@@ -243,7 +243,7 @@ VALUES  (1, 'Arc - Calsys'),
 CREATE TABLE proposal_type
 (
     proposal_type_id serial PRIMARY KEY,
-    proposal_type           varchar(50) UNIQUE NOT NULL,
+    proposal_type           varchar(50) UNIQUE NOT NULL
 );
 
 COMMENT ON TABLE proposal_type IS 'A Proposal type, such as commissioning.';

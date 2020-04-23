@@ -845,12 +845,16 @@ WHERE ot.night >= %(start_date)s AND ot.night <= %(end_date)s
             sql = """
             WITH inst (institution_id) AS (
                 SELECT institution_id FROM observations.institution WHERE name=%(institution)s
+            ),
+            pt (proposal_type_id) AS (
+                SELECT proposal_type_id FROM observations.proposal_type WHERE proposal_type=%(proposal_type)s
             )
-            INSERT INTO observations.proposal (institution_id, pi, proposal_code, title)
+            INSERT INTO observations.proposal (institution_id, pi, proposal_code, proposal_type_id, title)
             VALUES (
                 (SELECT institution_id FROM inst),
                 %(pi)s,
                 %(proposal_code)s,
+                (SELECT proposal_type_id FROM pt),
                 %(title)s
             )
             RETURNING proposal_id
@@ -861,6 +865,7 @@ WHERE ot.night >= %(start_date)s AND ot.night <= %(end_date)s
                     institution=proposal.institution.value,
                     pi=proposal.pi,
                     proposal_code=proposal.proposal_code,
+                    proposal_type=proposal.proposal_type.value,
                     title=proposal.title,
                 ),
             )

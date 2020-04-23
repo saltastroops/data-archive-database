@@ -1105,13 +1105,20 @@ class Proposal:
         Principal Investigator.
     proposal_code : str
         Proposal identifier, which is unique within an institution.
+    proposal_type : ProposalType
+        Proposal type.
     title : str
         Proposal title.
 
     """
 
     def __init__(
-        self, institution: Institution, pi: str, proposal_code: str, title: str
+        self,
+        institution: Institution,
+        pi: str,
+        proposal_code: str,
+        proposal_type: ProposalType,
+        title: str,
     ):
         if len(pi) > 100:
             raise ValueError("The PI must have at most 100 characters.")
@@ -1123,6 +1130,7 @@ class Proposal:
         self._institution = institution
         self._pi = pi
         self._proposal_code = proposal_code
+        self.proposal_type = proposal_type
         self._title = title
 
     @property
@@ -1176,8 +1184,8 @@ class ProposalType(Enum):
     """
     Enumeration of the available proposal type.
 
-    The enum values must be the same as the values of the ProposalType column in the
-    ProposalType table from the sdb.
+    The enum values must be the same as the values of the proposal_type column in the
+    proposal_type table.
 
     """
 
