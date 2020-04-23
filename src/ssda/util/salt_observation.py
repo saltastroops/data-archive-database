@@ -411,16 +411,10 @@ class SALTObservation:
                 return True
 
         observation_date = self.fits_file.header_value("DATE-OBS")
-        # If the FITS header does not include the observation date, do not store its data.
+
+        # If the FITS header does not include the observation date, do not store its
+        # data.
         if not observation_date:
-            return True
-
-        bv_id = self._block_visit_id()
-
-        status = self.database_service.find_observation_status(bv_id)
-
-        # Do not store deleted or in a queue observation data.
-        if status == Status.DELETED or status == Status.INQUEUE:
             return True
 
         return False
