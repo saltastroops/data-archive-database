@@ -718,7 +718,10 @@ LIMIT 1
             return types.Status.REJECTED
 
         status_sql = """
-SELECT BlockVisitStatus FROM BlockVisit JOIN BlockVisitStatus USING(BlockVisitStatus_Id) WHERE BlockVisit_Id=%s
+SELECT BlockVisitStatus
+FROM BlockVisit
+     JOIN BlockVisitStatus USING(BlockVisitStatus_Id)
+WHERE BlockVisit_Id=%s
         """
         status_results = pd.read_sql(status_sql, self._connection, params=(block_visit_id,))
 
@@ -736,10 +739,10 @@ SELECT BlockVisitStatus FROM BlockVisit JOIN BlockVisitStatus USING(BlockVisitSt
         # What block visits have there been for the block in the same night?
         visits_sql = """
 SELECT DISTINCT BlockVisit_Id, BlockVisitStatus
-FROM BlockVisit bv
-JOIN BlockVisitStatus bvs ON bv.BlockVisitStatus_Id = bvs.BlockVisitStatus_Id
-WHERE bv.Block_Id=(SELECT bv2.Block_Id FROM BlockVisit bv2 WHERE bv2.BlockVisit_Id=%(id)s)
-      AND bv.NightInfo_Id=(SELECT bv3.NightInfo_Id FROM BlockVisit bv3 WHERE bv3.BlockVisit_Id=%(id)s);
+FROM BlockVisit AS bv
+JOIN BlockVisitStatus AS bvs ON bv.BlockVisitStatus_Id = bvs.BlockVisitStatus_Id
+WHERE bv.Block_Id=(SELECT bv2.Block_Id FROM BlockVisit AS bv2 WHERE bv2.BlockVisit_Id=%(id)s)
+      AND bv.NightInfo_Id=(SELECT bv3.NightInfo_Id FROM BlockVisit AS bv3 WHERE bv3.BlockVisit_Id=%(id)s);
         """
         visits_results = pd.read_sql(visits_sql, self._connection, params={'id': block_visit_id})
         all_visits = len(visits_results)
