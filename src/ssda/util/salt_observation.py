@@ -231,9 +231,15 @@ class SALTObservation:
         )
 
     def _product_category(self):
-        observation_object = self.header_value("OBJECT").upper()
-        product_type = self.header_value("OBSTYPE").upper()
-        proposal_id = self.header_value("PROPID").upper()
+        observation_object = (
+            self.header_value("OBJECT").upper() if self.header_value("OBJECT") else ""
+        )
+        product_type = (
+            self.header_value("OBSTYPE").upper() if self.header_value("OBSTYPE") else ""
+        )
+        proposal_id = (
+            self.header_value("PROPID").upper() if self.header_value("PROPID") else ""
+        )
 
         # CCDTYPE is a copy of OBSTYPE
         if not product_type:
