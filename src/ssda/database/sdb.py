@@ -704,9 +704,10 @@ LIMIT 1
             return f"{results['Title']}"
         raise ValueError("The observation has no title")
 
-    def find_observations_to_update(self, proposal_code) -> List[types.UpdatableProposal]:
+    def find_proposal_observations(self, proposal_code) -> List[types.SALTObservation]:
         """
-        The part of an observations that contains what would have change on SDB
+        The observations taken for a proposal.
+
         Parameters
         ----------
         proposal_code: str
@@ -731,14 +732,14 @@ WHERE Proposal_Code = %s
         if len(results):
             for index, row in results.iterrows():
                 ps.append(
-                    types.UpdatableObservation(
+                    types.SALTObservation(
                         group_identifier=str(row["BlockVisit_Id"]),
                         status=row["BlockVisitStatus"]
                     )
                 )
         return ps
 
-    def find_proposals_to_update(self, start_date: date, end_date: date) -> List[types.UpdatableProposal]:
+    def find_proposals_to_update(self, start_date: date, end_date: date) -> List[types.SALTProposalDetails]:
         """
         The part of a proposal that contains what would have change on SDB.
 
@@ -776,18 +777,18 @@ WHERE Current = 1
             ps = []
             for index, row in results.iterrows():
                 ps.append(
-                    types.UpdatableProposal(
+                    types.SALTProposalDetails(
                         pi=row["FullName"],
                         proposal_code=row["Proposal_Code"],
                         title=row["Title"],
-                        date_release=row["ReleaseDate"],
-                        meta_release=row["ReleaseDate"]
+                        date_release=datetime.strftime(str(row["ReleaseDate"]), "%Y-%m-%d").date(),
+                        meta_release=datetime.strftime(str(row["ReleaseDate"]), "%Y-%m-%d").date()
                     )
                 )
             return ps
 
         return [
-            types.UpdatableProposal(
+            types.SALTProposalDetails(
                 pi=result[3],
                 proposal_code=result[1],
                 title=result[2],

@@ -8,7 +8,7 @@ from ssda.database.services import DatabaseServices
 from ssda.database.ssda import SSDADatabaseService
 
 from ssda.util import types
-from ssda.util.parser_date import parse_date
+from ssda.util.parse_date import parse_date
 
 
 @click.command()
@@ -17,22 +17,25 @@ from ssda.util.parser_date import parse_date
 
 def main(start, end) -> int:
     """
-    The script to sync SSDA database with main databases
+    Synchronise the SSDA database with telescope databases such as the SALT Science Database
 
-    :param start: date
-        The start date to which you wish to check if SSDA database is still in sync with other databases.The date is inclusive
-    :param end: date
-        The end date to which you wish to check if SSDA database is still in sync with other databases.The date is inclusive
-    :return: 0
-        On successful sync
+    Parameters
+    ----------
+    start: date
+        The Start date
+    end: date
+        The end date
+    Returns
+    -------
+        0 on successful synchronising
 
     """
     logging.basicConfig(level=logging.INFO)
     logging.error("SALT is always assumed to be the telescope.")
     # convert options as required and validate them
     now = datetime.now
-    start_date = parse_date(start, now) if start else None
-    end_date = parse_date(end, now) if end else None
+    start_date = parse_date(start, now)
+    end_date = parse_date(end, now)
 
     # database access
     ssda_db_config = dsnparse.parse_environ("SSDA_DSN")
@@ -61,12 +64,13 @@ def main(start, end) -> int:
 
     proposals_to_update = sdb_database_service.find_proposals_to_update(start_date, end_date)
 
-    ssda_database_service.begin_transaction()
+
     # Compare proposal and update
     for proposal in proposals_to_update:
+        ssda_database_service.begin_transaction()
         try:
             # Proposal to compare
-            proposal_ = ssda_database_service.find_proposal_to_compare(
+            proposal_ = ssda_database_service.find_proposal(
                 proposal_code=proposal.proposal_code,
                 institution=types.Institution.SALT
             )
@@ -90,13 +94,14 @@ def main(start, end) -> int:
             if not (sorted(proposal_investigators) == sorted(sdb_proposal_investigators)):
                 ssda_database_service.update_investigators(
                     proposal_id=proposal.proposal_id,
-                    proposal_investigators=sdb_proposal_investigators
+                    proposal_investigator_ids=sdb_proposal_investigators
                 )
-            observations_to_update = sdb_database_service.find_observations_to_update(
+            observations_to_update = sdb_database_service.find_proposal_observations(
                 proposal_code=proposal.proposal_code
             )
-            observations_to_compare = ssda_database_service.find_observations_to_compare(
-                proposal_code=proposal.proposal_code
+            observations_to_compare = ssda_database_service.find_proposal_observations(
+                proposal_code=proposal.proposal_code,
+                telescope=types.Telescope.SALT
             )
 
             # compare observation status.
@@ -104,12 +109,13 @@ def main(start, end) -> int:
                 for c in observations_to_compare:
                     if c.group_identifier == obs.group_identifier:
                         if proposal.meta_release != c.meta_release or \
-                           proposal.meta_release !=c.data_release or \
+                           proposal.data_release != c.data_release or \
                            obs.status != c.status:
                             ssda_database_service.update_release_date(
                                 group_identifier=obs.group_identifier,
                                 data_release_date=proposal.date_release,
-                                meta_release_date=proposal.meta_release
+                                meta_release_date=proposal.meta_release,
+                                status=obs.status
                             )
                         break
 

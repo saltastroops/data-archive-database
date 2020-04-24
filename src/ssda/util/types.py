@@ -1415,7 +1415,7 @@ class Telescope(Enum):
 
 
 @dataclass
-class UpdatableObservation:
+class SALTObservation:
     """
     An observation with updateble fields.
 
@@ -1433,7 +1433,7 @@ class UpdatableObservation:
 
 
 @dataclass
-class UpdatableProposal:
+class SALTProposalDetails:
     """
     A proposal for an updatable fields.
 
@@ -1454,8 +1454,8 @@ class UpdatableProposal:
 
     """
 
-    date_release: str
-    meta_release: str
+    date_release: date
+    meta_release: date
     pi: str
     proposal_code: str
     title: str
