@@ -110,7 +110,9 @@ class SALTObservation:
         proposal_id: Optional[int],
         instrument: types.Instrument,
     ) -> types.Observation:
-        proposal_code = self.header_value("PROPID").upper()
+        proposal_code = (
+            self.header_value("PROPID").upper() if self.header_value("PROPID") else ""
+        )
         if self.database_service.is_existing_proposal_code(proposal_code):
             data_release_dates = self.database_service.find_release_date(proposal_code)
         else:
@@ -195,7 +197,9 @@ class SALTObservation:
         if bv_id is None:
             return None
 
-        proposal_code = self.header_value("PROPID").upper()
+        proposal_code = (
+            self.header_value("PROPID").upper() if self.header_value("PROPID") else ""
+        )
 
         return types.Proposal(
             institution=types.Institution.SALT,
@@ -208,7 +212,9 @@ class SALTObservation:
     def proposal_investigators(
         self, proposal_id: int
     ) -> List[types.ProposalInvestigator]:
-        proposal_code = self.header_value("PROPID").upper()
+        proposal_code = (
+            self.header_value("PROPID").upper() if self.header_value("PROPID") else ""
+        )
         investigators = self.database_service.find_proposal_investigators(proposal_code)
         return [
             types.ProposalInvestigator(
@@ -218,7 +224,9 @@ class SALTObservation:
         ]
 
     def target(self, observation_id: int) -> Optional[types.Target]:
-        object_name = self.header_value("OBJECT").upper()
+        object_name = (
+            self.header_value("OBJECT").upper() if self.header_value("OBJECT") else ""
+        )
 
         if self.is_calibration() and not self.is_standard():
             return None
@@ -243,7 +251,11 @@ class SALTObservation:
 
         # CCDTYPE is a copy of OBSTYPE
         if not product_type:
-            product_type = self.header_value("CCDTYPE").upper()
+            product_type = (
+                self.header_value("CCDTYPE").upper()
+                if self.header_value("CCDTYPE")
+                else ""
+            )
 
         product_type_unknown = not product_type or product_type == "ZERO"
 
@@ -304,9 +316,17 @@ class SALTObservation:
         )
 
     def _product_type(self) -> types.ProductType:
-        obs_mode = self.header_value("OBSMODE").upper()
-        instrument = self.header_value("INSTRUME").upper()
-        proposal_id = self.header_value("PROPID").upper()
+        obs_mode = (
+            self.header_value("OBSMODE").upper() if self.header_value("OBSMODE") else ""
+        )
+        instrument = (
+            self.header_value("INSTRUME").upper()
+            if self.header_value("INSTRUME")
+            else ""
+        )
+        proposal_id = (
+            self.header_value("PROPID").upper() if self.header_value("PROPID") else ""
+        )
         product_category = self._product_category()
 
         if product_category == types.ProductCategory.ARC:
@@ -398,6 +418,8 @@ class SALTObservation:
         proposal_id = (
             self.fits_file.header_value("PROPID").upper()
             if self.fits_file.header_value("PROPID")
+            else ""
+            if self.fits_file.header_value("PROPID")
             else self.fits_file.header_value("PROPID")
         )
         # If the FITS file is Junk, Unknown, ENG or CAL_GAIN, do not store the observation.
@@ -410,7 +432,9 @@ class SALTObservation:
         ):
             return True
 
-        observation_object = self.header_value("OBJECT").upper()
+        observation_object = (
+            self.header_value("OBJECT").upper() if self.header_value("OBJECT") else ""
+        )
         # Do not store commissioning data that pretends to be science.
         if "COM-" in proposal_id or "COM_" in proposal_id:
             if observation_object == "DUMMY":
