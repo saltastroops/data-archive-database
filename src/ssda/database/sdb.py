@@ -416,7 +416,7 @@ class SaltDatabaseService:
             if _key in available_ids and available_ids[_key]:
                 return available_ids[_key].pop(0)
             else:
-                id_string = f"{night.isoformat()}{fd.proposal_code}{fd.target_name}"
+                id_string = f"{night.isoformat()}{_key.proposal_code}{_key.target_name}"
                 fake_id = hashlib.md5(id_string.encode("UTF-8")).hexdigest()
                 return fake_id
 
