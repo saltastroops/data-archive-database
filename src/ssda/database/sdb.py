@@ -367,7 +367,9 @@ class SaltDatabaseService:
 
     @staticmethod
     def create_block_visit_id_provider(
-        file_data: List[FileDataItem], block_visit_ids: Dict[BlockKey, List[int]], night: datetime.date
+        file_data: List[FileDataItem],
+        block_visit_ids: Dict[BlockKey, List[int]],
+        night: datetime.date,
     ) -> Callable[[BlockKey], Union[int, str]]:
         """
         Create a function for requesting block visit id values.
@@ -423,7 +425,10 @@ class SaltDatabaseService:
         return request_block_visit_id
 
     def _fill_block_visit_id_gaps(
-        self, file_data: List[FileDataItem], block_visit_ids: Dict[BlockKey, List[int]], night: datetime.date
+        self,
+        file_data: List[FileDataItem],
+        block_visit_ids: Dict[BlockKey, List[int]],
+        night: datetime.date,
     ):
         """
         Fill in missing block visit ids for files that contain target observations.
@@ -723,11 +728,14 @@ FROM BlockVisit
      JOIN BlockVisitStatus USING(BlockVisitStatus_Id)
 WHERE BlockVisit_Id=%s
         """
-        status_results = pd.read_sql(status_sql, self._connection, params=(block_visit_id,))
+        status_results = pd.read_sql(
+            status_sql, self._connection, params=(block_visit_id,)
+        )
 
         if not len(status_results):
-            raise Exception(f'No block visit status found for block visit id '
-                            f'{block_visit_id}.')
+            raise Exception(
+                f"No block visit status found for block visit id " f"{block_visit_id}."
+            )
 
         status_results = status_results.iloc[0]
 
@@ -744,10 +752,16 @@ JOIN BlockVisitStatus AS bvs ON bv.BlockVisitStatus_Id = bvs.BlockVisitStatus_Id
 WHERE bv.Block_Id=(SELECT bv2.Block_Id FROM BlockVisit AS bv2 WHERE bv2.BlockVisit_Id=%(id)s)
       AND bv.NightInfo_Id=(SELECT bv3.NightInfo_Id FROM BlockVisit AS bv3 WHERE bv3.BlockVisit_Id=%(id)s);
         """
-        visits_results = pd.read_sql(visits_sql, self._connection, params={'id': block_visit_id})
+        visits_results = pd.read_sql(
+            visits_sql, self._connection, params={"id": block_visit_id}
+        )
         all_visits = len(visits_results)
-        accepted_visits = len(visits_results[visits_results['BlockVisitStatus'] == 'Accepted'])
-        rejected_visits = len(visits_results[visits_results['BlockVisitStatus'] == 'Rejected'])
+        accepted_visits = len(
+            visits_results[visits_results["BlockVisitStatus"] == "Accepted"]
+        )
+        rejected_visits = len(
+            visits_results[visits_results["BlockVisitStatus"] == "Rejected"]
+        )
         other_visits = all_visits - accepted_visits - rejected_visits
 
         # We don't know which visit corresponds to a deleted/queued visit, However, this
@@ -761,8 +775,10 @@ WHERE bv.Block_Id=(SELECT bv2.Block_Id FROM BlockVisit AS bv2 WHERE bv2.BlockVis
             return types.Status.REJECTED
 
         # Despite best effort no block visit status could be determined.
-        raise Exception('The block visit status could not be determined for the block '
-                        'visit id {id}.')
+        raise Exception(
+            "The block visit status could not be determined for the block "
+            "visit id {id}."
+        )
 
     def find_release_date(
         self, proposal_code: str
