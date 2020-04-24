@@ -286,7 +286,7 @@ class SALTObservation:
         ):
             return types.ProductCategory.STANDARD
         if product_type == "OBJECT" or product_type == "SCIENCE":
-            # Science file with no block visit id are not populated
+            # Science files with no block visit id are not populated
             if self._block_visit_id() is None:
                 raise ValueError(
                     "The observation is marked as science but has no block visit id."
