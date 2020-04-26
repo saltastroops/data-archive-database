@@ -145,7 +145,11 @@ class SALTObservation:
         start_date_time_str = (
             self.header_value("DATE-OBS") + " " + self.header_value("TIME-OBS")
         )
-        start_date_time = datetime.strptime(start_date_time_str, "%Y-%m-%d %H:%M:%S.%f")
+        try:
+            start_date_time = datetime.strptime(start_date_time_str, "%Y-%m-%d %H:%M:%S.%f")
+        except ValueError:
+            # support legacy format
+            start_date_time = datetime.strptime(start_date_time_str, "%Y-%m-%d %H:%M:%S")
         start_time_tz = datetime(
             year=start_date_time.year,
             month=start_date_time.month,
