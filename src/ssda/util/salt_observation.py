@@ -423,8 +423,6 @@ class SALTObservation:
             self.fits_file.header_value("PROPID").upper()
             if self.fits_file.header_value("PROPID")
             else ""
-            if self.fits_file.header_value("PROPID")
-            else self.fits_file.header_value("PROPID")
         )
         # If the FITS file is Junk, Unknown, ENG or CAL_GAIN, do not store the observation.
         if proposal_id in ("JUNK", "UNKNOWN", "NONE", "ENG", "CAL_GAIN"):

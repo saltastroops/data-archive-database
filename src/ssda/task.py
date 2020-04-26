@@ -33,6 +33,9 @@ def execute_task(
                 if fits_file.header_value("PROPID")
                 else fits_file.header_value("PROPID")
             )
+            if not proposal_id:
+                proposal_id = ""
+
             # If the FITS file is Junk, Unknown, ENG or CAL_GAIN, do not store the observation.
             if proposal_id in ("JUNK", "UNKNOWN", "NONE", "ENG", "CAL_GAIN"):
                 return
