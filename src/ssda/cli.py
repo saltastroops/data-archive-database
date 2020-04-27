@@ -1,7 +1,7 @@
 import logging
 import os
 from datetime import date, datetime, timedelta
-from typing import Callable, Optional, Set, Tuple
+from typing import Callable, List, Optional, Set, Tuple
 
 import click
 import dsnparse
@@ -17,6 +17,8 @@ from ssda.util.fits import fits_file_paths, set_fits_base_dir, get_night_date
 from ssda.util.types import Instrument, DateRange, TaskName, TaskExecutionMode
 
 # Log with Sentry
+from ssda.util.warnings import clear_warnings, get_warnings
+
 if os.environ.get("SENTRY_DSN"):
     sentry_sdk.init(os.environ.get("SENTRY_DSN"))  # type: ignore
 
@@ -255,6 +257,7 @@ def main(
 
     daytime_errors = list()
     nighttime_errors = list()
+    warnings = list()
     night_date = ""
     # execute the requested task
     for path in paths:
@@ -262,58 +265,17 @@ def main(
             if verbosity_level >= 1 and night_date != get_night_date(path):
                 night_date = get_night_date(path)
                 click.echo(f"Mapping files for {get_night_date(path)}")
+            clear_warnings()
             execute_task(
                 task_name=task_name,
                 fits_path=path,
                 task_mode=task_mode,
                 database_services=database_services,
             )
+            for warning in get_warnings():
+                handle_exception(e=warning, daytime_errors=daytime_errors, nighttime_errors=nighttime_errors, warnings=warnings, verbosity_level=verbosity_level, path=path)
         except BaseException as e:
-            data_to_log = get_salt_data_to_log(path)
-            error_msg = str(e)
-            msg = ""
-            if verbosity_level == 0:
-                # don't output anything
-                pass
-            if verbosity_level == 1:
-                msg += "\n"
-                if data_to_log.is_daytime_observation():
-                    msg += "[DAYTIME] "
-                msg += f"Error in {path}. \n{error_msg}"
-                if not data_to_log.is_daytime_observation():
-                    logging.error(msg)
-            if verbosity_level == 2 or verbosity_level == 3:
-                # TODO Please note that data_to_log is only for SALT need to be updated in the future
-                # output the FITS file path and the error message.
-                msg = f"""
-Error message
--------------
-{error_msg}
-
-FITS file details
-------------------
-File path: {data_to_log.path}
-Proposal code: {data_to_log.proposal_code}
-Object: {data_to_log.object}
-Block visit id: {data_to_log.block_visit_id}
-Observation type: {data_to_log.observation_type}
-Observation mode: {data_to_log.observation_mode}
-Observation time: {data_to_log.observation_time}{" *** DAYTIME ***" if data_to_log.is_daytime_observation() else ""}
-"""
-                if verbosity_level == 3:
-                    msg += f"""
-Stack trace
------------
-"""
-                msg += """_________________________________________________________________________________________________
-"""
-                # output the FITS file path and error stacktrace.
-                logging.error(msg, exc_info=verbosity_level == 3)
-
-            if data_to_log.is_daytime_observation():
-                daytime_errors.append(msg)
-            else:
-                nighttime_errors.append(msg)
+            handle_exception(e=e, daytime_errors=daytime_errors, nighttime_errors=nighttime_errors, warnings=warnings, verbosity_level=verbosity_level, path=path)
 
             if not skip_errors:
                 ssda_connection.close()
@@ -342,8 +304,98 @@ Stack trace
             print()
             print("There are no daytime errors.\n")
 
+        print("WARNINGS:")
+        print("---------")
+        if len(warnings):
+            for warning in warnings:
+                print(warning)
+                print()
+        else:
+            print()
+            print("There are no warnings.\n")
+
         print(f"Total number of nighttime errors: {len(nighttime_errors)}")
         print(f"Total number of daytime errors: {len(daytime_errors)}")
+        print(f"Total number of warnings: {len(warnings)}")
 
     # Success!
     return 0
+
+
+def handle_exception(e: Exception, daytime_errors: List[str], nighttime_errors: List[str], warnings: List[str], verbosity_level: int, path: str):
+    """
+    Handle an exception.
+
+    Parameters
+    ----------
+    e : Exception
+        Exception.
+    daytime_errors : List[str]
+        Daytime error messages.
+    nighttime_errors : List[str]
+        Nighttime error messages.
+    warnings : List[str]
+        Warning messages.
+    verbosity_level : int
+        Verbosity level.
+    path : str
+        Path of the FITS File.
+
+    """
+
+    data_to_log = get_salt_data_to_log(path)
+    error_msg = str(e)
+    is_warning = isinstance(e, Warning)
+    msg = ""
+    if verbosity_level == 0:
+        # don't output anything
+        pass
+    if verbosity_level == 1:
+        msg += "\n"
+        if data_to_log.is_daytime_observation():
+            msg += "[DAYTIME] "
+        msg += f"{'Warning' if is_warning else 'Error'} in {path}. \n{error_msg}"
+        if not data_to_log.is_daytime_observation():
+            logging.error(msg)
+    if verbosity_level == 2 or verbosity_level == 3:
+        # TODO Please note that data_to_log is only for SALT need to be updated in the future
+        # output the FITS file path and the error message.
+        if is_warning:
+            msg = """
+    Warning
+    -------
+    """
+        else:
+            msg = """
+    Error message
+    -------------
+    """
+        msg += f"""{error_msg}
+    
+    FITS file details
+    ------------------
+    File path: {data_to_log.path}
+    Proposal code: {data_to_log.proposal_code}
+    Object: {data_to_log.object}
+    Block visit id: {data_to_log.block_visit_id}
+    Observation type: {data_to_log.observation_type}
+    Observation mode: {data_to_log.observation_mode}
+    Observation time: {data_to_log.observation_time}{" *** DAYTIME ***" if data_to_log.is_daytime_observation() else ""}
+    """
+
+        if verbosity_level == 3:
+            msg += f"""
+        Stack trace
+        -----------
+        """
+            msg += """_________________________________________________________________________________________________
+        """
+            # output the FITS file path and error stacktrace.
+            logging.error(msg, exc_info=verbosity_level == 3)
+
+    if is_warning:
+        warnings.append(msg)
+    elif data_to_log.is_daytime_observation():
+        daytime_errors.append(msg)
+    else:
+        nighttime_errors.append(msg)
