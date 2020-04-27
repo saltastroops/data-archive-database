@@ -1,18 +1,26 @@
 import datetime
 import functools
 import hashlib
+import os
 
 import pytz
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 from dateutil import relativedelta
 import pandas as pd
 from pymysql import connect
 
 from ssda.util import types
+from ssda.util.fits import (
+    FitsFile,
+    fits_file_paths,
+    StandardFitsFile,
+    get_fits_base_dir,
+)
+from ssda.util.salt_fits import parse_start_datetime
 from ssda.util.types import ProposalType
 
 
@@ -60,7 +68,9 @@ class SaltDatabaseService:
         self._cursor = self._connection.cursor()
         self._proposal_codes_existing: Dict[str, bool] = {}
 
-    def find_block_visit_ids(self, night: datetime.date) -> Dict[str, FileDataItem]:
+    def find_block_visit_ids(
+        self, night: datetime.date, include_fits_headers: bool = True
+    ) -> Dict[str, FileDataItem]:
         """
         Find the block visit ids fromm the SDB.
 
@@ -92,7 +102,7 @@ class SaltDatabaseService:
 
         """
 
-        file_data = self._find_raw_file_data(night)
+        file_data = self._find_raw_file_data(night, include_fits_headers)
 
         # Find the (accepted and rejected) block visit ids as well as the ignored
         # deleted or queued) block visit ids.
@@ -154,9 +164,11 @@ class SaltDatabaseService:
 
         return existing
 
-    def _find_raw_file_data(self, night: datetime.date) -> List[FileDataItem]:
+    def _find_raw_file_data(
+        self, night: datetime.date, include_fits_headers: bool
+    ) -> List[FileDataItem]:
         """
-        Extract file data from the FileData.
+        Extract file data from the FileData table and, if requested, the FITS headers.
 
         Some database inconsistencies are corrected, but missing block visit ids are
         not addressed.
@@ -165,6 +177,8 @@ class SaltDatabaseService:
         ----------
         night : date
             Observing night.
+        include_fits_headers : bool
+            Whether to include data from FITS headers.
 
         Returns
         -------
@@ -173,34 +187,16 @@ class SaltDatabaseService:
 
         """
 
-        # Extract data from the FileData table.
-        start_time = datetime.datetime(
-            night.year, night.month, night.day, 12, 0, 0, 0, tzinfo=pytz.utc
+        # Extract data from the FileData table and - if requested - the FITS headers.
+        file_data_from_db = self._find_file_data_from_database(night)
+        file_data_from_fits = (
+            self._find_file_data_from_fits_headers(night)
+            if include_fits_headers
+            else []
         )
-        end_time = start_time + datetime.timedelta(hours=24)
-        file_data_sql = """
-    SELECT FileData.UTStart, FileData.FileName, ProposalCode.Proposal_Code, FileData.Target_Name, FileData.BlockVisit_Id
-    FROM FileData
-    JOIN ProposalCode ON FileData.ProposalCode_Id = ProposalCode.ProposalCode_Id
-    WHERE UTStart BETWEEN %s AND %s
-    ORDER BY UTStart
-            """
-        file_data_results = pd.read_sql(
-            file_data_sql, self._connection, params=(start_time, end_time)
-        )
-        file_data = [
-            FileDataItem(
-                ut_start=row.UTStart.to_pydatetime(),
-                file_name=row.FileName,
-                proposal_code=row.Proposal_Code,
-                target_name=row.Target_Name.strip(),
-                block_visit_id=int(row.BlockVisit_Id)
-                if not pd.isna(row.BlockVisit_Id)
-                else None,
-                block_visit_id_status=None,
-            )
-            for row in file_data_results.itertuples()
-        ]
+
+        # Merge data from database and FITS headers.
+        file_data = self._merge_file_data(file_data_from_db, file_data_from_fits)
 
         # Correct for multiple target names in the same block visit.
         if night == datetime.date(2016, 10, 20):
@@ -233,6 +229,147 @@ class SaltDatabaseService:
                 fd.block_visit_id = None
 
         return file_data
+
+    def _find_file_data_from_database(self, night: datetime.date) -> List[FileDataItem]:
+        """
+        Collect file data from the database.
+
+        Parameters
+        ----------
+        night : date
+            Observing night.
+
+        Returns
+        -------
+        List[FileDataItem]
+            The file data.
+
+        """
+
+        start_time = datetime.datetime(
+            night.year, night.month, night.day, 12, 0, 0, 0, tzinfo=pytz.utc
+        )
+        end_time = start_time + datetime.timedelta(hours=24)
+        file_data_sql = """
+    SELECT FileData.UTStart, FileData.FileName, ProposalCode.Proposal_Code, FileData.Target_Name, FileData.BlockVisit_Id
+    FROM FileData
+    JOIN ProposalCode ON FileData.ProposalCode_Id = ProposalCode.ProposalCode_Id
+    WHERE UTStart BETWEEN %s AND %s
+    ORDER BY UTStart
+            """
+        file_data_results = pd.read_sql(
+            file_data_sql, self._connection, params=(start_time, end_time)
+        )
+
+        return [
+            FileDataItem(
+                ut_start=row.UTStart.to_pydatetime().replace(
+                    tzinfo=datetime.timezone.utc
+                ),
+                file_name=row.FileName,
+                proposal_code=row.Proposal_Code,
+                target_name=row.Target_Name.strip(),
+                block_visit_id=int(row.BlockVisit_Id)
+                if not pd.isna(row.BlockVisit_Id)
+                else None,
+                block_visit_id_status=None,
+            )
+            for row in file_data_results.itertuples()
+        ]
+
+    def _find_file_data_from_fits_headers(
+        self, night: datetime.date
+    ) -> List[FileDataItem]:
+        """
+        Collect the file data from the FITS file headers.
+
+        Parameters
+        ----------
+        night : date
+            Observing night.
+
+        Returns
+        -------
+        List[FileDataItem]
+            The file data.
+
+        """
+
+        def _parse_header(fits: FitsFile) -> FileDataItem:
+            start_date = fits.header_value("DATE-OBS")
+            start_time = fits.header_value("TIME-OBS")
+            ut_start = parse_start_datetime(start_date, start_time)
+            file_name = os.path.basename(fits.file_path())
+            block_visit_id = (
+                fits.header_value("BVISITID") if fits.header_value("BVISITID") else None
+            )
+            target_name = (
+                fits.header_value("OBJECT") if fits.header_value("OBJECT") else ""
+            )
+            proposal_code = (
+                fits.header_value("PROPID") if fits.header_value("PROPID") else None
+            )
+
+            return FileDataItem(
+                ut_start=ut_start,
+                file_name=file_name,
+                block_visit_id=block_visit_id,
+                block_visit_id_status=None,
+                target_name=target_name,
+                proposal_code=proposal_code,
+            )
+
+        nights = types.DateRange(start=night, end=night + datetime.timedelta(days=1))
+        instruments = {
+            types.Instrument.BCAM,
+            types.Instrument.HRS,
+            types.Instrument.RSS,
+            types.Instrument.SALTICAM,
+        }
+        base_dir = get_fits_base_dir()
+
+        return [
+            _parse_header(StandardFitsFile(f))
+            for f in fits_file_paths(nights, instruments, base_dir)
+        ]
+
+    def _merge_file_data(
+        self,
+        file_data_from_db: Iterable[FileDataItem],
+        file_data_from_fits: Iterable[FileDataItem],
+    ) -> List[FileDataItem]:
+        """
+        Merge the file data from the database and FITS file headers.
+
+        If file data is recorded in both the database abd the FITS file headers, the
+        database version is used.
+
+        Parameters
+        ----------
+        file_data_from_db : Iterable[FileDataItem]
+            File data from the database.
+        file_data_from_fits : Iterable[FileDataItem]
+            File data from the FITS file headers.
+
+        Returns
+        -------
+        List[FileDataItem]
+            Merged file data.
+
+        """
+
+        # Create dictionaries with the filename as key...
+        db_data_dict = {fd.file_name: fd for fd in file_data_from_db}
+        fits_data_dict = {fd.file_name: fd for fd in file_data_from_fits}
+
+        # ... merge them (using the database data if there are duplicates)...
+        file_data = db_data_dict.copy()
+        for file_name, fd in fits_data_dict.items():
+            if file_name not in file_data:
+                file_data[file_name] = fd
+
+        # ... and turn the result into a list sorted by start time.
+        return sorted(file_data.values(), key=lambda fd: fd.ut_start)
 
     def _find_raw_block_visit_ids(
         self, night: datetime.date, status_values: List[str]
@@ -590,9 +727,10 @@ class SaltDatabaseService:
                 fd.block_visit_id_status = BlockVisitIdStatus.INFERRED
                 continue
             else:
-                # The file could belong to two block visits. So if it's a Salticam file,
-                # we group with the later file, otherwise we use a new block visit id.
-                if fd.file_name.startswith("S2"):
+                # The file could belong to two block visits. So if it's a Salticam/BCAM
+                # file, we group with the later file, otherwise we use a new block visit
+                # id.
+                if fd.file_name.startswith("S2") or fd.file_name.startswith("B2"):
                     fd.block_visit_id = next_id
                     fd.block_visit_id_status = BlockVisitIdStatus.INFERRED
                     continue

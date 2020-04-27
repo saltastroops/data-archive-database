@@ -11,6 +11,7 @@ from ssda.database.sdb import SaltDatabaseService, FileDataItem
 from ssda.util.fits import FitsFile, get_fits_base_dir
 
 from ssda.util import types
+from ssda.util.salt_fits import parse_start_datetime
 from ssda.util.types import Status
 
 
@@ -142,25 +143,10 @@ class SALTObservation:
         return types.ObservationGroup(group_identifier=str(bv_id), name=name)
 
     def observation_start_time(self) -> datetime:
-        start_date_time_str = (
-            self.header_value("DATE-OBS") + " " + self.header_value("TIME-OBS")
-        )
-        try:
-            start_date_time = datetime.strptime(start_date_time_str, "%Y-%m-%d %H:%M:%S.%f")
-        except ValueError:
-            # support legacy format
-            start_date_time = datetime.strptime(start_date_time_str, "%Y-%m-%d %H:%M:%S")
-        start_time_tz = datetime(
-            year=start_date_time.year,
-            month=start_date_time.month,
-            day=start_date_time.day,
-            hour=start_date_time.hour,
-            minute=start_date_time.minute,
-            second=start_date_time.second,
-            tzinfo=timezone.utc,
-        )
+        start_date = self.header_value("DATE-OBS")
+        start_time = self.header_value("TIME-OBS")
 
-        return start_time_tz
+        return parse_start_datetime(start_date, start_time)
 
     def observation_time(self, plane_id: int) -> types.ObservationTime:
         exposure_time = float(self.header_value("EXPTIME"))
