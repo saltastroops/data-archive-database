@@ -827,7 +827,12 @@ FROM ProposalCode
     JOIN Investigator ON ProposalContact.Leader_Id=Investigator.Investigator_Id
 WHERE ProposalCode.Proposal_Code=%s;
         """
-        results = pd.read_sql(sql, self._connection, params=(proposal_code,)).iloc[0]
+        results = pd.read_sql(sql, self._connection, params=(proposal_code,))
+        if not len(results):
+            raise ValueError(
+                f"No Principal Investigator found for proposal code {proposal_code}. Does the proposal code exist?"
+            )
+        results = results.iloc[0]
         if results["FullName"]:
             return results["FullName"]
         raise ValueError("Observation have no Principal Investigator")
