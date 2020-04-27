@@ -34,6 +34,7 @@ class LogData:
         except:
             return False
 
+
 def get_salt_data_to_log(path: str) -> LogData:
     fits_file = StandardFitsFile(path)
     log_data = LogData(

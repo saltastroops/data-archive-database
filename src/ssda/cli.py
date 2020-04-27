@@ -253,7 +253,8 @@ def main(
     )
     ssda_connection = database_services.ssda.connection()
 
-    errors = list()
+    daytime_errors = list()
+    nighttime_errors = list()
     night_date = ""
     # execute the requested task
     for path in paths:
@@ -268,19 +269,22 @@ def main(
                 database_services=database_services,
             )
         except BaseException as e:
+            data_to_log = get_salt_data_to_log(path)
             error_msg = str(e)
             msg = ""
             if verbosity_level == 0:
                 # don't output anything
                 pass
             if verbosity_level == 1:
-                msg = f"\nError in {path}. \n{error_msg}"
-                # Add error to already flagged errors.
-                logging.error(msg)
+                msg += "\n"
+                if data_to_log.is_daytime_observation():
+                    msg += "[DAYTIME] "
+                msg += f"Error in {path}. \n{error_msg}"
+                if not data_to_log.is_daytime_observation():
+                    logging.error(msg)
             if verbosity_level == 2 or verbosity_level == 3:
                 # TODO Please note that data_to_log is only for SALT need to be updated in the future
                 # output the FITS file path and the error message.
-                data_to_log = get_salt_data_to_log(path)
                 msg = f"""
 Error message
 -------------
@@ -294,7 +298,7 @@ Object: {data_to_log.object}
 Block visit id: {data_to_log.block_visit_id}
 Observation type: {data_to_log.observation_type}
 Observation mode: {data_to_log.observation_mode}
-Observation time: {data_to_log.observation_time}
+Observation time: {data_to_log.observation_time}{" *** DAYTIME ***" if data_to_log.is_daytime_observation() else ""}
 """
                 if verbosity_level == 3:
                     msg += f"""
@@ -306,7 +310,10 @@ Stack trace
                 # output the FITS file path and error stacktrace.
                 logging.error(msg, exc_info=verbosity_level == 3)
 
-            errors.append(msg)
+            if data_to_log.is_daytime_observation():
+                daytime_errors.append(msg)
+            else:
+                nighttime_errors.append(msg)
 
             if not skip_errors:
                 ssda_connection.close()
@@ -315,10 +322,28 @@ Stack trace
     ssda_connection.close()
 
     if verbosity_level >= 1:
-        for error in errors:
-            print(error)
+        print("NIGHTTIME ERRORS:")
+        print("-----------------")
+        if len(nighttime_errors):
+            for error in nighttime_errors:
+                print(error)
+                print()
+        else:
             print()
-        print(f"Total number of errors: {len(errors)}")
+            print("There are no nighttime errors.\n")
+
+        print("DAYTIME ERRORS:")
+        print("---------------")
+        if len(daytime_errors):
+            for error in daytime_errors:
+                print(error)
+                print()
+        else:
+            print()
+            print("There are no daytime errors.\n")
+
+        print(f"Total number of nighttime errors: {len(nighttime_errors)}")
+        print(f"Total number of daytime errors: {len(daytime_errors)}")
 
     # Success!
     return 0
