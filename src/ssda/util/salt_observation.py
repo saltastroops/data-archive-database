@@ -13,6 +13,7 @@ from ssda.util.fits import FitsFile, get_fits_base_dir
 from ssda.util import types
 from ssda.util.salt_fits import parse_start_datetime
 from ssda.util.types import Status
+from ssda.util.warnings import record_warning
 
 
 @dataclass
@@ -149,14 +150,21 @@ class SALTObservation:
         return parse_start_datetime(start_date, start_time)
 
     def observation_time(self, plane_id: int) -> types.ObservationTime:
-        exposure_time = float(self.header_value("EXPTIME"))
+        exposure_time_string = self.header_value("EXPTIME")
+        if exposure_time_string:
+            exposure_time = float(exposure_time_string)
+            resolution=exposure_time
+        else:
+            record_warning(RuntimeWarning("No exposure time found. A value of 0 seconds is assumed."))
+            exposure_time = 0
+            resolution = 100000
         return types.ObservationTime(
-            end_time=self.observation_start_time() + timedelta(seconds=exposure_time),
-            exposure_time=exposure_time * u.second,
-            plane_id=plane_id,
-            resolution=exposure_time * u.second,
-            start_time=self.observation_start_time(),
-        )
+                end_time=self.observation_start_time() + timedelta(seconds=exposure_time),
+                exposure_time=exposure_time * u.second,
+                plane_id=plane_id,
+                resolution=resolution * u.second,
+                start_time=self.observation_start_time(),
+            )
 
     def position(self, plane_id: int) -> Optional[types.Position]:
         if self.is_calibration() and not self.is_standard():
