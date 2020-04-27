@@ -273,9 +273,23 @@ def main(
                 database_services=database_services,
             )
             for warning in get_warnings():
-                handle_exception(e=warning, daytime_errors=daytime_errors, nighttime_errors=nighttime_errors, warnings=warnings, verbosity_level=verbosity_level, path=path)
+                handle_exception(
+                    e=warning,
+                    daytime_errors=daytime_errors,
+                    nighttime_errors=nighttime_errors,
+                    warnings=warnings,
+                    verbosity_level=verbosity_level,
+                    path=path,
+                )
         except BaseException as e:
-            handle_exception(e=e, daytime_errors=daytime_errors, nighttime_errors=nighttime_errors, warnings=warnings, verbosity_level=verbosity_level, path=path)
+            handle_exception(
+                e=e,
+                daytime_errors=daytime_errors,
+                nighttime_errors=nighttime_errors,
+                warnings=warnings,
+                verbosity_level=verbosity_level,
+                path=path,
+            )
 
             if not skip_errors:
                 ssda_connection.close()
@@ -322,7 +336,14 @@ def main(
     return 0
 
 
-def handle_exception(e: Exception, daytime_errors: List[str], nighttime_errors: List[str], warnings: List[str], verbosity_level: int, path: str):
+def handle_exception(
+    e: Exception,
+    daytime_errors: List[str],
+    nighttime_errors: List[str],
+    warnings: List[str],
+    verbosity_level: int,
+    path: str,
+):
     """
     Handle an exception.
 

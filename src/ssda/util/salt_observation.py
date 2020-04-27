@@ -153,18 +153,22 @@ class SALTObservation:
         exposure_time_string = self.header_value("EXPTIME")
         if exposure_time_string:
             exposure_time = float(exposure_time_string)
-            resolution=exposure_time
+            resolution = exposure_time
         else:
-            record_warning(RuntimeWarning("No exposure time found. A value of 0 seconds is assumed."))
+            record_warning(
+                RuntimeWarning(
+                    "No exposure time found. A value of 0 seconds is assumed."
+                )
+            )
             exposure_time = 0
             resolution = 100000
         return types.ObservationTime(
-                end_time=self.observation_start_time() + timedelta(seconds=exposure_time),
-                exposure_time=exposure_time * u.second,
-                plane_id=plane_id,
-                resolution=resolution * u.second,
-                start_time=self.observation_start_time(),
-            )
+            end_time=self.observation_start_time() + timedelta(seconds=exposure_time),
+            exposure_time=exposure_time * u.second,
+            plane_id=plane_id,
+            resolution=resolution * u.second,
+            start_time=self.observation_start_time(),
+        )
 
     def position(self, plane_id: int) -> Optional[types.Position]:
         if self.is_calibration() and not self.is_standard():
