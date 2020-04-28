@@ -518,6 +518,29 @@ class Institution(Enum):
     SAAO = "South African Astronomical Observatory"
     SALT = "Southern African Large Telescope"
 
+    @staticmethod
+    def for_name(name: str) -> Institution:
+        """
+        The institution for a case-insensitive name.
+
+        Parameters
+        ----------
+        name : str
+            The institution name.
+
+        Returns
+        -------
+        Institution :
+            Institution.
+
+        """
+
+        for institution in Institution:
+            if name.lower() == str(institution.value).lower():
+                return institution
+
+        raise ValueError(f"Unknown institution name: {name}")
+
 
 class Instrument(Enum):
     """
@@ -707,6 +730,27 @@ class Intent(Enum):
 
     CALIBRATION = "Calibration"
     SCIENCE = "Science"
+
+    @staticmethod
+    def for_value(value):
+        """
+        The instrument for a case-insensitive name.
+
+        Parameters
+        ----------
+        value : str
+            The value.
+
+        Returns
+        -------
+        intent:
+            The Intent.
+
+        """
+        for intent in Intent:
+            if intent.value.lower() == value.lower():
+                return intent
+        raise ValueError(f"Unknown intent for value: {value}")
 
 
 class Observation:
@@ -1194,6 +1238,28 @@ class ProposalType(Enum):
     SCIENCE = "Science"
     SCIENCE_VERIFICATION = "Science Verification"
 
+    @staticmethod
+    def for_value(value) -> ProposalType:
+        """
+        The instrument for a case-insensitive name.
+
+        Parameters
+        ----------
+        value : str
+            The value.
+
+        Returns
+        -------
+        intent:
+            The Intent.
+
+        """
+        for proposal_type in ProposalType:
+            if proposal_type.value.lower() == value.lower():
+                return proposal_type
+        raise ValueError(f"Unknown proposal type for value: {value}")
+
+
 
 class RSSFabryPerotMode(Enum):
     """
@@ -1413,6 +1479,28 @@ class Telescope(Enum):
     ONE_DOT_NINE = "1.9 m"
     SALT = "SALT"
 
+    @staticmethod
+    def for_name(name):
+        """
+        The telescope for a case-insensitive name.
+
+        Parameters
+        ----------
+        name : str
+            The telescope name.
+
+        Returns
+        -------
+        Telescope :
+            The telescope.
+
+        """
+        for telescope in Telescope:
+            if name.lower() == str(telescope.value).lower():
+                return telescope
+
+        raise ValueError(f"Unknown telescope name: {name}")
+
 
 @dataclass
 class SALTObservation:
@@ -1481,28 +1569,3 @@ class ComparableProposal:
     proposal_code: str
     proposal_id: int
     title: str
-
-
-@dataclass
-class ComparableObservation:
-    """
-    An observation with comparable fields.
-
-    Parameters
-    ----------
-
-    observation_group_id : int
-        Identifier of the observation group to which the observation belongs.
-        Observation type.
-    group_identifier : int
-        Database id of the proposal to which this observation belongs.
-    status : Status
-        Status (accepted or rejected) of the observation.
-
-    """
-
-    group_identifier: Optional[int]
-    status: Status
-    meta_release: date
-    data_release: date
-

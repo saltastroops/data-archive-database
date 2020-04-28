@@ -739,7 +739,7 @@ WHERE Proposal_Code = %s
                 )
         return ps
 
-    def find_proposals_to_update(self, start_date: date, end_date: date) -> List[types.SALTProposalDetails]:
+    def find_observed_proposals(self, start_date: date, end_date: date) -> List[types.SALTProposalDetails]:
         """
         The part of a proposal that contains what would have change on SDB.
 
@@ -773,29 +773,18 @@ WHERE Current = 1
     )
         """
         results = pd.read_sql(sql, self._connection, params=(start_date, end_date))
-        if len(results):
-            ps = []
-            for index, row in results.iterrows():
-                ps.append(
-                    types.SALTProposalDetails(
-                        pi=row["FullName"],
-                        proposal_code=row["Proposal_Code"],
-                        title=row["Title"],
-                        date_release=datetime.strftime(str(row["ReleaseDate"]), "%Y-%m-%d").date(),
-                        meta_release=datetime.strftime(str(row["ReleaseDate"]), "%Y-%m-%d").date()
-                    )
-                )
-            return ps
+
 
         return [
             types.SALTProposalDetails(
-                pi=result[3],
-                proposal_code=result[1],
-                title=result[2],
-                date_release=result[4],
-                meta_release=result[5]
+                pi=row["FullName"],
+                proposal_code=row["Proposal_Code"],
+                title=row["Title"],
+                date_release=datetime.strptime(str(row["ReleaseDate"]), "%Y-%m-%d").date(),
+                meta_release=datetime.strptime(str(row["ReleaseDate"]), "%Y-%m-%d").date()
             )
-            for result in results] if results else None
+            for index, row in results.iterrows()
+        ]
 
     def find_observation_status(
         self, block_visit_id: Optional[Union[int, str]]

@@ -19,16 +19,6 @@ def main(start, end) -> int:
     """
     Synchronise the SSDA database with telescope databases such as the SALT Science Database
 
-    Parameters
-    ----------
-    start: date
-        The Start date
-    end: date
-        The end date
-    Returns
-    -------
-        0 on successful synchronising
-
     """
     logging.basicConfig(level=logging.INFO)
     logging.error("SALT is always assumed to be the telescope.")
@@ -62,22 +52,26 @@ def main(start, end) -> int:
     )
     ssda_connection = database_services.ssda.connection()
 
-    proposals_to_update = sdb_database_service.find_proposals_to_update(start_date, end_date)
+    salt_proposal = sdb_database_service.find_observed_proposals(start_date, end_date)
 
 
     # Compare proposal and update
-    for proposal in proposals_to_update:
+    for proposal in salt_proposal:
         ssda_database_service.begin_transaction()
+        institution = types.Institution.SALT
         try:
             # Proposal to compare
             proposal_ = ssda_database_service.find_proposal(
                 proposal_code=proposal.proposal_code,
-                institution=types.Institution.SALT
+                institution=institution
             )
             if not proposal_:
                 continue
             # Proposal id
-            proposal_id = proposal_.proposal_id
+            proposal_id = ssda_database_service.find_proposal_id(
+                proposal_code=proposal_.proposal_code,
+                institution=institution
+            )
 
             # Compare proposal title
             if proposal.title != proposal_.title:
@@ -96,26 +90,29 @@ def main(start, end) -> int:
                     proposal_id=proposal.proposal_id,
                     proposal_investigator_ids=sdb_proposal_investigators
                 )
-            observations_to_update = sdb_database_service.find_proposal_observations(
+            salt_observations = sdb_database_service.find_proposal_observations(
                 proposal_code=proposal.proposal_code
             )
-            observations_to_compare = ssda_database_service.find_proposal_observations(
+            observations = ssda_database_service.find_proposal_observations(
                 proposal_code=proposal.proposal_code,
                 telescope=types.Telescope.SALT
             )
 
             # compare observation status.
-            for obs in observations_to_update:
-                for c in observations_to_compare:
-                    if c.group_identifier == obs.group_identifier:
-                        if proposal.meta_release != c.meta_release or \
-                           proposal.data_release != c.data_release or \
-                           obs.status != c.status:
-                            ssda_database_service.update_release_date(
-                                group_identifier=obs.group_identifier,
+            for salt_obs in salt_observations:
+                for obs in observations:
+                    group_identifier = ssda_database_service.find_observation_group(
+                        observation_group_id=obs.observation_group_id
+                    )
+                    if group_identifier == salt_obs.group_identifier:
+                        if proposal.meta_release != obs.meta_release or \
+                           proposal.data_release != obs.data_release or \
+                           salt_obs.status != obs.status:
+                            ssda_database_service.update_observation(
+                                group_identifier=salt_obs.group_identifier,
                                 data_release_date=proposal.date_release,
                                 meta_release_date=proposal.meta_release,
-                                status=obs.status
+                                status=salt_obs.status
                             )
                         break
 
