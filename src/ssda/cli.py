@@ -300,34 +300,49 @@ def main(
     if verbosity_level >= 1:
         print("NIGHTTIME ERRORS:")
         print("-----------------")
+        if verbosity_level == 1:
+            print()
         if len(nighttime_errors):
             for error in nighttime_errors:
+                if verbosity_level > 1:
+                    print()
                 print(error)
-                print()
         else:
-            print()
+            if verbosity_level > 1:
+                print()
             print("There are no nighttime errors.\n")
 
+        print()
         print("DAYTIME ERRORS:")
         print("---------------")
+        if verbosity_level == 1:
+            print()
         if len(daytime_errors):
+            if verbosity_level > 1:
+                print()
             for error in daytime_errors:
                 print(error)
-                print()
         else:
-            print()
+            if verbosity_level > 1:
+                print()
             print("There are no daytime errors.\n")
 
+        print()
         print("WARNINGS:")
         print("---------")
+        if verbosity_level == 1:
+            print()
         if len(warnings):
             for warning in warnings:
+                if verbosity_level > 1:
+                    print()
                 print(warning)
-                print()
         else:
-            print()
+            if verbosity_level > 1:
+                print()
             print("There are no warnings.\n")
 
+        print()
         print(f"Total number of nighttime errors: {len(nighttime_errors)}")
         print(f"Total number of daytime errors: {len(daytime_errors)}")
         print(f"Total number of warnings: {len(warnings)}")
@@ -372,37 +387,36 @@ def handle_exception(
         # don't output anything
         pass
     if verbosity_level == 1:
-        msg += "\n"
+        if is_warning:
+            msg += "[Warning] "
+        msg += error_msg
         if data_to_log.is_daytime_observation():
-            msg += "[DAYTIME] "
-        msg += f"{'Warning' if is_warning else 'Error'} in {path}. \n{error_msg}"
+            msg += " [DAYTIME]"
+        msg += f" [{path}]"
         if not data_to_log.is_daytime_observation():
             logging.error(msg)
     if verbosity_level == 2 or verbosity_level == 3:
         # TODO Please note that data_to_log is only for SALT need to be updated in the future
         # output the FITS file path and the error message.
         if is_warning:
-            msg = """
-    Warning
-    -------
-    """
+            msg = """Warning
+-------
+"""
         else:
-            msg = """
-    Error message
-    -------------
-    """
+            msg = """Error message
+-------------
+"""
         msg += f"""{error_msg}
     
-    FITS file details
-    ------------------
-    File path: {data_to_log.path}
-    Proposal code: {data_to_log.proposal_code}
-    Object: {data_to_log.object}
-    Block visit id: {data_to_log.block_visit_id}
-    Observation type: {data_to_log.observation_type}
-    Observation mode: {data_to_log.observation_mode}
-    Observation time: {data_to_log.observation_time}{" *** DAYTIME ***" if data_to_log.is_daytime_observation() else ""}
-    """
+FITS file details
+------------------
+File path: {data_to_log.path}
+Proposal code: {data_to_log.proposal_code}
+Object: {data_to_log.object}
+Block visit id: {data_to_log.block_visit_id}
+Observation type: {data_to_log.observation_type}
+Observation mode: {data_to_log.observation_mode}
+Observation time: {data_to_log.observation_time}{" *** DAYTIME ***" if data_to_log.is_daytime_observation() else ""}"""
 
         if verbosity_level == 3:
             msg += f"""
