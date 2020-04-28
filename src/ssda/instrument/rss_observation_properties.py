@@ -70,7 +70,7 @@ class RssObservationProperties(ObservationProperties):
         detector_mode = None
         if self.header_value("DETMODE"):
             for dm in types.DetectorMode:
-                if self.header_value("DETMODE").upper() == dm.value.upper():
+                if self.header_value("DETMODE").replace(' ', '').upper() == dm.value.replace(' ', '').upper():
                     detector_mode = dm
         if not detector_mode:
             record_warning(Warning("The detector mode could not be determined."))

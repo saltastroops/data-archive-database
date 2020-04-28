@@ -43,7 +43,7 @@ class SaltImagingCameraObservationProperties(ObservationProperties):
 
         detector_mode = None
         for dm in types.DetectorMode:
-            if self.header_value("DETMODE").upper() == dm.value.upper():
+            if self.header_value("DETMODE").replace(' ', '').upper() == dm.value.replace(' ', '').upper():
                 detector_mode = dm
         if self.header_value("DETMODE").upper() == "SLOT":
             detector_mode = types.DetectorMode.SLOT_MODE
