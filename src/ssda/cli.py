@@ -272,9 +272,9 @@ def main(
                 task_mode=task_mode,
                 database_services=database_services,
             )
-            for warning in get_warnings():
+            if get_warnings():
                 handle_exception(
-                    e=warning,
+                    e=get_warnings()[0],
                     daytime_errors=daytime_errors,
                     nighttime_errors=nighttime_errors,
                     warnings=warnings,
@@ -302,7 +302,7 @@ def main(
         print("-----------------")
         if verbosity_level == 1:
             print()
-        if len(nighttime_errors):
+        if nighttime_errors:
             for error in nighttime_errors:
                 if verbosity_level > 1:
                     print()
@@ -317,7 +317,7 @@ def main(
         print("---------------")
         if verbosity_level == 1:
             print()
-        if len(daytime_errors):
+        if daytime_errors:
             if verbosity_level > 1:
                 print()
             for error in daytime_errors:
@@ -332,7 +332,7 @@ def main(
         print("---------")
         if verbosity_level == 1:
             print()
-        if len(warnings):
+        if warnings:
             for warning in warnings:
                 if verbosity_level > 1:
                     print()
@@ -378,7 +378,6 @@ def handle_exception(
         Path of the FITS File.
 
     """
-
     data_to_log = get_salt_data_to_log(path)
     error_msg = str(e)
     is_warning = isinstance(e, Warning)
