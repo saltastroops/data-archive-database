@@ -265,6 +265,7 @@ class DataProductType(Enum):
 
     IMAGE = "Image"
     SPECTRUM = "Spectrum"
+    UNKNOWN = "Unknown"
 
 
 class DateRange:
@@ -341,6 +342,7 @@ class DetectorMode(Enum):
     NORMAL = "Normal"
     SHUFFLE = "Shuffle"
     SLOT_MODE = "Slot Mode"
+    UNKNOWN = "Unknown"
 
 
 class Energy:
@@ -632,6 +634,7 @@ class InstrumentMode(Enum):
     SPECTROPOLARIMETRY = "Spectropolarimetry"
     SPECTROSCOPY = "Spectroscopy"
     STREAMING = "Streaming"
+    UNKNOWN = "Unknown"
 
 
 class InstrumentSetup:
@@ -707,6 +710,7 @@ class Intent(Enum):
 
     CALIBRATION = "Calibration"
     SCIENCE = "Science"
+    UNKNOWN = "Unknown"
 
 
 class Observation:
@@ -1061,6 +1065,7 @@ class ProductCategory(Enum):
     FLAT = "Flat"
     SCIENCE = "Science"
     STANDARD = "Standard"
+    UNKNOWN = "Unknown"
 
 
 class ProductType(Enum):
@@ -1091,6 +1096,7 @@ class ProductType(Enum):
     STANDARD_SPECTROSCOPIC = "Standard - Spectroscopic"
     STANDARD_TELLURIC = "Standard - Telluric"
     STANDARD_UNPOLARISED = "Standard - Unpolarised"
+    UNKNOWN = "Unknown"
 
 
 class Proposal:

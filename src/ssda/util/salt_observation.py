@@ -250,24 +250,29 @@ class SALTObservation:
             target_type=self.database_service.find_target_type(self._block_visit_id()),
         )
 
-    def _product_category(self):
-        observation_object = (
-            self.header_value("OBJECT").upper() if self.header_value("OBJECT") else ""
-        )
-        product_type = (
+    def _obs_type(self):
+        obs_type = (
             self.header_value("OBSTYPE").upper() if self.header_value("OBSTYPE") else ""
-        )
-        proposal_id = (
-            self.header_value("PROPID").upper() if self.header_value("PROPID") else ""
         )
 
         # CCDTYPE is a copy of OBSTYPE
-        if not product_type:
-            product_type = (
+        if not obs_type:
+            obs_type = (
                 self.header_value("CCDTYPE").upper()
                 if self.header_value("CCDTYPE")
                 else ""
             )
+
+        return obs_type
+
+    def _product_category(self):
+        observation_object = (
+            self.header_value("OBJECT").upper() if self.header_value("OBJECT") else ""
+        )
+        product_type = self._obs_type()
+        proposal_id = (
+            self.header_value("PROPID").upper() if self.header_value("PROPID") else ""
+        )
 
         product_type_unknown = not product_type or product_type == "ZERO"
 
@@ -324,9 +329,8 @@ class SALTObservation:
                 )
             return types.ProductCategory.SCIENCE
 
-        raise ValueError(
-            f"Product category of file ${self.fits_file.file_path()} could not be determined"
-        )
+        record_warning(Warning("The product category could not be determined."))
+        return types.ProductCategory.UNKNOWN
 
     def _product_type(self) -> types.ProductType:
         obs_mode = (
@@ -398,9 +402,8 @@ class SALTObservation:
         if product_category == types.ProductCategory.SCIENCE:
             return types.ProductType.SCIENCE
 
-        raise ValueError(
-            f"Product type of file ${self.fits_file.file_path()} could not be determined"
-        )
+        record_warning(Warning("The product type could not be determined."))
+        return types.ProductType.UNKNOWN
 
     def _intent(self) -> types.Intent:
         product_category = self._product_category()
@@ -409,7 +412,9 @@ class SALTObservation:
             return types.Intent.CALIBRATION
         elif product_category == types.ProductCategory.SCIENCE:
             return types.Intent.SCIENCE
-        raise ValueError(f"Intent for file {self.file_path()} could not be determined")
+
+        record_warning(Warning("The intent could not be determined."))
+        return types.Intent.UNKNOWN
 
     def is_calibration(self):
         product_category = self._product_category()
