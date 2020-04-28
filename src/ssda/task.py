@@ -4,6 +4,7 @@ from ssda.observation_properties import observation_properties
 from ssda.util.dummy import DummyObservationProperties
 from ssda.util.fits import StandardFitsFile, DummyFitsFile
 from ssda.util.types import TaskName, TaskExecutionMode
+from ssda.util.warnings import clear_warnings
 
 
 def execute_task(
@@ -26,6 +27,7 @@ def execute_task(
 
             # Check if the FITS file is to be ignored
             if _observation_properties.ignore_observation():
+                clear_warnings()
                 return
         except Exception as e:
             proposal_id = (
