@@ -85,7 +85,7 @@ class SALTObservation:
             SALTObservation.file_data = FileData(
                 self.database_service.find_block_visit_ids(night, False), night
             )
-            
+
         # ... but if this doesn't get details for the file, we try again, this time
         # including FITS headers.
         if filename not in SALTObservation.file_data.data:
@@ -319,7 +319,8 @@ class SALTObservation:
             # Science files with no block visit id are not populated
             if self._block_visit_id() is None:
                 raise ValueError(
-                    "The observation is marked as science but has no block visit id."
+                    f"The observation is marked as science but has no block visit id. "
+                    f"The proposal code is '{proposal_id}'."
                 )
             return types.ProductCategory.SCIENCE
 
