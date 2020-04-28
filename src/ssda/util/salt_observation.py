@@ -77,12 +77,22 @@ class SALTObservation:
             bvid_from_fits = None
 
         # Get the block visit id from the database
+        # As reading FITS headers takes a while, we first try reading information from
+        # the database only...
+        filename = Path(self.fits_file.file_path()).name
         night = (self.observation_start_time() - timedelta(hours=12)).date()
         if SALTObservation.file_data.night != night:
             SALTObservation.file_data = FileData(
-                self.database_service.find_block_visit_ids(night), night
+                self.database_service.find_block_visit_ids(night, False), night
             )
-        filename = Path(self.fits_file.file_path()).name
+            
+        # ... but if this doesn't get details for the file, we try again, this time
+        # including FITS headers.
+        if filename not in SALTObservation.file_data.data:
+            SALTObservation.file_data = FileData(
+                self.database_service.find_block_visit_ids(night, True), night
+            )
+
         if filename in SALTObservation.file_data.data:
             bvid_from_db = SALTObservation.file_data.data[filename].block_visit_id
         else:
