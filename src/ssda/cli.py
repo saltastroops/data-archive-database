@@ -337,7 +337,7 @@ def main(
 
 
 def handle_exception(
-    e: Exception,
+    e: BaseException,
     daytime_errors: List[str],
     nighttime_errors: List[str],
     warnings: List[str],
