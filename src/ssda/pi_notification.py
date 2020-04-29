@@ -1,7 +1,6 @@
 import os
 import MySQLdb
 import smtplib
-import pprint
 import psycopg2
 import psycopg2.extras
 import datetime
@@ -48,7 +47,9 @@ date_today = datetime.datetime.now().date()
 
 # We get all PIs and their proposals from sdb
 def all_pi_and_proposals_sdb():
-    with sdb_database_connection().cursor(MySQLdb.cursors.DictCursor) as database_connection:
+    with sdb_database_connection().cursor(
+        MySQLdb.cursors.DictCursor
+    ) as database_connection:
         pi_query = """SELECT Proposal_Code, Email, CONCAT(FirstName," ", Surname) AS FullName
                       FROM ProposalContact AS propCon
                       JOIN ProposalCode ON ProposalCode.ProposalCode_Id = propCon.ProposalCode_Id
@@ -61,7 +62,7 @@ def all_pi_and_proposals_sdb():
 # getting the release dates for the proposals in ssda
 def proposal_release_dates():
     with ssda_database_connection().cursor(
-            cursor_factory=psycopg2.extras.DictCursor
+        cursor_factory=psycopg2.extras.DictCursor
     ) as ssda_cursor:
         psql_query = """SELECT DISTINCT (proposal_code), data_release
                         FROM observations.proposal prop
@@ -81,18 +82,23 @@ def all_release_dates_and_proposals():
         for data in ssda_query_results:
             if pi["Proposal_Code"] == data["proposal_code"]:
                 if pi["Email"] not in all_data:
-                    all_data[pi["Email"]] = {"proposals": {}, "FullName": pi["FullName"]}
-                all_data[pi["Email"]]["proposals"].update({pi["Proposal_Code"]: data["data_release"]})
+                    all_data[pi["Email"]] = {
+                        "proposals": {},
+                        "FullName": pi["FullName"],
+                    }
+                all_data[pi["Email"]]["proposals"].update(
+                    {pi["Proposal_Code"]: data["data_release"]}
+                )
     return all_data
 
 
-def listing_proposals(proposal):
+def text_formatting(proposal):
     if not proposal:
         return ""
     elif len(proposal) == 1:
         return proposal[0]
     else:
-        return ', '.join(proposal[:-1]) + ", and " + proposal[-1]
+        return ", ".join(proposal[:-1]) + ", and " + proposal[-1]
 
 
 message = """
@@ -111,16 +117,19 @@ def email_to_be_sent(receiver, proposal, release_date):
         server.sendmail(
             sender,
             receiver,
-            message.format(receiver=receiver,
-                           sender=sender,
-                           proposal_code=proposal,
-                           release_date=release_date,
-                           )
+            message.format(
+                receiver=receiver,
+                sender=sender,
+                proposal_code=proposal,
+                release_date=release_date,
+            ),
         )
 
 
 @click.command()
-@click.option("--public-within", type=int, help="Number of days until release of proposal")
+@click.option(
+    "--public-within", type=int, help="Number of days until release of proposal"
+)
 def send_email(public_within):
     """
     We loop through the dictionary of all the PIs and their release dates of each
@@ -131,20 +140,20 @@ def send_email(public_within):
     """
     proposals_to_include = {}
     for key, value in all_release_dates_and_proposals().items():
-        for proposal, release_date in value['proposals'].items():
+        for proposal, release_date in value["proposals"].items():
             time_difference = release_date - date_today
-            if datetime.timedelta(0) <= time_difference <= datetime.timedelta(public_within):
+            if (
+                datetime.timedelta(0)
+                <= time_difference
+                <= datetime.timedelta(public_within)
+            ):
                 if key not in proposals_to_include:
                     proposals_to_include[key] = {proposal: release_date}
                 else:
                     proposals_to_include[key].update({proposal: release_date})
 
-    # listing_proposals(list(all_info.keys())), this gives the proposals
-    # list(all_info.values()), this gives the release dates
     for email, all_info in proposals_to_include.items():
-        all_dates = listing_proposals([datetime.datetime.strftime(d, "%Y-%m-%d")
-                                       for d in list(all_info.values())])
-        email_to_be_sent(email, listing_proposals(list(all_info.keys())), all_dates)
-
-
-send_email()
+        all_dates = text_formatting(
+            [datetime.datetime.strftime(d, "%Y-%m-%d") for d in list(all_info.values())]
+        )
+        email_to_be_sent(email, text_formatting(list(all_info.keys())), all_dates)
