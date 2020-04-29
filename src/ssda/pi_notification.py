@@ -86,15 +86,37 @@ def all_release_dates_and_proposals():
     return all_data
 
 
+def listing_proposals(proposal):
+    if not proposal:
+        return ""
+    elif len(proposal) == 1:
+        return proposal[0]
+    else:
+        return ', '.join(proposal[:-1]) + ", and " + proposal[-1]
+
+
 message = """
 Subject: Release of data
 To: {receiver}
 From: {sender}
-The proposal with proposal code {proposal_code} is due to
-be released soon with its release date being {release_date}.
+The release date for {proposal_code} is {release_date}.
 Please let us know if you wish to extend the release date. """
 
 sender = "Salt help<salthelp@saao.ac.za>"
+
+
+def email_to_be_sent(receiver, proposal, release_date):
+    with smtplib.SMTP(mail_server, mail_port) as server:
+        server.login(mail_username, mail_password)
+        server.sendmail(
+            sender,
+            receiver,
+            message.format(receiver=receiver,
+                           sender=sender,
+                           proposal_code=proposal,
+                           release_date=release_date,
+                           )
+        )
 
 
 @click.command()
@@ -107,8 +129,22 @@ def send_email(public_within):
     :param public_within: The number of days until the proposal goes public
     :return:
     """
+    proposals_to_include = {}
     for key, value in all_release_dates_and_proposals().items():
-        print(value)
+        for proposal, release_date in value['proposals'].items():
+            time_difference = release_date - date_today
+            if datetime.timedelta(0) <= time_difference <= datetime.timedelta(public_within):
+                if key not in proposals_to_include:
+                    proposals_to_include[key] = {proposal: release_date}
+                else:
+                    proposals_to_include[key].update({proposal: release_date})
+
+    # listing_proposals(list(all_info.keys())), this gives the proposals
+    # list(all_info.values()), this gives the release dates
+    for email, all_info in proposals_to_include.items():
+        all_dates = listing_proposals([datetime.datetime.strftime(d, "%Y-%m-%d")
+                                       for d in list(all_info.values())])
+        email_to_be_sent(email, listing_proposals(list(all_info.keys())), all_dates)
 
 
 send_email()
