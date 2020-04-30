@@ -108,7 +108,7 @@ From: {sender}
 The release date for {proposal_code} is {release_date}.
 Please let us know if you wish to extend the release date. """
 
-sender = "Salt help<salthelp@saao.ac.za>"
+sender = "Salt Astronomy Operations<salthelp@saao.ac.za>"
 
 
 def email_to_be_sent(receiver, proposal, release_date):
@@ -128,7 +128,7 @@ def email_to_be_sent(receiver, proposal, release_date):
 
 @click.command()
 @click.option(
-    "--public-within", type=int, help="Number of days until release of proposal"
+    "--public-within", type=int, help="Number of days until release of proposal data"
 )
 def send_email(public_within):
     """
@@ -157,3 +157,4 @@ def send_email(public_within):
             [datetime.datetime.strftime(d, "%Y-%m-%d") for d in list(all_info.values())]
         )
         email_to_be_sent(email, text_formatting(list(all_info.keys())), all_dates)
+    return "Email Sent"
