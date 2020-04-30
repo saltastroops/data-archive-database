@@ -320,12 +320,7 @@ class SaltDatabaseService:
             )
 
         nights = types.DateRange(start=night, end=night + datetime.timedelta(days=1))
-        instruments = {
-            types.Instrument.BCAM,
-            types.Instrument.HRS,
-            types.Instrument.RSS,
-            types.Instrument.SALTICAM,
-        }
+        instruments = {types.Instrument.all_telescope_instruments()}
         base_dir = get_fits_base_dir()
 
         return [
