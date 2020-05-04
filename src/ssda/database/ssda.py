@@ -66,7 +66,7 @@ class SSDADatabaseService:
         self, observation_group_id: str,
     ) -> Optional[types.ObservationGroup]:
         """
-        Find the database id of an observation group.
+        Find an observation group.
 
         Parameters
         ----------
@@ -82,7 +82,7 @@ class SSDADatabaseService:
 
         with self._connection.cursor() as cur:
             sql = """
-            SELECT group_identifier, name
+            SELECT block_visit_id, name
             FROM observation_group
             WHERE observation_group_id=%(observation_group_id)s
             """
@@ -123,7 +123,7 @@ class SSDADatabaseService:
             FROM observation_group
             JOIN observation ON observation_group.observation_group_id=observation.observation_group_id
             JOIN telescope ON observation.telescope_id = telescope.telescope_id
-            WHERE observation_group.group_identifier=%(group_identifier)s AND telescope.name=%(telescope)s
+            WHERE observation_group.block_visit_id=%(block_visit_id)s AND telescope.name=%(telescope)s
             """
             cur.execute(
                 sql, dict(group_identifier=group_identifier, telescope=telescope.value)
@@ -180,7 +180,7 @@ class SSDADatabaseService:
             The telescope.
         Returns
         -------
-        List
+        List[types.Observation]
             A list of observations.
 
         """
@@ -193,12 +193,12 @@ SELECT
     status,
     meta_release,
     data_release,
-    group_identifier,
+    block_visit_id,
     instrument.name,
     intent,
     proposal.proposal_id,
     observation.observation_group_id
-    group_identifier
+    block_visit_id
 FROM observations.observation
     JOIN observations.proposal ON proposal.proposal_id = observation.proposal_id
     JOIN observations.instrument ON instrument.instrument_id = observation.instrument_id
@@ -261,10 +261,10 @@ Where proposal_code = %(proposal_code)s
             else:
                 return None
 
-    def find_proposal_investigators(self, proposal_code: str) -> List[str]:
+    def find_proposal_investigators(self, proposal_code: str) -> List[types.ProposalInvestigator]:
         with self._connection.cursor() as cur:
             sql = """
-            SELECT institution_user_id
+            SELECT institution_user_id, proposal_id
             FROM admin.proposal_investigator AS propinv
                 JOIN observations.proposal AS p ON propinv.proposal_id = p.proposal_id
             WHERE proposal_code = %(proposal_code)s
@@ -274,7 +274,10 @@ Where proposal_code = %(proposal_code)s
                 sql, dict(proposal_code=proposal_code)
             )
             results = cur.fetchall()
-            return [result[0] for result in results] if results else None
+            return [
+                types.ProposalInvestigator(investigator_id=result[0], proposal_id=result[1])
+                for result in results
+                ] if results else None
 
     def find_proposal(self, proposal_code: str, institution: types.Institution) -> Optional[types.Proposal]:
         """
@@ -692,9 +695,9 @@ WHERE ot.night >= %(start_date)s AND ot.night <= %(end_date)s
 
         with self._connection.cursor() as cur:
             sql = """
-            INSERT INTO observation_group (group_identifier,
+            INSERT INTO observation_group (block_visit_id,
                                            name)
-            VALUES (%(group_identifier)s,
+            VALUES (%(block_visit_id)s,
                     %(name)s)
             RETURNING observation_group_id
             """
@@ -978,31 +981,43 @@ WHERE ot.night >= %(start_date)s AND ot.night <= %(end_date)s
 
             return cast(int, cur.fetchone()[0])
 
-    def update_pi(self, pi: str, proposal_id: int):
+    def update_pi(self, proposal_code: str, institution: types.Institution, pi: str):
         with self._connection.cursor() as cur:
             sql = """
-            UPDATE proposal
-                SET pi=%(pi)s
-            WHERE proposal_id=%(proposal_id)s
+WITH prop_id (proposal_id) AS (
+    SELECT proposal_id
+    FROM proposal
+	    JOIN institution on proposal.institution_id = institution.institution_id
+    WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
+)
+UPDATE proposal
+    SET pi=%(pi)s
+WHERE proposal_id=(SELECT proposal_id FROM prop_id)
             """
             cur.execute(
                 sql,
-                dict(pi=pi, proposal_id=proposal_id)
+                dict(proposal_code=proposal_code, institution=institution, pi=pi)
             )
 
-    def update_title(self, title: str, proposal_id: int):
+    def update_title(self, title: str, proposal_code: str, institution: types.Institution):
         with self._connection.cursor() as cur:
             sql = """
-            UPDATE proposal
-                SET title=%(title)s
-            WHERE proposal_id=%(proposal_id)s
+WITH prop_id (proposal_id) AS (
+    SELECT proposal_id
+    FROM proposal
+	    JOIN institution on proposal.institution_id = institution.institution_id
+    WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
+)
+UPDATE proposal
+    SET title=%(title)s
+WHERE proposal_id=(SELECT proposal_id FROM prop_id)
             """
             cur.execute(
                 sql,
-                dict(title=title, proposal_id=proposal_id)
+                dict(title=title, proposal_code=proposal_code, institution=institution.value)
             )
 
-    def update_observation(self, group_identifier:int, data_release_date: date, meta_release_date: date, status:types.Status) -> None:
+    def update_observation(self, group_identifier:str, data_release_date: date, meta_release_date: date, status:types.Status) -> None:
         with self._connection.cursor() as cur:
             sql = """
 WITH
@@ -1031,23 +1046,24 @@ WHERE observation_group_id=(SELECT observation_group_id FROM obs_id)
                 )
             )
 
-    def update_investigators(self, proposal_id: int, proposal_investigator_ids: List[str]):
+    def update_investigators(self, proposal_code: str, institution: types.Institution, proposal_investigators: List[str]):
         with self._connection.cursor() as cur:
             sql = """
-            DELETE FROM admin.proposal_investigator
-            WHERE proposal_id = %(proposal_id)s
+WITH prop_id (proposal_id) AS (
+    SELECT proposal_id
+    FROM proposal
+	    JOIN institution on proposal.institution_id = institution.institution_id
+    WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
+)
+DELETE FROM admin.proposal_investigator
+WHERE proposal_id = (SELECT proposal_id FROM prop_id)
             """
             cur.execute(
                 sql,
-                dict(proposal_id=proposal_id)
+                dict(proposal_code=proposal_code, institution=institution)
             )
-            for investigator_id in proposal_investigator_ids:
-                self.insert_proposal_investigator(
-                    proposal_investigator=types.ProposalInvestigator(
-                        investigator_id=investigator_id,
-                        proposal_id=proposal_id
-                    )
-                )
+            for proposal_investigator in proposal_investigators:
+                self.insert_proposal_investigator(proposal_investigator=proposal_investigator)
 
     def rollback_transaction(self) -> None:
         """

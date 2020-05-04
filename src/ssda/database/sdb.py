@@ -739,7 +739,7 @@ WHERE Proposal_Code = %s
                 )
         return ps
 
-    def find_observed_proposals(self, start_date: date, end_date: date) -> List[types.SALTProposalDetails]:
+    def find_submitted_proposals(self, start_date: date, end_date: date) -> List[types.SALTProposalDetails]:
         """
         The part of a proposal that contains what would have change on SDB.
 
@@ -749,28 +749,25 @@ WHERE Proposal_Code = %s
             The start date
         end_date:date
             The end date
+        proposal_code: str
+            The proposal_code.
+
         Returns
         -------
-        The list of proposals
+            The list of proposals
 
         """
 
         sql = """
-SELECT Proposal_Code, ReleaseDate, Title, CONCAT(FirstName, " ", Surname) as FullName
+SELECT Proposal_Code, Title, CONCAT(FirstName, " ", Surname) as FullName
 FROM Proposal
 	JOIN ProposalCode USING(ProposalCode_Id)
     JOIN ProposalText USING(ProposalCode_Id)
     JOIN ProposalContact USING(ProposalCode_Id)
     JOIN Investigator ON Leader_Id = Investigator_Id
     JOIN ProposalGeneralInfo USING(ProposalCode_Id)
-	JOIN Semester ON Proposal.Semester_Id= Semester.Semester_Id
-WHERE Current = 1
-	AND Semester.StartSemester >= (
-		SELECT StartSemester FROM Semester WHERE StartSemester <= %s ORDER BY StartSemester DESC LIMIT 1
-		)
-	AND Semester.EndSemester <=(
-		SELECT EndSemester FROM Semester WHERE StartSemester >= %s ORDER BY StartSemester ASC LIMIT 1
-    )
+WHERE Current = 1 AND
+	SubmissionDate >= %s AND SubmissionDate <= %s
         """
         results = pd.read_sql(sql, self._connection, params=(start_date, end_date))
 
@@ -779,9 +776,7 @@ WHERE Current = 1
             types.SALTProposalDetails(
                 pi=row["FullName"],
                 proposal_code=row["Proposal_Code"],
-                title=row["Title"],
-                date_release=datetime.strptime(str(row["ReleaseDate"]), "%Y-%m-%d").date(),
-                meta_release=datetime.strptime(str(row["ReleaseDate"]), "%Y-%m-%d").date()
+                title=row["Title"]
             )
             for index, row in results.iterrows()
         ]

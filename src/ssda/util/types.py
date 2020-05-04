@@ -734,7 +734,7 @@ class Intent(Enum):
     @staticmethod
     def for_value(value):
         """
-        The instrument for a case-insensitive name.
+        The intent value.
 
         Parameters
         ----------
@@ -743,8 +743,8 @@ class Intent(Enum):
 
         Returns
         -------
-        intent:
-            The Intent.
+        Intent:
+            The intent.
 
         """
         for intent in Intent:
@@ -1241,7 +1241,7 @@ class ProposalType(Enum):
     @staticmethod
     def for_value(value) -> ProposalType:
         """
-        The instrument for a case-insensitive name.
+        The proposal type value.
 
         Parameters
         ----------
@@ -1250,8 +1250,8 @@ class ProposalType(Enum):
 
         Returns
         -------
-        intent:
-            The Intent.
+        ProposalType:
+            The proposal type.
 
         """
         for proposal_type in ProposalType:
@@ -1509,14 +1509,14 @@ class SALTObservation:
 
     Parameters
     ----------
-    group_identifier : int
+    block_visit_id : int
         Database id of the proposal to which this observation belongs.
     status : Status
         Status (accepted or rejected) of the observation.
 
     """
 
-    group_identifier: Optional[str]
+    block_visit_id: Optional[str]
     status: Status
 
 
@@ -1535,37 +1535,13 @@ class SALTProposalDetails:
         Proposal identifier, which is unique within an institution.
     title : str
         Proposal title.
-    date_release: str
+    data_release: str
         Data release date
     meta_release: str
         Data release date
 
     """
 
-    date_release: date
-    meta_release: date
     pi: str
     proposal_code: str
-    title: str
-
-
-@dataclass
-class ComparableProposal:
-    """
-    A proposal with comparable fields.
-
-    Parameters
-    ----------
-    pi : str
-        Principal Investigator.
-    proposal_code : str
-        Proposal identifier, which is unique within an institution.
-    title : str
-        Proposal title.
-
-    """
-
-    pi: str
-    proposal_code: str
-    proposal_id: int
     title: str
