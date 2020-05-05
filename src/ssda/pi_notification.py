@@ -6,11 +6,6 @@ import psycopg2.extras
 import datetime
 import click
 
-mail_port = os.environ.get("MAIL_PORT")
-mail_server = os.environ.get("MAIL_SERVER")
-mail_username = os.environ.get("MAIL_USER")
-mail_password = os.environ.get("MAIL_PASSWORD")
-
 
 def sdb_database_connection():
     database_host = os.environ.get("SDB_HOST")
@@ -112,6 +107,11 @@ sender = "Salt Astronomy Operations<salthelp@saao.ac.za>"
 
 
 def email_to_be_sent(receiver, proposal, release_date):
+    mail_port = os.environ.get("MAIL_PORT")
+    mail_server = os.environ.get("MAIL_SERVER")
+    mail_username = os.environ.get("MAIL_USER")
+    mail_password = os.environ.get("MAIL_PASSWORD")
+
     with smtplib.SMTP(mail_server, mail_port) as server:
         server.login(mail_username, mail_password)
         server.sendmail(
@@ -124,6 +124,19 @@ def email_to_be_sent(receiver, proposal, release_date):
                 release_date=release_date,
             ),
         )
+    return "Email has been sent"
+
+
+def log_to_file(email_receiver, proposals, release_dates):
+    with open("logging.txt", 'a') as log_file:
+        file_information = [email_receiver + " " + proposals + " " + release_dates]
+        log_file.writelines("%s\n" % line for line in file_information)
+
+
+def read_log_file():
+    with open("logging.txt", "r") as file_content:
+        file_data = [data.replace("\n", "") for data in file_content.readlines()]
+        return file_data
 
 
 @click.command()
@@ -153,8 +166,17 @@ def send_email(public_within):
                     proposals_to_include[key].update({proposal: release_date})
 
     for email, all_info in proposals_to_include.items():
-        all_dates = text_formatting(
-            [datetime.datetime.strftime(d, "%Y-%m-%d") for d in list(all_info.values())]
-        )
-        email_to_be_sent(email, text_formatting(list(all_info.keys())), all_dates)
+        for x, y in all_info.items():
+            file_content = email + " " + x + " " + datetime.datetime.strftime(y, "%Y-%m-%d")
+            if file_content not in read_log_file():
+                log_to_file(email, x, datetime.datetime.strftime(y, "%Y-%m-%d"))
+                all_proposals = text_formatting([proposal for proposal in all_info.keys()])
+                all_dates = text_formatting(
+                    [datetime.datetime.strftime(d, "%Y-%m-%d") for d in list(all_info.values())]
+                )
+                email_to_be_sent(email, all_proposals, all_dates)
+
     return "Email Sent"
+
+
+send_email()
