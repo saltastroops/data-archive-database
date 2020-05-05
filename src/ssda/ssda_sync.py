@@ -85,7 +85,7 @@ def main(start, end) -> int:
                 )
 
             # compare proposal investigators
-            sdb_proposal_investigators = sdb_database_service.find_proposal_investigators(proposal_code=sdb_proposal.proposal_code)
+            sdb_proposal_investigators = sdb_database_service.find_proposal_investigator_user_ids(proposal_code=sdb_proposal.proposal_code)
 
             ssda_database_service.update_investigators(
                 proposal_code=ssda_proposal.proposal_code,

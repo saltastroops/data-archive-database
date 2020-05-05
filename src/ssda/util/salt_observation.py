@@ -209,7 +209,7 @@ class SALTObservation:
         self, proposal_id: int
     ) -> List[types.ProposalInvestigator]:
         proposal_code = self.header_value("PROPID").upper()
-        investigators = self.database_service.find_proposal_investigators(proposal_code)
+        investigators = self.database_service.find_proposal_investigator_user_ids(proposal_code)
         return [
             types.ProposalInvestigator(
                 proposal_id=proposal_id, investigator_id=str(investigator)

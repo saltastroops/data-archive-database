@@ -869,7 +869,7 @@ WHERE Proposal_Code=%s;
 
         return release_date, release_date
 
-    def find_proposal_investigators(self, proposal_code: str) -> List[str]:
+    def find_proposal_investigator_user_ids(self, proposal_code: str) -> List[str]:
         sql = """
 SELECT PiptUser.PiptUser_Id
 FROM ProposalInvestigator
