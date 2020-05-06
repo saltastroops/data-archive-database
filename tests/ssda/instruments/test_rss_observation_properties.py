@@ -10,6 +10,7 @@ from dateutil.tz import tz
 from ssda.instrument.rss_observation_properties import RssObservationProperties
 from ssda.util import types
 from ssda.util.salt_observation import SALTObservation
+from ssda.util.types import ProposalType
 
 
 class FakeSaltDatabaseService:
@@ -241,6 +242,7 @@ def test_proposal(mocker):
             institution=types.Institution.SALT,
             pi="Name_1",
             proposal_code="Code_1",
+            proposal_type=ProposalType.SCIENCE,
             title="Title_1"
     )):
         assert rss_obs.proposal().institution == types.Institution.SALT

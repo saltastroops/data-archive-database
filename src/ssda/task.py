@@ -1,5 +1,4 @@
 from ssda.database.services import DatabaseServices
-from ssda.exceptions import IgnoreObservationError
 from ssda.repository import insert, delete
 from ssda.observation_properties import observation_properties
 from ssda.util.dummy import DummyObservationProperties

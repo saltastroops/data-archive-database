@@ -274,6 +274,12 @@ class StandardFitsFile(FitsFile):
         elif instrument_value.upper() == "BCAM":
             return types.Instrument.BCAM
         else:
+            # There are some HRS files missing the INSTRUME keyword. We rely on the
+            # filename together with an HRS-specific header keyword instead. (As that
+            # keyword is for a temperature it should never be 0.)
+            filename = os.path.basename(self.file_path())
+            if filename.startswith('H2') and self.header_value('TEM-RMIR'):
+                return types.Instrument.HRS
             raise ValueError(
                 f"Unknown instrument in file {self.path}: {instrument_value}"
             )

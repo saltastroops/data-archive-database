@@ -8,6 +8,7 @@ from ssda.util import types
 
 
 # Artifact
+from ssda.util.types import ProposalType
 
 
 def test_artifact_is_created_correctly():
@@ -800,6 +801,7 @@ def test_proposal_is_created_correctly():
         institution=types.Institution.SAAO,
         pi="John Doe",
         proposal_code="2019-1-SCI-042",
+        proposal_type=ProposalType.SCIENCE,
         title="Some Proposal",
     )
 
@@ -814,6 +816,7 @@ def test_proposal_pi_too_long():
             institution=types.Institution.SAAO,
             pi=101 * "a",
             proposal_code="2019-1-SCI-042",
+            proposal_type=ProposalType.SCIENCE,
             title="Some Proposal",
         )
 
@@ -826,6 +829,7 @@ def test_proposal_proposal_code_too_long():
             institution=types.Institution.SAAO,
             pi="John Doe",
             proposal_code="p" * 51,
+            proposal_type=ProposalType.SCIENCE,
             title="Some Proposal",
         )
 
@@ -838,6 +842,7 @@ def test_proposal_title_too_long():
             institution=types.Institution.SALT,
             pi="John Doe",
             proposal_code="2019-1-SCI-042",
+            proposal_type=ProposalType.SCIENCE,
             title=201 * "a",
         )
 

@@ -51,12 +51,12 @@ def parse_date(value: str, now: Callable[[], datetime]) -> date:
 
 
 def validate_options(
-        start: Optional[date],
-        end: Optional[date],
-        file: Optional[str],
-        instruments: Set[Instrument],
-        fits_base_dir: Optional[str],
-        task_name:Optional[TaskName]
+    start: Optional[date],
+    end: Optional[date],
+    file: Optional[str],
+    instruments: Set[Instrument],
+    fits_base_dir: Optional[str],
+    task_name: Optional[TaskName],
 ) -> None:
     """
     Validate the command line options.
@@ -95,9 +95,7 @@ def validate_options(
 
     # Can not run insert for a single file
     if task_name == TaskName.INSERT and file:
-        raise click.UsageError(
-            "You cannot use the --file option with the insert task."
-        )
+        raise click.UsageError("You cannot use the --file option with the insert task.")
 
     # A start date requires an end date, and vice versa
     if start and not end:
@@ -169,7 +167,7 @@ def validate_options(
     help="Task to perform.",
 )
 @click.option(
-    "--verbosity", type=click.Choice(["0", "1", "2"]), help="Log more details."
+    "--verbosity", type=click.Choice(["0", "1", "2", "3"]), help="Log more details."
 )
 def main(
     task: str,
@@ -255,7 +253,7 @@ def main(
     )
     ssda_connection = database_services.ssda.connection()
 
-    flagged_errors = set()
+    errors = list()
     night_date = ""
     # execute the requested task
     for path in paths:
@@ -271,40 +269,56 @@ def main(
             )
         except BaseException as e:
             error_msg = str(e)
+            msg = ""
             if verbosity_level == 0:
                 # don't output anything
                 pass
-            if verbosity_level == 1 and error_msg not in flagged_errors:
+            if verbosity_level == 1:
                 msg = f"\nError in {path}. \n{error_msg}"
                 # Add error to already flagged errors.
-                flagged_errors.add(error_msg)
                 logging.error(msg)
-            if verbosity_level == 2:
+            if verbosity_level == 2 or verbosity_level == 3:
                 # TODO Please note that data_to_log is only for SALT need to be updated in the future
                 # output the FITS file path and the error message.
                 data_to_log = get_salt_data_to_log(path)
                 msg = f"""
-FiITS file details
+Error message
+-------------
+{error_msg}
+
+FITS file details
 ------------------
+File path: {data_to_log.path}
 Proposal code: {data_to_log.proposal_code}
 Object: {data_to_log.object}
 Block visit id: {data_to_log.block_visit_id}
 Observation type: {data_to_log.observation_type}
 Observation mode: {data_to_log.observation_mode}
 Observation time: {data_to_log.observation_time}
-
+"""
+                if verbosity_level == 3:
+                    msg += f"""
 Stack trace
 -----------
-{error_msg}
-_________________________________________________________________________________________________
+"""
+                msg += """_________________________________________________________________________________________________
 """
                 # output the FITS file path and error stacktrace.
-                logging.error(msg, exc_info=True)
+                logging.error(msg, exc_info=verbosity_level == 3)
+
+            errors.append(msg)
+
             if not skip_errors:
                 ssda_connection.close()
                 return -1
 
     ssda_connection.close()
+
+    if verbosity_level >= 1:
+        for error in errors:
+            print(error)
+            print()
+        print(f"Total number of errors: {len(errors)}")
 
     # Success!
     return 0

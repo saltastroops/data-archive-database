@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass
 from ssda.util.fits import StandardFitsFile
 
@@ -9,12 +10,14 @@ class LogData:
     observation_mode: str
     observation_time: str
     observation_type: str
+    path: str
     proposal_code: str
 
 
 def get_salt_data_to_log(path: str) -> LogData:
     fits_file = StandardFitsFile(path)
     log_data = LogData(
+        path=str(path),
         proposal_code=fits_file.header_value("PROPID"),
         block_visit_id=fits_file.header_value("BVISITID"),
         observation_type=fits_file.header_value("OBSTYPE"),
