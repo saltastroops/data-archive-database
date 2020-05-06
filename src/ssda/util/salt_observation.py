@@ -466,8 +466,8 @@ class SALTObservation:
         # Ignore observations of unknown category unless they are part of a proposal.
         proposal_id = self.header_value("PROPID") or ""
         try:
-            # Trying to get product category might result in an exception. But in this
-            # case we should not ignore the file.
+            # Trying to get the product category might result in an exception. But in
+            # this case we should not ignore the file.
             if self._product_category() == types.ProductCategory.UNKNOWN and not self.database_service.is_existing_proposal_code(proposal_id):
                 return True
         except:
