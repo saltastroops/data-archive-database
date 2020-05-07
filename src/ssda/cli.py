@@ -19,6 +19,13 @@ from ssda.util.types import Instrument, DateRange, TaskName, TaskExecutionMode
 # Log with Sentry
 from ssda.util.warnings import clear_warnings, get_warnings
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s]: %(message)s",
+    datefmt="%Y/%m/%d %H:%M:%S",
+)
+
 if os.environ.get("SENTRY_DSN"):
     sentry_sdk.init(os.environ.get("SENTRY_DSN"))  # type: ignore
 
@@ -213,6 +220,17 @@ def main(
         task_name=task_name,
     )
 
+    # Off we go!
+    start_msg = "Inserting data "
+    if start_date:
+        start_msg += (
+            f"for the nights from {start_date.isoformat()} to {end_date.isoformat()}"
+        )
+    if file:
+        start_msg += f"from {file}"
+    if verbosity_level >= 1:
+        logging.info(start_msg)
+
     # store the base directory
     set_fits_base_dir(fits_base_dir)
 
@@ -298,54 +316,57 @@ def main(
     ssda_connection.close()
 
     if verbosity_level >= 1:
-        print("NIGHTTIME ERRORS:")
-        print("-----------------")
+        msg = ""
+        msg += "NIGHTTIME ERRORS:\n"
+        msg += "-----------------\n"
         if verbosity_level == 1:
-            print()
+            msg += "\n"
         if nighttime_errors:
             for error in nighttime_errors:
                 if verbosity_level > 1:
-                    print()
-                print(error)
+                    msg += "\n"
+                msg += f"{error}\n"
         else:
             if verbosity_level > 1:
-                print()
-            print("There are no nighttime errors.\n")
+                msg += "\n"
+            msg += "There are no nighttime errors.\n\n"
 
-        print()
-        print("DAYTIME ERRORS:")
-        print("---------------")
+        msg += "\n"
+        msg += "DAYTIME ERRORS:\n"
+        msg += "---------------\n"
         if verbosity_level == 1:
-            print()
+            msg += "\n"
         if daytime_errors:
             if verbosity_level > 1:
-                print()
+                msg += "\n"
             for error in daytime_errors:
-                print(error)
+                msg += f"{error}\n"
         else:
             if verbosity_level > 1:
-                print()
-            print("There are no daytime errors.\n")
+                msg += "\n"
+            msg += "There are no daytime errors.\n\n"
 
-        print()
-        print("WARNINGS:")
-        print("---------")
+        msg += "\n"
+        msg += "WARNINGS:\n"
+        msg += "---------\n"
         if verbosity_level == 1:
-            print()
+            msg += "\n"
         if warnings:
             for warning in warnings:
                 if verbosity_level > 1:
-                    print()
-                print(warning)
+                    msg += "\n"
+                msg += f"{warning}\n"
         else:
             if verbosity_level > 1:
-                print()
-            print("There are no warnings.\n")
+                msg += "\n"
+            msg += "There are no warnings.\n\n"
 
-        print()
-        print(f"Total number of nighttime errors: {len(nighttime_errors)}")
-        print(f"Total number of daytime errors: {len(daytime_errors)}")
-        print(f"Total number of warnings: {len(warnings)}")
+        msg = f"""
+Total number of nighttime errors: {len(nighttime_errors)}
+Total number of daytime errors: {len(daytime_errors)}
+Total number of warnings: {len(warnings)}
+"""
+        logging.info(msg)
 
     # Success!
     return 0
@@ -386,14 +407,15 @@ def handle_exception(
         # don't output anything
         pass
     if verbosity_level == 1:
-        if is_warning:
-            msg += "[Warning] "
         msg += error_msg
         if data_to_log.is_daytime_observation():
             msg += " [DAYTIME]"
         msg += f" [{path}]"
         if not data_to_log.is_daytime_observation():
-            logging.error(msg)
+            if not is_warning:
+                logging.error(msg)
+            else:
+                logging.warning(msg)
     if verbosity_level == 2 or verbosity_level == 3:
         # TODO Please note that data_to_log is only for SALT need to be updated in the future
         # output the FITS file path and the error message.
@@ -425,7 +447,10 @@ Observation time: {data_to_log.observation_time}{" *** DAYTIME ***" if data_to_l
             msg += """_________________________________________________________________________________________________
         """
             # output the FITS file path and error stacktrace.
-            logging.error(msg, exc_info=verbosity_level == 3)
+            if not is_warning:
+                logging.error(msg, exc_info=verbosity_level == 3)
+            else:
+                logging.warning(msg, exc_info=verbosity_level == 3)
 
     if is_warning:
         warnings.append(msg)
