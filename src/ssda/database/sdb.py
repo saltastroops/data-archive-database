@@ -336,7 +336,7 @@ class SaltDatabaseService:
         """
         Merge the file data from the database and FITS file headers.
 
-        If file data is recorded in both the database abd the FITS file headers, the
+        If file data is recorded in both the database and the FITS file headers, the
         database version is used.
 
         Parameters
