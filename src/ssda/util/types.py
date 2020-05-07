@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Optional, Set
+from typing import Any, Dict, List, NamedTuple, Optional
 
 import astropy.units as u
 from astropy.units import def_unit, Quantity
@@ -558,8 +558,10 @@ class Instrument(Enum):
         raise ValueError(f"Unknown instrument name: {name}")
 
     @staticmethod
-    def all_telescope_instruments():
-        return Set[Instrument]
+    def instrument(telescope: Telescope):
+        if telescope == Telescope.SALT:
+            return set(instruments for instruments in Instrument)
+        raise ValueError(f"Unknown telescope {telescope}")
 
 
 class InstrumentKeyword(Enum):
