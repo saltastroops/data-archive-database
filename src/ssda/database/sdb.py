@@ -825,7 +825,7 @@ WHERE ProposalCode.Proposal_Code=%s;
         results = pd.read_sql(sql, self._connection, params=(proposal_code,))
         if not len(results):
             raise ValueError(
-                f"No Principal Investigator found for proposal code \"{proposal_code}\". Does the proposal code exist?"
+                f'No Principal Investigator found for proposal code "{proposal_code}". Does the proposal code exist?'
             )
         results = results.iloc[0]
         if results["FullName"]:

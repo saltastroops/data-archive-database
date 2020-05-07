@@ -70,7 +70,10 @@ class RssObservationProperties(ObservationProperties):
         detector_mode = None
         if self.header_value("DETMODE"):
             for dm in types.DetectorMode:
-                if self.header_value("DETMODE").replace(' ', '').upper() == dm.value.replace(' ', '').upper():
+                if (
+                    self.header_value("DETMODE").replace(" ", "").upper()
+                    == dm.value.replace(" ", "").upper()
+                ):
                     detector_mode = dm
         if not detector_mode:
             record_warning(Warning("The detector mode could not be determined."))
@@ -82,7 +85,9 @@ class RssObservationProperties(ObservationProperties):
                 filter = fi
 
         try:
-            instrument_mode = rss_instrument_mode(self.header_value, self.database_service)
+            instrument_mode = rss_instrument_mode(
+                self.header_value, self.database_service
+            )
         except BaseException as e:
             record_warning(Warning("The instrument mode could not be determined."))
             instrument_mode = types.InstrumentMode.UNKNOWN
@@ -111,7 +116,9 @@ class RssObservationProperties(ObservationProperties):
         return self.salt_observation.observation_time(plane_id)
 
     def plane(self, observation_id: int) -> types.Plane:
-        observation_mode = self.header_value("OBSMODE").upper() if self.header_value("OBSMODE") else ""
+        observation_mode = (
+            self.header_value("OBSMODE").upper() if self.header_value("OBSMODE") else ""
+        )
         if observation_mode:
             data_product_type = (
                 types.DataProductType.IMAGE

@@ -468,13 +468,15 @@ class SALTObservation:
         try:
             # Trying to get the product category might result in an exception. But in
             # this case we should not ignore the file.
-            if self._product_category() == types.ProductCategory.UNKNOWN and not self.database_service.is_existing_proposal_code(proposal_id):
+            if self._product_category() == types.ProductCategory.UNKNOWN and not self.database_service.is_existing_proposal_code(
+                proposal_id
+            ):
                 return True
         except:
             pass
 
         # Ignore "science" proposals without a proposal code and block visit id
-        product_type= self._obs_type()
+        product_type = self._obs_type()
         is_science = product_type == "OBJECT" or product_type == "SCIENCE"
         if is_science and not self._block_visit_id():
             return True
