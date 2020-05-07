@@ -558,9 +558,29 @@ class Instrument(Enum):
         raise ValueError(f"Unknown instrument name: {name}")
 
     @staticmethod
-    def instrument(telescope: Telescope):
+    def instruments(telescope: Telescope):
+        """
+        Return the instruments used by a telescope.
+
+        Parameters
+        ----------
+        telescope : Telescope
+            Telescope.
+
+        Returns
+        -------
+        Set[Instrument]
+            The instruments used by the telescope.
+
+        """
+
         if telescope == Telescope.SALT:
-            return set(instruments for instruments in Instrument)
+            return {
+                Instrument.BCAM,
+                Instrument.HRS,
+                Instrument.RSS,
+                Instrument.SALTICAM,
+            }
         raise ValueError(f"Unknown telescope {telescope}")
 
 
