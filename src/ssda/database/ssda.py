@@ -194,7 +194,7 @@ SELECT
     meta_release,
     data_release,
     block_visit_id,
-    instrument.name,
+    instrument.name as instrument_name,
     intent,
     proposal.proposal_id,
     observation.observation_group_id
@@ -211,16 +211,16 @@ Where proposal_code = %(proposal_code)s
             cur.execute(
                 sql, dict(proposal_code=proposal_code, telescope=telescope.value)
             )
-            results = cur.fetchall()
+            results = cur.dictfetchall()
             return [
                 types.Observation(
-                    status=types.Status.for_value(result[0]),
-                    meta_release=datetime.strptime(str(result[1]), "%Y-%m-%d").date(),
-                    data_release=datetime.strptime(str(result[2]), "%Y-%m-%d").date(),
-                    instrument=types.Instrument.for_name(result[4]),
-                    intent=types.Intent.for_value(result[5]),
-                    proposal_id=result[6],
-                    observation_group_id=result[7],
+                    status=types.Status.for_value(result["status"]),
+                    meta_release=datetime.strptime(str(result["meta_release"]), "%Y-%m-%d").date(),
+                    data_release=datetime.strptime(str(result["data_release"]), "%Y-%m-%d").date(),
+                    instrument=types.Instrument.for_name(result["instrument_name"]),
+                    intent=types.Intent.for_value(result["intent"]),
+                    proposal_id=result["proposal_id"],
+                    observation_group_id=result["block_visit_id"],
                     telescope=telescope
                 )  for result in results] if results else None
 
@@ -1017,12 +1017,21 @@ WHERE proposal_id=(SELECT proposal_id FROM prop_id)
                 dict(title=title, proposal_code=proposal_code, institution=institution.value)
             )
 
-    def update_observation(self, group_identifier:str, data_release_date: date, meta_release_date: date, status:types.Status) -> None:
+    def update_observation(
+            self, group_identifier:str,
+            data_release_date: date,
+            meta_release_date: date,
+            status:types.Status,
+            telescope: types.Telescope
+    ) -> None:
         with self._connection.cursor() as cur:
             sql = """
 WITH
     obs_id (observation_group_id) AS (
-	    SELECT observation_group_id FROM observation_group WHERE group_identifier=%(group_identifier)s
+	    SELECT observation_group_id FROM observation_group
+            JOIN observation ON observation_group.observation_group_id=observation.observation_group_id
+            JOIN telescope ON observation.telescope_id = telescope.telescope_id
+        WHERE group_identifier=%(group_identifier)s AND telescope.name=%(telescope)s
 	),
     stat (status_id) AS (
 	    SELECT status_id
@@ -1042,7 +1051,8 @@ WHERE observation_group_id=(SELECT observation_group_id FROM obs_id)
                     data_release_date=data_release_date,
                     meta_release_date=meta_release_date,
                     group_identifier=group_identifier,
-                    status=status.value
+                    status=status.value,
+                    telescope=telescope.value
                 )
             )
 

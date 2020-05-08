@@ -112,7 +112,8 @@ def main(start, end) -> int:
                             group_identifier=salt_obs.group_identifier,
                             data_release_date=release_date,
                             meta_release_date=release_date,
-                            status=salt_obs.status
+                            status=salt_obs.status,
+                            telescope=types.Telescope.SALT
                         )
                         break
 
