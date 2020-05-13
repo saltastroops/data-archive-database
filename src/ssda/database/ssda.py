@@ -297,7 +297,7 @@ Where proposal_code = %(proposal_code)s
             proposal code abd institution.
 
         """
-
+        print("XX: ", institution.value)
         with self._connection.cursor() as cur:
             sql = """
 SELECT
@@ -305,7 +305,7 @@ SELECT
 	proposal_code,
 	title,
 	proposal_id,
-	proposal_type
+	proposal_type,
 	institution.name
 FROM observations.proposal
     JOIN observations.institution ON proposal.institution_id = institution.institution_id
@@ -1070,7 +1070,7 @@ WHERE proposal_id = (SELECT proposal_id FROM prop_id)
             """
             cur.execute(
                 sql,
-                dict(proposal_code=proposal_code, institution=institution)
+                dict(proposal_code=proposal_code, institution=institution.value)
             )
             for proposal_investigator in proposal_investigators:
                 self.insert_proposal_investigator(proposal_investigator=proposal_investigator)
