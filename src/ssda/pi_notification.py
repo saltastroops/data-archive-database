@@ -100,7 +100,7 @@ def all_release_dates_and_proposals():
     all_data = {}
     for proposal_code in ssda_query_results:
         if proposal_code not in sdb_query_results:
-            raise ValueError("... some appropriate error message...")
+            raise ValueError("Invalid Proposal code.")
         pi_email = sdb_query_results[proposal_code]['email']
         full_name = sdb_query_results[proposal_code]['fullname']
         proposal_release_date = ssda_query_results[proposal_code]
@@ -133,16 +133,19 @@ for key, pi in all_release_dates_and_proposals().items():  # all_pi_proposal.ite
 def sending_email(receiver, pi_name, table):
     sender = "salthelp@salt.ac.za"
 
-    message = f"""\    
+    message = f"""\
+        
 Subject: Release of data
 To: {receiver}
 From: {sender}
+
 Hi {pi_name}
+
 Please note that the below proposal will be public soon.
 
 {table}
 
-Your friendly SALT assistance """
+Your friendly SALT assistance. """
 
     mail_port = os.environ.get("MAIL_PORT")
     mail_server = os.environ.get("MAIL_SERVER")
