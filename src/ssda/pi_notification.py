@@ -57,6 +57,9 @@ def ssda_database_connection():
     return ssda_connection
 
 
+days = int(input("Please enter the number of days until proposal release\n"))
+
+
 # getting the release dates for the proposals in ssda
 def proposal_release_dates():
     with ssda_database_connection().cursor(
@@ -67,13 +70,13 @@ def proposal_release_dates():
                         JOIN observations.observation obs on proposal.proposal_id=obs.proposal_id
                         JOIN observations.telescope telescope on obs.telescope_id=telescope.telescope_id
                         WHERE name=%(telescope_name)s and data_release - CURRENT_DATE BETWEEN 1 and %(days)s"""
-        ssda_cursor.execute(psql_query, dict(telescope_name='SALT', days=189))
+        ssda_cursor.execute(psql_query, dict(telescope_name='SALT', days=days))
         results = ssda_cursor.fetchall()
         ssda_query_results = {pi_proposal["proposal_code"]: pi_proposal["data_release"] for pi_proposal in results}
         return ssda_query_results
 
 
-# We get all PIs and their proposals from sdb
+# We get the PI names, proposals and email addresses for all proposals with release date in ssda
 def all_pi_and_proposals(pi_proposals):
     sdb_query_results = {}
     with sdb_database_connection().cursor(
@@ -93,6 +96,8 @@ def all_pi_and_proposals(pi_proposals):
         return sdb_query_results
 
 
+# We make a dictionary where the PI email is key and the values are the PI name and the proposals to be released in
+# the given time period
 def all_release_dates_and_proposals():
     ssda_query_results = proposal_release_dates()
     sdb_query_results = all_pi_and_proposals(list(ssda_query_results.keys()))
@@ -114,7 +119,7 @@ def all_release_dates_and_proposals():
     return all_data
 
 
-for key, pi in all_release_dates_and_proposals().items():  # all_pi_proposal.items is the dict with email as keys
+for key, pi in all_release_dates_and_proposals().items():
     proposals = []
     for proposal in pi["proposal"]:
         proposals.append(
@@ -131,11 +136,11 @@ for key, pi in all_release_dates_and_proposals().items():  # all_pi_proposal.ite
 
 
 def sending_email(receiver, pi_name, table):
-    sender = "salthelp@salt.ac.za"
-
+    sender = "lonwabo@saao.ac.za"
+    subject = "Release of data"
     message = f"""\
         
-Subject: Release of data
+Subject: {subject}
 To: {receiver}
 From: {sender}
 
@@ -179,33 +184,32 @@ def read_log_file():
         return file_data
 
 
-def send_message(pi, proposals):
-    # before send check if proposals are not yet included in a log if there is one send email with just that one
-    # if not do not send email.
+def send_message(pi_details, pi_proposals):
     table = PrettyTable()
     table.field_names = ["Proposal", "Data to be released"]
     proposal_to_send = []
     proposals_in_log = read_log_file()
-    for proposal in proposals:
-        file_content = pi.email + " " + proposal.code+" "+datetime.datetime.strftime(proposal.release_date, "%Y-%m-%d")
+    for pi_proposal in pi_proposals:
+        file_content = pi_details.email + " " + pi_proposal.code+" "+datetime.datetime.strftime(
+            pi_proposal.release_date, "%Y-%m-%d")
         if file_content not in proposals_in_log:
-            proposal_to_send.append(proposal)
-        table.add_row([proposal.code, proposal.release_date])
+            proposal_to_send.append(pi_proposal)
+        table.add_row([pi_proposal.code, pi_proposal.release_date])
     if len(proposal_to_send) > 0:
-        sending_email(pi.email, pi.name, table)
+        sending_email(pi_details.email, pi_details.name, table)
         for prop in proposal_to_send:
-            log_to_file(pi.email, prop.code, datetime.datetime.strftime(prop.release_date, "%Y-%m-%d"))
-    return "Email has been sent to".format(pi.name)
+            log_to_file(pi_details.email, prop.code, datetime.datetime.strftime(prop.release_date, "%Y-%m-%d"))
+    return "Email has been sent to".format(pi_details.name)
 
 
 def run_code():
-    for pi in PIs:  # PIs is the list of all PIs like you have above
+    for pi_information in PIs:  # PIs is the list of all PIs like you have above
         public_soon = []
-        for proposal in pi.proposals:
-            public_soon.append(proposal)
+        for pi_proposal in pi_information.proposals:
+            public_soon.append(pi_proposal)
         if len(public_soon) > 0:
-            send_message(pi, public_soon)
-    return ""
+            send_message(pi_information, public_soon)
+    return None
 
 
 run_code()
