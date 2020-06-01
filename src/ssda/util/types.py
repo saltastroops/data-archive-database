@@ -1223,6 +1223,9 @@ class ProposalInvestigator:
     def investigator_id(self) -> str:
         return self._investigator_id
 
+    def __eq__(self, other):
+        return self._proposal_id == other.proposal_id and self._investigator_id == other.investigator_id
+
 
 class ProposalType(Enum):
     """
@@ -1545,3 +1548,51 @@ class SALTProposalDetails:
     pi: str
     proposal_code: str
     title: str
+
+
+class Prop:
+    def __init__(
+            self,
+            proposal_code: str,
+            institution: Institution,
+            meta_release: date,
+            data_release: date,
+            pi: str,
+            title: str,
+            investigators: List[str]
+    ):
+        self.proposal_code = proposal_code
+        self.institution = institution
+        self.meta_release = meta_release
+        self.data_release = data_release
+        self.pi = pi
+        self.title = title
+        self.investigators = investigators
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and \
+               self.proposal_code == other.proposal_code and \
+               self.institution == other.institution and \
+               self.meta_release == other.meta_release and \
+               self.data_release == other.data_release and \
+               self.pi == other.pi and \
+               self.lists_equal(self.investigators, other.investigators)
+
+    def lists_equal(self, list_1: List[str],  list_2: List[str]):
+        for investigator in list_1:
+            if investigator not in list_2:
+                return False
+        return True
+
+
+class Obs:
+    def __init__(self, status: Status, group_identifier: str, telescope: Telescope):
+        self.status = status
+        self.group_identifier = group_identifier
+        self.telescope = telescope
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and \
+               self.status.value == other.status.value and \
+               self.telescope.value == other.telescope.value and \
+               self.group_identifier == other.group_identifier
