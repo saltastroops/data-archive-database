@@ -4,7 +4,6 @@ import os
 import pymysql
 import psycopg2
 from psycopg2 import extras
-from prettytable import PrettyTable
 import smtplib
 import datetime
 import dsnparse
@@ -144,13 +143,12 @@ def pi_information_to_be_sent(days):
 def sending_email(receiver, pi_name, table):
     sender = "lonwabo@saao.ac.za"
     message = MIMEMultipart("alternative")
-    message["Subject"] = "Your data will become public soon"
+    message["Subject"] = "Your data will become public"
     message["From"] = sender
     message["To"] = receiver
 
 # write the plain text part
     text = """\
-Subject: Your observation data will become public soon
 To: {receiver}
 From: {sender}
 
@@ -224,10 +222,38 @@ def read_log_file():
 
 
 def table_to_be_sent(proposals):
-    table = PrettyTable()
-    table.field_names = ["Proposal", "Release Date"]
+    table = """
+    <html>
+    <head>
+    
+    <style>
+     table {
+     font-family: arial, sans-serif;
+     border-collapse: collapse;
+     }
+     th, td {
+     border: 1px solid #dddddd;
+     padding: 8px;
+     }
+     
+    </style>
+    
+    </head>
+    <body>
+     <table>
+       <tr>
+         <th>Proposal</th>
+         <th>Release Date</th>
+       </tr>
+       """
+
     for pi_proposal in proposals:
-        table.add_row([pi_proposal.code, pi_proposal.release_date])
+        table += f"""
+                  <tr>
+                    <td><a href='https://www.salt.ac.za/wm/proposal/{pi_proposal.code}'>{pi_proposal.code}</a></td>
+                    <td>{pi_proposal.release_date}</td>
+                   </tr>"""
+    table += '</table></body></html>'
     return table
 
 
