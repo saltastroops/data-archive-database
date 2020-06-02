@@ -278,7 +278,7 @@ class StandardFitsFile(FitsFile):
             # filename together with an HRS-specific header keyword instead. (As that
             # keyword is for a temperature it should never be 0.)
             filename = os.path.basename(self.file_path())
-            if filename.startswith('H2') and self.header_value('TEM-RMIR'):
+            if filename.startswith("H2") and self.header_value("TEM-RMIR"):
                 return types.Instrument.HRS
             raise ValueError(
                 f"Unknown instrument in file {self.path}: {instrument_value}"

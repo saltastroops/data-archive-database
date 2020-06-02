@@ -13,6 +13,27 @@ class LogData:
     path: str
     proposal_code: str
 
+    def is_daytime_observation(self):
+        """
+        Is this an observation taken between 6:00 and 15:00 UTC?
+
+        If the observation time cannot be found, it is assumed that the observation is
+        not a daytime one.
+
+        Returns
+        -------
+        bool
+            Whether this is a daytime observation.
+
+        """
+
+        try:
+            parts = self.observation_time.strip().split(":")
+            if len(parts) > 1:
+                return 6 <= int(parts[0]) < 15
+        except:
+            return False
+
 
 def get_salt_data_to_log(path: str) -> LogData:
     fits_file = StandardFitsFile(path)

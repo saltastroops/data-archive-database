@@ -6,6 +6,8 @@ from ssda.util.salt_observation import SALTObservation
 from ssda.util.fits import FitsFile
 from typing import Optional, List
 
+from ssda.util.warnings import record_warning
+
 
 class RssObservationProperties(ObservationProperties):
     def __init__(self, fits_file: FitsFile, salt_database_service: SaltDatabaseService):
@@ -66,16 +68,29 @@ class RssObservationProperties(ObservationProperties):
         queries = [types.SQLQuery(sql=sql, parameters=parameters)]
 
         detector_mode = None
-        for dm in types.DetectorMode:
-            if self.header_value("DETMODE").upper() == dm.value.upper():
-                detector_mode = dm
+        if self.header_value("DETMODE"):
+            for dm in types.DetectorMode:
+                if (
+                    self.header_value("DETMODE").replace(" ", "").upper()
+                    == dm.value.replace(" ", "").upper()
+                ):
+                    detector_mode = dm
+        if not detector_mode:
+            record_warning(Warning("The detector mode could not be determined."))
+            detector_mode = types.DetectorMode.UNKNOWN
 
         filter = None
         for fi in types.Filter:
             if self.header_value("FILTER") == fi.value:
                 filter = fi
 
-        instrument_mode = rss_instrument_mode(self.header_value, self.database_service)
+        try:
+            instrument_mode = rss_instrument_mode(
+                self.header_value, self.database_service
+            )
+        except BaseException as e:
+            record_warning(Warning("The instrument mode could not be determined."))
+            instrument_mode = types.InstrumentMode.UNKNOWN
 
         return types.InstrumentSetup(
             additional_queries=queries,
@@ -101,12 +116,18 @@ class RssObservationProperties(ObservationProperties):
         return self.salt_observation.observation_time(plane_id)
 
     def plane(self, observation_id: int) -> types.Plane:
-        observation_mode = self.header_value("OBSMODE").upper()
-        data_product_type = (
-            types.DataProductType.IMAGE
-            if observation_mode == "IMAGING" or observation_mode == "FABRY-PEROT"
-            else types.DataProductType.SPECTRUM
-        )  # TODO is fp only imaging
+        observation_mode = (
+            self.header_value("OBSMODE").upper() if self.header_value("OBSMODE") else ""
+        )
+        if observation_mode:
+            data_product_type = (
+                types.DataProductType.IMAGE
+                if observation_mode == "IMAGING" or observation_mode == "FABRY-PEROT"
+                else types.DataProductType.SPECTRUM
+            )  # TODO is fp only imaging
+        else:
+            record_warning(Warning("The data product type could not be determined."))
+            data_product_type = types.DataProductType.UNKNOWN
         return types.Plane(observation_id, data_product_type=data_product_type)
 
     def polarization(self, plane_id: int) -> Optional[types.Polarization]:

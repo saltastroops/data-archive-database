@@ -8,6 +8,8 @@ from ssda.util.salt_observation import SALTObservation
 from ssda.util.fits import FitsFile
 from typing import Optional, List
 
+from ssda.util.warnings import record_warning
+
 
 class SaltImagingCameraObservationProperties(ObservationProperties):
     def __init__(self, fits_file: FitsFile, database_service: SaltDatabaseService):
@@ -43,12 +45,18 @@ class SaltImagingCameraObservationProperties(ObservationProperties):
 
         detector_mode = None
         for dm in types.DetectorMode:
-            if self.header_value("DETMODE").upper() == dm.value.upper():
+            if (
+                self.header_value("DETMODE").replace(" ", "").upper()
+                == dm.value.replace(" ", "").upper()
+            ):
                 detector_mode = dm
         if self.header_value("DETMODE").upper() == "SLOT":
             detector_mode = types.DetectorMode.SLOT_MODE
         if self.header_value("DETMODE").upper() == "FT":
             detector_mode = types.DetectorMode.FRAME_TRANSFER
+        if not detector_mode:
+            record_warning(Warning("The detector mode could not be determined."))
+            detector_mode = types.DetectorMode.UNKNOWN
         filter = None
         for fi in types.Filter:
             if self.header_value("FILTER") == fi.value:
