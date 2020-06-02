@@ -416,7 +416,7 @@ class SaltDatabaseService:
             if _key in available_ids and available_ids[_key]:
                 return available_ids[_key].pop(0)
             else:
-                id_string = f"{night.isoformat()}{fd.proposal_code}{fd.target_name}"
+                id_string = f"{night.isoformat()}{_key.proposal_code}{_key.target_name}"
                 fake_id = hashlib.md5(id_string.encode("UTF-8")).hexdigest()
                 return fake_id
 
@@ -801,25 +801,52 @@ WHERE Proposal_Code = %s
         except ValueError:
             return types.Status.REJECTED
 
-        sql = """
-SELECT BlockVisitStatus FROM BlockVisit JOIN BlockVisitStatus USING(BlockVisitStatus_Id) WHERE BlockVisit_Id=%s
+        status_sql = """
+SELECT BlockVisitStatus
+FROM BlockVisit
+     JOIN BlockVisitStatus USING(BlockVisitStatus_Id)
+WHERE BlockVisit_Id=%s
         """
-        results = pd.read_sql(sql, self._connection, params=(block_visit_id,))
+        status_results = pd.read_sql(status_sql, self._connection, params=(block_visit_id,))
 
-        if not len(results):
-            return types.Status.REJECTED
+        if not len(status_results):
+            raise Exception(f'No block visit status found for block visit id '
+                            f'{block_visit_id}.')
 
-        results = results.iloc[0]
+        status_results = status_results.iloc[0]
 
-        if results["BlockVisitStatus"].lower() == "accepted":
+        if status_results["BlockVisitStatus"].lower() == "accepted":
             return types.Status.ACCEPTED
-        if results["BlockVisitStatus"].lower() == "rejected":
+        if status_results["BlockVisitStatus"].lower() == "rejected":
             return types.Status.REJECTED
-        if results["BlockVisitStatus"].lower() == "deleted":
-            return types.Status.DELETED
-        if results["BlockVisitStatus"].lower() == "in queue":
-            return types.Status.INQUEUE
-        raise ValueError("Observation has an unknown status.")
+
+        # What block visits have there been for the block in the same night?
+        visits_sql = """
+SELECT DISTINCT BlockVisit_Id, BlockVisitStatus
+FROM BlockVisit AS bv
+JOIN BlockVisitStatus AS bvs ON bv.BlockVisitStatus_Id = bvs.BlockVisitStatus_Id
+WHERE bv.Block_Id=(SELECT bv2.Block_Id FROM BlockVisit AS bv2 WHERE bv2.BlockVisit_Id=%(id)s)
+      AND bv.NightInfo_Id=(SELECT bv3.NightInfo_Id FROM BlockVisit AS bv3 WHERE bv3.BlockVisit_Id=%(id)s);
+        """
+        visits_results = pd.read_sql(visits_sql, self._connection, params={'id': block_visit_id})
+        all_visits = len(visits_results)
+        accepted_visits = len(visits_results[visits_results['BlockVisitStatus'] == 'Accepted'])
+        rejected_visits = len(visits_results[visits_results['BlockVisitStatus'] == 'Rejected'])
+        other_visits = all_visits - accepted_visits - rejected_visits
+
+        # We don't know which visit corresponds to a deleted/queued visit, However, this
+        # doesn't matter if there are enough accepted/rejected visits and if there
+        # aren't both accepted and rejected visits, as in this case it is reasonable to
+        # assume that there is a corresponding visit and there is only one possible
+        # status for it.
+        if rejected_visits == 0 and accepted_visits >= other_visits:
+            return types.Status.ACCEPTED
+        if accepted_visits == 0 and rejected_visits >= other_visits:
+            return types.Status.REJECTED
+
+        # Despite best effort no block visit status could be determined.
+        raise Exception('The block visit status could not be determined for the block '
+                        'visit id {id}.')
 
     def find_release_date(
         self, proposal_code: str
