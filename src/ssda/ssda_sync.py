@@ -51,7 +51,7 @@ def main(start, end) -> int:
     )
     ssda_connection = database_services.ssda.connection()
 
-    salt_proposals = sdb_database_service.find_props(start_date, end_date)
+    salt_proposals = sdb_database_service.find_proposals_details(start_date, end_date)
 
     # Compare proposal and update
     for sdb_proposal in salt_proposals:
@@ -59,32 +59,31 @@ def main(start, end) -> int:
         institution = types.Institution.SALT
         try:
             # Proposal to compare
-            ssda_proposal = ssda_database_service.find_prop(
+            ssda_proposal = ssda_database_service.find_proposal_details(
                 proposal_code=sdb_proposal.proposal_code,
-                institution=institution,
-                telescope=types.Telescope.SALT
+                institution=institution
             )
             if not ssda_proposal:
                 continue
 
             if sdb_proposal != ssda_proposal:
-                ssda_database_service.update_prop(proposal=sdb_proposal)
-                salt_observations = sdb_database_service.find_proposal_observations(
-                    proposal_code=sdb_proposal.proposal_code
-                )
+                ssda_database_service.update_salt_proposal(proposal=sdb_proposal)
 
-                # compare observation status.
-                for salt_obs in salt_observations:
-                    ssda_obs = ssda_database_service.find_obs(
+            # compare observation status.
+            salt_observations = sdb_database_service.find_proposal_observations(
+                proposal_code=sdb_proposal.proposal_code
+            )
+            for salt_obs in salt_observations:
+                ssda_obs = ssda_database_service.find_obs(
+                    group_identifier=salt_obs.group_identifier,
+                    telescope=types.Telescope.SALT
+                )
+                if salt_obs != ssda_obs and ssda_obs is not None:
+                    ssda_database_service.update_observation_group_status(
                         group_identifier=salt_obs.group_identifier,
-                        telescope=types.Telescope.SALT
+                        telescope=salt_obs.telescope,
+                        status=salt_obs.status
                     )
-                    if salt_obs != ssda_obs and ssda_obs is not None:
-                        ssda_database_service.update_observation_group_status(
-                            group_identifier=salt_obs.group_identifier,
-                            telescope=salt_obs.telescope,
-                            status=salt_obs.status
-                        )
             ssda_database_service.commit_transaction()
         except AttributeError as e:
             ssda_database_service.rollback_transaction()

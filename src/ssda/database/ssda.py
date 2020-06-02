@@ -168,7 +168,7 @@ class SSDADatabaseService:
             else:
                 return None
 
-    def find_obs(self, group_identifier: str, telescope: types.Telescope) -> Optional[types.Obs]:
+    def find_obs(self, group_identifier: str, telescope: types.Telescope) -> Optional[types.SALTObservation]:
         """
         Find the observations for a proposal.
 
@@ -203,7 +203,7 @@ Where group_identifier = %(group_identifier)s
                 sql, dict(group_identifier=group_identifier, telescope=telescope.value)
             )
             result = cur.fetchone()
-            return types.Obs(
+            return types.SALTObservation(
                     status=types.Status.for_value(result[0]),
                     group_identifier=result[1],
                     telescope=telescope) if result else None
@@ -259,11 +259,10 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
             )
             return cur.fetchone()
 
-    def find_prop(
+    def find_proposal_details(
             self, proposal_code: str,
-            institution: types.Institution,
-            telescope: types.Telescope
-    ) -> Optional[types.Prop]:
+            institution: types.Institution
+    ) -> Optional[types.SALTProposalDetails]:
         """
         Find the database id of a proposal.
 
@@ -273,8 +272,6 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
             Proposal code.
         institution: Institution
             Institution to which the proposal was submitted.
-        telescope: Telescope
-            The Telescope used for the observation.
 
         Returns
         -------
@@ -304,7 +301,7 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
                     proposal_code=proposal_code,
                     institution=institution
                 )
-                return types.Prop(
+                return types.SALTProposalDetails(
                     pi=result[0],
                     meta_release=release_date[1],
                     data_release=release_date[0],
@@ -384,37 +381,6 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
                 )
             else:
                 return None
-
-    def find_observed_proposals(self, start_date: date, end_date: date) -> list:
-        with self._connection.cursor() as cur:
-            sql = """
-SELECT DISTINCT
-    p.proposal_id,
-    p.proposal_code,
-    p.title,
-    p.pi,
-    o.data_release,
-    o.meta_release
-FROM observation  AS o
-    JOIN plane ON plane.observation_id = o.observation_id
-    JOIN observation_time AS ot ON ot.plane_id = plane.plane_id
-    JOIN proposal AS p ON o.proposal_id = p.proposal_id
-WHERE ot.night >= %(start_date)s AND ot.night <= %(end_date)s
-            """
-            cur.execute(
-                sql, dict(start_date=start_date, end_date=end_date)
-            )
-            results = cur.fetchall()
-            return [
-                types.SALTProposalDetails(
-                    proposal_id=result[0],
-                    pi=result[3],
-                    proposal_code=result[1],
-                    title=result[2],
-                    date_release=result[4],
-                    meta_release=result[5]
-                )
-                for result in results] if results else None
 
     def file_exists(self, path: str) -> bool:
         """
@@ -997,7 +963,6 @@ WHERE ot.night >= %(start_date)s AND ot.night <= %(end_date)s
                 ),
             )
 
-
     def insert_target(self, target: types.Target) -> int:
         """
         Insert a target.
@@ -1038,42 +1003,6 @@ WHERE ot.night >= %(start_date)s AND ot.night <= %(end_date)s
             )
 
             return cast(int, cur.fetchone()[0])
-
-    def update_pi(self, proposal_code: str, institution: types.Institution, pi: str):
-        with self._connection.cursor() as cur:
-            sql = """
-WITH prop_id (proposal_id) AS (
-    SELECT proposal_id
-    FROM proposal
-        JOIN institution on proposal.institution_id = institution.institution_id
-    WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
-)
-UPDATE proposal
-    SET pi=%(pi)s
-WHERE proposal_id=(SELECT proposal_id FROM prop_id)
-            """
-            cur.execute(
-                sql,
-                dict(proposal_code=proposal_code, institution=institution, pi=pi)
-            )
-
-    def update_title(self, title: str, proposal_code: str, institution: types.Institution):
-        with self._connection.cursor() as cur:
-            sql = """
-WITH prop_id (proposal_id) AS (
-    SELECT proposal_id
-    FROM proposal
-	    JOIN institution on proposal.institution_id = institution.institution_id
-    WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
-)
-UPDATE proposal
-    SET title=%(title)s
-WHERE proposal_id=(SELECT proposal_id FROM prop_id)
-            """
-            cur.execute(
-                sql,
-                dict(title=title, proposal_code=proposal_code, institution=institution.value)
-            )
 
     def update_observation_group_status(
             self, group_identifier: str,
@@ -1149,7 +1078,7 @@ WHERE proposal_id=%(proposal_id)s
                 )
             )
 
-    def update_prop(self, proposal: types.Prop):
+    def update_salt_proposal(self, proposal: types.SALTProposalDetails):
         with self._connection.cursor() as cur:
             sql = """
         WITH prop_id (proposal_id) AS (

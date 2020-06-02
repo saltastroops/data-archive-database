@@ -704,7 +704,7 @@ LIMIT 1
             return f"{results['Title']}"
         raise ValueError("The observation has no title")
 
-    def find_proposal_observations(self, proposal_code) -> List[types.Obs]:
+    def find_proposal_observations(self, proposal_code) -> List[types.SALTObservation]:
         """
         The observations taken for a proposal.
 
@@ -733,7 +733,7 @@ WHERE Proposal_Code = %s
             for index, row in results.iterrows():
                 if row["BlockVisitStatus"] in ['Accepted', 'Rejected']:
                     ps.append(
-                        types.Obs(
+                        types.SALTObservation(
                             group_identifier=str(row["BlockVisit_Id"]),
                             status=types.Status.for_value(row["BlockVisitStatus"]),
                             telescope=types.Telescope.SALT
@@ -741,7 +741,7 @@ WHERE Proposal_Code = %s
                     )
         return ps
 
-    def find_submitted_proposals(self, start_date: date, end_date: date) -> List[types.SALTProposalDetails]:
+    def find_proposals_details(self, start_date: date, end_date: date) -> List[types.SALTProposalDetails]:
         """
         The part of a proposal that contains what would have change on SDB.
 
@@ -751,50 +751,6 @@ WHERE Proposal_Code = %s
             The start date
         end_date:date
             The end date
-        proposal_code: str
-            The proposal_code.
-
-        Returns
-        -------
-            The list of proposals
-
-        """
-
-        sql = """
-SELECT Proposal_Code, Title, CONCAT(FirstName, " ", Surname) as FullName
-FROM Proposal
-	JOIN ProposalCode USING(ProposalCode_Id)
-    JOIN ProposalText USING(ProposalCode_Id)
-    JOIN ProposalContact USING(ProposalCode_Id)
-    JOIN Investigator ON Leader_Id = Investigator_Id
-    JOIN ProposalGeneralInfo USING(ProposalCode_Id)
-WHERE Current = 1 AND
-	SubmissionDate >= %s AND SubmissionDate <= %s
-        """
-        results = pd.read_sql(sql, self._connection, params=(start_date, end_date))
-
-
-        return [
-            types.SALTProposalDetails(
-                pi=row["FullName"],
-                proposal_code=row["Proposal_Code"],
-                title=row["Title"]
-            )
-            for index, row in results.iterrows()
-        ]
-
-    def find_props(self, start_date: date, end_date: date) -> List[types.Prop]:
-        """
-        The part of a proposal that contains what would have change on SDB.
-
-        Parameters
-        ----------
-        start_date: date
-            The start date
-        end_date:date
-            The end date
-        proposal_code: str
-            The proposal_code.
 
         Returns
         -------
@@ -820,7 +776,7 @@ WHERE Current = 1 AND
             release_date = self.find_release_date(proposal_code=proposal_code)
             investigators = self.find_proposal_investigator_user_ids(proposal_code=proposal_code)
             proposals.append(
-                types.Prop(
+                types.SALTProposalDetails(
                     pi=row["FullName"],
                     meta_release=release_date[1],
                     data_release=release_date[0],
@@ -912,8 +868,6 @@ WHERE Proposal_Code=%s;
         # However, it is easier (and more correct) to use the first day of the
         # following month.
         # We therefore add a day in addition to the proprietary period.
-        if not proprietary_period:
-            proprietary_period = 365
         release_date = (
             end_semester
             + relativedelta.relativedelta(days=1)

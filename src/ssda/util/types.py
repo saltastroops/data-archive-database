@@ -1505,52 +1505,7 @@ class Telescope(Enum):
         raise ValueError(f"Unknown telescope name: {name}")
 
 
-@dataclass
-class SALTObservation:
-    """
-    An observation with updateble fields.
-
-    Parameters
-    ----------
-    block_visit_id : int
-        Database id of the proposal to which this observation belongs.
-    status : Status
-        Status (accepted or rejected) of the observation.
-
-    """
-
-    block_visit_id: Optional[str]
-    status: Status
-
-
-@dataclass
 class SALTProposalDetails:
-    """
-    A proposal for an updatable fields.
-
-    Parameters
-    ----------
-    pi : str
-        Principal Investigator.
-    proposal_code : str
-        Proposal identifier, which is unique within an institution.
-    proposal_id : int
-        Proposal identifier, which is unique within an institution.
-    title : str
-        Proposal title.
-    data_release: str
-        Data release date
-    meta_release: str
-        Data release date
-
-    """
-
-    pi: str
-    proposal_code: str
-    title: str
-
-
-class Prop:
     def __init__(
             self,
             proposal_code: str,
@@ -1585,7 +1540,7 @@ class Prop:
         return True
 
 
-class Obs:
+class SALTObservation:
     def __init__(self, status: Status, group_identifier: str, telescope: Telescope):
         self.status = status
         self.group_identifier = group_identifier
