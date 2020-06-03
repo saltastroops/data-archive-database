@@ -9,29 +9,28 @@ from ssda.util import types
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s %(asctime)s: %(message)s',)
 
+
 def validate_options(
-        filename: Optional[str]=None,
-        start: Optional[date]=None,
-        end: Optional[date]=None
+        filename: Optional[str] = None,
+        start: Optional[date] = None,
+        end: Optional[date] = None
 ):
     if not filename and not start and not end:
-        raise ValueError("You must provide either a filename or date range")
-    if  filename and (start or  end):
-        raise ValueError("You can not provide filename and a date or date range")
+        raise ValueError("You must provide either a filename or a date range.")
+    if filename and (start or end):
+        raise ValueError("You cannot provide provide both a filename and a date range.")
     if (start and not end) or (not start and end):
-        raise ValueError("You must provide both start and end date with options --start for start date and --end for "
-                         "end date. For a single day you must enter same date for both start and end")
+        raise ValueError("You cannot provide a start_date without an end_date date, or an end_date date without a "
+                         "start_date date.")
 
 
 @click.command()
 @click.option("--end", type=str, help="Start date of the last night to consider.")
 @click.option(
     "--file",
-    help="FITS file to map to the database.",
+    help="FITS file whose data to remove from the database.",
 )
 @click.option("--start", type=str, help="Start date of the last night to consider.")
-
-
 def main(
         file: Optional[str],
         start: Optional[date],
@@ -72,4 +71,3 @@ def main(
         logging.error(e)
 
     ssda_database_service.close()
-
