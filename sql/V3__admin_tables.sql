@@ -255,16 +255,18 @@ COMMENT ON TABLE data_request_calibration_type IS 'Join table between data reque
 DROP TABLE IF EXISTS institution_user;
 
 CREATE TABLE institution_user (
-    institution_id      int NOT NULL REFERENCES observations.institution (institution_id),
-    institution_member  boolean NOT NULL,
-    institution_user_id varchar(50) NOT NULL,
-    ssda_user_id        int NOT NULL REFERENCES ssda_user (ssda_user_id)
+    institution_member_user_id serial PRIMARY KEY,
+    institution_id             int NOT NULL REFERENCES observations.institution (institution_id),
+    institution_member         boolean NOT NULL,
+    institution_user_id        varchar(50) NOT NULL,
+    ssda_user_id               int REFERENCES ssda_user (ssda_user_id)
 );
 
 CREATE INDEX institution_user_institution_idx ON institution_user (institution_id);
 CREATE INDEX institution_user_institution_user_idx ON institution_user (institution_user_id);
 CREATE INDEX institution_user_ssda_user ON institution_user (ssda_user_id);
 
+COMMENT ON COLUMN institution_user.institution_member_user_id IS 'Id used by the data archive to identify the  institution user. This must be consistent with the institution_member_user_id used in the proposal_investigator table.';
 COMMENT ON TABLE institution_user IS 'Table for linking a data archive user to a user account at an institution such as SALT.';
 COMMENT ON COLUMN institution_user.institution_user_id IS 'Id used by the institution to identify the user. This must be consistent with the id used in the proposal_investigator table.';
 
@@ -288,13 +290,17 @@ DROP TABLE IF EXISTS proposal_investigator;
 
 CREATE TABLE proposal_investigator (
     institution_user_id varchar(50) NOT NULL,
-    proposal_id int NOT NULL REFERENCES observations.proposal (proposal_id) ON DELETE CASCADE
+    proposal_id int NOT NULL REFERENCES observations.proposal (proposal_id) ON DELETE CASCADE,
+    institution_member_user_id int NOT NULL REFERENCES institution_user (institution_member_user_id)
 );
 
 CREATE INDEX proposal_investigator_user_idx ON proposal_investigator (institution_user_id);
 CREATE INDEX proposal_investigator_proposal_idx ON proposal_investigator (proposal_id);
+CREATE INDEX proposal_investigator_member_user_id_idx ON proposal_investigator (institution_member_user_id);
 
 COMMENT ON TABLE proposal_investigator IS 'Investigator on a proposal.';
 COMMENT ON COLUMN proposal_investigator.institution_user_id IS 'Id used to identify the investigator by the institution to which the proposal was submitted.';
+COMMENT ON COLUMN institution_user.institution_member_user_id IS 'Id used by the data archive to identify the institution user to which the proposal belongs to.';
+
 
 

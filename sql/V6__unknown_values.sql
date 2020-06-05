@@ -1,3 +1,5 @@
+SET search_path TO observations, extensions;
+
 -- "Unknown" data product type
 
 INSERT INTO data_product_type (product_type)

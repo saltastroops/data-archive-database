@@ -7,7 +7,7 @@ GRANT SELECT, USAGE ON ALL SEQUENCES IN SCHEMA observations TO archive_user;
 
 GRANT SELECT ON ALL TABLES IN SCHEMA observations TO archive_user;
 
-REVOKE SELECT ON observations._position FROM archive_user;
+REVOKE SELECT ON observations.position FROM archive_user;
 
 -- Editing observation data
 
