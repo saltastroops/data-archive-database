@@ -594,19 +594,6 @@ COMMENT ON COLUMN position.dec IS 'Declination, in degrees between -90 and 90.';
 COMMENT ON COLUMN position.ra IS 'Right ascension, in degrees between 0 and 360.';
 COMMENT ON COLUMN position.institution_member_user_ids IS 'The institution members who owns the data';
 
--- policy for hiding target coordinates of proprietary observations to not belonging members
-
-ALTER TABLE observations."position" ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS position_policy ON observations.position;
-
-CREATE POLICY position_policy ON observations.position
-USING (
-    current_setting('my.institution_user_id')::int = ANY(observations.position.institution_member_user_ids)
-    OR position.institution_member_user_ids IS NULL
-);
-
-
 -- Insert filters
 
 INSERT INTO filter (name)
