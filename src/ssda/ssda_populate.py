@@ -1,7 +1,7 @@
 import logging
 import os
-from datetime import date, datetime, timedelta
-from typing import Callable, List, Optional, Set, Tuple
+from datetime import date, datetime
+from typing import List, Optional, Tuple
 
 import click
 import dsnparse
@@ -14,6 +14,7 @@ from ssda.task import execute_task
 from ssda.util import types
 from ssda.util.errors import get_salt_data_to_log
 from ssda.util.fits import fits_file_paths, set_fits_base_dir, get_night_date
+from ssda.util.parse_date import parse_date
 from ssda.util.types import Instrument, DateRange, TaskName, TaskExecutionMode
 
 # Log with Sentry
@@ -30,40 +31,10 @@ if os.environ.get("SENTRY_DSN"):
     sentry_sdk.init(os.environ.get("SENTRY_DSN"))  # type: ignore
 
 
-def parse_date(value: str, now: Callable[[], datetime]) -> date:
-    """
-    Parse a date string.
-
-    The value must be a date of the form yyyy-mm-dd. Alternatively, you can use the
-    keywords today and yesterday.
-
-    Parameters
-    ----------
-    value : str
-         Date string
-    now : func
-         Function returning the current datetime.
-
-    """
-
-    if value == "today":
-        return now().date()
-    if value == "yesterday":
-        return (now() - timedelta(days=1)).date()
-    try:
-        return datetime.strptime(value, "%Y-%m-%d").date()
-    except ValueError:
-        raise click.UsageError(
-            f"{value} is neither a valid date of the form yyyy-mm-dd, nor the string "
-            f"yesterday, nor the string today."
-        )
-
-
 def validate_options(
     start: Optional[date],
     end: Optional[date],
     file: Optional[str],
-    instruments: Set[Instrument],
     fits_base_dir: Optional[str],
     task_name: Optional[TaskName],
 ) -> None:
@@ -83,8 +54,7 @@ def validate_options(
     end : datetime
         End date.
     file : str
-        FITS file (path).
-    instruments : set of Instrument
+        FITS file (path).rument
         Set of instruments.
     fits_base_dir: str
         The base directory to data files
@@ -215,7 +185,6 @@ def main(
         start=start_date,
         end=end_date,
         file=file,
-        instruments=instruments_set,
         fits_base_dir=fits_base_dir,
         task_name=task_name,
     )
