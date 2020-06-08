@@ -1,5 +1,5 @@
-from datetime import timedelta
-from typing import cast, Any, Dict, Optional
+from datetime import timedelta, date
+from typing import cast, Any, Dict, Optional, List
 import os
 
 import astropy.units as u
@@ -44,7 +44,7 @@ class SSDADatabaseService:
     def connection(self) -> connect:
         return self._connection
 
-    def delete_observation(self, observation_id: int) -> None:
+    def delete_observation(self, observation_id: Optional[int]) -> None:
         """
         Delete an observation.
 
@@ -61,6 +61,40 @@ class SSDADatabaseService:
             """
 
             cur.execute(sql, dict(observation_id=observation_id))
+
+    def find_observation_group(
+        self, observation_group_id: str,
+    ) -> Optional[types.ObservationGroup]:
+        """
+        Find an observation group.
+
+        Parameters
+        ----------
+        observation_group_id : int
+            Identifier for the observation group.
+
+        Returns
+        -------
+        Optional[types.ObservationGroup]
+            The observation group, or None if there is no observation group.
+
+        """
+
+        with self._connection.cursor() as cur:
+            sql = """
+SELECT block_visit_id, name
+FROM observation_group
+WHERE observation_group_id=%(observation_group_id)s
+            """
+            cur.execute(sql, dict(observation_group_id=observation_group_id))
+
+            observation_group = cur.fetchone()
+            if observation_group:
+                return types.ObservationGroup(
+                    group_identifier=observation_group[0], name=observation_group[1]
+                )
+            else:
+                return None
 
     def find_observation_group_id(
         self, group_identifier: str, telescope: types.Telescope
@@ -89,7 +123,7 @@ class SSDADatabaseService:
             FROM observation_group
             JOIN observation ON observation_group.observation_group_id=observation.observation_group_id
             JOIN telescope ON observation.telescope_id = telescope.telescope_id
-            WHERE observation_group.group_identifier=%(group_identifier)s AND telescope.name=%(telescope)s
+            WHERE observation_group.block_visit_id=%(block_visit_id)s AND telescope.name=%(telescope)s
             """
             cur.execute(
                 sql, dict(group_identifier=group_identifier, telescope=telescope.value)
@@ -134,6 +168,54 @@ class SSDADatabaseService:
             else:
                 return None
 
+    def find_obs(
+        self, group_identifier: str, telescope: types.Telescope
+    ) -> Optional[types.SALTObservation]:
+        """
+        Find the observations for a proposal.
+
+        Parameters
+        ----------
+        group_identifier: str
+            The group identifier.
+        telescope: Telescope
+            The telescope.
+
+        Returns
+        -------
+        List[types.Observation]
+            A list of observations.
+
+        """
+        with self._connection.cursor() as cur:
+            sql = """
+WITH tel(telescope_id) AS(
+    SELECT telescope_id FROM telescope WHERE name = %(telescope)s
+    )
+SELECT DISTINCT
+    status,
+    group_identifier
+FROM observations.observation
+    JOIN observations.proposal ON proposal.proposal_id = observation.proposal_id
+    JOIN observations.status ON status.status_id = observation.status_id
+    JOIN observations.observation_group ON observation_group.observation_group_id = observation.observation_group_id
+Where group_identifier = %(group_identifier)s
+    AND telescope_id = (SELECT telescope_id FROM tel)
+            """
+            cur.execute(
+                sql, dict(group_identifier=group_identifier, telescope=telescope.value)
+            )
+            result = cur.fetchone()
+            return (
+                types.SALTObservation(
+                    status=types.Status.for_value(result[0]),
+                    group_identifier=result[1],
+                    telescope=telescope,
+                )
+                if result
+                else None
+            )
+
     def find_proposal_id(
         self, proposal_code: str, institution: types.Institution
     ) -> Optional[int]:
@@ -168,6 +250,138 @@ class SSDADatabaseService:
             result = cur.fetchone()
             if result:
                 return cast(int, result[0])
+            else:
+                return None
+
+    def find_proposal_release_date(
+        self, proposal_code: str, institution: types.Institution
+    ) -> (date, date):
+        with self._connection.cursor() as cur:
+            sql = """
+SELECT DISTINCT data_release, meta_release
+FROM observation
+    JOIN proposal ON observation.proposal_id = proposal.proposal_id
+    JOIN observations.institution ON proposal.institution_id = institution.institution_id
+WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
+            """
+            cur.execute(
+                sql, dict(proposal_code=proposal_code, institution=institution.value)
+            )
+            return cur.fetchone()
+
+    def find_proposal_details(
+        self, proposal_code: str, institution: types.Institution
+    ) -> Optional[types.SALTProposalDetails]:
+        """
+        Find the database id of a proposal.
+
+        Parameters
+        ----------
+        proposal_code : str
+            Proposal code.
+        institution: Institution
+            Institution to which the proposal was submitted.
+
+        Returns
+        -------
+        Optional[int]
+            The database id of the proposal, or None if there is no proposal for the
+            proposal code abd institution.
+
+        """
+
+        with self._connection.cursor() as cur:
+            sql = """
+SELECT pi, title
+FROM observations.proposal
+    JOIN observations.institution ON proposal.institution_id = institution.institution_id
+WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
+               """
+            cur.execute(
+                sql, dict(proposal_code=proposal_code, institution=institution.value)
+            )
+            result = cur.fetchone()
+            if result:
+                release_date = self.find_proposal_release_date(
+                    proposal_code=proposal_code, institution=institution
+                )
+                investigators = self.find_proposal_investigator_user_ids(
+                    proposal_code=proposal_code, institution=institution
+                )
+                return types.SALTProposalDetails(
+                    pi=result[0],
+                    meta_release=release_date[1],
+                    data_release=release_date[0],
+                    proposal_code=proposal_code,
+                    title=result[1],
+                    institution=institution,
+                    investigators=investigators,
+                )
+            else:
+                return None
+
+    def find_proposal_investigator_user_ids(
+        self, proposal_code: str, institution: types.Institution
+    ) -> List[str]:
+        with self._connection.cursor() as cur:
+            sql = """
+SELECT institution_user_id
+FROM admin.proposal_investigator 
+    JOIN observations.proposal ON proposal_investigator .proposal_id = proposal.proposal_id
+    JOIN observations.institution ON proposal.institution_id = institution.institution_id
+WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
+            """
+            cur.execute(
+                sql, dict(proposal_code=proposal_code, institution=institution.value)
+            )
+            results = cur.fetchall()
+            return [str(result[0]) for result in results] if results else None
+
+    def find_proposal(
+        self, proposal_code: str, institution: types.Institution
+    ) -> Optional[types.Proposal]:
+        """
+        Find a proposal proposal to compare for an update.
+
+        Parameters
+        ----------
+        proposal_code : str
+            Proposal code.
+        institution
+            Institution to which the proposal was submitted.
+
+        Returns
+        -------
+        Optional[int]
+            The database id of the proposal, or None if there is no proposal for the
+            proposal code abd institution.
+        """
+        with self._connection.cursor() as cur:
+            sql = """
+SELECT
+    pi,
+    proposal_code,
+    title,
+    proposal_id,
+    proposal_type,
+    institution.name
+FROM observations.proposal
+    JOIN observations.institution ON proposal.institution_id = institution.institution_id
+    JOIN proposal_type ON proposal_type.proposal_type_id = proposal.proposal_type_id
+WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
+                    """
+            cur.execute(
+                sql, dict(proposal_code=proposal_code, institution=institution.value)
+            )
+            result = cur.fetchone()
+            if result:
+                return types.Proposal(
+                    pi=result[0],
+                    proposal_code=result[1],
+                    title=result[2],
+                    institution=types.Institution.for_name(result[5]),
+                    proposal_type=types.ProposalType.for_value(result[4]),
+                )
             else:
                 return None
 
@@ -793,6 +1007,120 @@ class SSDADatabaseService:
             )
 
             return cast(int, cur.fetchone()[0])
+
+    def update_observation_group_status(
+        self, group_identifier: str, status: types.Status, telescope: types.Telescope
+    ) -> None:
+        with self._connection.cursor() as cur:
+            sql = """
+WITH
+    obs_id (observation_group_id) AS (
+        SELECT DISTINCT observation_group.observation_group_id FROM observation_group
+            JOIN observation ON observation_group.observation_group_id=observation.observation_group_id
+            JOIN telescope ON observation.telescope_id = telescope.telescope_id
+        WHERE group_identifier=%(group_identifier)s AND telescope.name=%(telescope)s
+    ),
+    stat (status_id) AS (
+        SELECT status_id
+        FROM observations.status
+        WHERE status=%(status)s
+    )
+UPDATE observation
+SET status_id=(SELECT status_id FROM stat)
+WHERE observation_group_id=(SELECT observation_group_id FROM obs_id)
+            """
+            cur.execute(
+                sql,
+                dict(
+                    group_identifier=group_identifier,
+                    status=status.value,
+                    telescope=telescope.value,
+                ),
+            )
+
+    def update_investigators(
+        self,
+        proposal_code: str,
+        institution: types.Institution,
+        proposal_investigators: List[types.ProposalInvestigator],
+    ):
+        with self._connection.cursor() as cur:
+            sql = """
+WITH prop_id (proposal_id) AS (
+    SELECT proposal_id
+    FROM proposal
+        JOIN institution on proposal.institution_id = institution.institution_id
+    WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
+)
+DELETE FROM admin.proposal_investigator
+WHERE proposal_id = (SELECT proposal_id FROM prop_id)
+            """
+            cur.execute(
+                sql, dict(proposal_code=proposal_code, institution=institution.value)
+            )
+            for proposal_investigator in proposal_investigators:
+                self.insert_proposal_investigator(
+                    proposal_investigator=proposal_investigator
+                )
+
+    def update_proposal_release_date(
+        self, proposal_id: int, meta_release: date, data_release: date
+    ) -> None:
+        with self._connection.cursor() as cur:
+            sql = """
+UPDATE observation
+SET
+    meta_release=%(meta_release_date)s,
+    data_release=%(data_release_date)s
+WHERE proposal_id=%(proposal_id)s
+                    """
+            cur.execute(
+                sql,
+                dict(
+                    data_release_date=data_release,
+                    meta_release_date=meta_release,
+                    proposal_id=proposal_id,
+                ),
+            )
+
+    def update_salt_proposal(self, proposal: types.SALTProposalDetails):
+        with self._connection.cursor() as cur:
+            sql = """
+        WITH prop_id (proposal_id) AS (
+            SELECT proposal_id
+            FROM proposal
+                JOIN institution on proposal.institution_id = institution.institution_id
+            WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
+        )
+        UPDATE proposal
+            SET pi=%(pi)s, title=%(title)s
+        WHERE proposal_id=(SELECT proposal_id FROM prop_id)
+                    """
+            cur.execute(
+                sql,
+                dict(
+                    proposal_code=proposal.proposal_code,
+                    institution=proposal.institution.value,
+                    pi=proposal.pi,
+                    title=proposal.title,
+                ),
+            )
+            proposal_id = self.find_proposal_id(
+                proposal_code=proposal.proposal_code, institution=proposal.institution
+            )
+            self.update_investigators(
+                proposal_code=proposal.proposal_code,
+                institution=proposal.institution,
+                proposal_investigators=[
+                    types.ProposalInvestigator(
+                        proposal_id=proposal_id, investigator_id=investigator
+                    )
+                    for investigator in proposal.investigators
+                ],
+            )
+            self.update_proposal_release_date(
+                proposal_id, proposal.meta_release, proposal.data_release
+            )
 
     def rollback_transaction(self) -> None:
         """

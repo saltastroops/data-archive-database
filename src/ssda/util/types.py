@@ -16,29 +16,20 @@ byte = def_unit("byte")
 class SQLQuery(NamedTuple):
     """
     An SQL query.
-
     Query parameters must be included in the form %(name)s in SQL statement, and their
     value must be provided in the parameters dictionary.
-
     For example, the query
-
     INSERT INTO target (ra, dec) VALUES (42.8, -16.4)
-
     would be represented by
-
     sql = "INSERT INTO target (ra, dec) VALUES (%(ra)s, %(dec)s)
-
     and
-
     parameters = dict(ra=42.8, dec=-16.4)
-
     Parameters
     ----------
     parameters : Dict[str, any]
         Query parameters and their values.
     sql : str
         SQL statement. Query parameters must be included in the form $(name)s.
-
     """
 
     parameters: Dict[str, Any]
@@ -87,14 +78,14 @@ class Artifact:
     """
 
     def __init__(
-        self,
-        content_checksum: str,
-        content_length: Quantity,
-        identifier: uuid.UUID,
-        name: str,
-        plane_id: int,
-        paths: CalibrationLevelPaths,
-        product_type: ProductType,
+            self,
+            content_checksum: str,
+            content_length: Quantity,
+            identifier: uuid.UUID,
+            name: str,
+            plane_id: int,
+            paths: CalibrationLevelPaths,
+            product_type: ProductType,
     ):
         if len(content_checksum) > 32:
             raise ValueError("The content checksum must have at most 32 characters.")
@@ -166,7 +157,7 @@ class DatabaseConfiguration:
     """
 
     def __init__(
-        self, host: str, username: str, password: str, database: str, port: int
+            self, host: str, username: str, password: str, database: str, port: int
     ) -> None:
         if port <= 0:
             raise ValueError("The port number must be positive.")
@@ -246,11 +237,11 @@ class DatabaseConfiguration:
         if not isinstance(other, DatabaseConfiguration):
             return NotImplemented
         return (
-            self.host() == other.host()
-            and self.username() == other.username()
-            and self.password() == other.password()
-            and self.database() == other.database()
-            and self.port() == other.port()
+                self.host() == other.host()
+                and self.username() == other.username()
+                and self.password() == other.password()
+                and self.database() == other.database()
+                and self.port() == other.port()
         )
 
 
@@ -367,13 +358,13 @@ class Energy:
     """
 
     def __init__(
-        self,
-        dimension: int,
-        max_wavelength: Quantity,
-        min_wavelength: Quantity,
-        plane_id: int,
-        resolving_power: float,
-        sample_size: Quantity,
+            self,
+            dimension: int,
+            max_wavelength: Quantity,
+            min_wavelength: Quantity,
+            plane_id: int,
+            resolving_power: float,
+            sample_size: Quantity,
     ):
         if dimension <= 0:
             raise ValueError("The dimension must be positive.")
@@ -520,6 +511,26 @@ class Institution(Enum):
     SAAO = "South African Astronomical Observatory"
     SALT = "Southern African Large Telescope"
 
+    @staticmethod
+    def for_name(name: str) -> Institution:
+        """
+        The institution for a case-insensitive name.
+        Parameters
+        ----------
+        name : str
+            The institution name.
+        Returns
+        -------
+        Institution :
+            Institution.
+        """
+
+        for institution in Institution:
+            if name.lower() == str(institution.value).lower():
+                return institution
+
+        raise ValueError(f"Unknown institution name: {name}")
+
 
 class Instrument(Enum):
     """
@@ -613,11 +624,11 @@ class InstrumentKeywordValue:
     """
 
     def __init__(
-        self,
-        instrument: Instrument,
-        instrument_keyword: InstrumentKeyword,
-        observation_id: int,
-        value: str,
+            self,
+            instrument: Instrument,
+            instrument_keyword: InstrumentKeyword,
+            observation_id: int,
+            value: str,
     ):
         if len(value) > 200:
             raise ValueError("The values must have at most 200 characters.")
@@ -691,12 +702,12 @@ class InstrumentSetup:
     """
 
     def __init__(
-        self,
-        additional_queries: List[SQLQuery],
-        detector_mode: DetectorMode,
-        filter: Optional[Filter],
-        instrument_mode: InstrumentMode,
-        observation_id: int,
+            self,
+            additional_queries: List[SQLQuery],
+            detector_mode: DetectorMode,
+            filter: Optional[Filter],
+            instrument_mode: InstrumentMode,
+            observation_id: int,
     ):
         self._additional_queries = additional_queries
         self._detector_mode = detector_mode
@@ -736,7 +747,26 @@ class Intent(Enum):
 
     CALIBRATION = "Calibration"
     SCIENCE = "Science"
-    UNKNOWN = "Unknown"
+
+    @staticmethod
+    def for_value(value):
+        """
+        The intent value.
+        Parameters
+        ----------
+        value : str
+            The value.
+
+        Returns
+        -------
+        Intent:
+            The intent.
+
+        """
+        for intent in Intent:
+            if intent.value.lower() == value.lower():
+                return intent
+        raise ValueError(f"Unknown intent for value: {value}")
 
 
 class Observation:
@@ -766,15 +796,15 @@ class Observation:
     """
 
     def __init__(
-        self,
-        data_release: date,
-        instrument: Instrument,
-        intent: Intent,
-        meta_release: date,
-        observation_group_id: Optional[int],
-        proposal_id: Optional[int],
-        status: Status,
-        telescope: Telescope,
+            self,
+            data_release: date,
+            instrument: Instrument,
+            intent: Intent,
+            meta_release: date,
+            observation_group_id: Optional[int],
+            proposal_id: Optional[int],
+            status: Status,
+            telescope: Telescope,
     ):
         if data_release < meta_release:
             raise ValueError(
@@ -875,12 +905,12 @@ class ObservationTime:
     """
 
     def __init__(
-        self,
-        end_time: datetime,
-        exposure_time: Quantity,
-        plane_id: int,
-        resolution: Quantity,
-        start_time: datetime,
+            self,
+            end_time: datetime,
+            exposure_time: Quantity,
+            plane_id: int,
+            resolution: Quantity,
+            start_time: datetime,
     ):
         if start_time.tzinfo is None:
             raise ValueError("The start time must be timezone-aware.")
@@ -974,15 +1004,15 @@ class PolarizationMode(Enum):
         if polarization_mode.upper() == "LINEAR":
             return PolarizationMode.LINEAR
         elif (
-            polarization_mode.upper() == "LINEAR-HI"
-            or polarization_mode.upper() == "LINEAR HI"
+                polarization_mode.upper() == "LINEAR-HI"
+                or polarization_mode.upper() == "LINEAR HI"
         ):
             return PolarizationMode.LINEAR_HI
         elif polarization_mode.upper() == "CIRCULAR":
             return PolarizationMode.CIRCULAR
         elif (
-            polarization_mode.upper() == "ALL-STOKES"
-            or polarization_mode.upper() == "ALL STOKES"
+                polarization_mode.upper() == "ALL-STOKES"
+                or polarization_mode.upper() == "ALL STOKES"
         ):
             return PolarizationMode.ALL_STOKES
         elif polarization_mode.upper() == "OTHER":
@@ -1145,12 +1175,12 @@ class Proposal:
     """
 
     def __init__(
-        self,
-        institution: Institution,
-        pi: str,
-        proposal_code: str,
-        proposal_type: ProposalType,
-        title: str,
+            self,
+            institution: Institution,
+            pi: str,
+            proposal_code: str,
+            proposal_type: ProposalType,
+            title: str,
     ):
         if len(pi) > 100:
             raise ValueError("The PI must have at most 100 characters.")
@@ -1211,20 +1241,42 @@ class ProposalInvestigator:
     def investigator_id(self) -> str:
         return self._investigator_id
 
+    def __eq__(self, other):
+        return self._proposal_id == other.proposal_id and self._investigator_id == other.investigator_id
+
 
 class ProposalType(Enum):
     """
     Enumeration of the available proposal type.
-
     The enum values must be the same as the values of the proposal_type column in the
     proposal_type table.
-
     """
 
     COMMISSIONING = "Commissioning"
     ENGINEERING = "Engineering"
     SCIENCE = "Science"
     SCIENCE_VERIFICATION = "Science Verification"
+
+    @staticmethod
+    def for_value(value) -> ProposalType:
+        """
+        The proposal type value.
+
+        Parameters
+        ----------
+        value : str
+            The value.
+
+        Returns
+        -------
+        ProposalType:
+            The proposal type.
+
+        """
+        for proposal_type in ProposalType:
+            if proposal_type.value.lower() == value.lower():
+                return proposal_type
+        raise ValueError(f"Unknown proposal type for value: {value}")
 
 
 class RSSFabryPerotMode(Enum):
@@ -1282,7 +1334,30 @@ class Status(Enum):
     """
 
     ACCEPTED = "Accepted"
-    REJECTED = "Rejected"
+    DELETED = "Deleted"
+
+    @staticmethod
+    def for_value(value: str) -> Status:
+        """T
+        he status for.
+
+        Parameters
+        ----------
+        value : str
+            The status value.
+
+        Returns
+        -------
+        Status :
+            Status.
+
+        """
+
+        for status in Status:
+            if value.lower() == str(status.value).lower():
+                return status
+
+        raise ValueError(f"Unknown status: {value}")
 
 
 class StokesParameter(Enum):
@@ -1318,7 +1393,7 @@ class Target:
     """
 
     def __init__(
-        self, name: str, observation_id: int, standard: bool, target_type: str
+            self, name: str, observation_id: int, standard: bool, target_type: str
     ):
         if len(name) > 50:
             raise ValueError("The target name must have at most 50 characters.")
@@ -1420,3 +1495,75 @@ class Telescope(Enum):
     LESEDI = "LESEDI"
     ONE_DOT_NINE = "1.9 m"
     SALT = "SALT"
+
+    @staticmethod
+    def for_name(name):
+        """
+        The telescope for a case-insensitive name.
+
+        Parameters
+        ----------
+        name : str
+            The telescope name.
+
+        Returns
+        -------
+        Telescope :
+            The telescope.
+
+        """
+        for telescope in Telescope:
+            if name.lower() == str(telescope.value).lower():
+                return telescope
+
+        raise ValueError(f"Unknown telescope name: {name}")
+
+
+class SALTProposalDetails:
+    def __init__(
+            self,
+            proposal_code: str,
+            institution: Institution,
+            meta_release: date,
+            data_release: date,
+            pi: str,
+            title: str,
+            investigators: List[str]
+    ):
+        self.proposal_code = proposal_code
+        self.institution = institution
+        self.meta_release = meta_release
+        self.data_release = data_release
+        self.pi = pi
+        self.title = title
+        self.investigators = investigators
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and \
+               self.proposal_code == other.proposal_code and \
+               self.institution == other.institution and \
+               self.meta_release == other.meta_release and \
+               self.data_release == other.data_release and \
+               self.pi == other.pi and \
+               self.investigator_ids_equal(self.investigators, other.investigators)
+
+    @staticmethod
+    def investigator_ids_equal(list_1: List[str], list_2: List[str]):
+
+        for investigator in list_1:
+            if investigator not in list_2:
+                return False
+        return True
+
+
+class SALTObservation:
+    def __init__(self, status: Status, group_identifier: str, telescope: Telescope):
+        self.status = status
+        self.group_identifier = group_identifier
+        self.telescope = telescope
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and \
+               self.status.value == other.status.value and \
+               self.telescope.value == other.telescope.value and \
+               self.group_identifier == other.group_identifier

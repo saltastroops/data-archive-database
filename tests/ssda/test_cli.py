@@ -5,10 +5,10 @@ from typing import NamedTuple, Optional, Set
 import pytest
 import glob
 
-import ssda.cli
+import ssda.ssda_populate
 import ssda.task
 import ssda.util.fits
-from ssda.cli import parse_date, validate_options, main
+from ssda.ssda_populate import parse_date, validate_options, main
 from ssda.util.dummy import DummyObservationProperties
 from ssda.util.types import Instrument, DateRange
 

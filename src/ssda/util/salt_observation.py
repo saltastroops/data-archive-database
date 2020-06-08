@@ -11,9 +11,6 @@ from ssda.database.sdb import SaltDatabaseService, FileDataItem
 from ssda.util.fits import FitsFile, get_fits_base_dir
 
 from ssda.util import types
-from ssda.util.salt_fits import parse_start_datetime
-from ssda.util.types import Status
-from ssda.util.warnings import record_warning
 
 
 @dataclass
@@ -77,22 +74,12 @@ class SALTObservation:
             bvid_from_fits = None
 
         # Get the block visit id from the database
-        # As reading FITS headers takes a while, we first try reading information from
-        # the database only...
-        filename = Path(self.fits_file.file_path()).name
         night = (self.observation_start_time() - timedelta(hours=12)).date()
         if SALTObservation.file_data.night != night:
             SALTObservation.file_data = FileData(
-                self.database_service.find_block_visit_ids(night, False), night
+                self.database_service.find_block_visit_ids(night), night
             )
-
-        # ... but if this doesn't get details for the file, we try again, this time
-        # including FITS headers.
-        if filename not in SALTObservation.file_data.data:
-            SALTObservation.file_data = FileData(
-                self.database_service.find_block_visit_ids(night, True), night
-            )
-
+        filename = Path(self.fits_file.file_path()).name
         if filename in SALTObservation.file_data.data:
             bvid_from_db = SALTObservation.file_data.data[filename].block_visit_id
         else:
@@ -108,7 +95,8 @@ class SALTObservation:
             )
         ):
             logging.warning(
-                f"The block visit ids from the FITS header ({bvid_from_fits}) and the database ({bvid_from_db}) are different."
+                f"The block visit ids from the FITS header ({bvid_from_fits}) and the database ({bvid_from_db}) are "
+                f"different."
             )
 
         # Some block visit ids don't exist in the FITS header but can be inferred
@@ -122,9 +110,7 @@ class SALTObservation:
         proposal_id: Optional[int],
         instrument: types.Instrument,
     ) -> types.Observation:
-        proposal_code = (
-            self.header_value("PROPID").upper() if self.header_value("PROPID") else ""
-        )
+        proposal_code = self.header_value("PROPID").upper()
         if self.database_service.is_existing_proposal_code(proposal_code):
             data_release_dates = self.database_service.find_release_date(proposal_code)
         else:
@@ -154,29 +140,29 @@ class SALTObservation:
         return types.ObservationGroup(group_identifier=str(bv_id), name=name)
 
     def observation_start_time(self) -> datetime:
-        start_date = self.header_value("DATE-OBS")
-        start_time = self.header_value("TIME-OBS")
+        start_date_time_str = (
+                self.header_value("DATE-OBS") + " " + self.header_value("TIME-OBS")
+        )
+        start_date_time = datetime.strptime(start_date_time_str, "%Y-%m-%d %H:%M:%S.%f")
+        start_time_tz = datetime(
+            year=start_date_time.year,
+            month=start_date_time.month,
+            day=start_date_time.day,
+            hour=start_date_time.hour,
+            minute=start_date_time.minute,
+            second=start_date_time.second,
+            tzinfo=timezone.utc,
+        )
 
-        return parse_start_datetime(start_date, start_time)
+        return start_time_tz
 
     def observation_time(self, plane_id: int) -> types.ObservationTime:
-        exposure_time_string = self.header_value("EXPTIME")
-        if exposure_time_string:
-            exposure_time = float(exposure_time_string)
-            resolution = exposure_time
-        else:
-            record_warning(
-                RuntimeWarning(
-                    "No exposure time found. A value of 0 seconds is assumed."
-                )
-            )
-            exposure_time = 0
-            resolution = 100000
+        exposure_time = float(self.header_value("EXPTIME"))
         return types.ObservationTime(
             end_time=self.observation_start_time() + timedelta(seconds=exposure_time),
             exposure_time=exposure_time * u.second,
             plane_id=plane_id,
-            resolution=resolution * u.second,
+            resolution=exposure_time * u.second,
             start_time=self.observation_start_time(),
         )
 
@@ -209,9 +195,7 @@ class SALTObservation:
         if bv_id is None:
             return None
 
-        proposal_code = (
-            self.header_value("PROPID").upper() if self.header_value("PROPID") else ""
-        )
+        proposal_code = self.header_value("PROPID").upper()
 
         return types.Proposal(
             institution=types.Institution.SALT,
@@ -222,12 +206,10 @@ class SALTObservation:
         )
 
     def proposal_investigators(
-        self, proposal_id: int
+            self, proposal_id: int
     ) -> List[types.ProposalInvestigator]:
-        proposal_code = (
-            self.header_value("PROPID").upper() if self.header_value("PROPID") else ""
-        )
-        investigators = self.database_service.find_proposal_investigators(proposal_code)
+        proposal_code = self.header_value("PROPID").upper()
+        investigators = self.database_service.find_proposal_investigator_user_ids(proposal_code)
         return [
             types.ProposalInvestigator(
                 proposal_id=proposal_id, investigator_id=str(investigator)
@@ -248,29 +230,14 @@ class SALTObservation:
             target_type=self.database_service.find_target_type(self._block_visit_id()),
         )
 
-    def _obs_type(self):
-        obs_type = (
-            self.header_value("OBSTYPE").upper() if self.header_value("OBSTYPE") else ""
-        )
+    def _product_category(self):
+        observation_object = self.header_value("OBJECT").upper()
+        product_type = self.header_value("OBSTYPE").upper()
+        proposal_id = self.header_value("PROPID").upper()
 
         # CCDTYPE is a copy of OBSTYPE
-        if not obs_type:
-            obs_type = (
-                self.header_value("CCDTYPE").upper()
-                if self.header_value("CCDTYPE")
-                else ""
-            )
-
-        return obs_type
-
-    def _product_category(self):
-        observation_object = (
-            self.header_value("OBJECT").upper() if self.header_value("OBJECT") else ""
-        )
-        product_type = self._obs_type()
-        proposal_id = (
-            self.header_value("PROPID").upper() if self.header_value("PROPID") else ""
-        )
+        if not product_type:
+            product_type = self.header_value("CCDTYPE").upper()
 
         product_type_unknown = not product_type or product_type == "ZERO"
 
@@ -319,29 +286,21 @@ class SALTObservation:
         ):
             return types.ProductCategory.STANDARD
         if product_type == "OBJECT" or product_type == "SCIENCE":
-            # Science files with no block visit id are not populated
+            # Science file with no block visit id are not populated
             if self._block_visit_id() is None:
                 raise ValueError(
-                    f"The observation is marked as science but has no block visit id. "
-                    f"The proposal code is '{proposal_id}'."
+                    "The observation is marked as science but has no block visit id."
                 )
             return types.ProductCategory.SCIENCE
 
-        record_warning(Warning("The product category could not be determined."))
-        return types.ProductCategory.UNKNOWN
+        raise ValueError(
+            f"Product category of file ${self.fits_file.file_path()} could not be determined"
+        )
 
     def _product_type(self) -> types.ProductType:
-        obs_mode = (
-            self.header_value("OBSMODE").upper() if self.header_value("OBSMODE") else ""
-        )
-        instrument = (
-            self.header_value("INSTRUME").upper()
-            if self.header_value("INSTRUME")
-            else ""
-        )
-        proposal_id = (
-            self.header_value("PROPID").upper() if self.header_value("PROPID") else ""
-        )
+        obs_mode = self.header_value("OBSMODE").upper()
+        instrument = self.header_value("INSTRUME").upper()
+        proposal_id = self.header_value("PROPID").upper()
         product_category = self._product_category()
 
         if product_category == types.ProductCategory.ARC:
@@ -400,8 +359,9 @@ class SALTObservation:
         if product_category == types.ProductCategory.SCIENCE:
             return types.ProductType.SCIENCE
 
-        record_warning(Warning("The product type could not be determined."))
-        return types.ProductType.UNKNOWN
+        raise ValueError(
+            f"Product type of file ${self.fits_file.file_path()} could not be determined"
+        )
 
     def _intent(self) -> types.Intent:
         product_category = self._product_category()
@@ -410,19 +370,17 @@ class SALTObservation:
             return types.Intent.CALIBRATION
         elif product_category == types.ProductCategory.SCIENCE:
             return types.Intent.SCIENCE
-
-        record_warning(Warning("The intent could not be determined."))
-        return types.Intent.UNKNOWN
+        raise ValueError(f"Intent for file {self.file_path()} could not be determined")
 
     def is_calibration(self):
         product_category = self._product_category()
 
         return (
-            product_category == types.ProductCategory.ARC
-            or product_category == types.ProductCategory.BIAS
-            or product_category == types.ProductCategory.DARK
-            or product_category == types.ProductCategory.FLAT
-            or product_category == types.ProductCategory.STANDARD
+                product_category == types.ProductCategory.ARC
+                or product_category == types.ProductCategory.BIAS
+                or product_category == types.ProductCategory.DARK
+                or product_category == types.ProductCategory.FLAT
+                or product_category == types.ProductCategory.STANDARD
         )
 
     def is_standard(self):
@@ -434,21 +392,19 @@ class SALTObservation:
         proposal_id = (
             self.fits_file.header_value("PROPID").upper()
             if self.fits_file.header_value("PROPID")
-            else ""
+            else self.fits_file.header_value("PROPID")
         )
         # If the FITS file is Junk, Unknown, ENG or CAL_GAIN, do not store the observation.
-        if proposal_id in ("JUNK", "UNKNOWN", "NONE", "ENG", "CAL_GAIN", "TEST"):
+        if proposal_id in ("JUNK", "UNKNOWN", "NONE", "ENG", "CAL_GAIN"):
             return True
         # Do not store engineering data.
         # Proposal ids referring to an actual proposal will always start with a "2" (as in 2020-1-SCI-014).
         if not proposal_id.startswith("2") and (
-            "ENG_" in proposal_id or "ENG-" in proposal_id
+                "ENG_" in proposal_id or "ENG-" in proposal_id
         ):
             return True
 
-        observation_object = (
-            self.header_value("OBJECT").upper() if self.header_value("OBJECT") else ""
-        )
+        observation_object = self.header_value("OBJECT").upper()
         # Do not store commissioning data that pretends to be science.
         if "COM-" in proposal_id or "COM_" in proposal_id:
             if observation_object == "DUMMY":
@@ -459,24 +415,6 @@ class SALTObservation:
         # If the FITS header does not include the observation date, do not store its
         # data.
         if not observation_date:
-            return True
-
-        # Ignore observations of unknown category unless they are part of a proposal.
-        proposal_id = self.header_value("PROPID") or ""
-        try:
-            # Trying to get the product category might result in an exception. But in
-            # this case we should not ignore the file.
-            if self._product_category() == types.ProductCategory.UNKNOWN and not self.database_service.is_existing_proposal_code(
-                proposal_id
-            ):
-                return True
-        except:
-            pass
-
-        # Ignore "science" proposals without a proposal code and block visit id
-        product_type = self._obs_type()
-        is_science = product_type == "OBJECT" or product_type == "SCIENCE"
-        if is_science and not self._block_visit_id():
             return True
 
         return False
