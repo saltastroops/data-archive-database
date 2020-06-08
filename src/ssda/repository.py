@@ -2,6 +2,7 @@ from typing import cast
 
 from ssda.database.ssda import SSDADatabaseService
 from ssda.observation import ObservationProperties
+from ssda.util.warnings import record_warning
 
 
 def delete(
@@ -154,7 +155,11 @@ def insert(
         plane_id = ssda_database_service.insert_plane(plane)
 
         # insert energy
-        energy = observation_properties.energy(plane_id)
+        try:
+            energy = observation_properties.energy(plane_id)
+        except BaseException as e:
+            record_warning(Warning("The energy could not be calculated."))
+            energy = None
         if energy:
             ssda_database_service.insert_energy(energy)
 

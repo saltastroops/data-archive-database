@@ -47,5 +47,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA observations TO admin_editor;
 
 GRANT INSERT, UPDATE ON TABLE admin.data_request TO admin_editor;
 GRANT INSERT ON TABLE admin.data_request_artifact TO admin_editor;
+GRANT INSERT ON TABLE admin.data_request_calibration_level TO admin_editor;
+GRANT INSERT ON TABLE admin.data_request_calibration_type TO admin_editor;
 GRANT INSERT, UPDATE ON TABLE admin.ssda_user TO admin_editor;
 GRANT INSERT, UPDATE ON TABLE admin.ssda_user_auth TO admin_editor;

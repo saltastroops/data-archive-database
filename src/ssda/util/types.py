@@ -265,6 +265,7 @@ class DataProductType(Enum):
 
     IMAGE = "Image"
     SPECTRUM = "Spectrum"
+    UNKNOWN = "Unknown"
 
 
 class DateRange:
@@ -341,6 +342,7 @@ class DetectorMode(Enum):
     NORMAL = "Normal"
     SHUFFLE = "Shuffle"
     SLOT_MODE = "Slot Mode"
+    UNKNOWN = "Unknown"
 
 
 class Energy:
@@ -555,6 +557,32 @@ class Instrument(Enum):
 
         raise ValueError(f"Unknown instrument name: {name}")
 
+    @staticmethod
+    def instruments(telescope: Telescope):
+        """
+        Return the instruments used by a telescope.
+
+        Parameters
+        ----------
+        telescope : Telescope
+            Telescope.
+
+        Returns
+        -------
+        Set[Instrument]
+            The instruments used by the telescope.
+
+        """
+
+        if telescope == Telescope.SALT:
+            return {
+                Instrument.BCAM,
+                Instrument.HRS,
+                Instrument.RSS,
+                Instrument.SALTICAM,
+            }
+        raise ValueError(f"Unknown telescope {telescope}")
+
 
 class InstrumentKeyword(Enum):
     """
@@ -632,6 +660,7 @@ class InstrumentMode(Enum):
     SPECTROPOLARIMETRY = "Spectropolarimetry"
     SPECTROSCOPY = "Spectroscopy"
     STREAMING = "Streaming"
+    UNKNOWN = "Unknown"
 
 
 class InstrumentSetup:
@@ -707,6 +736,7 @@ class Intent(Enum):
 
     CALIBRATION = "Calibration"
     SCIENCE = "Science"
+    UNKNOWN = "Unknown"
 
 
 class Observation:
@@ -1061,6 +1091,7 @@ class ProductCategory(Enum):
     FLAT = "Flat"
     SCIENCE = "Science"
     STANDARD = "Standard"
+    UNKNOWN = "Unknown"
 
 
 class ProductType(Enum):
@@ -1091,6 +1122,7 @@ class ProductType(Enum):
     STANDARD_SPECTROSCOPIC = "Standard - Spectroscopic"
     STANDARD_TELLURIC = "Standard - Telluric"
     STANDARD_UNPOLARISED = "Standard - Unpolarised"
+    UNKNOWN = "Unknown"
 
 
 class Proposal:
@@ -1250,7 +1282,7 @@ class Status(Enum):
     """
 
     ACCEPTED = "Accepted"
-    DELETED = "Deleted"
+    REJECTED = "Rejected"
 
 
 class StokesParameter(Enum):
