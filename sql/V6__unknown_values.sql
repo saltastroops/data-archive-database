@@ -1,4 +1,4 @@
-SET search_path TO observations, extensions;
+SET search_path TO observations;
 
 -- "Unknown" data product type
 
