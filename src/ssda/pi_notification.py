@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import os
 import pymysql
 import psycopg2
+from prettytable import PrettyTable
 from psycopg2 import extras
 import smtplib
 import datetime
@@ -12,17 +13,19 @@ from ssda.database.ssda import SSDADatabaseService
 from ssda.database.sdb import SaltDatabaseService
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from datetime import date
+import click
 
 
 @dataclass
 class Proposal:
     code: str
-    release_date: str
+    release_date: date
 
 
 @dataclass
 class PI:
-    pi_fullname: str
+    fullname: str
     email: str
     proposals: List[Proposal]
 
@@ -85,9 +88,9 @@ def pi_details(proposal_codes):
             pymysql.cursors.DictCursor
     ) as database_connection:
         pi_query = """SELECT Proposal_Code, Email, CONCAT(FirstName," ", Surname) AS fullname
-                      FROM ProposalContact AS propCon
-                      JOIN ProposalCode ON ProposalCode.ProposalCode_Id = propCon.ProposalCode_Id
-                      JOIN Investigator ON Investigator.Investigator_Id = propCon.Leader_Id
+                      FROM ProposalContact
+                      JOIN ProposalCode ON ProposalCode.ProposalCode_Id = ProposalContact.ProposalCode_Id
+                      JOIN Investigator ON Investigator.Investigator_Id = ProposalContact.Leader_Id
                       WHERE Proposal_Code IN %(proposals)s"""
         database_connection.execute(pi_query, dict(proposals=proposal_codes))
         results = database_connection.fetchall()
@@ -108,15 +111,15 @@ def release_dates_and_proposals(days):
     all_data = {}
     for proposal_code in proposals_and_release_dates:
         if proposal_code not in proposal_and_pi_information:
-            raise ValueError("Invalid Proposal code.")
+            raise ValueError("invalid proposal code.")
         pi_email = proposal_and_pi_information[proposal_code]['email']
-        full_name = proposal_and_pi_information[proposal_code]['fullname']
+        fullname = proposal_and_pi_information[proposal_code]['fullname']
         proposal_release_date = proposals_and_release_dates[proposal_code]
 
         if pi_email not in all_data:
             all_data[pi_email] = {
                 "proposals": [],
-                "fullname": full_name,
+                "fullname": fullname,
             }
         all_data[pi_email]["proposals"].append({"proposal_code": proposal_code, "release_date": proposal_release_date})
     return all_data
@@ -129,26 +132,36 @@ def pi_information_to_be_sent(days):
             proposals.append(
                 Proposal(
                     code=proposal["proposal_code"],
-                    release_date=datetime.datetime.strftime(proposal["release_date"], "%d %b %Y")
+                    release_date=proposal["release_date"]
                 )
             )
         PIs.append(PI(
-            pi_fullname=pi["fullname"],
+            fullname=pi["fullname"],
             email=key,
             proposals=proposals
         ))
     return PIs
 
 
-def sending_email(receiver, pi_name, table):
+# def email_content():
+#     message = """
+# Please note that the observation data of your following proposals will become public soon.
+# You may request an extension on the proposal's page in the Web Manager.
+#
+# Kind regards,
+#
+# SALT Astronomy Operations"""
+
+
+def sending_email(receiver, pi_name, plain_table, styled_table):
     sender = "lonwabo@saao.ac.za"
     message = MIMEMultipart("alternative")
-    message["Subject"] = "Your data will become public"
+    message["Subject"] = "Your SALT proposal data will become public"
     message["From"] = sender
     message["To"] = receiver
 
 # write the plain text part
-    text = """\
+    text = f"""
 To: {receiver}
 From: {sender}
 
@@ -156,7 +169,7 @@ Dear {pi_name}
 
 Please note that the observation data of your following proposals will become public soon.
 
-{table}
+{plain_table}
 
 You may request an extension on the proposal's page in the Web Manager.
 
@@ -165,15 +178,15 @@ Kind regards,
 SALT Astronomy Operations """
 
 # write the html part
-    html = """\
+    html = f"""
 <html>
   <body>
    <p> Dear {pi_name}<br><br>
    
        Please note that the observation data of your following proposals will become public soon. </p>
-       
-       {table} <br><br>
-             
+
+       {styled_table} <br><br>
+
        You may request an extension on the proposal's page in the Web Manager.<br><br>
       
        Kind regards, <br><br>
@@ -184,12 +197,9 @@ SALT Astronomy Operations """
 </html>
  """
     # convert both the parts to MIMEText objects and add them to the MIMEMultipart message
-    part1 = MIMEText(text.format(pi_name=pi_name,
-                                 table=table,
-                                 receiver=receiver,
-                                 sender=sender), "plain")
+    part1 = MIMEText(text, "plain")
 
-    part2 = MIMEText(html.format(pi_name=pi_name, table=table), "html")
+    part2 = MIMEText(html, "html")
     message.attach(part1)
     message.attach(part2)
 
@@ -199,8 +209,8 @@ SALT Astronomy Operations """
     mail_username = os.environ.get("MAIL_USER")
     mail_password = os.environ.get("MAIL_PASSWORD")
 
-    with smtplib.SMTP(mail_server, mail_port) as server:
-        server.login(mail_username, mail_password)
+    with smtplib.SMTP('mail.saao.ac.za', 25) as server:
+        server.login('lonwabo@saao.ac.za', 'loydbanks11$')
         server.sendmail(
             sender,
             receiver,
@@ -221,11 +231,17 @@ def read_log_file():
         return file_data
 
 
-def table_to_be_sent(proposals):
+def plain_text_table(proposals):
+    table = PrettyTable()
+    table.field_names = ["Proposals", "Release Date"]
+    for proposal in proposals:
+        table.add_row([proposal.code, proposal.release_date])
+    return table
+
+
+def html_table(proposals):
     table = """
-    <html>
-    <head>
-    
+
     <style>
      table {
      font-family: arial, sans-serif;
@@ -234,11 +250,11 @@ def table_to_be_sent(proposals):
      th, td {
      border: 1px solid #dddddd;
      padding: 8px;
+     text-align:left;
      }
      
     </style>
-    
-    </head>
+
     <body>
      <table>
        <tr>
@@ -250,43 +266,46 @@ def table_to_be_sent(proposals):
     for pi_proposal in proposals:
         table += f"""
                   <tr>
-                    <td><a href='https://www.salt.ac.za/wm/proposal/{pi_proposal.code}'>{pi_proposal.code}</a></td>
+                    <td><a href="https://www.salt.ac.za/wm/proposal/{pi_proposal.code}">{pi_proposal.code}</a></td>
                     <td>{pi_proposal.release_date}</td>
                    </tr>"""
-    table += '</table></body></html>'
+    table += '</table>'
     return table
 
 
 def proposals_to_send(pi_proposals, email):
     info = []
     for proposal in pi_proposals:
-        file_content = email + " " + proposal.code + " " + proposal.release_date
+        file_content = email + " " + proposal.code + " " + datetime.datetime.strftime(proposal.release_date, "%d %b %Y")
         if file_content not in read_log_file():
             info.append(proposal)
     return info
 
 
-def logging_to_file(pi_proposals, email):
+def log_proposal_information(pi_proposals, email):
     for proposal in pi_proposals:
-        file_content = email+" "+proposal.code+" "+proposal.release_date
-        if file_content not in read_log_file():
-            log_to_file(email, proposal.code, proposal.release_date)
+        log_to_file(email, proposal.code, datetime.datetime.strftime(proposal.release_date, "%d %b %Y"))
     return None
 
 
-def send_message(pi_information):
+def handle_pi(pi_information):
     proposals = proposals_to_send(pi_information.proposals, pi_information.email)
     if len(proposals) > 0:
-        sending_email(pi_information.email, pi_information.pi_fullname, table_to_be_sent(proposals))
-    return "Email has been sent to".format(pi_information.pi_fullname)
+        sending_email("lonwabo@saao.ac.za", pi_information.fullname, plain_text_table(proposals), html_table(proposals))
+        log_proposal_information(pi_information.proposals, pi_information.email)
+    return None
 
 
 def run_code(days):
     for pi_information in pi_information_to_be_sent(days):
-        send_message(pi_information)
-        logging_to_file(pi_information.proposals, pi_information.email)
+        handle_pi(pi_information)
     return None
 
 
-if __name__ == "__main__":
-    run_code(189)
+@click.command()
+@click.argument("days", nargs=1, type=int)
+def main(days):
+    run_code(days)
+
+
+main()
