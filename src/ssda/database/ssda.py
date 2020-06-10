@@ -1,5 +1,5 @@
-from datetime import timedelta
-from typing import cast, Any, Dict, Optional
+from datetime import timedelta, date
+from typing import cast, Any, Dict, Optional, List
 import os
 
 import astropy.units as u
@@ -170,6 +170,35 @@ class SSDADatabaseService:
                 return cast(int, result[0])
             else:
                 return None
+
+    def find_observation_ids(self, start_date: date, end_date: date) -> List[int]:
+        """
+        The observation ids that are observed in a date range. The start date and the end date are inclusive.
+
+        Parameters
+        ----------
+        start_date: date
+            Start date.
+        end_date: date
+            End date.
+
+        Returns
+        -------
+        The observation ids.
+
+        """
+        with self._connection.cursor() as cur:
+            sql = """
+SELECT observation.observation_id
+FROM observation
+    JOIN plane ON observation.observation_id = plane.observation_id
+    JOIN observation_time ON plane.plane_id = observation_time.plane_id
+WHERE night >= %(start_date)s AND night <= %(end_date)s
+            """
+            cur.execute(sql, dict(start=start_date, end=end_date))
+
+            observation_ids = cur.fetchall()
+            return [cast(int, obs[0]) for obs in observation_ids]
 
     def file_exists(self, path: str) -> bool:
         """
