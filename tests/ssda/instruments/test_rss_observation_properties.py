@@ -61,16 +61,12 @@ class FakeProposal(object):
 
 
 def fake_proposal(pi: str, title: str, proposal_code: str) -> Any:
-    return FakeProposal(
-        pi=pi,
-        title=title,
-        proposal_code=proposal_code
-    )
+    return FakeProposal(pi=pi, title=title, proposal_code=proposal_code)
 
 
 class FakeFitsFile(object):
     def __init__(self, headers):
-        self._headers=headers
+        self._headers = headers
         self._size = {"OBJECT": "arc"}
         self._file_path = "path"
 
@@ -103,6 +99,7 @@ class FakeFitsFile(object):
         """
 
         return ""
+
     pass
 
 
@@ -111,11 +108,14 @@ class FakeSALTObservation(object):
         if proposal:
             self._proposal = proposal
         else:
-            self._proposal = fake_proposal(pi="Name_1", title="Title_1", proposal_code="Code_1")
+            self._proposal = fake_proposal(
+                pi="Name_1", title="Title_1", proposal_code="Code_1"
+            )
 
     @property
     def proposal(self) -> Optional[Any]:
         return self._proposal
+
     pass
 
 
@@ -132,18 +132,19 @@ def fake_salt_observation(proposal: dict = None) -> Any:
 
 
 rss_obs = RssObservationProperties(
-    fits_file=fake_fit_file(),
-    database_service=fake_database_service()
+    fits_file=fake_fit_file(), database_service=fake_database_service()
 )
 
 salt_obs = SALTObservation(
-    fits_file=fake_fit_file(),
-    database_service=fake_database_service()
+    fits_file=fake_fit_file(), database_service=fake_database_service()
 )
 
 
 def test_artifact(mocker):
-    with mocker.patch.object(rss_obs, 'artifact', return_value=types.Artifact(
+    with mocker.patch.object(
+        rss_obs,
+        "artifact",
+        return_value=types.Artifact(
             content_checksum="Sum_1",
             content_length=Quantity(value=100, unit=types.byte),
             identifier="randomtext",
@@ -151,25 +152,24 @@ def test_artifact(mocker):
             plane_id=1,
             path="path/to/file/filename.fits",
             product_type=types.ProductType.ARC,
-    )):
+        ),
+    ):
         assert rss_obs.artifact(1).product_type == types.ProductType.ARC
 
 
 def test_energy(mocker):
-    with mocker.patch.object(rss_obs, 'energy', return_value=types.Energy(
+    with mocker.patch.object(
+        rss_obs,
+        "energy",
+        return_value=types.Energy(
             dimension=1,
             max_wavelength=Quantity(value=2, unit=u.meter),
-            min_wavelength=Quantity(
-                value=1,
-                unit=u.meter
-            ),
+            min_wavelength=Quantity(value=1, unit=u.meter),
             plane_id=1,
             resolving_power=1.0,
-            sample_size=Quantity(
-                value=1,
-                unit=u.meter
-            )
-    )):
+            sample_size=Quantity(value=1, unit=u.meter),
+        ),
+    ):
         energy = rss_obs.energy(1)
         assert energy.dimension == 1
         assert energy.max_wavelength.value == 2
@@ -179,7 +179,10 @@ def test_energy(mocker):
 
 #  Done
 def test_observation(mocker):
-    with mocker.patch.object(rss_obs, 'observation', return_value=types.Observation(
+    with mocker.patch.object(
+        rss_obs,
+        "observation",
+        return_value=types.Observation(
             data_release=datetime(year=2019, month=1, day=1),
             instrument=types.Instrument.RSS,
             intent=types.Intent.CALIBRATION,
@@ -188,8 +191,9 @@ def test_observation(mocker):
             observation_type=types.ObservationType.OBJECT,
             proposal_id=101,
             status=types.Status.ACCEPTED,
-            telescope=types.Telescope.SALT
-    )):
+            telescope=types.Telescope.SALT,
+        ),
+    ):
         observation = rss_obs.observation(101)
         assert observation.telescope == types.Telescope.SALT
         assert observation.proposal_id == 101
@@ -197,40 +201,61 @@ def test_observation(mocker):
 
 
 def test_observation_time(mocker):
-    start_time = datetime(year=2019, month=1, day=1, hour=0, minute=0, second=0, tzinfo=tz.gettz("Africa/Johannesburg"))
+    start_time = datetime(
+        year=2019,
+        month=1,
+        day=1,
+        hour=0,
+        minute=0,
+        second=0,
+        tzinfo=tz.gettz("Africa/Johannesburg"),
+    )
     exposure_time = 100
-    with mocker.patch.object(rss_obs, 'observation_time', return_value=types.ObservationTime(
+    with mocker.patch.object(
+        rss_obs,
+        "observation_time",
+        return_value=types.ObservationTime(
             end_time=start_time + timedelta(seconds=exposure_time),
             exposure_time=exposure_time * u.second,
             plane_id=1,
             resolution=exposure_time * u.second,
-            start_time=start_time
-    )):
+            start_time=start_time,
+        ),
+    ):
         observation_time = rss_obs.observation_time(1)
-        assert observation_time.end_time == datetime(year=2019, month=1, day=1, hour=0, minute=1, second=40,
-                                                                tzinfo=tz.gettz("Africa/Johannesburg"))
+        assert observation_time.end_time == datetime(
+            year=2019,
+            month=1,
+            day=1,
+            hour=0,
+            minute=1,
+            second=40,
+            tzinfo=tz.gettz("Africa/Johannesburg"),
+        )
         assert observation_time.exposure_time == Quantity(value=100, unit=u.second)
 
 
 def test_polarizations(mocker):
-    with mocker.patch.object(rss_obs, 'polarizations', return_value=[
-        types.Polarization(
-            plane_id=1,
-            stokes_parameter=types.StokesParameter.I
-        )
-    ]):
+    with mocker.patch.object(
+        rss_obs,
+        "polarizations",
+        return_value=[
+            types.Polarization(plane_id=1, stokes_parameter=types.StokesParameter.I)
+        ],
+    ):
         assert rss_obs.polarizations(1)[0].stokes_parameter == types.StokesParameter.I
 
 
 def test_position(mocker):
-    with mocker.patch.object(rss_obs, 'position', return_value=(
+    with mocker.patch.object(
+        rss_obs,
+        "position",
+        return_value=(
             types.Position(
-                dec=50 * u.degree,
-                equinox=2000,
-                plane_id=1,
-                ra=100 * u.degree
+                dec=50 * u.degree, equinox=2000, plane_id=1, ra=100 * u.degree
             )
-    )):
+        ),
+    ):
         position = rss_obs.position(1)
         assert position.dec == Quantity(value=50, unit=u.degree)
         assert position.ra == Quantity(value=100, unit=u.degree)
@@ -238,13 +263,17 @@ def test_position(mocker):
 
 
 def test_proposal(mocker):
-    with mocker.patch.object(rss_obs, 'proposal', return_value=types.Proposal(
+    with mocker.patch.object(
+        rss_obs,
+        "proposal",
+        return_value=types.Proposal(
             institution=types.Institution.SALT,
             pi="Name_1",
             proposal_code="Code_1",
             proposal_type=ProposalType.SCIENCE,
-            title="Title_1"
-    )):
+            title="Title_1",
+        ),
+    ):
         assert rss_obs.proposal().institution == types.Institution.SALT
         assert rss_obs.proposal().pi == "Name_1"
         assert rss_obs.proposal().proposal_code == "Code_1"
@@ -253,20 +282,27 @@ def test_proposal(mocker):
 
 def test_proposal_investigators(mocker):
 
-    with mocker.patch.object(rss_obs, 'proposal_investigators', return_value=[
-        types.ProposalInvestigator(
-            proposal_id=101,
-            investigator_id="Investigator_1"
-        ),
-        types.ProposalInvestigator(
-            proposal_id=101,
-            investigator_id="Investigator_2"
-        ),
-        types.ProposalInvestigator(
-            proposal_id=101,
-            investigator_id="Investigator_3"
+    with mocker.patch.object(
+        rss_obs,
+        "proposal_investigators",
+        return_value=[
+            types.ProposalInvestigator(
+                proposal_id=101, investigator_id="Investigator_1"
+            ),
+            types.ProposalInvestigator(
+                proposal_id=101, investigator_id="Investigator_2"
+            ),
+            types.ProposalInvestigator(
+                proposal_id=101, investigator_id="Investigator_3"
+            ),
+        ],
+    ):
+        assert (
+            rss_obs.proposal_investigators(101)[0].investigator_id == "Investigator_1"
         )
-    ]):
-        assert rss_obs.proposal_investigators(101)[0].investigator_id == "Investigator_1"
-        assert rss_obs.proposal_investigators(101)[1].investigator_id == "Investigator_2"
-        assert rss_obs.proposal_investigators(101)[2].investigator_id == "Investigator_3"
+        assert (
+            rss_obs.proposal_investigators(101)[1].investigator_id == "Investigator_2"
+        )
+        assert (
+            rss_obs.proposal_investigators(101)[2].investigator_id == "Investigator_3"
+        )

@@ -134,6 +134,36 @@ class SSDADatabaseService:
             else:
                 return None
 
+    def find_owner_institution_user_ids(self, proposal_id: int) -> Optional[List[int]]:
+        """
+        Find the database institution user id
+
+        Parameters
+        ----------
+        proposal_id: int
+            Database proposal id
+
+        Returns
+        -------
+
+        """
+
+        with self._connection.cursor() as cur:
+            sql = """
+            SELECT array_agg(institution_user_id)
+            FROM admin.proposal_investigator
+            JOIN observations.observation ON observation.proposal_id=proposal_investigator.proposal_id
+            WHERE proposal_investigator.proposal_id=%(proposal_id)s AND observation.meta_release >= now()
+            GROUP BY proposal_investigator.proposal_id
+            """
+            cur.execute(sql, dict(proposal_id=proposal_id))
+            result = cur.fetchone()
+
+            if result:
+                return result[0]
+            else:
+                return None
+
     def find_proposal_id(
         self, proposal_code: str, institution: types.Institution
     ) -> Optional[int]:
@@ -329,6 +359,62 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
             )
 
             return cast(int, cur.fetchone()[0])
+
+    def insert_institution_user(
+        self, user_id: str, institution: types.Institution
+    ) -> int:
+        """
+        Insert an institution user.
+
+        Parameters
+        ----------
+        institution: Institution
+            Institution to which the user belongs.
+        user_id : str
+            A unique identify for the institution user.
+
+        """
+
+        with self._connection.cursor() as cur:
+            sql = """
+            WITH inst (institution_id) AS (
+                SELECT institution_id FROM observations.institution WHERE name=%(institution)s
+            )
+            INSERT INTO admin.institution_user (institution_id, institution_member, user_id)
+            VALUES ((SELECT institution_id FROM inst), %(institution_member)s, %(user_id)s)
+            ON CONFLICT (user_id, institution_id) 
+            DO NOTHING
+            RETURNING institution_user_id
+            """
+
+            cur.execute(
+                sql,
+                dict(
+                    institution=institution.value,
+                    institution_member=True,
+                    user_id=user_id,
+                ),
+            )
+
+            result = cur.fetchone()
+            if result:
+                return cast(int, result[0])
+            else:
+                sql = """
+                WITH inst (institution_id) AS (
+                    SELECT institution_id FROM observations.institution WHERE name=%(institution)s
+                )
+                SELECT institution_user_id FROM admin.institution_user 
+                WHERE institution_id=(SELECT institution_id FROM inst) AND user_id=%(user_id)s
+                """
+
+                cur.execute(
+                    sql, dict(institution=institution.value, user_id=user_id,),
+                )
+
+                result = cur.fetchone()
+
+                return cast(int, result[0])
 
     def insert_instrument_keyword_value(
         self, instrument_keyword_value: types.InstrumentKeywordValue
@@ -673,7 +759,9 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
                 ),
             )
 
-    def insert_position(self, position: types.Position) -> int:
+    def insert_position(
+        self, position: types.Position, owner_institution_user_ids: Optional[List[int]]
+    ) -> int:
         """
         Inert a position.
 
@@ -681,6 +769,8 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
         ----------
         position : Position
             Position.
+        owner_institution_user_ids:
+            Institution users who own the data related to the position.
 
         Returns
         -------
@@ -691,8 +781,8 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
 
         with self._connection.cursor() as cur:
             sql = """
-            INSERT INTO _position (dec, equinox, plane_id, ra)
-            VALUES (%(dec)s, %(equinox)s, %(plane_id)s, %(ra)s)
+            INSERT INTO position (dec, equinox, owner_institution_user_ids, plane_id, ra)
+            VALUES (%(dec)s, %(equinox)s, %(owner_institution_user_ids)s, %(plane_id)s, %(ra)s)
             RETURNING position_id
             """
 
@@ -701,6 +791,7 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
                 dict(
                     dec=position.dec.to_value(u.degree),
                     equinox=position.equinox,
+                    owner_institution_user_ids=owner_institution_user_ids,
                     plane_id=position.plane_id,
                     ra=position.ra.to_value(u.degree),
                 ),
@@ -756,30 +847,29 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
             return cast(int, cur.fetchone()[0])
 
     def insert_proposal_investigator(
-        self, proposal_investigator: types.ProposalInvestigator
+        self, institution_user_id: int, proposal_id: int
     ) -> None:
         """
         Insert a proposal investigator.
 
         Parameters
         ----------
-        proposal_investigator : ProposalInvestigator
-            Proposal investigator.
+        institution_user_id : int
+            Institution proposal investigator.
+        proposal_id: int
+            Proposal id
 
         """
 
         with self._connection.cursor() as cur:
             sql = """
             INSERT INTO admin.proposal_investigator (institution_user_id, proposal_id)
-            VALUES (%(user_id)s, %(proposal_id)s)
+            VALUES (%(institution_user_id)s, %(proposal_id)s)
             """
 
             cur.execute(
                 sql,
-                dict(
-                    user_id=proposal_investigator.investigator_id,
-                    proposal_id=proposal_investigator.proposal_id,
-                ),
+                dict(institution_user_id=institution_user_id, proposal_id=proposal_id,),
             )
 
     def insert_target(self, target: types.Target) -> int:

@@ -1035,7 +1035,9 @@ class Position:
 
     """
 
-    def __init__(self, dec: Quantity, equinox: float, plane_id: int, ra: Quantity):
+    def __init__(
+        self, dec: Quantity, equinox: float, plane_id: int, ra: Quantity,
+    ):
         try:
             dec.to(u.degree)
         except u.UnitConversionError:
