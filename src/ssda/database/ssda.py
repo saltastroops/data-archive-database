@@ -156,7 +156,7 @@ class SSDADatabaseService:
             SELECT array_agg(institution_user_id)
             FROM admin.proposal_investigator
             JOIN observations.observation ON observation.proposal_id=proposal_investigator.proposal_id
-            WHERE proposal_investigator.proposal_id=%(proposal_id)s AND observation.meta_release >= now()
+            WHERE proposal_investigator.proposal_id=%(proposal_id)s AND observation.data_release >= now()
             GROUP BY observation.proposal_id
             """
             cur.execute(sql, dict(proposal_id=proposal_id))
