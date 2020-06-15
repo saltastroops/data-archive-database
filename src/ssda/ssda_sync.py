@@ -51,7 +51,7 @@ def main(start, end) -> int:
     )
     ssda_connection = database_services.ssda.connection()
 
-    salt_proposals = sdb_database_service.find_proposals_details(start_date, end_date)
+    salt_proposals = sdb_database_service.find_submitted_proposals_details(start_date, end_date)
 
     # Compare proposal and update
     for sdb_proposal in salt_proposals:
@@ -59,7 +59,7 @@ def main(start, end) -> int:
         institution = types.Institution.SALT
         try:
             # Proposal to compare
-            ssda_proposal = ssda_database_service.find_proposal_details(
+            ssda_proposal = ssda_database_service.find_salt_proposal_details(
                 proposal_code=sdb_proposal.proposal_code,
                 institution=institution
             )
@@ -69,20 +69,20 @@ def main(start, end) -> int:
             if sdb_proposal != ssda_proposal:
                 ssda_database_service.update_salt_proposal(proposal=sdb_proposal)
 
-            # compare observation status.
-            salt_observations = sdb_database_service.find_proposal_observations(
+            # Compare observation group status.
+            salt_observation_groups = sdb_database_service.find_proposal_observation_groups(
                 proposal_code=sdb_proposal.proposal_code
             )
-            for salt_obs in salt_observations:
-                ssda_obs = ssda_database_service.find_obs(
-                    group_identifier=salt_obs.group_identifier,
+            for salt_obs_group in salt_observation_groups:
+                ssda_obs_group = ssda_database_service.find_salt_observation_group(
+                    group_identifier=salt_obs_group.group_identifier,
                     telescope=types.Telescope.SALT
                 )
-                if salt_obs != ssda_obs and ssda_obs is not None:
+                if salt_obs_group != ssda_obs_group and ssda_obs_group is not None:
                     ssda_database_service.update_observation_group_status(
-                        group_identifier=salt_obs.group_identifier,
-                        telescope=salt_obs.telescope,
-                        status=salt_obs.status
+                        group_identifier=salt_obs_group.group_identifier,
+                        telescope=salt_obs_group.telescope,
+                        status=salt_obs_group.status
                     )
             ssda_database_service.commit_transaction()
         except AttributeError as e:

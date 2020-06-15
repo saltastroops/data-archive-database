@@ -515,13 +515,15 @@ class Institution(Enum):
     def for_name(name: str) -> Institution:
         """
         The institution for a case-insensitive name.
+
         Parameters
         ----------
         name : str
             The institution name.
+
         Returns
         -------
-        Institution :
+        Institution
             Institution.
         """
 
@@ -751,7 +753,8 @@ class Intent(Enum):
     @staticmethod
     def for_value(value):
         """
-        The intent value.
+        The intent for a case-insensitive value.
+
         Parameters
         ----------
         value : str
@@ -1248,6 +1251,7 @@ class ProposalInvestigator:
 class ProposalType(Enum):
     """
     Enumeration of the available proposal type.
+
     The enum values must be the same as the values of the proposal_type column in the
     proposal_type table.
     """
@@ -1260,7 +1264,7 @@ class ProposalType(Enum):
     @staticmethod
     def for_value(value) -> ProposalType:
         """
-        The proposal type value.
+        The proposal type for a case-insensitive value.
 
         Parameters
         ----------
@@ -1556,7 +1560,7 @@ class SALTProposalDetails:
         return True
 
 
-class SALTObservation:
+class SALTObservationGroup:
     def __init__(self, status: Status, group_identifier: str, telescope: Telescope):
         self.status = status
         self.group_identifier = group_identifier

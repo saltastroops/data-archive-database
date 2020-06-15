@@ -54,8 +54,7 @@ def validate_options(
     end : datetime
         End date.
     file : str
-        FITS file (path).rument
-        Set of instruments.
+        FITS file (path)
     fits_base_dir: str
         The base directory to data files
     task_name: TaskName

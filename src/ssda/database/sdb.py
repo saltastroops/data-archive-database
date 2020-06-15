@@ -713,22 +713,23 @@ LIMIT 1
             return f"{results['Title']}"
         raise ValueError("The observation has no title")
 
-    def find_proposal_observations(self, proposal_code) -> List[types.SALTObservation]:
+    def find_proposal_observation_groups(self, proposal_code) -> List[types.SALTObservationGroup]:
         """
-        The observations taken for a proposal.
+        The observation groups (i.e. block visits) taken for a proposal.
 
         Parameters
         ----------
         proposal_code: str
             The proposal code.
+
         Returns
         -------
-            The list of observations.
+            The observation group.
 
         """
 
         sql = """
-SELECT  BlockVisit_Id, BlockVisitStatus
+SELECT BlockVisit_Id, BlockVisitStatus
 FROM BlockVisit
     JOIN `Block` USING(Block_Id)
     JOIN BlockVisitStatus USING(BlockVisitStatus_Id)
@@ -741,7 +742,7 @@ WHERE Proposal_Code = %s
             for index, row in results.iterrows():
                 if row["BlockVisitStatus"] in ["Accepted", "Rejected"]:
                     ps.append(
-                        types.SALTObservation(
+                        types.SALTObservationGroup(
                             group_identifier=str(row["BlockVisit_Id"]),
                             status=types.Status.for_value(row["BlockVisitStatus"]),
                             telescope=types.Telescope.SALT,
@@ -749,22 +750,22 @@ WHERE Proposal_Code = %s
                     )
         return ps
 
-    def find_proposals_details(
+    def find_submitted_proposals_details(
         self, start_date: date, end_date: date
     ) -> List[types.SALTProposalDetails]:
         """
-        The part of a proposal that contains what would have change on SDB.
+        Details of proposals submitted within a date range.
 
         Parameters
         ----------
         start_date: date
-            The start date.
+            The start date (inclusive).
         end_date:date
-            The end date.
+            The end date (inclusive).
 
         Returns
         -------
-            The list of proposals.
+            The list of proposal details.
 
         """
 

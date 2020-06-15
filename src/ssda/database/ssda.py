@@ -62,7 +62,7 @@ class SSDADatabaseService:
 
             cur.execute(sql, dict(observation_id=observation_id))
 
-    def find_observation_group(
+    def _incorrect_find_observation_group(
         self, observation_group_id: str,
     ) -> Optional[types.ObservationGroup]:
         """
@@ -168,11 +168,11 @@ WHERE observation_group_id=%(observation_group_id)s
             else:
                 return None
 
-    def find_obs(
+    def find_salt_observation_group(
         self, group_identifier: str, telescope: types.Telescope
-    ) -> Optional[types.SALTObservation]:
+    ) -> Optional[types.SALTObservationGroup]:
         """
-        Find the observations for a proposal.
+        Find an observation group.
 
         Parameters
         ----------
@@ -183,7 +183,7 @@ WHERE observation_group_id=%(observation_group_id)s
 
         Returns
         -------
-        List[types.Observation]
+        Optional[types.Observation]
             A list of observations.
 
         """
@@ -207,7 +207,7 @@ Where group_identifier = %(group_identifier)s
             )
             result = cur.fetchone()
             return (
-                types.SALTObservation(
+                types.SALTObservationGroup(
                     status=types.Status.for_value(result[0]),
                     group_identifier=result[1],
                     telescope=telescope,
@@ -253,7 +253,7 @@ Where group_identifier = %(group_identifier)s
             else:
                 return None
 
-    def find_proposal_release_date(
+    def find_salt_proposal_release_date(
         self, proposal_code: str, institution: types.Institution
     ) -> (date, date):
         with self._connection.cursor() as cur:
@@ -269,11 +269,11 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
             )
             return cur.fetchone()
 
-    def find_proposal_details(
+    def find_salt_proposal_details(
         self, proposal_code: str, institution: types.Institution
     ) -> Optional[types.SALTProposalDetails]:
         """
-        Find the database id of a proposal.
+        Find proposal details.
 
         Parameters
         ----------
@@ -284,8 +284,8 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
 
         Returns
         -------
-        Optional[int]
-            The database id of the proposal, or None if there is no proposal for the
+        Optional[SALTProposalDetails]
+            The proposal details, or None if there is no proposal for the
             proposal code abd institution.
 
         """
@@ -302,7 +302,7 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
             )
             result = cur.fetchone()
             if result:
-                release_date = self.find_proposal_release_date(
+                release_date = self.find_salt_proposal_release_date(
                     proposal_code=proposal_code, institution=institution
                 )
                 investigators = self.find_proposal_investigator_user_ids(
@@ -341,7 +341,7 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
         self, proposal_code: str, institution: types.Institution
     ) -> Optional[types.Proposal]:
         """
-        Find a proposal proposal to compare for an update.
+        Find a proposal.
 
         Parameters
         ----------
@@ -352,9 +352,9 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
 
         Returns
         -------
-        Optional[int]
-            The database id of the proposal, or None if there is no proposal for the
-            proposal code abd institution.
+        Optional[Proposal]
+            The proposal, or None if there is no proposal for the
+            proposal code and institution.
         """
         with self._connection.cursor() as cur:
             sql = """
@@ -1040,6 +1040,20 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
     def update_observation_group_status(
         self, group_identifier: str, status: types.Status, telescope: types.Telescope
     ) -> None:
+        """
+        Update the status of all observations in an observation group.
+
+        Parameters
+        ----------
+        group_identifier : str
+            Identifier for the observation group.
+        status : Status
+            New status.
+        telescope : Telescope
+            Telescope used for observing the group.
+
+        """
+
         with self._connection.cursor() as cur:
             sql = """
 WITH
@@ -1073,6 +1087,20 @@ WHERE observation_group_id=(SELECT observation_group_id FROM obs_id)
         institution: types.Institution,
         proposal_investigators: List[types.ProposalInvestigator],
     ):
+        """
+        Update the investigators for a proposal. Existing investigators are deleted.
+
+        Parameters
+        ----------
+        proposal_code : str
+            Proposal code.
+        institution : Institution
+            Institution.
+        proposal_investigators : List[ProposalInvestiogator]
+            New proposal investigators.
+
+        """
+
         with self._connection.cursor() as cur:
             sql = """
 WITH prop_id (proposal_id) AS (
@@ -1113,6 +1141,15 @@ WHERE proposal_id=%(proposal_id)s
             )
 
     def update_salt_proposal(self, proposal: types.SALTProposalDetails):
+        """
+        Update details for a SALT proposal, including investigators and release dates.
+
+        Parameters
+        ----------
+        proposal : SALTProposal
+            SALT proposal.
+
+        """
         with self._connection.cursor() as cur:
             sql = """
         WITH prop_id (proposal_id) AS (
