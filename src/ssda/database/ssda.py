@@ -376,7 +376,7 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
         institution: Institution
             Institution to which the user belongs.
         institution_member: bool
-            Institution member.
+            Whether the user is a member of the institution.
         user_id : str
             Unique identifier used by the institution for the user.
 
