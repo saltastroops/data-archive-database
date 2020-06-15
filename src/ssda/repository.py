@@ -88,14 +88,9 @@ def insert(
                 )
 
                 for proposal_investigator in proposal_investigators:
-                    # insert institution user if not exist
-                    institution_user_id = ssda_database_service.insert_institution_user(
-                        proposal_investigator.investigator_id, proposal.institution.SALT
-                    )
-
                     # insert proposal investigators
                     ssda_database_service.insert_proposal_investigator(
-                        institution_user_id, proposal_id,
+                        proposal_investigator
                     )
         else:
             proposal_id = None
@@ -181,10 +176,7 @@ def insert(
         # insert position
         position = observation_properties.position(plane_id)
         if position:
-            owner_institution_user_ids = ssda_database_service.find_owner_institution_user_ids(
-                proposal_id
-            )
-            ssda_database_service.insert_position(position, owner_institution_user_ids)
+            ssda_database_service.insert_position(position, proposal_id)
 
         # insert artifact
         artifact = observation_properties.artifact(plane_id)

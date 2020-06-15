@@ -2,7 +2,7 @@ import logging
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, cast
 from datetime import timedelta, date, datetime, timezone
 from astropy.coordinates import Angle
 
@@ -230,7 +230,12 @@ class SALTObservation:
         investigators = self.database_service.find_proposal_investigators(proposal_code)
         return [
             types.ProposalInvestigator(
-                proposal_id=proposal_id, investigator_id=str(investigator)
+                proposal_id=proposal_id,
+                investigator_id=str(investigator),
+                institution=types.Institution.SALT,
+                institution_member=self.database_service.is_salt_partner(
+                    int(investigator)
+                ),
             )
             for investigator in investigators
         ]

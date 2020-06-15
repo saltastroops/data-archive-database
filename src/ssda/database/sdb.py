@@ -1037,6 +1037,24 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
 
         return results.iloc[0]["RssMaskType"] == "MOS"
 
+    def is_salt_partner(self, user_id: int) -> bool:
+
+        sql = """
+            SELECT Partner_Code
+            FROM PiptUser
+            JOIN Investigator ON PiptUser.Investigator_Id = Investigator.Investigator_Id
+            JOIN Institute ON Investigator.Institute_Id = Institute.Institute_Id
+            JOIN Partner ON Institute.Partner_Id = Partner.Partner_Id
+            WHERE PiptUser.PiptUser_Id=%s
+        """
+
+        results = pd.read_sql(sql, self._connection, params=(user_id,))
+
+        if results.iloc[0]["Partner_Code"] == "OTH":
+            return False
+
+        return True
+
     def find_proposal_type(self, proposal_code: str) -> ProposalType:
         with self._connection.cursor() as cur:
             sql = """
