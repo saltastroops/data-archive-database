@@ -50,7 +50,8 @@ class RssObservationProperties(ObservationProperties):
     def instrument_setup(self, observation_id: int) -> types.InstrumentSetup:
         sql = """
         WITH fpm (id) AS (
-            SELECT rss_fabry_perot_mode_id FROM rss_fabry_perot_mode WHERE fabry_perot_mode=%(fabry_perot_mode)s
+            SELECT rss_fabry_perot_mode_id FROM observations.rss_fabry_perot_mode 
+            WHERE fabry_perot_mode=%(fabry_perot_mode)s
         ),
              rg (id) AS (
                  SELECT rss_grating_id FROM rss_grating WHERE grating=%(grating)s
@@ -61,7 +62,13 @@ class RssObservationProperties(ObservationProperties):
 
         fabry_perot_mode = self.header_value("OBSMODE")
 
-        grating_value = self.header_value("GRATING")
+        def normalized_grating_name(grating_name: str) -> str:
+            normalized_name = grating_name.lower()
+            if normalized_name == "open":
+                normalized_name = "Open"
+            return normalized_name
+
+        grating_value = normalized_grating_name(self.header_value("GRATING"))
         grating = None if grating_value == "N/A" else grating_value
 
         parameters = dict(fabry_perot_mode=fabry_perot_mode, grating=grating)
