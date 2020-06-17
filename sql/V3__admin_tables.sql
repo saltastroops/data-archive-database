@@ -265,6 +265,7 @@ CREATE TABLE institution_user (
 CREATE INDEX institution_user_institution_idx ON institution_user (institution_id);
 CREATE INDEX institution_user_institution_user_idx ON institution_user (institution_user_id);
 CREATE INDEX institution_user_ssda_user ON institution_user (ssda_user_id);
+CREATE UNIQUE INDEX institution_user_institution_institution_user ON institution_user (institution_id, user_id);
 
 COMMENT ON TABLE institution_user IS 'Table for linking a data archive user to a user account at an institution such as SALT.';
 COMMENT ON COLUMN institution_user.user_id IS 'Id used by the institution to identify the user.';

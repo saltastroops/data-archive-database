@@ -1,9 +1,9 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='ssda',
-    packages=find_packages(where='src'),
-    package_dir={'': 'src'},
+    name="ssda",
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
     python_requires=">=3.7",
     setup_requires=['pytest-runner'],
     install_requires=['astropy', 'click', 'dsnparse', 'python-dateutil', 'faker', 'psycopg2', 'sentry-sdk'],
