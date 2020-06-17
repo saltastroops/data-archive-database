@@ -1035,7 +1035,9 @@ class Position:
 
     """
 
-    def __init__(self, dec: Quantity, equinox: float, plane_id: int, ra: Quantity):
+    def __init__(
+        self, dec: Quantity, equinox: float, plane_id: int, ra: Quantity,
+    ):
         try:
             dec.to(u.degree)
         except u.UnitConversionError:
@@ -1190,22 +1192,42 @@ class ProposalInvestigator:
     ----------
     proposal_id : int
         Database id of the proposal.
+    institution : Institution
+            Institution to which the proposal was submitted.
+    institution_member: bool
+            Institution member.
     investigator_id : str
         The unique id of the investigator, as determined by the institution to which the
         proposal was submitted.
 
     """
 
-    def __init__(self, proposal_id: int, investigator_id: str):
+    def __init__(
+        self,
+        proposal_id: int,
+        investigator_id: str,
+        institution: Institution,
+        institution_member: bool,
+    ):
         if len(investigator_id) > 50:
             raise ValueError("The investigator id must have at most 30 characters.")
 
         self._proposal_id = proposal_id
+        self._institution = institution
+        self._institution_member = institution_member
         self._investigator_id = investigator_id
 
     @property
     def proposal_id(self) -> int:
         return self._proposal_id
+
+    @property
+    def institution(self) -> Institution:
+        return self._institution
+
+    @property
+    def institution_member(self) -> bool:
+        return self._institution_member
 
     @property
     def investigator_id(self) -> str:

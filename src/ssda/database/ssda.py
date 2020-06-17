@@ -135,6 +135,39 @@ class SSDADatabaseService:
             else:
                 return None
 
+    def find_owner_institution_user_ids(self, proposal_id: int) -> Optional[List[int]]:
+        """
+        Find the database institution user id values of the institution users who own the data related to the position.
+        If the data is public, None is returned.
+
+        Parameters
+        ----------
+        proposal_id: int
+            Database proposal id
+
+        Returns
+        -------
+        Optional[int]
+            The database id of institution users who own the data, or None if the data is public.
+
+        """
+
+        with self._connection.cursor() as cur:
+            sql = """
+            SELECT array_agg(institution_user_id)
+            FROM admin.proposal_investigator
+            JOIN observations.observation ON observation.proposal_id=proposal_investigator.proposal_id
+            WHERE proposal_investigator.proposal_id=%(proposal_id)s AND observation.data_release >= now()
+            GROUP BY observation.proposal_id
+            """
+            cur.execute(sql, dict(proposal_id=proposal_id))
+            result = cur.fetchone()
+
+            if result:
+                return result[0]
+            else:
+                return None
+
     def find_proposal_id(
         self, proposal_code: str, institution: types.Institution
     ) -> Optional[int]:
@@ -330,6 +363,71 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
             )
 
             return cast(int, cur.fetchone()[0])
+
+    def insert_institution_user(
+        self, user_id: str, institution: types.Institution, institution_member: bool
+    ) -> int:
+        """
+        Insert an institution user in the database if the institution user does not exist
+        and return the new database institution user id.
+        If the institution user already exist, the database institution user id is retrieved.
+
+        Parameters
+        ----------
+        institution: Institution
+            Institution to which the user belongs.
+        institution_member: bool
+            Whether the user is a member of the institution.
+        user_id : str
+            Unique identifier used by the institution for the user.
+
+        Returns
+        -------
+        int
+            Database id of the institution user.
+
+        """
+
+        with self._connection.cursor() as cur:
+            sql = """
+            WITH inst (institution_id) AS (
+                SELECT institution_id FROM observations.institution WHERE name=%(institution)s
+            )
+            INSERT INTO admin.institution_user (institution_id, institution_member, user_id)
+            VALUES ((SELECT institution_id FROM inst), %(institution_member)s, %(user_id)s)
+            ON CONFLICT (user_id, institution_id) 
+            DO NOTHING
+            RETURNING institution_user_id
+            """
+
+            cur.execute(
+                sql,
+                dict(
+                    institution=institution.value,
+                    institution_member=bool(institution_member),
+                    user_id=user_id,
+                ),
+            )
+
+            result = cur.fetchone()
+            if result:
+                return cast(int, result[0])
+            else:
+                sql = """
+                WITH inst (institution_id) AS (
+                    SELECT institution_id FROM observations.institution WHERE name=%(institution)s
+                )
+                SELECT institution_user_id FROM admin.institution_user 
+                WHERE institution_id=(SELECT institution_id FROM inst) AND user_id=%(user_id)s
+                """
+
+                cur.execute(
+                    sql, dict(institution=institution.value, user_id=user_id,),
+                )
+
+                result = cur.fetchone()
+
+                return cast(int, result[0])
 
     def insert_instrument_keyword_value(
         self, instrument_keyword_value: types.InstrumentKeywordValue
@@ -674,7 +772,7 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
                 ),
             )
 
-    def insert_position(self, position: types.Position) -> int:
+    def insert_position(self, position: types.Position, proposal_id: int) -> int:
         """
         Inert a position.
 
@@ -682,6 +780,8 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
         ----------
         position : Position
             Position.
+        proposal_id: int
+            Database proposal id
 
         Returns
         -------
@@ -690,10 +790,12 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
 
         """
 
+        owner_institution_user_ids = self.find_owner_institution_user_ids(proposal_id)
+
         with self._connection.cursor() as cur:
             sql = """
-            INSERT INTO observations._position (dec, equinox, plane_id, ra)
-            VALUES (%(dec)s, %(equinox)s, %(plane_id)s, %(ra)s)
+            INSERT INTO position (dec, equinox, owner_institution_user_ids, plane_id, ra)
+            VALUES (%(dec)s, %(equinox)s, %(owner_institution_user_ids)s, %(plane_id)s, %(ra)s)
             RETURNING position_id
             """
 
@@ -702,6 +804,7 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
                 dict(
                     dec=position.dec.to_value(u.degree),
                     equinox=position.equinox,
+                    owner_institution_user_ids=owner_institution_user_ids,
                     plane_id=position.plane_id,
                     ra=position.ra.to_value(u.degree),
                 ),
@@ -761,24 +864,29 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
     ) -> None:
         """
         Insert a proposal investigator.
-
         Parameters
         ----------
         proposal_investigator : ProposalInvestigator
             Proposal investigator.
-
         """
+
+        # insert institution user if not exist
+        institution_user_id = self.insert_institution_user(
+            proposal_investigator.investigator_id,
+            proposal_investigator.institution,
+            proposal_investigator.institution_member,
+        )
 
         with self._connection.cursor() as cur:
             sql = """
             INSERT INTO admin.proposal_investigator (institution_user_id, proposal_id)
-            VALUES (%(user_id)s, %(proposal_id)s)
+            VALUES (%(institution_user_id)s, %(proposal_id)s)
             """
 
             cur.execute(
                 sql,
                 dict(
-                    user_id=proposal_investigator.investigator_id,
+                    institution_user_id=institution_user_id,
                     proposal_id=proposal_investigator.proposal_id,
                 ),
             )
