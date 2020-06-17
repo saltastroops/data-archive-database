@@ -85,11 +85,12 @@ class SSDADatabaseService:
 
         with self._connection.cursor() as cur:
             sql = """
-            SELECT observation.observation_group_id
-            FROM observation_group
-            JOIN observation ON observation_group.observation_group_id=observation.observation_group_id
-            JOIN telescope ON observation.telescope_id = telescope.telescope_id
-            WHERE observation_group.group_identifier=%(group_identifier)s AND telescope.name=%(telescope)s
+            SELECT observations.observation.observation_group_id
+            FROM observations.observation_group
+            JOIN observations.observation ON observations.observation_group.observation_group_id=
+            observations.observation.observation_group_id
+            JOIN observations.telescope ON observations.observation.telescope_id = observations.telescope.telescope_id
+            WHERE observations.observation_group.group_identifier=%(group_identifier)s AND observations.telescope.name=%(telescope)s
             """
             cur.execute(
                 sql, dict(group_identifier=group_identifier, telescope=telescope.value)
@@ -120,11 +121,11 @@ class SSDADatabaseService:
 
         with self._connection.cursor() as cur:
             sql = """
-            SELECT observation.observation_id
-            FROM observation
-            JOIN plane ON observation.observation_id = plane.observation_id
-            JOIN artifact ON plane.plane_id = artifact.plane_id
-            WHERE artifact.name=%(artifact_name)s
+            SELECT observations.observation.observation_id
+            FROM observations.observation
+            JOIN observations.plane ON observations.observation.observation_id = observations.plane.observation_id
+            JOIN observations.artifact ON observations.plane.plane_id = observations.artifact.plane_id
+            WHERE observations.artifact.name=%(artifact_name)s
             """
             cur.execute(sql, dict(artifact_name=artifact_name))
 
@@ -189,10 +190,10 @@ class SSDADatabaseService:
         """
         with self._connection.cursor() as cur:
             sql = """
-SELECT observation.observation_id
-FROM observation
-    JOIN plane ON observation.observation_id = plane.observation_id
-    JOIN observation_time ON plane.plane_id = observation_time.plane_id
+SELECT observations.observation.observation_id
+FROM observations.observation
+    JOIN observations.plane ON observations.observation.observation_id = observations.plane.observation_id
+    JOIN observations.observation_time ON observations.plane.plane_id = observations.observation_time.plane_id
 WHERE night >= %(start_date)s AND night <= %(end_date)s
             """
             cur.execute(sql, dict(start=start_date, end=end_date))
@@ -242,10 +243,10 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
             sql = """
             WITH pt (product_type_id) AS (
                 SELECT product_type_id
-                FROM product_type
+                FROM observations.product_type
                 WHERE product_type.product_type=%(product_type)s
             )
-            INSERT INTO artifact (content_checksum,
+            INSERT INTO observations.artifact (content_checksum,
                                   content_length,
                                   identifier,
                                   name,
@@ -351,14 +352,14 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
         with self._connection.cursor() as cur:
             sql = """
             WITH instr (instrument_id) AS (
-                SELECT instrument_id FROM instrument WHERE name=%(instrument)s
+                SELECT instrument_id FROM observations.instrument WHERE name=%(instrument)s
             ),
             ik (instrument_keyword_id) AS (
                 SELECT instrument_keyword_id
-                FROM instrument_keyword
+                FROM observations.instrument_keyword
                 WHERE keyword=%(keyword)s
             )
-            INSERT INTO instrument_keyword_value (instrument_id,
+            INSERT INTO observations.instrument_keyword_value (instrument_id,
                                                   instrument_keyword_id,
                                                   observation_id,
                                                   value)
@@ -396,17 +397,17 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
         with self._connection.cursor() as cur:
             sql = """
             WITH d (id) AS (
-                SELECT detector_mode_id FROM detector_mode
+                SELECT detector_mode_id FROM observations.detector_mode
                 WHERE detector_mode.detector_mode=%(detector_mode)s
             ),
             f (id) AS (
-                SELECT filter_id FROM filter WHERE name=%(filter)s
+                SELECT filter_id FROM observations.filter WHERE name=%(filter)s
             ),
             im (id) AS (
-                SELECT instrument_mode_id FROM instrument_mode
+                SELECT instrument_mode_id FROM observations.instrument_mode
                 WHERE instrument_mode.instrument_mode=%(instrument_mode)s
             )
-            INSERT INTO instrument_setup (detector_mode_id,
+            INSERT INTO observations.instrument_setup (detector_mode_id,
                                           filter_id,
                                           instrument_mode_id,
                                           observation_id)
@@ -470,18 +471,18 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
         with self._connection.cursor() as cur:
             sql = """
             WITH instr (instrument_id) AS (
-                SELECT instrument_id FROM instrument WHERE name=%(instrument)s
+                SELECT instrument_id FROM observations.instrument WHERE name=%(instrument)s
             ),
             i (intent_id) AS (
-                SELECT intent_id FROM intent WHERE intent.intent=%(intent)s
+                SELECT intent_id FROM observations.intent WHERE observations.intent.intent=%(intent)s
             ),
             st (status_id) AS (
-                SELECT status_id FROM status WHERE status.status=%(status)s
+                SELECT status_id FROM observations.status WHERE observations.status.status=%(status)s
             ),
             tel (telescope_id) AS (
-                SELECT telescope_id FROM telescope WHERE name=%(telescope)s
+                SELECT telescope_id FROM observations.telescope WHERE name=%(telescope)s
             )
-            INSERT INTO observation (data_release,
+            INSERT INTO observations.observation (data_release,
                                      instrument_id,
                                      intent_id,
                                      meta_release,
@@ -537,7 +538,7 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
 
         with self._connection.cursor() as cur:
             sql = """
-            INSERT INTO observation_group (group_identifier,
+            INSERT INTO observations.observation_group (group_identifier,
                                            name)
             VALUES (%(group_identifier)s,
                     %(name)s)
@@ -571,7 +572,7 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
 
         with self._connection.cursor() as cur:
             sql = """
-            INSERT INTO observation_time (end_time,
+            INSERT INTO observations.observation_time (end_time,
                                           exposure_time,
                                           night,
                                           plane_id,
@@ -620,10 +621,10 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
             sql = """
             WITH dpt (data_product_type_id) AS (
                 SELECT data_product_type_id
-                FROM data_product_type
+                FROM observations.data_product_type
                 WHERE product_type=%(data_product_type)s
             )
-            INSERT INTO plane (data_product_type_id, observation_id)
+            INSERT INTO observations.plane (data_product_type_id, observation_id)
             VALUES ((SELECT data_product_type_id FROM dpt),
                     %(observation_id)s)
             RETURNING plane_id
@@ -691,7 +692,7 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
 
         with self._connection.cursor() as cur:
             sql = """
-            INSERT INTO _position (dec, equinox, plane_id, ra)
+            INSERT INTO observations._position (dec, equinox, plane_id, ra)
             VALUES (%(dec)s, %(equinox)s, %(plane_id)s, %(ra)s)
             RETURNING position_id
             """
@@ -801,9 +802,9 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
         with self._connection.cursor() as cur:
             sql = """
             WITH tt (target_type_id) AS (
-                SELECT target_type_id FROM target_type WHERE numeric_code=%(numeric_code)s
+                SELECT target_type_id FROM observations.target_type WHERE numeric_code=%(numeric_code)s
             )
-            INSERT INTO Target (name, observation_id, standard, target_type_id)
+            INSERT INTO observations.target (name, observation_id, standard, target_type_id)
             VALUES (%(name)s,
                     %(observation_id)s,
                     %(standard)s,
