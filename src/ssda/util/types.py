@@ -738,6 +738,24 @@ class Intent(Enum):
     SCIENCE = "Science"
     UNKNOWN = "Unknown"
 
+    @staticmethod
+    def for_value(value):
+        """
+        The intent for a case-insensitive value.
+        Parameters
+        ----------
+        value : str
+            The value.
+        Returns
+        -------
+        Intent:
+            The intent.
+        """
+        for intent in Intent:
+            if intent.value.lower() == value.lower():
+                return intent
+        raise ValueError(f"Unknown intent for value: {value}")
+
 
 class Observation:
     """
@@ -1284,6 +1302,26 @@ class Status(Enum):
     ACCEPTED = "Accepted"
     REJECTED = "Rejected"
 
+    @staticmethod
+    def for_value(value: str) -> Status:
+        """
+        The status for.
+        Parameters
+        ----------
+        value : str
+            The status value.
+        Returns
+        -------
+        Status :
+            Status.
+        """
+
+        for status in Status:
+            if value.lower() == str(status.value).lower():
+                return status
+
+        raise ValueError(f"Unknown status: {value}")
+
 
 class StokesParameter(Enum):
     """
@@ -1420,3 +1458,45 @@ class Telescope(Enum):
     LESEDI = "LESEDI"
     ONE_DOT_NINE = "1.9 m"
     SALT = "SALT"
+
+
+class SALTProposalDetails:
+    def __init__(
+            self,
+            proposal_code: str,
+            institution: Institution,
+            meta_release: date,
+            data_release: date,
+            pi: str,
+            title: str,
+            investigators: List[str]
+    ):
+        self.proposal_code = proposal_code
+        self.institution = institution
+        self.meta_release = meta_release
+        self.data_release = data_release
+        self.pi = pi
+        self.title = title
+        self.investigators = investigators
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and \
+               self.proposal_code == other.proposal_code and \
+               self.institution == other.institution and \
+               self.meta_release == other.meta_release and \
+               self.data_release == other.data_release and \
+               self.pi == other.pi and \
+               self.investigators.sort() == other.investigators.sort()
+
+
+class SALTObservationGroup:
+    def __init__(self, status: Status, group_identifier: str, telescope: Telescope):
+        self.status = status
+        self.group_identifier = group_identifier
+        self.telescope = telescope
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and \
+               self.status.value == other.status.value and \
+               self.telescope.value == other.telescope.value and \
+               self.group_identifier == other.group_identifier
