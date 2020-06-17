@@ -403,7 +403,7 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
                 sql,
                 dict(
                     institution=institution.value,
-                    institution_member=institution_member,
+                    institution_member=bool(institution_member),
                     user_id=user_id,
                 ),
             )
