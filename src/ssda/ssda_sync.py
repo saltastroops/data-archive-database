@@ -18,7 +18,6 @@ def main(start, end) -> int:
     """
     Synchronise the SSDA database with telescope databases such as the SALT Science Database.
     """
-    print("2222")
     logging.basicConfig(level=logging.INFO)
     logging.error("SALT is always assumed to be the telescope.")
     # convert options as required and validate them
@@ -50,7 +49,6 @@ def main(start, end) -> int:
         ssda=ssda_database_service, sdb=sdb_database_service
     )
     ssda_connection = database_services.ssda.connection()
-    print("SSDA connection done")
 
     salt_proposals = sdb_database_service.find_submitted_proposals_details(start_date, end_date)
 
@@ -66,7 +64,6 @@ def main(start, end) -> int:
                 continue
 
             if sdb_proposal != ssda_proposal:
-                print(">>: ", sdb_proposal.proposal_code)
                 ssda_database_service.update_salt_proposal(proposal=sdb_proposal)
 
             # Compare observation group status.
@@ -78,14 +75,12 @@ def main(start, end) -> int:
                     group_identifier=salt_obs_group.group_identifier
                 )
                 if salt_obs_group != ssda_obs_group and ssda_obs_group is not None:
-                    print(salt_obs_group)
                     ssda_database_service.update_observation_group_status(
                         group_identifier=salt_obs_group.group_identifier,
                         telescope=salt_obs_group.telescope,
                         status=salt_obs_group.status
                     )
             ssda_database_service.commit_transaction()
-            print(sdb_proposal.proposal_code)
         except AttributeError as e:
             ssda_database_service.rollback_transaction()
             logging.error("""
