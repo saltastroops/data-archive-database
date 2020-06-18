@@ -465,7 +465,7 @@ CREATE TABLE rss_setup
 (
     instrument_setup_id     int PRIMARY KEY REFERENCES instrument_setup (instrument_setup_id) ON DELETE CASCADE,
     rss_fabry_perot_mode_id int REFERENCES rss_fabry_perot_mode (rss_fabry_perot_mode_id),
-    rss_grating_id          int REFERENCES rss_grating (rss_grating_id)
+    rss_grating_id          int REFERENCES rss_grating (rss_grating_id),
     camera_angle            numeric(5, 2)
 );
 
