@@ -135,6 +135,39 @@ class SSDADatabaseService:
             else:
                 return None
 
+    def find_owner_institution_user_ids(self, proposal_id: int) -> Optional[List[int]]:
+        """
+        Find the database institution user id values of the institution users who own the data related to the position.
+        If the data is public, None is returned.
+
+        Parameters
+        ----------
+        proposal_id: int
+            Database proposal id
+
+        Returns
+        -------
+        Optional[int]
+            The database id of institution users who own the data, or None if the data is public.
+
+        """
+
+        with self._connection.cursor() as cur:
+            sql = """
+            SELECT array_agg(institution_user_id)
+            FROM admin.proposal_investigator
+            JOIN observations.observation ON observation.proposal_id=proposal_investigator.proposal_id
+            WHERE proposal_investigator.proposal_id=%(proposal_id)s AND observation.data_release >= now()
+            GROUP BY observation.proposal_id
+            """
+            cur.execute(sql, dict(proposal_id=proposal_id))
+            result = cur.fetchone()
+
+            if result:
+                return result[0]
+            else:
+                return None
+
     def find_proposal_id(
         self, proposal_code: str, institution: types.Institution
     ) -> Optional[int]:
@@ -202,18 +235,6 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
             return [cast(int, obs[0]) for obs in observation_ids]
 
     def find_salt_proposal_release_date(self, proposal_code: str) -> (date, date):
-        """
-        Find the release dates for the data and metadata of a SALT proposal.
-
-        Parameters
-        ----------
-        proposal_code
-
-        Returns
-        -------
-        pair of dates
-            A pair of the data and metadata release date, in this order.
-        """
         with self._connection.cursor() as cur:
             sql = """
 SELECT DISTINCT data_release, meta_release
@@ -230,14 +251,12 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
     def find_salt_proposal_details(self, proposal_code: str) -> Optional[types.SALTProposalDetails]:
         """
         Find proposal details.
-
         Parameters
         ----------
         proposal_code : str
             Proposal code.
         institution: Institution
             Institution to which the proposal was submitted.
-
         Returns
         -------
         Optional[SALTProposalDetails]
@@ -279,23 +298,6 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
     def find_proposal_investigator_user_ids(
             self, proposal_code: str, institution: types.Institution
     ) -> List[str]:
-        """
-        Find the list of user ids for the investigators on a proposal.
-
-        Parameters
-        ----------
-        proposal_code : str
-            Proposal code.
-        institution : Institution
-            Institution.
-
-        Returns
-        -------
-        list of str
-            List of user ids.
-
-        """
-
         with self._connection.cursor() as cur:
             sql = """
 SELECT user_id
@@ -315,20 +317,17 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
     ) -> Optional[types.Proposal]:
         """
         Find a proposal.
-
         Parameters
         ----------
         proposal_code : str
             Proposal code.
         institution
             Institution to which the proposal was submitted.
-
         Returns
         -------
         Optional[Proposal]
             The proposal, or None if there is no proposal for the
             proposal code and institution.
-
         """
         with self._connection.cursor() as cur:
             sql = """
@@ -352,7 +351,7 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
                     pi=result[0],
                     proposal_code=result[1],
                     title=result[2],
-                    institution=types.Institution.for_name(result[5]),
+                    institution=types.Institution.for_name(result[3]),
                     proposal_type=types.ProposalType.for_value(result[4]),
                 )
             else:
@@ -361,19 +360,15 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
     def find_salt_observation_group(self, group_identifier: str) -> Optional[types.SALTObservationGroup]:
         """
         Find an observation group.
-
         Parameters
         ----------
         group_identifier: str
             The group identifier.
-
         Returns
         -------
         Optional[types.Observation]
             A list of observations.
-
         """
-
         with self._connection.cursor() as cur:
             sql = """
 WITH tel(telescope_id) AS(
@@ -531,6 +526,71 @@ Where group_identifier = %(group_identifier)s
             )
 
             return cast(int, cur.fetchone()[0])
+
+    def insert_institution_user(
+        self, user_id: str, institution: types.Institution, institution_member: bool
+    ) -> int:
+        """
+        Insert an institution user in the database if the institution user does not exist
+        and return the new database institution user id.
+        If the institution user already exist, the database institution user id is retrieved.
+
+        Parameters
+        ----------
+        institution: Institution
+            Institution to which the user belongs.
+        institution_member: bool
+            Whether the user is a member of the institution.
+        user_id : str
+            Unique identifier used by the institution for the user.
+
+        Returns
+        -------
+        int
+            Database id of the institution user.
+
+        """
+
+        with self._connection.cursor() as cur:
+            sql = """
+            WITH inst (institution_id) AS (
+                SELECT institution_id FROM observations.institution WHERE name=%(institution)s
+            )
+            INSERT INTO admin.institution_user (institution_id, institution_member, user_id)
+            VALUES ((SELECT institution_id FROM inst), %(institution_member)s, %(user_id)s)
+            ON CONFLICT (user_id, institution_id) 
+            DO NOTHING
+            RETURNING institution_user_id
+            """
+
+            cur.execute(
+                sql,
+                dict(
+                    institution=institution.value,
+                    institution_member=bool(institution_member),
+                    user_id=user_id,
+                ),
+            )
+
+            result = cur.fetchone()
+            if result:
+                return cast(int, result[0])
+            else:
+                sql = """
+                WITH inst (institution_id) AS (
+                    SELECT institution_id FROM observations.institution WHERE name=%(institution)s
+                )
+                SELECT institution_user_id FROM admin.institution_user 
+                WHERE institution_id=(SELECT institution_id FROM inst) AND user_id=%(user_id)s
+                """
+
+                cur.execute(
+                    sql, dict(institution=institution.value, user_id=user_id,),
+                )
+
+                result = cur.fetchone()
+
+                return cast(int, result[0])
 
     def insert_instrument_keyword_value(
         self, instrument_keyword_value: types.InstrumentKeywordValue
@@ -875,7 +935,7 @@ Where group_identifier = %(group_identifier)s
                 ),
             )
 
-    def insert_position(self, position: types.Position) -> int:
+    def insert_position(self, position: types.Position, proposal_id: int) -> int:
         """
         Inert a position.
 
@@ -883,6 +943,8 @@ Where group_identifier = %(group_identifier)s
         ----------
         position : Position
             Position.
+        proposal_id: int
+            Database proposal id
 
         Returns
         -------
@@ -891,10 +953,12 @@ Where group_identifier = %(group_identifier)s
 
         """
 
+        owner_institution_user_ids = self.find_owner_institution_user_ids(proposal_id)
+
         with self._connection.cursor() as cur:
             sql = """
-            INSERT INTO observations._position (dec, equinox, plane_id, ra)
-            VALUES (%(dec)s, %(equinox)s, %(plane_id)s, %(ra)s)
+            INSERT INTO position (dec, equinox, owner_institution_user_ids, plane_id, ra)
+            VALUES (%(dec)s, %(equinox)s, %(owner_institution_user_ids)s, %(plane_id)s, %(ra)s)
             RETURNING position_id
             """
 
@@ -903,6 +967,7 @@ Where group_identifier = %(group_identifier)s
                 dict(
                     dec=position.dec.to_value(u.degree),
                     equinox=position.equinox,
+                    owner_institution_user_ids=owner_institution_user_ids,
                     plane_id=position.plane_id,
                     ra=position.ra.to_value(u.degree),
                 ),
@@ -962,24 +1027,29 @@ Where group_identifier = %(group_identifier)s
     ) -> None:
         """
         Insert a proposal investigator.
-
         Parameters
         ----------
         proposal_investigator : ProposalInvestigator
             Proposal investigator.
-
         """
+
+        # insert institution user if not exist
+        institution_user_id = self.insert_institution_user(
+            proposal_investigator.investigator_id,
+            proposal_investigator.institution,
+            proposal_investigator.institution_member,
+        )
 
         with self._connection.cursor() as cur:
             sql = """
             INSERT INTO admin.proposal_investigator (institution_user_id, proposal_id)
-            VALUES (%(user_id)s, %(proposal_id)s)
+            VALUES (%(institution_user_id)s, %(proposal_id)s)
             """
 
             cur.execute(
                 sql,
                 dict(
-                    user_id=proposal_investigator.investigator_id,
+                    institution_user_id=institution_user_id,
                     proposal_id=proposal_investigator.proposal_id,
                 ),
             )
@@ -1030,7 +1100,6 @@ Where group_identifier = %(group_identifier)s
     ) -> None:
         """
         Update the status of all observations in an observation group.
-
         Parameters
         ----------
         group_identifier : str
@@ -1039,7 +1108,6 @@ Where group_identifier = %(group_identifier)s
             New status.
         telescope : Telescope
             Telescope used for observing the group.
-
         """
 
         with self._connection.cursor() as cur:
@@ -1077,7 +1145,6 @@ WHERE observation_group_id=(SELECT observation_group_id FROM obs_id)
     ):
         """
         Update the investigators for a proposal. Existing investigators are deleted.
-
         Parameters
         ----------
         proposal_code : str
@@ -1086,7 +1153,6 @@ WHERE observation_group_id=(SELECT observation_group_id FROM obs_id)
             Institution.
         proposal_investigators : List[ProposalInvestiogator]
             New proposal investigators.
-
         """
 
         with self._connection.cursor() as cur:
@@ -1108,24 +1174,7 @@ WHERE proposal_id = (SELECT proposal_id FROM prop_id)
                     proposal_investigator=proposal_investigator
                 )
 
-    def update_proposal_release_date(
-            self, proposal_id: int, data_release: date, meta_release: date
-    ) -> None:
-        """
-        Update all the data and metadata release dates of all observations for a
-        proposal.
-
-        Parameters
-        ----------
-        proposal_id : str
-            Proposal id.
-        data_release : date
-            Data release date.
-        meta_release : date
-            Metadata release date.
-
-        """
-
+    def update_proposal_release_date(self, proposal_id: int, release_dates: types.ReleaseDates) -> None:
         with self._connection.cursor() as cur:
             sql = """
 UPDATE observation
@@ -1137,8 +1186,8 @@ WHERE proposal_id=%(proposal_id)s
             cur.execute(
                 sql,
                 dict(
-                    data_release_date=data_release,
-                    meta_release_date=meta_release,
+                    data_release_date=release_dates.data_release,
+                    meta_release_date=release_dates.meta_release,
                     proposal_id=proposal_id,
                 ),
             )
@@ -1146,14 +1195,11 @@ WHERE proposal_id=%(proposal_id)s
     def update_salt_proposal(self, proposal: types.SALTProposalDetails):
         """
         Update details for a SALT proposal, including investigators and release dates.
-
         Parameters
         ----------
         proposal : SALTProposal
             SALT proposal.
-
         """
-
         with self._connection.cursor() as cur:
             sql = """
         WITH prop_id (proposal_id) AS (
@@ -1189,7 +1235,8 @@ WHERE proposal_id=%(proposal_id)s
                 ],
             )
             self.update_proposal_release_date(
-                proposal_id, proposal.data_release, proposal.meta_release
+                proposal_id=proposal_id,
+                release_dates=types.ReleaseDates(meta_release=proposal.meta_release, data_release=proposal.data_release)
             )
 
     def rollback_transaction(self) -> None:
