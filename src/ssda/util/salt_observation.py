@@ -485,7 +485,7 @@ class SALTObservation:
             return True
 
         # Ignore deleted blocks
-        if self._block_visit_id() and self.database_service.find_observation_status(self._block_visit_id()) == Status.DELETED:
+        if self._block_visit_id() and self.database_service.find_observation_status(self._block_visit_id()) in [Status.DELETED, Status.IN_QUEUE]:
             return True
 
         return False
