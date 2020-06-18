@@ -484,4 +484,8 @@ class SALTObservation:
         if is_science and not self._block_visit_id():
             return True
 
+        # Ignore deleted blocks
+        if self._block_visit_id() and self.database_service.find_observation_status(self._block_visit_id()) == Status.DELETED:
+            return True
+
         return False

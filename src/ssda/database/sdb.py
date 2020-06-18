@@ -881,6 +881,8 @@ WHERE BlockVisit_Id=%s
             return types.Status.ACCEPTED
         if status_results["BlockVisitStatus"].lower() == "rejected":
             return types.Status.REJECTED
+        if status_results["BlockVisitStatus"].lower() == "deleted":
+            return types.Status.DELETED
 
         # What block visits have there been for the block in the same night?
         visits_sql = """
@@ -900,17 +902,22 @@ WHERE bv.Block_Id=(SELECT bv2.Block_Id FROM BlockVisit AS bv2 WHERE bv2.BlockVis
         rejected_visits = len(
             visits_results[visits_results["BlockVisitStatus"] == "Rejected"]
         )
-        other_visits = all_visits - accepted_visits - rejected_visits
+        deleted_visits = len(
+            visits_results[visits_results["BlockVisitStatus"] == "Deleted"]
+        )
+        other_visits = all_visits - accepted_visits - rejected_visits - deleted_visits
 
         # We don't know which visit corresponds to a deleted/queued visit, However, this
         # doesn't matter if there are enough accepted/rejected visits and if there
         # aren't both accepted and rejected visits, as in this case it is reasonable to
         # assume that there is a corresponding visit and there is only one possible
         # status for it.
-        if rejected_visits == 0 and accepted_visits >= other_visits:
+        if rejected_visits == 0 and deleted_visits == 0 and accepted_visits >= other_visits:
             return types.Status.ACCEPTED
-        if accepted_visits == 0 and rejected_visits >= other_visits:
+        if accepted_visits == 0 and deleted_visits == 0 and rejected_visits >= other_visits:
             return types.Status.REJECTED
+        if accepted_visits == 0 and rejected_visits == 0 and deleted_visits >= other_visits:
+            return types.Status.DELETED
 
         # Despite best effort no block visit status could be determined.
         raise Exception(
