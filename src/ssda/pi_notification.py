@@ -3,6 +3,8 @@ from dataclasses import dataclass
 import os
 import pymysql
 import psycopg2
+import pprint
+import operator
 from prettytable import PrettyTable
 from psycopg2 import extras
 import smtplib
@@ -128,7 +130,7 @@ def release_dates_and_proposals(days):
 def pi_information_to_be_sent(days):
     for key, pi in release_dates_and_proposals(days).items():
         proposals = []
-        for proposal in pi["proposals"]:
+        for proposal in sorted(pi["proposals"], key=lambda i: i["proposal_code"]):
             proposals.append(
                 Proposal(
                     code=proposal["proposal_code"],
@@ -143,18 +145,22 @@ def pi_information_to_be_sent(days):
     return PIs
 
 
-# def email_content():
-#     message = """
-# Please note that the observation data of your following proposals will become public soon.
-# You may request an extension on the proposal's page in the Web Manager.
-#
-# Kind regards,
-#
-# SALT Astronomy Operations"""
+def email_content(table):
+    message = f"""
+Please note that the observation data of your following proposals will become public soon.
+
+{table}
+
+You may request an extension on the proposal's page in the Web Manager.
+
+Kind regards,
+
+SALT Astronomy Operations"""
+    return message
 
 
-def sending_email(receiver, pi_name, plain_table, styled_table):
-    sender = "lonwabo@saao.ac.za"
+def sending_email(receiver, pi_name, table):
+    sender = "salthelp@salt.ac.za"
     message = MIMEMultipart("alternative")
     message["Subject"] = "Your SALT proposal data will become public"
     message["From"] = sender
@@ -167,31 +173,15 @@ From: {sender}
 
 Dear {pi_name}
 
-Please note that the observation data of your following proposals will become public soon.
-
-{plain_table}
-
-You may request an extension on the proposal's page in the Web Manager.
-
-Kind regards,
-
-SALT Astronomy Operations """
+ {email_content(table)} """
 
 # write the html part
     html = f"""
 <html>
   <body>
    <p> Dear {pi_name}<br><br>
-   
-       Please note that the observation data of your following proposals will become public soon. </p>
-
-       {styled_table} <br><br>
-
-       You may request an extension on the proposal's page in the Web Manager.<br><br>
       
-       Kind regards, <br><br>
-      
-       SALT Astronomy Operations
+      {email_content(table)}
   
   </body>
 </html>
@@ -209,8 +199,8 @@ SALT Astronomy Operations """
     mail_username = os.environ.get("MAIL_USER")
     mail_password = os.environ.get("MAIL_PASSWORD")
 
-    with smtplib.SMTP('mail.saao.ac.za', 25) as server:
-        server.login('lonwabo@saao.ac.za', 'loydbanks11$')
+    with smtplib.SMTP(mail_server, mail_port) as server:
+        server.login(mail_username, mail_password)
         server.sendmail(
             sender,
             receiver,
@@ -234,6 +224,8 @@ def read_log_file():
 def plain_text_table(proposals):
     table = PrettyTable()
     table.field_names = ["Proposals", "Release Date"]
+    table.align["Proposals"] = "l"
+    table.align["Release Date"] = "l"
     for proposal in proposals:
         table.add_row([proposal.code, proposal.release_date])
     return table
@@ -291,7 +283,7 @@ def log_proposal_information(pi_proposals, email):
 def handle_pi(pi_information):
     proposals = proposals_to_send(pi_information.proposals, pi_information.email)
     if len(proposals) > 0:
-        sending_email("lonwabo@saao.ac.za", pi_information.fullname, plain_text_table(proposals), html_table(proposals))
+        sending_email("lonwabo@saao.ac.za", pi_information.fullname, html_table(proposals))
         log_proposal_information(pi_information.proposals, pi_information.email)
     return None
 
