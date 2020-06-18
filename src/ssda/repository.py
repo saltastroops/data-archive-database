@@ -83,11 +83,12 @@ def insert(
                 # insert proposal
                 proposal_id = ssda_database_service.insert_proposal(proposal)
 
-                # insert proposal investigators
                 proposal_investigators = observation_properties.proposal_investigators(
                     proposal_id
                 )
+
                 for proposal_investigator in proposal_investigators:
+                    # insert proposal investigators
                     ssda_database_service.insert_proposal_investigator(
                         proposal_investigator
                     )
@@ -175,7 +176,7 @@ def insert(
         # insert position
         position = observation_properties.position(plane_id)
         if position:
-            ssda_database_service.insert_position(position)
+            ssda_database_service.insert_position(position, proposal_id)
 
         # insert artifact
         artifact = observation_properties.artifact(plane_id)

@@ -265,7 +265,9 @@ def test_energy_max_wavelength_must_be_positive():
             sample_size=2.34 * u.nanometer,
         )
 
-    assert "maximum wavelength" in str(excinfo.value) and "positive" in str(excinfo.value)
+    assert "maximum wavelength" in str(excinfo.value) and "positive" in str(
+        excinfo.value
+    )
 
 
 def test_energy_max_wavelength_must_have_a_length_unit():
@@ -293,7 +295,9 @@ def test_energy_min_wavelength_must_be_positive():
             sample_size=2.34 * u.nanometer,
         )
 
-    assert "minimum wavelength" in str(excinfo.value) and "positive" in str(excinfo.value)
+    assert "minimum wavelength" in str(excinfo.value) and "positive" in str(
+        excinfo.value
+    )
 
 
 def test_energy_min_wavelength_must_have_a_length_unit():
@@ -654,7 +658,9 @@ def test_observation_exposure_time_must_be_non_negative():
             ),
         )
 
-    assert "exposure time" in str(excinfo.value) and "non-negative" in str(excinfo.value)
+    assert "exposure time" in str(excinfo.value) and "non-negative" in str(
+        excinfo.value
+    )
 
 
 def test_observation_exposure_time_must_have_a_time_unit():
