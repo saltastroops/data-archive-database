@@ -76,22 +76,9 @@ class RssObservationProperties(ObservationProperties):
         parameters = dict(fabry_perot_mode=fabry_perot_mode, grating=grating, camera_angle=camera_angle)
         queries = [types.SQLQuery(sql=sql, parameters=parameters)]
 
-        detector_mode = None
-        if self.header_value("DETMODE"):
-            for dm in types.DetectorMode:
-                if (
-                    self.header_value("DETMODE").replace(" ", "").upper()
-                    == dm.value.replace(" ", "").upper()
-                ):
-                    detector_mode = dm
-        if not detector_mode:
-            record_warning(Warning("The detector mode could not be determined."))
-            detector_mode = types.DetectorMode.UNKNOWN
+        detector_mode = types.DetectorMode.for_name(self.header_value("DETMODE"))
 
-        filter = None
-        for fi in types.Filter:
-            if self.header_value("FILTER") == fi.value:
-                filter = fi
+        filter = types.Filter.for_name(self.header_value("FILTER"))
 
         try:
             instrument_mode = rss_instrument_mode(

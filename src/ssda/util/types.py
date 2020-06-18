@@ -10,6 +10,8 @@ from typing import Any, Dict, List, NamedTuple, Optional
 import astropy.units as u
 from astropy.units import def_unit, Quantity
 
+from ssda.util.warnings import record_warning
+
 byte = def_unit("byte")
 
 
@@ -344,6 +346,35 @@ class DetectorMode(Enum):
     SLOT_MODE = "Slot Mode"
     UNKNOWN = "Unknown"
 
+    @staticmethod
+    def for_name(name: str) -> DetectorMode:
+        """The detector mode for a case-insensitive name.
+
+        Parameters
+        ----------
+        name : str
+            Detector mode name.
+
+        Returns
+        -------
+        DetectorMode :
+            DetectorMode.
+
+        """
+
+        if name.lower() == "slot":
+            name = "Slot Mode"
+        if name.lower() == "ft":
+            name = "Frame Transfer"
+
+        for detector_mode in DetectorMode:
+            if name.lower() == str(detector_mode.value).lower():
+                return detector_mode
+        if not name:
+            return DetectorMode.UNKNOWN
+
+        record_warning(Warning(f"The detector mode {name} could not be determined."))
+
 
 class Energy:
     """
@@ -479,12 +510,116 @@ class Filter(Enum):
     table.
 
     """
-
+    Cousins_I = "Cousins I"
+    Cousins_R = "Cousins R"
+    FUSED_SILICA_CLEAR = "Fused silica clear"
+    FWHM_340_35 = "340nm 35nm FWHM"
+    FWHM_380_40 = "380nm 40nm FWHM"
+    H_ALPHA = "H-alpha"
+    H_BETA_NARROW = "H-beta narrow"
+    H_BETA_WIDE = "H-beta wide"
+    JOHNSON_B = "Johnson B"
+    JOHNSON_I = "Johnson I"
+    JOHNSON_R = "Johnson R"
     JOHNSON_U = "Johnson U"
     JOHNSON_V = "Johnson V"
-    JOHNSON_B = "Johnson B"
-    JOHNSON_R = "Johnson R"
-    JOHNSON_I = "Johnson I"
+    SDSS_G = "SDSS g'"
+    SDSS_I = "SDSS i'"
+    SDSS_R = "SDSS r'"
+    SDSS_U = "SDSS u'"
+    SDSS_z = "SDSS z'"
+    SRE_1 = "SRE 1"
+    SRE_2 = "SRE 2"
+    SRE_3 = "SRE 3"
+    SRE_4 = "SRE 4"
+    STROEMGREN_B = "Stroemgren b"
+    STROEMGREN_U = "Stroemgren u"
+    STROEMGREN_V = "Stroemgren v"
+    STROEMGREN_Y = "Stroemgren y"
+    PC00000 = "pc00000"
+    PC03200 = "pc03200"
+    PC03400 = "pc03400"
+    PC03850 = "pc03850"
+    PC04600 = "pc04600"
+    PI04340 = "pi04340"
+    PI04400 = "pi04400"
+    PI04465 = "pi04465"
+    PI04530 = "pi04530"
+    PI04600 = "pi04600"
+    PI04670 = "pi04670"
+    PI04740 = "pi04740"
+    PI04820 = "pi04820"
+    PI04895 = "pi04895"
+    PI04975 = "pi04975"
+    PI05060 = "pi05060"
+    PI05145 = "pi05145"
+    PI05235 = "pi05235"
+    PI05325 = "pi05325"
+    PI05420 = "pi05420"
+    PI05520 = "pi05520"
+    PI05620 = "pi05620"
+    PI05725 = "pi05725"
+    PI05830 = "pi05830"
+    PI05945 = "pi05945"
+    PI06055 = "pi06055"
+    PI06170 = "pi06170"
+    PI06290 = "pi06290"
+    PI06410 = "pi06410"
+    PI06530 = "pi06530"
+    PI06645 = "pi06645"
+    PI06765 = "pi06765"
+    PI06885 = "pi06885"
+    PI07005 = "pi07005"
+    PI07130 = "pi07130"
+    PI07260 = "pi07260"
+    PI07390 = "pi07390"
+    PI07535 = "pi07535"
+    PI07685 = "pi07685"
+    PI07840 = "pi07840"
+    PI08005 = "pi08005"
+    PI08175 = "pi08175"
+    PI08350 = "pi08350"
+    PI08535 = "pi08535"
+    PI08730 = "pi08730"
+    UNKNOWN = "Unknown"
+
+    @staticmethod
+    def for_name(name: str) -> Filter:
+        """The filter for a case-insensitive name.
+
+        Parameters
+        ----------
+        name : str
+            Filter name.
+
+        Returns
+        -------
+        Filter :
+            Filter.
+
+        """
+
+        if name == "Halpha-S1":
+            name = "H-alpha"
+        if name == "SDSSr-S1":
+            name = "SDSS r'"
+        if name == "SDSSi-S1":
+            name = "SDSS i'"
+        if name == "SDSSg-S1":
+            name = "SDSS g'"
+        if name == "SDSSu-S1":
+            name = "SDSS u'"
+        if name == "SDSSz-S1":
+            name = "SDSS z'"
+
+        for filter in Filter:
+            if name.lower() == str(filter.value).lower():
+                return filter
+
+        if not name:
+            return Filter.UNKNOWN
+
+        record_warning(Warning(f"Unknown filter name: {name}"))
 
 
 class HRSArm(Enum):

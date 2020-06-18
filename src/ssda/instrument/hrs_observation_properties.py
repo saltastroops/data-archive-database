@@ -8,6 +8,8 @@ from ssda.util.salt_observation import SALTObservation
 from ssda.util.fits import FitsFile
 from typing import Optional, List
 
+from ssda.util.warnings import record_warning
+
 
 class HrsObservationProperties(ObservationProperties):
     def __init__(self, fits_file: FitsFile, database_service: SaltDatabaseService):
@@ -59,14 +61,7 @@ class HrsObservationProperties(ObservationProperties):
         parameters = dict(hrs_mode=hrs_mode.value)
         queries = [types.SQLQuery(sql=sql, parameters=parameters)]
 
-        detector_mode = None
-        for dm in types.DetectorMode:
-            if self.header_value("DETMODE") == dm.value:
-                detector_mode = dm
-        if not detector_mode:
-            raise ValueError(
-                f"Detector mode of file {self.file_path} is not recognised"
-            )
+        detector_mode = types.DetectorMode.for_name(self.header_value("DETMODE"))
 
         return types.InstrumentSetup(
             additional_queries=queries,

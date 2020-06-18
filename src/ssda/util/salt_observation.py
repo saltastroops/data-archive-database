@@ -484,4 +484,11 @@ class SALTObservation:
         if is_science and not self._block_visit_id():
             return True
 
+        # Ignore all data observed before 2011-09-01
+        date_observed = datetime.strptime(self.header_value('DATE-OBS'), "%Y-%m-%d")
+
+        if date_observed < datetime.strptime("2011-09-01", "%Y-%m-%d"):
+            print(date_observed)
+            return True
+
         return False
