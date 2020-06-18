@@ -881,8 +881,6 @@ WHERE BlockVisit_Id=%s
             return types.Status.ACCEPTED
         if status_results["BlockVisitStatus"].lower() == "rejected":
             return types.Status.REJECTED
-        if status_results["BlockVisitStatus"].lower() == "deleted":
-            return types.Status.DELETED
 
         # What block visits have there been for the block in the same night?
         visits_sql = """
