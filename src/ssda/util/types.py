@@ -1245,6 +1245,12 @@ class ProposalType(Enum):
     SCIENCE_VERIFICATION = "Science Verification"
 
 
+@dataclass
+class ReleaseDates:
+    meta_release: date
+    data_release: date
+
+
 class RSSFabryPerotMode(Enum):
     """
     Enumeration of the RSS Fabry-Perot modes.
@@ -1290,6 +1296,48 @@ class RSSGrating(Enum):
     PG3000 = "PG3000"
 
 
+class SALTObservationGroup:
+    def __init__(self, status: Status, group_identifier: str, telescope: Telescope):
+        self.status = status
+        self.group_identifier = group_identifier
+        self.telescope = telescope
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and \
+               self.status.value == other.status.value and \
+               self.telescope.value == other.telescope.value and \
+               self.group_identifier == other.group_identifier
+
+
+class SALTProposalDetails:
+    def __init__(
+            self,
+            proposal_code: str,
+            institution: Institution,
+            meta_release: date,
+            data_release: date,
+            pi: str,
+            title: str,
+            investigators: List[str]
+    ):
+        self.proposal_code = proposal_code
+        self.institution = institution
+        self.meta_release = meta_release
+        self.data_release = data_release
+        self.pi = pi
+        self.title = title
+        self.investigators = investigators
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and \
+               self.proposal_code == other.proposal_code and \
+               self.institution == other.institution and \
+               self.meta_release == other.meta_release and \
+               self.data_release == other.data_release and \
+               self.pi == other.pi and \
+               self.investigators.sort() == other.investigators.sort()
+
+
 class Status(Enum):
     """
     Enumeration of the available status values.
@@ -1317,7 +1365,7 @@ class Status(Enum):
         """
 
         for status in Status:
-            if value.lower() == str(status.value).lower():
+            if value.lower() == status.value.lower():
                 return status
 
         raise ValueError(f"Unknown status: {value}")
@@ -1458,45 +1506,3 @@ class Telescope(Enum):
     LESEDI = "LESEDI"
     ONE_DOT_NINE = "1.9 m"
     SALT = "SALT"
-
-
-class SALTProposalDetails:
-    def __init__(
-            self,
-            proposal_code: str,
-            institution: Institution,
-            meta_release: date,
-            data_release: date,
-            pi: str,
-            title: str,
-            investigators: List[str]
-    ):
-        self.proposal_code = proposal_code
-        self.institution = institution
-        self.meta_release = meta_release
-        self.data_release = data_release
-        self.pi = pi
-        self.title = title
-        self.investigators = investigators
-
-    def __eq__(self, other):
-        return self.__class__ == other.__class__ and \
-               self.proposal_code == other.proposal_code and \
-               self.institution == other.institution and \
-               self.meta_release == other.meta_release and \
-               self.data_release == other.data_release and \
-               self.pi == other.pi and \
-               self.investigators.sort() == other.investigators.sort()
-
-
-class SALTObservationGroup:
-    def __init__(self, status: Status, group_identifier: str, telescope: Telescope):
-        self.status = status
-        self.group_identifier = group_identifier
-        self.telescope = telescope
-
-    def __eq__(self, other):
-        return self.__class__ == other.__class__ and \
-               self.status.value == other.status.value and \
-               self.telescope.value == other.telescope.value and \
-               self.group_identifier == other.group_identifier

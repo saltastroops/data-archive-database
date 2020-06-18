@@ -318,7 +318,7 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
                     pi=result[0],
                     proposal_code=result[1],
                     title=result[2],
-                    institution=types.Institution.for_name(result[5]),
+                    institution=types.Institution.for_name(result[3]),
                     proposal_type=types.ProposalType.for_value(result[4]),
                 )
             else:
@@ -1066,9 +1066,7 @@ WHERE proposal_id = (SELECT proposal_id FROM prop_id)
                     proposal_investigator=proposal_investigator
                 )
 
-    def update_proposal_release_date(
-            self, proposal_id: int, meta_release: date, data_release: date
-    ) -> None:
+    def update_proposal_release_date(self, proposal_id: int, release_dates: types.ReleaseDates) -> None:
         with self._connection.cursor() as cur:
             sql = """
 UPDATE observation
@@ -1080,8 +1078,8 @@ WHERE proposal_id=%(proposal_id)s
             cur.execute(
                 sql,
                 dict(
-                    data_release_date=data_release,
-                    meta_release_date=meta_release,
+                    data_release_date=release_dates.data_release,
+                    meta_release_date=release_dates.meta_release,
                     proposal_id=proposal_id,
                 ),
             )
@@ -1129,7 +1127,8 @@ WHERE proposal_id=%(proposal_id)s
                 ],
             )
             self.update_proposal_release_date(
-                proposal_id, proposal.meta_release, proposal.data_release
+                proposal_id=proposal_id,
+                release_dates=types.ReleaseDates(meta_release=proposal.meta_release, data_release=proposal.data_release)
             )
 
     def rollback_transaction(self) -> None:
