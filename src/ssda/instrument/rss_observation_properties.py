@@ -56,8 +56,8 @@ class RssObservationProperties(ObservationProperties):
              rg (id) AS (
                  SELECT rss_grating_id FROM rss_grating WHERE grating=%(grating)s
              )
-        INSERT INTO rss_setup (instrument_setup_id, rss_fabry_perot_mode_id, rss_grating_id, articulation)
-        VALUES (%(instrument_setup_id)s, (SELECT id FROM fpm), (SELECT id FROM rg), %(articulation)s)
+        INSERT INTO rss_setup (instrument_setup_id, rss_fabry_perot_mode_id, rss_grating_id)
+        VALUES (%(instrument_setup_id)s, (SELECT id FROM fpm), (SELECT id FROM rg))
         """
 
         fabry_perot_mode = self.header_value("OBSMODE")
@@ -71,9 +71,7 @@ class RssObservationProperties(ObservationProperties):
         grating_value = normalized_grating_name(self.header_value("GRATING"))
         grating = None if grating_value == "N/A" else grating_value
 
-        articulation = float(self.header_value("CAMANG"))
-
-        parameters = dict(fabry_perot_mode=fabry_perot_mode, grating=grating, articulation=articulation)
+        parameters = dict(fabry_perot_mode=fabry_perot_mode, grating=grating)
         queries = [types.SQLQuery(sql=sql, parameters=parameters)]
 
         detector_mode = None
