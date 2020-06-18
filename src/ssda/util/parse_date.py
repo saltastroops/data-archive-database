@@ -7,14 +7,17 @@ import click
 def parse_date(value: str, now: Callable[[], datetime]) -> date:
     """
     Parse a date string.
+
     The value must be a date of the form yyyy-mm-dd. Alternatively, you can use the
     keywords today and yesterday.
+
     Parameters
     ----------
     value : str
          Date string
     now : func
          Function returning the current datetime.
+
     """
 
     if value == "today":

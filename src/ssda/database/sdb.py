@@ -850,10 +850,12 @@ LIMIT 1
     def find_proposal_observation_groups(self, proposal_code) -> List[types.SALTObservationGroup]:
         """
         The observation groups (i.e. block visits) taken for a proposal.
+
         Parameters
         ----------
         proposal_code: str
             The proposal code.
+
         Returns
         -------
             The observation group.

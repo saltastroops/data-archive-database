@@ -742,15 +742,19 @@ class Intent(Enum):
     def for_value(value):
         """
         The intent for a case-insensitive value.
+
         Parameters
         ----------
         value : str
             The value.
+
         Returns
         -------
         Intent:
             The intent.
+
         """
+
         for intent in Intent:
             if intent.value.lower() == value.lower():
                 return intent
@@ -1305,15 +1309,18 @@ class Status(Enum):
     @staticmethod
     def for_value(value: str) -> Status:
         """
-        The status for.
+        The status for a case-insensitive value.
+
         Parameters
         ----------
         value : str
             The status value.
+
         Returns
         -------
         Status :
             Status.
+
         """
 
         for status in Status:
