@@ -639,11 +639,11 @@ class SaltDatabaseService:
                 """
 
                 return (
-                    target == "ARC"
-                    or target == "BIAS"
-                    or target == "FLAT"
-                    or target.startswith("FLAT ")
-                    or target.startswith("FLAT-")
+                    target.upper() == "ARC"
+                    or target.upper() == "BIAS"
+                    or target.upper() == "FLAT"
+                    or target.upper().startswith("FLAT ")
+                    or target.upper().startswith("FLAT-")
                 )
 
             file_is_calibration = is_calibration(target_name)
