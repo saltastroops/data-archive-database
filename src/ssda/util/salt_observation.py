@@ -464,11 +464,11 @@ class SALTObservation:
             if observation_object == "DUMMY":
                 return True
 
+        # If the FITS header does not include the observation date and time, do not
+        # store its data.
         observation_date = self.fits_file.header_value("DATE-OBS")
-
-        # If the FITS header does not include the observation date, do not store its
-        # data.
-        if not observation_date:
+        observation_time = self.fits_file.header_value("TIME-OBS")
+        if not observation_date or not observation_time:
             return True
 
         # Ignore observations of unknown category unless they are part of a proposal.
