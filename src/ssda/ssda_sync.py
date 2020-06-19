@@ -1,7 +1,8 @@
 import click
-from datetime import datetime
+from datetime import datetime, date
 import dsnparse
 import logging
+from sentry_sdk import capture_exception
 
 from ssda.database.sdb import SaltDatabaseService
 from ssda.database.services import DatabaseServices
@@ -9,6 +10,9 @@ from ssda.database.ssda import SSDADatabaseService
 
 from ssda.util import types
 from ssda.util.parse_date import parse_date
+
+
+logging.root.setLevel(logging.INFO)
 
 
 @click.command()
@@ -81,10 +85,16 @@ def main(start, end) -> int:
                         status=salt_obs_group.status
                     )
             ssda_database_service.commit_transaction()
+
+            logging.basicConfig(filename='ssda_sync_info_log.log', filemode='a', format='%(levelname)s - %(message)s')
+            logging.info(msg=f"Proposal: {sdb_proposal.proposal_code} was sucessfully updated. Date: {date.today()}")
         except AttributeError as e:
             ssda_database_service.rollback_transaction()
-            logging.error("""
-            ______________________________________________________________________________________________________
+
+            capture_exception(e)
+            logging.basicConfig(filename='ssda_sync_error_log.log', filemode='a', format='\n%(message)s\n%(levelname)s')
+            logging.error(
+                """____________________________________________________________________________________________________________
             """, exc_info=True)
     ssda_connection.close()
 

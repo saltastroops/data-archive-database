@@ -18,7 +18,7 @@ setup(
     tests_require=["mypy", "pytest", "pytest-mock"],
     entry_points={
         "console_scripts": [
-            "ssda = ssda.cli:main",
+            "ssda = ssda.ssda_populate:main",
             "ssda_delete = ssda.ssda_delete:main",
             "ssda_sync = ssda.ssda_sync:main"
         ]

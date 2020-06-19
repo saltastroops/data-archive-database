@@ -520,6 +520,26 @@ class Institution(Enum):
     SAAO = "South African Astronomical Observatory"
     SALT = "Southern African Large Telescope"
 
+    @staticmethod
+    def for_name(name: str) -> Institution:
+        """
+        The institution for a case-insensitive name.
+        Parameters
+        ----------
+        name : str
+            The institution name.
+        Returns
+        -------
+        Institution :
+            Institution.
+        """
+
+        for institution in Institution:
+            if name.lower() == str(institution.value).lower():
+                return institution
+
+        raise ValueError(f"Unknown institution name: {name}")
+
 
 class Instrument(Enum):
     """
@@ -1270,6 +1290,24 @@ class ProposalType(Enum):
     SCIENCE = "Science"
     SCIENCE_VERIFICATION = "Science Verification"
 
+    @staticmethod
+    def for_value(value) -> ProposalType:
+        """
+        The proposal type value.
+        Parameters
+        ----------
+        value : str
+            The value.
+        Returns
+        -------
+        ProposalType:
+            The proposal type.
+        """
+        for proposal_type in ProposalType:
+            if proposal_type.value.lower() == value.lower():
+                return proposal_type
+        raise ValueError(f"Unknown proposal type for value: {value}")
+
 
 @dataclass
 class ReleaseDates:
@@ -1535,3 +1573,22 @@ class Telescope(Enum):
     LESEDI = "LESEDI"
     ONE_DOT_NINE = "1.9 m"
     SALT = "SALT"
+
+    @staticmethod
+    def for_name(name):
+        """
+        The telescope for a case-insensitive name.
+        Parameters
+        ----------
+        name : str
+            The telescope name.
+        Returns
+        -------
+        Telescope :
+            The telescope.
+        """
+        for telescope in Telescope:
+            if name.lower() == str(telescope.value).lower():
+                return telescope
+
+        raise ValueError(f"Unknown telescope name: {name}")

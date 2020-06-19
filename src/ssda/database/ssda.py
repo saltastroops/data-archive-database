@@ -360,8 +360,8 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
                     pi=result[0],
                     proposal_code=result[1],
                     title=result[2],
-                    institution=types.Institution.for_name(result[3]),
-                    proposal_type=types.ProposalType.for_value(result[4]),
+                    institution=types.Institution.for_name(result[4]),
+                    proposal_type=types.ProposalType.for_value(result[3]),
                 )
             else:
                 return None
