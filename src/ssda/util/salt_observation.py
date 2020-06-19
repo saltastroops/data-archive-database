@@ -67,13 +67,22 @@ class SALTObservation:
             product_type=self._product_type(),
         )
 
+    def _proposal_code(self) -> str:
+        propid = (
+            self.header_value("PROPID").upper() if self.header_value("PROPID") else ""
+        )
+        if propid and self.database_service.is_existing_proposal_code(propid):
+            return propid
+        else:
+            return ""
+
     def _block_visit_id(self) -> Optional[str]:
         # The block visit id from the FITS header...
         bvid_from_fits = self.fits_file.header_value("BVISITID")
 
         # ... must be discarded if this observation is not part of a proposal
-        proposal_code = self.fits_file.header_value("PROPID")
-        if not self.database_service.is_existing_proposal_code(proposal_code):
+        proposal_code = self._proposal_code()
+        if not proposal_code:
             bvid_from_fits = None
 
         # Get the block visit id from the database
@@ -122,10 +131,8 @@ class SALTObservation:
         proposal_id: Optional[int],
         instrument: types.Instrument,
     ) -> types.Observation:
-        proposal_code = (
-            self.header_value("PROPID").upper() if self.header_value("PROPID") else ""
-        )
-        if self.database_service.is_existing_proposal_code(proposal_code):
+        proposal_code = self._proposal_code()
+        if proposal_code:
             data_release_dates = self.database_service.find_release_date(proposal_code)
         else:
             data_release_dates = (
@@ -209,9 +216,9 @@ class SALTObservation:
         if bv_id is None:
             return None
 
-        proposal_code = (
-            self.header_value("PROPID").upper() if self.header_value("PROPID") else ""
-        )
+        proposal_code = self._proposal_code()
+        if not proposal_code:
+            return None
 
         return types.Proposal(
             institution=types.Institution.SALT,
@@ -224,9 +231,7 @@ class SALTObservation:
     def proposal_investigators(
         self, proposal_id: int
     ) -> List[types.ProposalInvestigator]:
-        proposal_code = (
-            self.header_value("PROPID").upper() if self.header_value("PROPID") else ""
-        )
+        proposal_code = self._proposal_code()
         investigators = self.database_service.find_proposal_investigators(proposal_code)
         return [
             types.ProposalInvestigator(
