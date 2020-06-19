@@ -979,7 +979,7 @@ WHERE Proposal_Code=%s;
             + relativedelta.relativedelta(months=proprietary_period)
         )
 
-        return release_date.date(), release_date.date()
+        return release_date, release_date
 
     def find_proposal_investigators(self, proposal_code: str) -> List[str]:
         sql = """
