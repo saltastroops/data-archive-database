@@ -264,22 +264,32 @@ class StandardFitsFile(FitsFile):
         return os.stat(self.path).st_size * types.byte
 
     def instrument(self) -> types.Instrument:
-        instrument_value = self.header_value("INSTRUME").upper()
+        instrument_value = (
+            self.header_value("INSTRUME").upper()
+            if self.header_value("INSTRUME")
+            else None
+        )
         if instrument_value == "RSS":
             return types.Instrument.RSS
-        elif instrument_value.upper() == "HRS":
+        elif instrument_value == "HRS":
             return types.Instrument.HRS
-        elif instrument_value.upper() == "SALTICAM":
+        elif instrument_value == "SALTICAM":
             return types.Instrument.SALTICAM
-        elif instrument_value.upper() == "BCAM":
+        elif instrument_value == "BCAM":
             return types.Instrument.BCAM
         else:
             # There are some HRS files missing the INSTRUME keyword. We rely on the
             # filename together with an HRS-specific header keyword instead. (As that
             # keyword is for a temperature it should never be 0.)
             filename = os.path.basename(self.file_path())
-            if (filename.startswith("H2") or filename.startswith("R2")) and self.header_value("TEM-RMIR"):
+            if (
+                filename.startswith("H2") or filename.startswith("R2")
+            ) and self.header_value("TEM-RMIR"):
                 return types.Instrument.HRS
+            # There are some BCAM files missing the INSTRUME keyword.
+            # For these files we rely on the file name to contain the word "bcam".
+            if "bcam" in filename.lower():
+                return types.Instrument.BCAM
             raise ValueError(
                 f"Unknown instrument in file {self.path}: {instrument_value}"
             )

@@ -1058,7 +1058,7 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
 
         results = pd.read_sql(sql, self._connection, params=(user_id,))
 
-        return results.iloc[0]['Partner_Code_Count'] > 0
+        return results.iloc[0]["Partner_Code_Count"] > 0
 
     def find_proposal_type(self, proposal_code: str) -> ProposalType:
         with self._connection.cursor() as cur:

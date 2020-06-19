@@ -73,7 +73,11 @@ class RssObservationProperties(ObservationProperties):
 
         camera_angle = float(self.header_value("CAMANG"))
 
-        parameters = dict(fabry_perot_mode=fabry_perot_mode, grating=grating, camera_angle=camera_angle)
+        parameters = dict(
+            fabry_perot_mode=fabry_perot_mode,
+            grating=grating,
+            camera_angle=camera_angle,
+        )
         queries = [types.SQLQuery(sql=sql, parameters=parameters)]
 
         detector_mode = types.DetectorMode.for_name(self.header_value("DETMODE"))

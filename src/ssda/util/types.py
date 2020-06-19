@@ -287,14 +287,18 @@ class DataProductType(Enum):
         """
 
         if not name:
-            record_warning(Warning(f"The data product type {name} could not be determined."))
+            record_warning(
+                Warning(f"The data product type {name} could not be determined.")
+            )
             return DataProductType.UNKNOWN
 
         for data_product_type in DataProductType:
             if name.lower() == str(data_product_type.value).lower():
                 return data_product_type
 
-        record_warning(Warning(f"The data product type {name} could not be determined."))
+        record_warning(
+            Warning(f"The data product type {name} could not be determined.")
+        )
         return DataProductType.UNKNOWN
 
 
@@ -391,7 +395,9 @@ class DetectorMode(Enum):
         """
 
         if not name:
-            record_warning(Warning(f"The detector mode {name} could not be determined."))
+            record_warning(
+                Warning(f"The detector mode {name} could not be determined.")
+            )
             return DetectorMode.UNKNOWN
 
         if name.lower() == "slot":
@@ -400,7 +406,10 @@ class DetectorMode(Enum):
             name = "Frame Transfer"
 
         for detector_mode in DetectorMode:
-            if name.replace(" ", "").lower() == str(detector_mode.value).replace(" ", "").lower():
+            if (
+                name.replace(" ", "").lower()
+                == str(detector_mode.value).replace(" ", "").lower()
+            ):
                 return detector_mode
 
         record_warning(Warning(f"The detector mode {name} could not be determined."))
@@ -541,6 +550,7 @@ class Filter(Enum):
     table.
 
     """
+
     Cousins_I = "Cousins I"
     Cousins_R = "Cousins R"
     FUSED_SILICA_CLEAR = "Fused silica clear"
@@ -848,7 +858,9 @@ class InstrumentMode(Enum):
         """
 
         if not name:
-            record_warning(Warning(f"The instrument mode {name} could not be determined."))
+            record_warning(
+                Warning(f"The instrument mode {name} could not be determined.")
+            )
             return InstrumentMode.UNKNOWN
 
         for instrument_mode in InstrumentMode:
@@ -1339,7 +1351,9 @@ class ProductCategory(Enum):
         """
 
         if not name:
-            record_warning(Warning(f"The product category {name} could not be determined."))
+            record_warning(
+                Warning(f"The product category {name} could not be determined.")
+            )
             return ProductCategory.UNKNOWN
 
         for product_category in ProductCategory:
