@@ -456,3 +456,209 @@ class Instrument(Enum):
 With these changes in place you can populate the database from the new instrument's FITS files, as you can for the previously existing instruments.
 
 In order to update an instrument you just have to change the database tables and the above files as required.
+
+# Adding https using a self-signed certificate to the SALT/SAAO Data Archive
+
+Before you begin, you should have a non root user with sudo privileges.
+
+We also need  to have Nginx installed. To check if Nginx is installed and running, you run the following command:
+```bash
+  service nginx status
+```
+If Nginx is not installed in your system, you can follow this guide [installing Nginx](https://www.nginx.com/resources/wiki/start/topics/tutorials/install/) 
+
+We can create a self-signed key and certificate pair using the following command
+``` bash
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt
+```
+You will be asked a series of questions about our server in order to add the required information correctly in our certificate
+
+The prompts will look something like this
+
+```text
+Country Name (2 letter code) []:
+State or Province Name (full name) []:
+Locality Name (example: city) []:
+Organization name (e.g company) []:
+Organization Unit Name (eg, section) []:
+Common Name (e.g server FQDN or YOUR name) []:
+Email Address []:
+```
+You will need to answer these prompts appropriately. Two files will then be created in the appropriate
+subdirectories of the  ```/etc/ssl``` directory.
+
+We then need to create a strong Diffie-Helman group which is used in negotiating Perfect Forward Secrecy with clients.
+We can do this by running the code below:
+
+```bash
+sudo openssl dhparam -out /etc/nginx/dhparam.pem 4096
+``` 
+
+## Configuring Nginx to use SSL
+
+In order to do this we need to create a configuration snippet pointing the SSL key and Certificate
+To distinguish the file from the rest we can call it `your-file-name`.conf
+
+```bash
+sudo nano /etc/nginx/snippets/your-filename.conf
+```
+You can replace `your-filename` with any file name you choose. Inside the file we just created we need
+to set the `ssl_certificate` directive to our certificate file and the `ssl_certificate_key` to the associated key.
+
+```text
+ ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
+ ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key; 
+```
+The snippet above must be in  file. Save and close the file when done.
+
+## Creating a configuration snippet with strong encryption settings
+___
+We now need another code snippet to define some SSL settings so we can keep our server secure. We have to create a new 
+file in the location /etc/nginx/snippets
+
+```bash
+ sudo nano /etc/nginx/snippets/ssl-params.conf
+``` 
+
+Copy the following snippet into your `ssl-params.conf` snippet file:
+
+```text
+ssl_protocols TLSv1.2;
+ssl_prefer_server_ciphers on;
+ssl_dhparam /etc/nginx/dhparam.pem;
+ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384;
+ssl_ecdh_curve secp384r1; # Requires nginx >= 1.1.0
+ssl_session_timeout  10m;
+ssl_session_cache shared:SSL:10m;
+ssl_session_tickets off; # Requires nginx >= 1.5.9
+ssl_stapling on; # Requires nginx >= 1.3.7
+ssl_stapling_verify on; # Requires nginx => 1.3.7
+resolver 8.8.8.8 8.8.4.4 valid=300s;
+resolver_timeout 5s;
+# Disable strict transport security for now. You can uncomment the following
+# line if you understand the implications.
+# add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload";
+add_header X-Frame-Options DENY;
+add_header X-Content-Type-Options nosniff;
+add_header X-XSS-Protection "1; mode=block";
+```
+Since we are using a self-signed certificate, the SSL-stapling will not be used and because of this, Nginx
+will give a warning, disable stapilng for our self-signed certificate and then continue
+working as it should. 
+
+We then need to adjust the Nginx configuration to use SSL
+
+This setup assumes you are having  a custom server block configuration file in `/etc/nginx/sites-available` directory. 
+Before changing your Nginx configuration file, you must do a backup for it in case of problems arsing in your file:
+
+```bash
+sudo cp /etc/nginx/sites-available/filename /etc/nginx/sites-available/filename.bak
+``` 
+Replace `filename` with the name of your Nginx configuration file. Now open the configuration file and make these
+adjustments.
+
+```bash
+ sudo nano /etc/nginx/sites-available/filename
+``` 
+Your configuration file might look something like this:
+
+```text
+server {
+    listen 80;
+    listen [::]:80;
+
+    server_name your-servername;
+}
+```
+We now need to add the following snippet in the server block underneath `server_name`
+```text
+    return 302 https://$server_name$request_uri;
+```
+This snippet above allows us to redirect to HTTPS.  
+
+Inside your file, create a new server block, add the following:
+
+```text
+server{
+     listen 443 ssl;
+     listen [::] 443 ssl;
+     include snippets/your-filename.conf;
+     include snippets/ssl-params.conf; 
+    
+     server_name your-servername;
+}   
+```
+Replace `your-filename` with the file name of the `.conf` file we created earlier and `your-servername` with name of 
+your server, the save and close the file.
+
+We now focus on the firewall. If you have ufw firewall enabled, you will need to adjust the settings to allow for SSL 
+traffic. We can see the available ufw profiles added by Nginx upon installation by typing:
+
+```bash
+sudo ufw app list
+```  
+
+We can also see the current setting by typing:
+
+```bash
+ sudo ufw status
+```
+This will show that only HTTP traffic is allowed in the web server, so to change this we need to allow the `Nginx Full`
+profile and then delete the redundant Nginx HTTP profile allowance by typing the following:
+ ```bash
+sudo ufw allow 'Nginx Full'
+sudo ufw delete allow 'Nginx HTTP'
+```
+Now we need to restart Nginx to implement the changes we have made. We need to first check that we don't have any syntax
+errors in our files by running the following command:
+
+```bash
+sudo nginx -t
+``` 
+
+If it passes, this means everything was successful and you will get a result which may look like the following:
+
+```text
+nginx: [warn] "ssl_stapling" ignored, issuer certificate not found
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+```
+
+The warning can be ignored as we mentioned earlier that since this is a self-signed certificate, we will not have SSL 
+stapling. If your output is as above, we can proceed to restart Nginx so as to ensure our changes are implemented.
+We can type this:
+
+```bash
+sudo sysmtemctl restart nginx
+```
+
+We now need to test that our encryption is working and to do this, you can open your web broswer and type `https://`
+followed by your server's IP address or domain name in the address bar
+
+```bash
+https://server_domain_or_IP
+```
+
+Since our certificate is self-signed, it  will not be recognized by your browser's trusted certificate authorities, 
+hence you will get a warning in your browser when accesing your site. This is normal and expected.
+
+If the redirect worked fine, we can now change the Nginx configuration file to ensure that only encrypted traffic is
+received. Open the Nginx configuration file.
+
+```bash
+sudo nano /etc/nginx/sites-available/your-filename
+```
+Replace `your-filename` with the correct name of your configuration file. In the configuration file, find the 
+`retutn 302` and change it to `return 301` then save and close the file. We then need to check for any syntax errors in
+the configuration file.
+
+```bash
+sudo nginx -t
+``` 
+If no errors arise, then we restart Nginx to make the https redirect permanent
+
+```bash
+sudo systemctl nginx restart
+```
+
+With these configurations in place we can now change a url form http to https using a self-signed ssl certificate.
