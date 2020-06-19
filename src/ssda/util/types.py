@@ -295,6 +295,7 @@ class DataProductType(Enum):
                 return data_product_type
 
         record_warning(Warning(f"The data product type {name} could not be determined."))
+        return DataProductType.UNKNOWN
 
 
 class DateRange:
@@ -403,6 +404,7 @@ class DetectorMode(Enum):
                 return detector_mode
 
         record_warning(Warning(f"The detector mode {name} could not be determined."))
+        return DetectorMode.UNKNOWN
 
 
 class Energy:
@@ -650,6 +652,7 @@ class Filter(Enum):
                 return filter
 
         record_warning(Warning(f"Unknown filter name: {name}"))
+        return Filter.UNKNOWN
 
 
 class HRSArm(Enum):
@@ -853,6 +856,7 @@ class InstrumentMode(Enum):
                 return instrument_mode
 
         record_warning(Warning(f"The instrument mode {name} could not be determined."))
+        return InstrumentMode.UNKNOWN
 
 
 class InstrumentSetup:
@@ -956,6 +960,7 @@ class Intent(Enum):
                 return intent
 
         record_warning(Warning(f"The intent {name} could not be determined."))
+        return Intent.UNKNOWN
 
 
 class Observation:
@@ -1340,6 +1345,7 @@ class ProductCategory(Enum):
                 return product_category
 
         record_warning(Warning(f"The product category {name} could not be determined."))
+        return ProductCategory.UNKNOWN
 
 
 class ProductType(Enum):
@@ -1398,6 +1404,7 @@ class ProductType(Enum):
                 return product_type
 
         record_warning(Warning(f"The product type {name} could not be determined."))
+        return ProductType.UNKNOWN
 
 
 class Proposal:
