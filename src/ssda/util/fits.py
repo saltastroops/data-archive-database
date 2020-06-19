@@ -286,8 +286,8 @@ class StandardFitsFile(FitsFile):
                 filename.startswith("H2") or filename.startswith("R2")
             ) and self.header_value("TEM-RMIR"):
                 return types.Instrument.HRS
-            # There are some BCAM files missing INSTRUME keyword.
-            # For these files we rely on the file path to contain the word "bcam".
+            # There are some BCAM files missing the INSTRUME keyword.
+            # For these files we rely on the file name to contain the word "bcam".
             if "bcam" in filename.lower():
                 return types.Instrument.BCAM
             raise ValueError(
