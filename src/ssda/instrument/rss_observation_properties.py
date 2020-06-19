@@ -62,7 +62,9 @@ class RssObservationProperties(ObservationProperties):
 
         fabry_perot_mode = self.header_value("OBSMODE")
 
-        def normalized_grating_name(grating_name: str) -> str:
+        def normalized_grating_name(grating_name: Optional[str]) -> str:
+            if not grating_name:
+                return grating_name
             normalized_name = grating_name.lower()
             if normalized_name == "open":
                 normalized_name = "Open"
@@ -71,7 +73,7 @@ class RssObservationProperties(ObservationProperties):
         grating_value = normalized_grating_name(self.header_value("GRATING"))
         grating = None if grating_value == "N/A" else grating_value
 
-        camera_angle = float(self.header_value("CAMANG"))
+        camera_angle = float(self.header_value("CAMANG")) if grating else None
 
         parameters = dict(
             fabry_perot_mode=fabry_perot_mode,
