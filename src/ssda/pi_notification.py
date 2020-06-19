@@ -3,8 +3,6 @@ from dataclasses import dataclass
 import os
 import pymysql
 import psycopg2
-import pprint
-import operator
 from prettytable import PrettyTable
 from psycopg2 import extras
 import smtplib
@@ -89,10 +87,12 @@ def pi_details(proposal_codes):
     with sdb_database_connection().cursor(
             pymysql.cursors.DictCursor
     ) as database_connection:
-        pi_query = """SELECT Proposal_Code, Email, CONCAT(FirstName," ", Surname) AS fullname
+        pi_query = """SELECT Proposal_Code, ins.Email, CONCAT(ins.FirstName," ", ins.Surname) AS FullName
                       FROM ProposalContact
                       JOIN ProposalCode ON ProposalCode.ProposalCode_Id = ProposalContact.ProposalCode_Id
-                      JOIN Investigator ON Investigator.Investigator_Id = ProposalContact.Leader_Id
+                      JOIN Investigator ins ON ins.Investigator_Id = ProposalContact.Leader_Id
+                      JOIN PiptUser ON ins.PiptUser_Id=PiptUser.PiptUser_Id
+                      JOIN Investigator ON PiptUser.Investigator_Id = Investigator.Investigator_Id                     
                       WHERE Proposal_Code IN %(proposals)s"""
         database_connection.execute(pi_query, dict(proposals=proposal_codes))
         results = database_connection.fetchall()
@@ -104,8 +104,6 @@ def pi_details(proposal_codes):
         return sdb_query_results
 
 
-# We make a dictionary where the PI email is key and the values are the PI name and the proposals to be released in
-# the given time period
 def release_dates_and_proposals(days):
     proposals_and_release_dates = proposal_release_dates(days)
     proposal_and_pi_information = pi_details(list(proposals_and_release_dates.keys()))
@@ -124,11 +122,8 @@ def release_dates_and_proposals(days):
                 "fullname": fullname,
             }
         all_data[pi_email]["proposals"].append({"proposal_code": proposal_code, "release_date": proposal_release_date})
-    return all_data
 
-
-def pi_information_to_be_sent(days):
-    for key, pi in release_dates_and_proposals(days).items():
+    for key, pi in all_data.items():
         proposals = []
         for proposal in sorted(pi["proposals"], key=lambda i: i["proposal_code"]):
             proposals.append(
@@ -145,7 +140,7 @@ def pi_information_to_be_sent(days):
     return PIs
 
 
-def email_content(table):
+def plain_text_email_content(table):
     message = f"""
 Please note that the observation data of your following proposals will become public soon.
 
@@ -159,7 +154,21 @@ SALT Astronomy Operations"""
     return message
 
 
-def sending_email(receiver, pi_name, table):
+def html_email_content(table):
+    message = f"""
+Please note that the observation data of your following proposals will become public soon.<br><br>
+
+{table}<br><br>
+
+You may request an extension on the proposal's page in the Web Manager.<br><br>
+
+Kind regards,<br><br>
+
+SALT Astronomy Operations"""
+    return message
+
+
+def sending_email(receiver, pi_name, plain_table, styled_table):
     sender = "salthelp@salt.ac.za"
     message = MIMEMultipart("alternative")
     message["Subject"] = "Your SALT proposal data will become public"
@@ -168,12 +177,9 @@ def sending_email(receiver, pi_name, table):
 
 # write the plain text part
     text = f"""
-To: {receiver}
-From: {sender}
-
 Dear {pi_name}
 
- {email_content(table)} """
+ {plain_text_email_content(plain_table)} """
 
 # write the html part
     html = f"""
@@ -181,7 +187,7 @@ Dear {pi_name}
   <body>
    <p> Dear {pi_name}<br><br>
       
-      {email_content(table)}
+      {html_email_content(styled_table)}
   
   </body>
 </html>
@@ -283,13 +289,13 @@ def log_proposal_information(pi_proposals, email):
 def handle_pi(pi_information):
     proposals = proposals_to_send(pi_information.proposals, pi_information.email)
     if len(proposals) > 0:
-        sending_email("lonwabo@saao.ac.za", pi_information.fullname, html_table(proposals))
+        sending_email(pi_information.email, pi_information.fullname, plain_text_table(proposals), html_table(proposals))
         log_proposal_information(pi_information.proposals, pi_information.email)
     return None
 
 
 def run_code(days):
-    for pi_information in pi_information_to_be_sent(days):
+    for pi_information in release_dates_and_proposals(days):
         handle_pi(pi_information)
     return None
 
