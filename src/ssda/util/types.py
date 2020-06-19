@@ -269,6 +269,33 @@ class DataProductType(Enum):
     SPECTRUM = "Spectrum"
     UNKNOWN = "Unknown"
 
+    @staticmethod
+    def for_name(name: str) -> DataProductType:
+        """
+        The data product type for a case-insensitive name.
+
+        Parameters
+        ----------
+        name : str
+            Data product type name.
+
+        Returns
+        -------
+        DataProductType :
+            DataProductType.
+
+        """
+
+        if not name:
+            record_warning(Warning(f"The data product type {name} could not be determined."))
+            return DataProductType.UNKNOWN
+
+        for data_product_type in DataProductType:
+            if name.lower() == str(data_product_type.value).lower():
+                return data_product_type
+
+        record_warning(Warning(f"The data product type {name} could not be determined."))
+
 
 class DateRange:
     """
@@ -362,16 +389,18 @@ class DetectorMode(Enum):
 
         """
 
+        if not name:
+            record_warning(Warning(f"The detector mode {name} could not be determined."))
+            return DetectorMode.UNKNOWN
+
         if name.lower() == "slot":
             name = "Slot Mode"
         if name.lower() == "ft":
             name = "Frame Transfer"
 
         for detector_mode in DetectorMode:
-            if name.lower() == str(detector_mode.value).lower():
+            if name.replace(" ", "").lower() == str(detector_mode.value).replace(" ", "").lower():
                 return detector_mode
-        if not name:
-            return DetectorMode.UNKNOWN
 
         record_warning(Warning(f"The detector mode {name} could not be determined."))
 
@@ -599,6 +628,10 @@ class Filter(Enum):
 
         """
 
+        if not name:
+            record_warning(Warning(f"Unknown filter name: {name}"))
+            return Filter.UNKNOWN
+
         if name == "Halpha-S1":
             name = "H-alpha"
         if name == "SDSSr-S1":
@@ -615,9 +648,6 @@ class Filter(Enum):
         for filter in Filter:
             if name.lower() == str(filter.value).lower():
                 return filter
-
-        if not name:
-            return Filter.UNKNOWN
 
         record_warning(Warning(f"Unknown filter name: {name}"))
 
@@ -797,6 +827,33 @@ class InstrumentMode(Enum):
     STREAMING = "Streaming"
     UNKNOWN = "Unknown"
 
+    @staticmethod
+    def for_name(name: str) -> InstrumentMode:
+        """
+        The instrument mode for a case-insensitive name.
+
+        Parameters
+        ----------
+        name : str
+            Instrument mode name.
+
+        Returns
+        -------
+        InstrumentMode :
+            InstrumentMode.
+
+        """
+
+        if not name:
+            record_warning(Warning(f"The instrument mode {name} could not be determined."))
+            return InstrumentMode.UNKNOWN
+
+        for instrument_mode in InstrumentMode:
+            if name.lower() == str(instrument_mode.value).lower():
+                return instrument_mode
+
+        record_warning(Warning(f"The instrument mode {name} could not be determined."))
+
 
 class InstrumentSetup:
     """
@@ -872,6 +929,33 @@ class Intent(Enum):
     CALIBRATION = "Calibration"
     SCIENCE = "Science"
     UNKNOWN = "Unknown"
+
+    @staticmethod
+    def for_name(name: str) -> Intent:
+        """
+        The intent for a case-insensitive name.
+
+        Parameters
+        ----------
+        name : str
+            Intent name.
+
+        Returns
+        -------
+        Intent :
+            Intent.
+
+        """
+
+        if not name:
+            record_warning(Warning(f"The intent {name} could not be determined."))
+            return Intent.UNKNOWN
+
+        for intent in Intent:
+            if name.lower() == str(intent.value).lower():
+                return intent
+
+        record_warning(Warning(f"The intent {name} could not be determined."))
 
 
 class Observation:
@@ -1230,6 +1314,33 @@ class ProductCategory(Enum):
     STANDARD = "Standard"
     UNKNOWN = "Unknown"
 
+    @staticmethod
+    def for_name(name: str) -> ProductCategory:
+        """
+        The product category for a case-insensitive name.
+
+        Parameters
+        ----------
+        name : str
+            Product category name.
+
+        Returns
+        -------
+        ProductCategory :
+            ProductCategory.
+
+        """
+
+        if not name:
+            record_warning(Warning(f"The product category {name} could not be determined."))
+            return ProductCategory.UNKNOWN
+
+        for product_category in ProductCategory:
+            if name.lower() == str(product_category.value).lower():
+                return product_category
+
+        record_warning(Warning(f"The product category {name} could not be determined."))
+
 
 class ProductType(Enum):
     """
@@ -1260,6 +1371,33 @@ class ProductType(Enum):
     STANDARD_TELLURIC = "Standard - Telluric"
     STANDARD_UNPOLARISED = "Standard - Unpolarised"
     UNKNOWN = "Unknown"
+
+    @staticmethod
+    def for_name(name: str) -> ProductType:
+        """
+        The product type for a case-insensitive name.
+
+        Parameters
+        ----------
+        name : str
+            Product type name.
+
+        Returns
+        -------
+        ProductType :
+            ProductType.
+
+        """
+
+        if not name:
+            record_warning(Warning(f"The product type {name} could not be determined."))
+            return ProductType.UNKNOWN
+
+        for product_type in ProductType:
+            if name.lower() == str(product_type.value).lower():
+                return product_type
+
+        record_warning(Warning(f"The product type {name} could not be determined."))
 
 
 class Proposal:

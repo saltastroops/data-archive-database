@@ -199,6 +199,11 @@ def main(
             "Environment variable SENTRY_DSN for logging with Sentry not " "set."
         )
 
+    # Data prior to 2011-09-01 is no stored in the data archive
+    if datetime.strptime(start, "%Y-%m-%d") < datetime.strptime("2011-09-01", "%Y-%m-%d"):
+        logging.error('The minimum start date must be from 2011-09-01 and beyond.')
+        return 0
+
     # convert options as required and validate them
     now = datetime.now
     start_date = parse_date(start, now) if start else None

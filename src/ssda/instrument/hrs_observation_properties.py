@@ -8,8 +8,6 @@ from ssda.util.salt_observation import SALTObservation
 from ssda.util.fits import FitsFile
 from typing import Optional, List
 
-from ssda.util.warnings import record_warning
-
 
 class HrsObservationProperties(ObservationProperties):
     def __init__(self, fits_file: FitsFile, database_service: SaltDatabaseService):
