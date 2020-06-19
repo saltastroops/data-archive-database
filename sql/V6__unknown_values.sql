@@ -5,6 +5,16 @@ SET search_path TO observations;
 INSERT INTO data_product_type (product_type)
 VALUES ('Unknown');
 
+-- "Unknown" detector mode
+
+INSERT INTO detector_mode (detector_mode)
+VALUES ('Unknown');
+
+-- "Unknown" filter
+
+INSERT INTO filter (name)
+VALUES ('Unknown');
+
 -- "Unknown" instrument mode
 
 INSERT INTO instrument_mode (instrument_mode)
@@ -13,11 +23,6 @@ VALUES ('Unknown');
 -- "Unknown" intent
 
 INSERT INTO intent (intent)
-VALUES ('Unknown');
-
--- "Unknown" detector mode
-
-INSERT INTO detector_mode (detector_mode)
 VALUES ('Unknown');
 
 -- "Unknown" product category

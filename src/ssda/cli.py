@@ -93,6 +93,9 @@ def validate_options(
 
     """
 
+    if start and start < date(2011, 9, 1):
+        raise ValueError('The start date must be 2011-09-01 or later.')
+
     if not fits_base_dir:
         fits_base_dir = os.environ.get("FITS_BASE_DIR")
     if not fits_base_dir:

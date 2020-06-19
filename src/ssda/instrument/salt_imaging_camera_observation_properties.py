@@ -43,24 +43,9 @@ class SaltImagingCameraObservationProperties(ObservationProperties):
     def instrument_setup(self, observation_id: int) -> types.InstrumentSetup:
         queries = []
 
-        detector_mode = None
-        for dm in types.DetectorMode:
-            if (
-                self.header_value("DETMODE").replace(" ", "").upper()
-                == dm.value.replace(" ", "").upper()
-            ):
-                detector_mode = dm
-        if self.header_value("DETMODE").upper() == "SLOT":
-            detector_mode = types.DetectorMode.SLOT_MODE
-        if self.header_value("DETMODE").upper() == "FT":
-            detector_mode = types.DetectorMode.FRAME_TRANSFER
-        if not detector_mode:
-            record_warning(Warning("The detector mode could not be determined."))
-            detector_mode = types.DetectorMode.UNKNOWN
-        filter = None
-        for fi in types.Filter:
-            if self.header_value("FILTER") == fi.value:
-                filter = fi
+        detector_mode = types.DetectorMode.for_name(self.header_value("DETMODE"))
+
+        filter = types.Filter.for_name(self.header_value("FILTER"))
 
         return types.InstrumentSetup(
             additional_queries=queries,
