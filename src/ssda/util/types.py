@@ -1304,6 +1304,8 @@ class Status(Enum):
     """
 
     ACCEPTED = "Accepted"
+    DELETED = "Deleted"
+    IN_QUEUE = "In queue"
     REJECTED = "Rejected"
 
 
