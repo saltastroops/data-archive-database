@@ -1640,7 +1640,7 @@ class Target:
     def __init__(
         self, name: str, observation_id: int, standard: bool, target_type: str
     ):
-        if len(name) > 50:
+        if name and len(name) > 50:
             raise ValueError("The target name must have at most 50 characters.")
 
         self._name = name

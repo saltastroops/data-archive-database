@@ -248,6 +248,9 @@ class SALTObservation:
     def target(self, observation_id: int) -> Optional[types.Target]:
         object_name = self.header_value("OBJECT")
 
+        if object_name is None:
+            return None
+
         if self.is_calibration() and not self.is_standard():
             return None
 
