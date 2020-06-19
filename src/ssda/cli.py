@@ -93,6 +93,11 @@ def validate_options(
 
     """
 
+    # Data prior to 2011-09-01 is not stored in the data archive
+    if datetime.strptime(start, "%Y-%m-%d") < datetime.strptime("2011-09-01", "%Y-%m-%d"):
+        logging.error('The minimum start date must be from 2011-09-01 and beyond.')
+        return 0
+
     if not fits_base_dir:
         fits_base_dir = os.environ.get("FITS_BASE_DIR")
     if not fits_base_dir:
@@ -198,11 +203,6 @@ def main(
         logging.warning(
             "Environment variable SENTRY_DSN for logging with Sentry not " "set."
         )
-
-    # Data prior to 2011-09-01 is no stored in the data archive
-    if datetime.strptime(start, "%Y-%m-%d") < datetime.strptime("2011-09-01", "%Y-%m-%d"):
-        logging.error('The minimum start date must be from 2011-09-01 and beyond.')
-        return 0
 
     # convert options as required and validate them
     now = datetime.now
