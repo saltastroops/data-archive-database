@@ -1268,6 +1268,8 @@ class Position:
             raise ValueError("The declination must have an angular unit.")
         if dec.to_value(u.degree) < -90 or dec.to_value(u.degree) > 90:
             raise ValueError("The declination must be between -90 and 90 degrees.")
+        if 199.9 < equinox < 200.1:
+            equinox = 2000
         if equinox < 1900:
             raise ValueError("The equinox must be 1900 or later.")
         try:
