@@ -93,10 +93,8 @@ def validate_options(
 
     """
 
-    # Data prior to 2011-09-01 is not stored in the data archive
-    if datetime.strptime(start, "%Y-%m-%d") < datetime.strptime("2011-09-01", "%Y-%m-%d"):
-        logging.error('The minimum start date must be from 2011-09-01 and beyond.')
-        return 0
+    if start and start < date(2011, 9, 1):
+        raise ValueError('The start date must be 2011-09-01 or later.')
 
     if not fits_base_dir:
         fits_base_dir = os.environ.get("FITS_BASE_DIR")
