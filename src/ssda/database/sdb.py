@@ -912,6 +912,14 @@ WHERE bv.Block_Id=(SELECT bv2.Block_Id FROM BlockVisit AS bv2 WHERE bv2.BlockVis
         if accepted_visits == 0 and rejected_visits >= other_visits:
             return types.Status.REJECTED
 
+        # If there are neither accepted nor rejected block visits, the block visit
+        # status should be correct.
+        if accepted_visits == 0 and rejected_visits == 0:
+            if status_results["BlockVisitStatus"].lower() == "deleted":
+                return types.Status.DELETED
+            if status_results["BlockVisitStatus"].lower() == "in queue":
+                return types.Status.IN_QUEUE
+
         # Despite best effort no block visit status could be determined.
         raise Exception(
             "The block visit status could not be determined for the block "
@@ -941,7 +949,7 @@ WHERE Proposal_Code=%s;
         # accessible by SALT partners). However, their meta data becomes public
         # immediately.
         if proposal_type == "Gravitational Wave Event":
-            release_date = datetime.datetime.strptime("2100-01-01", "%Y-%m-%d")
+            release_date = datetime.datetime.strptime("2100-01-01", "%Y-%m-%d").date()
             meta_release_date = datetime.datetime.today().date()
 
             return release_date, meta_release_date
@@ -971,7 +979,7 @@ WHERE Proposal_Code=%s;
             + relativedelta.relativedelta(months=proprietary_period)
         )
 
-        return release_date, release_date
+        return release_date.date(), release_date.date()
 
     def find_proposal_investigators(self, proposal_code: str) -> List[str]:
         sql = """

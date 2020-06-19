@@ -464,11 +464,11 @@ class SALTObservation:
             if observation_object == "DUMMY":
                 return True
 
+        # If the FITS header does not include the observation date and time, do not
+        # store its data.
         observation_date = self.fits_file.header_value("DATE-OBS")
-
-        # If the FITS header does not include the observation date, do not store its
-        # data.
-        if not observation_date:
+        observation_time = self.fits_file.header_value("TIME-OBS")
+        if not observation_date or not observation_time:
             return True
 
         # Ignore observations of unknown category unless they are part of a proposal.
@@ -487,6 +487,10 @@ class SALTObservation:
         product_type = self._obs_type()
         is_science = product_type == "OBJECT" or product_type == "SCIENCE"
         if is_science and not self._block_visit_id():
+            return True
+
+        # Ignore deleted and in queue blocks
+        if self._block_visit_id() and self.database_service.find_observation_status(self._block_visit_id()) in [Status.DELETED, Status.IN_QUEUE]:
             return True
 
         return False
