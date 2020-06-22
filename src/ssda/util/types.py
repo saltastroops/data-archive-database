@@ -644,22 +644,41 @@ class Filter(Enum):
             record_warning(Warning(f"Unknown filter name: {name}"))
             return Filter.UNKNOWN
 
-        if name == "Halpha-S1":
-            name = "H-alpha"
-        if name == "SDSSr-S1":
-            name = "SDSS r'"
-        if name == "SDSSi-S1":
-            name = "SDSS i'"
-        if name == "SDSSg-S1":
-            name = "SDSS g'"
-        if name == "SDSSu-S1":
-            name = "SDSS u'"
-        if name == "SDSSz-S1":
-            name = "SDSS z'"
-
         for filter in Filter:
             if name.lower() == str(filter.value).lower():
                 return filter
+
+        # Maybe the name is one of the filter name aliases?
+        aliases: Dict[Filter, List[str]] = {
+            Filter.JOHNSON_U: ["U-S1", "Johnson U", "SCAM-U"],
+            Filter.JOHNSON_B: ["B-S1", "Johnson B", "SCAM-B"],
+            Filter.JOHNSON_V: ["V-S1", "Johnson V", "SCAM-V"],
+            Filter.Cousins_R: ["R-S1", "Cousins R", "SCAM-R"],
+            Filter.Cousins_I: ["I-S1", "Cousins I", "SCAM-I"],
+            Filter.FWHM_380_40: ["380-40", "380nm 40nm FWHM", "SCAM380-40"],
+            Filter.FWHM_340_35: ["340-35", "340nm 35nm FWHM", "SCAM340-35"],
+            Filter.FUSED_SILICA_CLEAR: ["CLR-S1", "Fused silica clear", "PC00000"],
+            Filter.SDSS_U: ["SDSSu-S1", "SDSS u'", "S-SDSS-u"],
+            Filter.SDSS_G: ["SDSSg-S1", "SDSS g'", "S-SDSS-g"],
+            Filter.SDSS_R: ["SDSSr-S1", "SDSS r'", "S-SDSS-r"],
+            Filter.SDSS_I: ["SDSSi-S1", "SDSS i'", "S-SDSS-i"],
+            Filter.SDSS_z: ["SDSSz-S1", "SDSS z'", "S-SDSS-z"],
+            Filter.STROEMGREN_U: ["Su-S1", "Stroemgren u", "Su-S1"],
+            Filter.STROEMGREN_B: ["Sb-S1", "Stroemgren b", "Sb-S1"],
+            Filter.STROEMGREN_V: ["Sv-S1", "Stroemgren v", "Sv-S1"],
+            Filter.STROEMGREN_Y: ["Sy-S1", "Stroemgren y", "Sy-S1"],
+            Filter.H_ALPHA: ["Halpha-S1", "H-alpha", "Halpha-S1"],
+            Filter.H_BETA_WIDE: ["Hbw-S1", "H-beta wide", "Hbw-S1"],
+            Filter.H_BETA_NARROW: ["Hbn-S1", "H-beta narrow", "Hbn-S1"],
+            Filter.SRE_1: ["SR613-21", "SRE 1", "SR613-21"],
+            Filter.SRE_2: ["SR708-25", "SRE 2", "SR708-25"],
+            Filter.SRE_3: ["SR815-29", "SRE 3", "SR815-29"],
+            Filter.SRE_4: ["SR862-32", "SRE 4", "SR862-32"]
+        }
+        for key in aliases:
+            for alias in aliases[key]:
+                if name.lower() == alias.lower():
+                    return key
 
         record_warning(Warning(f"Unknown filter name: {name}"))
         return Filter.UNKNOWN
