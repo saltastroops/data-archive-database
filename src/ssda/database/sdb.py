@@ -929,11 +929,10 @@ WHERE bv.Block_Id=(SELECT bv2.Block_Id FROM BlockVisit AS bv2 WHERE bv2.BlockVis
             if status_results["BlockVisitStatus"].lower() == "in queue":
                 return types.Status.IN_QUEUE
 
-        # Despite best effort no block visit status could be determined.
-        raise Exception(
-            "The block visit status could not be determined for the block "
-            "visit id {id}."
-        )
+        # Despite best effort no block visit status could be determined. Let's play it
+        # safe and declare the visit rejected.
+        record_warning(Warning(f"The block visit status could not be determined for the block visit id {block_visit_id}. It is therefore marked as rejected."))
+        return types.Status.REJECTED
 
     def find_release_date(
         self, proposal_code: str
