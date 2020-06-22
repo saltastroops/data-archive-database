@@ -267,7 +267,6 @@ class DataProductType(Enum):
 
     IMAGE = "Image"
     SPECTRUM = "Spectrum"
-    UNKNOWN = "Unknown"
 
     @staticmethod
     def for_name(name: str) -> DataProductType:
@@ -286,20 +285,11 @@ class DataProductType(Enum):
 
         """
 
-        if not name:
-            record_warning(
-                Warning(f"The data product type {name} could not be determined.")
-            )
-            return DataProductType.UNKNOWN
-
         for data_product_type in DataProductType:
-            if name.lower() == str(data_product_type.value).lower():
+            if name and name.lower() == str(data_product_type.value).lower():
                 return data_product_type
 
-        record_warning(
-            Warning(f"The data product type {name} could not be determined.")
-        )
-        return DataProductType.UNKNOWN
+        raise ValueError(f"The data product type {name} could not be determined.")
 
 
 class DateRange:
@@ -376,7 +366,6 @@ class DetectorMode(Enum):
     NORMAL = "Normal"
     SHUFFLE = "Shuffle"
     SLOT_MODE = "Slot Mode"
-    UNKNOWN = "Unknown"
 
     @staticmethod
     def for_name(name: str) -> DetectorMode:
@@ -394,26 +383,19 @@ class DetectorMode(Enum):
 
         """
 
-        if not name:
-            record_warning(
-                Warning(f"The detector mode {name} could not be determined.")
-            )
-            return DetectorMode.UNKNOWN
-
-        if name.lower() == "slot":
+        if name and name.lower() == "slot":
             name = "Slot Mode"
-        if name.lower() == "ft":
+        if name and name.lower() == "ft":
             name = "Frame Transfer"
 
         for detector_mode in DetectorMode:
             if (
-                name.replace(" ", "").lower()
+                name and name.replace(" ", "").lower()
                 == str(detector_mode.value).replace(" ", "").lower()
             ):
                 return detector_mode
 
-        record_warning(Warning(f"The detector mode {name} could not be determined."))
-        return DetectorMode.UNKNOWN
+        raise ValueError(f"The detector mode {name} could not be determined.")
 
 
 class Energy:
@@ -622,10 +604,9 @@ class Filter(Enum):
     PI08350 = "pi08350"
     PI08535 = "pi08535"
     PI08730 = "pi08730"
-    UNKNOWN = "Unknown"
 
     @staticmethod
-    def for_name(name: str) -> Filter:
+    def for_name(name: str) -> Optional[Filter]:
         """The filter for a case-insensitive name.
 
         Parameters
@@ -641,8 +622,7 @@ class Filter(Enum):
         """
 
         if not name:
-            record_warning(Warning(f"Unknown filter name: {name}"))
-            return Filter.UNKNOWN
+            return None
 
         for filter in Filter:
             if name.lower() == str(filter.value).lower():
@@ -675,13 +655,13 @@ class Filter(Enum):
             Filter.SRE_3: ["SR815-29", "SRE 3", "SR815-29"],
             Filter.SRE_4: ["SR862-32", "SRE 4", "SR862-32"]
         }
+
         for key in aliases:
             for alias in aliases[key]:
                 if name.lower() == alias.lower():
                     return key
 
-        record_warning(Warning(f"Unknown filter name: {name}"))
-        return Filter.UNKNOWN
+        raise ValueError(f"Unknown filter name: {name}")
 
 
 class HRSArm(Enum):
@@ -857,7 +837,6 @@ class InstrumentMode(Enum):
     SPECTROPOLARIMETRY = "Spectropolarimetry"
     SPECTROSCOPY = "Spectroscopy"
     STREAMING = "Streaming"
-    UNKNOWN = "Unknown"
 
     @staticmethod
     def for_name(name: str) -> InstrumentMode:
@@ -876,18 +855,11 @@ class InstrumentMode(Enum):
 
         """
 
-        if not name:
-            record_warning(
-                Warning(f"The instrument mode {name} could not be determined.")
-            )
-            return InstrumentMode.UNKNOWN
-
         for instrument_mode in InstrumentMode:
-            if name.lower() == str(instrument_mode.value).lower():
+            if name and name.lower() == str(instrument_mode.value).lower():
                 return instrument_mode
 
-        record_warning(Warning(f"The instrument mode {name} could not be determined."))
-        return InstrumentMode.UNKNOWN
+        raise ValueError(f"The instrument mode {name} could not be determined.")
 
 
 class InstrumentSetup:
@@ -963,7 +935,6 @@ class Intent(Enum):
 
     CALIBRATION = "Calibration"
     SCIENCE = "Science"
-    UNKNOWN = "Unknown"
 
     @staticmethod
     def for_name(name: str) -> Intent:
@@ -982,16 +953,11 @@ class Intent(Enum):
 
         """
 
-        if not name:
-            record_warning(Warning(f"The intent {name} could not be determined."))
-            return Intent.UNKNOWN
-
         for intent in Intent:
-            if name.lower() == str(intent.value).lower():
+            if name and name.lower() == str(intent.value).lower():
                 return intent
 
-        record_warning(Warning(f"The intent {name} could not be determined."))
-        return Intent.UNKNOWN
+        raise ValueError(f"The intent {name} could not be determined.")
 
 
 class Observation:
@@ -1350,7 +1316,6 @@ class ProductCategory(Enum):
     FLAT = "Flat"
     SCIENCE = "Science"
     STANDARD = "Standard"
-    UNKNOWN = "Unknown"
 
     @staticmethod
     def for_name(name: str) -> ProductCategory:
@@ -1369,18 +1334,11 @@ class ProductCategory(Enum):
 
         """
 
-        if not name:
-            record_warning(
-                Warning(f"The product category {name} could not be determined.")
-            )
-            return ProductCategory.UNKNOWN
-
         for product_category in ProductCategory:
-            if name.lower() == str(product_category.value).lower():
+            if name and name.lower() == str(product_category.value).lower():
                 return product_category
 
-        record_warning(Warning(f"The product category {name} could not be determined."))
-        return ProductCategory.UNKNOWN
+        raise ValueError(f"The product category {name} could not be determined.")
 
 
 class ProductType(Enum):
@@ -1411,7 +1369,6 @@ class ProductType(Enum):
     STANDARD_SPECTROSCOPIC = "Standard - Spectroscopic"
     STANDARD_TELLURIC = "Standard - Telluric"
     STANDARD_UNPOLARISED = "Standard - Unpolarised"
-    UNKNOWN = "Unknown"
 
     @staticmethod
     def for_name(name: str) -> ProductType:
@@ -1430,16 +1387,11 @@ class ProductType(Enum):
 
         """
 
-        if not name:
-            record_warning(Warning(f"The product type {name} could not be determined."))
-            return ProductType.UNKNOWN
-
         for product_type in ProductType:
             if name.lower() == str(product_type.value).lower():
                 return product_type
 
-        record_warning(Warning(f"The product type {name} could not be determined."))
-        return ProductType.UNKNOWN
+        raise ValueError(f"The product type {name} could not be determined.")
 
 
 class Proposal:
