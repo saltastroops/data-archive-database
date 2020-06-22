@@ -622,7 +622,6 @@ class Filter(Enum):
         """
 
         if not name:
-            record_warning(Warning(f"No filter was used: {name}"))
             return None
 
         for filter in Filter:
