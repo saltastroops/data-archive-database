@@ -22,6 +22,7 @@ from ssda.util.fits import (
 )
 from ssda.util.salt_fits import parse_start_datetime
 from ssda.util.types import ProposalType
+from ssda.util.warnings import record_warning
 
 
 class BlockVisitIdStatus(Enum):
@@ -798,11 +799,19 @@ class SaltDatabaseService:
                     fd.block_visit_id in status_values
                     and status_values[fd.block_visit_id] != fd.block_visit_id_status
                 ):
-                    raise Exception(
-                        f"The block visit id {fd.block_visit_id} has been "
-                        f"marked both as {status_values[fd.block_visit_id]} "
-                        f"and {fd.block_visit_id_status}."
-                    )
+                    if status_values[fd.block_visit_id] == BlockVisitIdStatus.CONFIRMED:
+                        record_warning(Warning(
+                            f"The block visit id {fd.block_visit_id} has been "
+                            f"marked both as {status_values[fd.block_visit_id]} "
+                            f"and {fd.block_visit_id_status}."
+                        ))
+                        fd.block_visit_id_status = BlockVisitIdStatus.CONFIRMED
+                    else:
+                        raise Exception(
+                            f"The block visit id {fd.block_visit_id} has been "
+                            f"marked both as {status_values[fd.block_visit_id]} "
+                            f"and {fd.block_visit_id_status}."
+                        )
                 status_values[fd.block_visit_id] = fd.block_visit_id_status
 
         # ... and update the inferred and guessed status values accordingly.
