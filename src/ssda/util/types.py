@@ -1294,15 +1294,19 @@ class ProposalType(Enum):
     def for_value(value) -> ProposalType:
         """
         The proposal type value.
+
         Parameters
         ----------
         value : str
             The value.
+
         Returns
         -------
         ProposalType:
             The proposal type.
+
         """
+
         for proposal_type in ProposalType:
             if proposal_type.value.lower() == value.lower():
                 return proposal_type
@@ -1578,15 +1582,19 @@ class Telescope(Enum):
     def for_name(name):
         """
         The telescope for a case-insensitive name.
+
         Parameters
         ----------
         name : str
             The telescope name.
+
         Returns
         -------
         Telescope :
             The telescope.
+
         """
+
         for telescope in Telescope:
             if name.lower() == str(telescope.value).lower():
                 return telescope
