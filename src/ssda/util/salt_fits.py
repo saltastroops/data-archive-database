@@ -1,4 +1,7 @@
 from datetime import datetime, timezone
+from typing import Any, Optional
+
+from ssda.util import types
 
 
 def parse_start_datetime(start_date: str, start_time: str):
@@ -36,3 +39,22 @@ def parse_start_datetime(start_date: str, start_time: str):
     )
 
     return start_time_tz
+
+
+def find_fabry_perot_mode(header_value: Any) -> Optional[types.RSSFabryPerotMode]:
+    etalon_state = header_value("ET-STATE")
+    if etalon_state.lower() == "s1 - etalon open":
+        return None
+
+    if etalon_state.lower() == "s3 - etalon 2":
+        fabry_perot_mode = types.RSSFabryPerotMode.parse_fp_mode(
+            header_value("ET2MODE").upper()
+        )
+    elif (
+            etalon_state.lower() == "s2 - etalon 1"
+            or etalon_state.lower() == "s4 - etalon 1 & 2"
+    ):
+        fabry_perot_mode = types.RSSFabryPerotMode.parse_fp_mode(header_value("ET1MODE").upper())
+    else:
+        raise ValueError("Unknown etalon state")
+    return fabry_perot_mode
