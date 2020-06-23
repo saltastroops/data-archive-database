@@ -280,50 +280,50 @@ class SALTObservation:
         observation_object = (
             self.header_value("OBJECT").upper() if self.header_value("OBJECT") else ""
         )
-        product_type = self._obs_type()
+        obs_type = self._obs_type()
         proposal_id = (
             self.header_value("PROPID").upper() if self.header_value("PROPID") else ""
         )
 
-        product_type_unknown = not product_type or product_type == "ZERO"
+        obs_type_unknown = not obs_type or obs_type == "ZERO"
 
         if (
             proposal_id in ["CAL_ARC", "CAL_STABLE"]
-            or "ARC" in product_type
+            or "ARC" in obs_type
             or (
-                product_type_unknown
+                obs_type_unknown
                 and (observation_object == "ARC" or "_ARC" in observation_object)
             )
         ):
             return types.ProductCategory.ARC
         if (
             proposal_id == "CAL_BIAS"
-            or "BIAS" in product_type
+            or "BIAS" in obs_type
             or (
-                product_type_unknown
+                obs_type_unknown
                 and (observation_object == "BIAS" or "_BIAS" in observation_object)
             )
         ):
             return types.ProductCategory.BIAS
         if (
             proposal_id in ["CAL_FLAT", "CAL_SKYFLAT"]
-            or "FLAT" in product_type
+            or "FLAT" in obs_type
             or (
-                product_type_unknown
+                obs_type_unknown
                 and (observation_object == "FLAT" or "_FLAT" in observation_object)
             )
         ):
             return types.ProductCategory.FLAT
-        if "DARK" in product_type or (
-            product_type_unknown
+        if "DARK" in obs_type or (
+            obs_type_unknown
             and (observation_object == "DARK" or "_DARK" in observation_object)
         ):
             return types.ProductCategory.DARK
         if (
             proposal_id.startswith("CAL_")
-            or "STANDARD" in product_type
+            or "STANDARD" in obs_type
             or (
-                product_type_unknown
+                obs_type_unknown
                 and (
                     observation_object == "STANDARD"
                     or "_STANDARD" in observation_object
@@ -331,7 +331,7 @@ class SALTObservation:
             )
         ):
             return types.ProductCategory.STANDARD
-        if product_type == "OBJECT" or product_type == "SCIENCE":
+        if obs_type == "OBJECT" or obs_type == "SCIENCE":
             # Science files with no block visit id are not populated
             if self._block_visit_id() is None:
                 raise ValueError(
@@ -340,7 +340,13 @@ class SALTObservation:
                 )
             return types.ProductCategory.SCIENCE
 
-        raise ValueError(f"The product category could not be determined for [Product Type: {product_type}, Object: {observation_object}].")
+        header_values = {
+            "CCDTYPE": self.header_value("CCDTYPE"),
+            'OBJECT': self.header_value("OBJECT"),
+            'OBSTYPE': self.header_value("OBSTYPE"),
+            'PROPID': self.header_value("PROPID")
+        }
+        raise ValueError(f"The product category could not be determined. (Observation type: {obs_type}, FITS header values: {header_values})")
 
     def _product_type(self) -> types.ProductType:
         obs_mode = (
@@ -412,7 +418,12 @@ class SALTObservation:
         if product_category == types.ProductCategory.SCIENCE:
             return types.ProductType.SCIENCE
 
-        raise ValueError(f"The product type could not be determined for [Product Category: {product_category}, OBS Mode: {obs_mode}, Instrument Mode:{instrument} ].")
+        header_values = {
+            "INSTRUME": self.header_value("INSTRUME"),
+            "OBSMODE": self.header_value("OBSMODE"),
+            "PROPID": self.header_value("PROPID")
+        }
+        raise ValueError(f"The product type could not be determined. (Product Category: {product_category}, observation mode: {obs_mode}, instrument: {instrument}, FITS header values: {header_values})")
 
     def _intent(self) -> types.Intent:
         product_category = self._product_category()
@@ -422,7 +433,7 @@ class SALTObservation:
         elif product_category == types.ProductCategory.SCIENCE:
             return types.Intent.SCIENCE
 
-        raise ValueError(f"The intent could not be determined for [Product category: {product_category}].")
+        raise ValueError(f"The intent could not be determined. (Product category: {product_category})")
 
     def is_calibration(self):
         product_category = self._product_category()
