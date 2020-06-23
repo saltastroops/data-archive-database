@@ -2,6 +2,7 @@ from ssda.database.sdb import SaltDatabaseService
 from ssda.observation import ObservationProperties
 from ssda.util import types
 from ssda.util.salt_energy_calculation import rss_spectral_properties
+from ssda.util.salt_fits import find_fabry_perot_mode
 from ssda.util.salt_observation import SALTObservation
 from ssda.util.fits import FitsFile
 from typing import Optional, List
@@ -60,7 +61,7 @@ class RssObservationProperties(ObservationProperties):
         VALUES (%(instrument_setup_id)s, (SELECT id FROM fpm), (SELECT id FROM rg), %(camera_angle)s)
         """
 
-        fabry_perot_mode = self.header_value("OBSMODE")
+        fabry_perot_mode = find_fabry_perot_mode(self.header_value)
 
         def normalized_grating_name(grating_name: str) -> str:
             normalized_name = grating_name.lower()
@@ -74,7 +75,7 @@ class RssObservationProperties(ObservationProperties):
         camera_angle = float(self.header_value("CAMANG"))
 
         parameters = dict(
-            fabry_perot_mode=fabry_perot_mode,
+            fabry_perot_mode=fabry_perot_mode.value,
             grating=grating,
             camera_angle=camera_angle,
         )
