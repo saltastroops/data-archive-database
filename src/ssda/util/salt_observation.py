@@ -340,7 +340,7 @@ class SALTObservation:
                 )
             return types.ProductCategory.SCIENCE
 
-        raise ValueError(f"The product category {product_type} could not be determined.")
+        raise ValueError(f"The product category could not be determined for [Product Type: {product_type}, Object: {observation_object}].")
 
     def _product_type(self) -> types.ProductType:
         obs_mode = (
@@ -412,7 +412,7 @@ class SALTObservation:
         if product_category == types.ProductCategory.SCIENCE:
             return types.ProductType.SCIENCE
 
-        raise ValueError(f"The product type {product_category} could not be determined.")
+        raise ValueError(f"The product type could not be determined for [Product Category: {product_category}, OBS Mode: {obs_mode}, Instrument Mode:{instrument} ].")
 
     def _intent(self) -> types.Intent:
         product_category = self._product_category()
@@ -422,7 +422,7 @@ class SALTObservation:
         elif product_category == types.ProductCategory.SCIENCE:
             return types.Intent.SCIENCE
 
-        raise ValueError(f"The intent {product_category} could not be determined.")
+        raise ValueError(f"The intent could not be determined for [Product category: {product_category}].")
 
     def is_calibration(self):
         product_category = self._product_category()
