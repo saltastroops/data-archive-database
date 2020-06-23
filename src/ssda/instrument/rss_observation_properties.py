@@ -85,13 +85,9 @@ class RssObservationProperties(ObservationProperties):
 
         filter = types.Filter.for_name(self.header_value("FILTER"))
 
-        try:
-            instrument_mode = rss_instrument_mode(
+        instrument_mode = rss_instrument_mode(
                 self.header_value, self.database_service
-            )
-        except BaseException as e:
-            record_warning(Warning("The instrument mode could not be determined."))
-            instrument_mode = types.InstrumentMode.UNKNOWN
+        )
 
         return types.InstrumentSetup(
             additional_queries=queries,
@@ -127,8 +123,7 @@ class RssObservationProperties(ObservationProperties):
                 else types.DataProductType.SPECTRUM
             )  # TODO is fp only imaging
         else:
-            record_warning(Warning("The data product type could not be determined."))
-            data_product_type = types.DataProductType.UNKNOWN
+            raise ValueError(f"The OBSMODE FITS header value is missing.")
         return types.Plane(observation_id, data_product_type=data_product_type)
 
     def polarization(self, plane_id: int) -> Optional[types.Polarization]:
