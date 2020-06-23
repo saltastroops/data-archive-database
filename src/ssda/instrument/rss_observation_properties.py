@@ -90,8 +90,7 @@ class RssObservationProperties(ObservationProperties):
                 self.header_value, self.database_service
             )
         except BaseException as e:
-            record_warning(Warning("The instrument mode could not be determined."))
-            instrument_mode = types.InstrumentMode.UNKNOWN
+            raise ValueError(f"The instrument mode {instrument_mode} could not be determined.")
 
         return types.InstrumentSetup(
             additional_queries=queries,
@@ -127,8 +126,7 @@ class RssObservationProperties(ObservationProperties):
                 else types.DataProductType.SPECTRUM
             )  # TODO is fp only imaging
         else:
-            record_warning(Warning("The data product type could not be determined."))
-            data_product_type = types.DataProductType.UNKNOWN
+            raise ValueError(f"The data product type {observation_mode} could not be determined.")
         return types.Plane(observation_id, data_product_type=data_product_type)
 
     def polarization(self, plane_id: int) -> Optional[types.Polarization]:

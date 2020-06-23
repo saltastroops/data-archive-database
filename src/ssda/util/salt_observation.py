@@ -340,8 +340,7 @@ class SALTObservation:
                 )
             return types.ProductCategory.SCIENCE
 
-        record_warning(Warning("The product category could not be determined."))
-        return types.ProductCategory.UNKNOWN
+        raise ValueError(f"The product category {product_type} could not be determined.")
 
     def _product_type(self) -> types.ProductType:
         obs_mode = (
@@ -413,8 +412,7 @@ class SALTObservation:
         if product_category == types.ProductCategory.SCIENCE:
             return types.ProductType.SCIENCE
 
-        record_warning(Warning("The product type could not be determined."))
-        return types.ProductType.UNKNOWN
+        raise ValueError(f"The product type {product_category} could not be determined.")
 
     def _intent(self) -> types.Intent:
         product_category = self._product_category()
@@ -424,8 +422,7 @@ class SALTObservation:
         elif product_category == types.ProductCategory.SCIENCE:
             return types.Intent.SCIENCE
 
-        record_warning(Warning("The intent could not be determined."))
-        return types.Intent.UNKNOWN
+        raise ValueError(f"The intent {product_category} could not be determined.")
 
     def is_calibration(self):
         product_category = self._product_category()
@@ -479,7 +476,7 @@ class SALTObservation:
         try:
             # Trying to get the product category might result in an exception. But in
             # this case we should not ignore the file.
-            if self._product_category() == types.ProductCategory.UNKNOWN and not self.database_service.is_existing_proposal_code(
+            if not self.database_service.is_existing_proposal_code(
                 proposal_id
             ):
                 return True
