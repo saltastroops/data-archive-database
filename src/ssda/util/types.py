@@ -644,7 +644,7 @@ class Filter(Enum):
             Filter.SDSS_I: ["SDSSi-S1", "SDSS i'", "S-SDSS-i"],
             Filter.SDSS_z: ["SDSSz-S1", "SDSS z'", "S-SDSS-z"],
             Filter.STROEMGREN_U: ["Su-S1", "Stroemgren u", "Su-S1"],
-            Filter.STROEMGREN_B: ["Sb-S1", "Stroemgren b", "Sb-S1"],
+            Filter.STROEMGREN_B: ["Sb-S1", "Stroemgren b", "Sb-S1", "SBn-S1"],
             Filter.STROEMGREN_V: ["Sv-S1", "Stroemgren v", "Sv-S1"],
             Filter.STROEMGREN_Y: ["Sy-S1", "Stroemgren y", "Sy-S1"],
             Filter.H_ALPHA: ["Halpha-S1", "H-alpha", "Halpha-S1"],
@@ -659,6 +659,8 @@ class Filter(Enum):
         for key in aliases:
             for alias in aliases[key]:
                 if name.lower() == alias.lower():
+                    if name.lower() == "sbn-s1":
+                        record_warning(Warning(f"Filter name: {name} is assumed to be {key.value}"))
                     return key
 
         raise ValueError(f"Unknown filter name: {name}")
