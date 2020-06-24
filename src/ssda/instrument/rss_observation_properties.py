@@ -55,9 +55,9 @@ class RssObservationProperties(ObservationProperties):
             WHERE fabry_perot_mode=%(fabry_perot_mode)s
         ),
              rg (id) AS (
-                 SELECT rss_grating_id FROM rss_grating WHERE grating=%(grating)s
+                 SELECT rss_grating_id FROM observations.rss_grating WHERE grating=%(grating)s
              )
-        INSERT INTO rss_setup (instrument_setup_id, rss_fabry_perot_mode_id, rss_grating_id, camera_angle)
+        INSERT INTO observations.rss_setup (instrument_setup_id, rss_fabry_perot_mode_id, rss_grating_id, camera_angle)
         VALUES (%(instrument_setup_id)s, (SELECT id FROM fpm), (SELECT id FROM rg), %(camera_angle)s)
         """
 
@@ -70,7 +70,7 @@ class RssObservationProperties(ObservationProperties):
             return normalized_name
 
         grating_value = normalized_grating_name(self.header_value("GRATING"))
-        grating = None if grating_value == "N/A" else grating_value
+        grating = None if grating_value == "n/a" else grating_value
 
         camera_angle = float(self.header_value("CAMANG"))
 
