@@ -52,14 +52,20 @@ def main(file: Optional[str], start: Optional[date], end: Optional[date]):
 
     try:
         if file:
+            observation_id = ssda_database_service.find_observation_id(
+                artifact_name=file)
+            if observation_id is None:
+                raise ValueError(f"No observation id found for file: {file}")
             ssda_database_service.delete_observation(
-                observation_id=ssda_database_service.find_observation_id(
-                    artifact_name=file
-                )
+                observation_id=observation_id
             )
         else:
+            if start is None:
+                raise ValueError("The start date is None.")
+            if end is None:
+                raise ValueError("The end date is None.")
             observation_ids = ssda_database_service.find_observation_ids(
-                start=start, end=end
+                start_date=start, end_date=end
             )
             for obs_id in observation_ids:
                 ssda_database_service.delete_observation(observation_id=obs_id)
@@ -69,5 +75,3 @@ def main(file: Optional[str], start: Optional[date], end: Optional[date]):
         ssda_database_service.rollback_transaction()
         logging.error(msg="Failed to delete data.", exc_info=True)
         logging.error(e)
-
-    ssda_database_service.close()

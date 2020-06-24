@@ -39,12 +39,12 @@ class FileDataItem:
 
     """
 
-    ut_start: datetime
+    ut_start: datetime.datetime
     file_name: str
     block_visit_id: Optional[Union[int, str]]
     block_visit_id_status: Optional[BlockVisitIdStatus]
     target_name: str
-    proposal_code: str
+    proposal_code: Optional[str]
 
 
 @dataclass(frozen=True)
@@ -226,7 +226,7 @@ class SaltDatabaseService:
         # There might be calibration files not belonging to any proposal which still
         # have a block visit id, although they shouldn't.
         for fd in file_data:
-            if not self.is_existing_proposal_code(fd.proposal_code):
+            if not fd.proposal_code or  not self.is_existing_proposal_code(fd.proposal_code):
                 fd.block_visit_id = None
 
         return file_data
@@ -369,7 +369,7 @@ class SaltDatabaseService:
 
     def _find_raw_block_visit_ids(
         self, night: datetime.date, status_values: List[str]
-    ) -> Dict[BlockKey, List[id]]:
+    ) -> Dict[BlockKey, List[int]]:
         """
         Extract block visit ids from database tables other than FileData.
 
@@ -434,7 +434,7 @@ class SaltDatabaseService:
                 key = BlockKey(
                     proposal_code=row.Proposal_Code, target_name=row.Target_Name.strip()
                 )
-                block_visit_ids[key].append(row.BlockVisit_Id)
+                block_visit_ids[key].append(int(row.BlockVisit_Id))
 
         return block_visit_ids
 
@@ -467,7 +467,7 @@ class SaltDatabaseService:
 
         # Extract all id values from the block visit id and ignored block visit id
         # dictionaries.
-        id_values = sorted(
+        id_values: List[int] = sorted(
             functools.reduce(
                 lambda x, y: [*x, *y],
                 [*block_visit_ids.values(), *ignored_block_visit_ids.values()],
@@ -544,7 +544,7 @@ class SaltDatabaseService:
             if fd.block_visit_id:
                 for key in available_ids:
                     if fd.block_visit_id in available_ids[key]:
-                        available_ids[key].remove(fd.block_visit_id)
+                        available_ids[key].remove(int(fd.block_visit_id))
 
         # Define the function for requesting block visit id values.
         def request_block_visit_id(_key: BlockKey):
@@ -673,7 +673,7 @@ class SaltDatabaseService:
                 ):
                     # At least one of the two files is a calibration or both files have
                     # the same target. So we've found a block visit id!
-                    return block_visit_id
+                    return int(block_visit_id)
                 if forward_search:
                     i += 1
                 else:
@@ -688,6 +688,8 @@ class SaltDatabaseService:
                 continue
 
             # Files which don't belong to a proposal have no block visit id.
+            if not fd.proposal_code:
+                continue
             if not self.is_existing_proposal_code(fd.proposal_code):
                 continue
 
@@ -1006,7 +1008,7 @@ WHERE ProposalCode.Proposal_Code=%s;
             return ps
         raise ValueError("Observation has no Investigators")
 
-    def find_target_type(self, block_visit_id: Union[int, str]) -> str:
+    def find_target_type(self, block_visit_id: Optional[Union[int, str]]) -> str:
         # If there is no block visit, return the Unknown target type
         if block_visit_id is None:
             return "00.00.00.00"

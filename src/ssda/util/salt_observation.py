@@ -35,12 +35,12 @@ class SALTObservation:
 
     def artifact(self, plane_id: int) -> types.Artifact:
         # Creates a file path of the reduced calibration level mapping a raw calibration level.
-        def create_reduced_path(path: Path) -> Path:
+        def create_reduced_path(path: Path) -> Optional[Path]:
             reduced_dir = Path.joinpath(path.parent.parent, "product")
 
             reduced_paths = reduced_dir.glob("*.fits")
 
-            _reduced_path = ""
+            _reduced_path: Optional[Path] = None
 
             for _path in reduced_paths:
                 if _path.name.endswith(path.name):
@@ -78,7 +78,7 @@ class SALTObservation:
 
     def _block_visit_id(self) -> Optional[str]:
         # The block visit id from the FITS header...
-        bvid_from_fits = self.fits_file.header_value("BVISITID")
+        bvid_from_fits: Optional[str] = self.fits_file.header_value("BVISITID")
 
         # ... must be discarded if this observation is not part of a proposal
         proposal_code = self._proposal_code()
@@ -123,7 +123,7 @@ class SALTObservation:
         # Some block visit ids don't exist in the FITS header but can be inferred
         # from the database. Also, if the two differ, the database inferred one is the
         # more conservative (and hence safer) bet.
-        return bvid_from_db
+        return str(bvid_from_db) if bvid_from_db is not None else ""
 
     def observation(
         self,
