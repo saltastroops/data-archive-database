@@ -75,7 +75,7 @@ class RssObservationProperties(ObservationProperties):
         camera_angle = float(self.header_value("CAMANG"))
 
         parameters = dict(
-            fabry_perot_mode=fabry_perot_mode.value,
+            fabry_perot_mode=fabry_perot_mode.value if fabry_perot_mode else None,
             grating=grating,
             camera_angle=camera_angle,
         )
