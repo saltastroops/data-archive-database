@@ -624,6 +624,17 @@ class Filter(Enum):
         if not name:
             return None
 
+        replacements = {
+            "SBn-S1": "Stroemgren b",
+            "SDSSI": "SDSS i'",
+            "SDSSU": "SDSS u'"
+        }
+
+        for old_value, new_value in replacements.items():
+            if name.lower() == old_value.lower():
+                record_warning(Warning(f"Filter name: {name} is assumed to be {new_value}"))
+                name = new_value
+
         for filter in Filter:
             if name.lower() == str(filter.value).lower():
                 return filter
@@ -644,7 +655,7 @@ class Filter(Enum):
             Filter.SDSS_I: ["SDSSi-S1", "SDSS i'", "S-SDSS-i"],
             Filter.SDSS_z: ["SDSSz-S1", "SDSS z'", "S-SDSS-z"],
             Filter.STROEMGREN_U: ["Su-S1", "Stroemgren u", "Su-S1"],
-            Filter.STROEMGREN_B: ["Sb-S1", "Stroemgren b", "Sb-S1", "SBn-S1"],
+            Filter.STROEMGREN_B: ["Sb-S1", "Stroemgren b", "Sb-S1"],
             Filter.STROEMGREN_V: ["Sv-S1", "Stroemgren v", "Sv-S1"],
             Filter.STROEMGREN_Y: ["Sy-S1", "Stroemgren y", "Sy-S1"],
             Filter.H_ALPHA: ["Halpha-S1", "H-alpha", "Halpha-S1"],
