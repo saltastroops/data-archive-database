@@ -1596,7 +1596,7 @@ class Telescope(Enum):
         """
 
         for telescope in Telescope:
-            if name.lower() == str(telescope.value).lower():
+            if name.lower() == telescope.value.lower():
                 return telescope
 
         raise ValueError(f"Unknown telescope name: {name}")

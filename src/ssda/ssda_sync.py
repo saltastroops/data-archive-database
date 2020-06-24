@@ -9,10 +9,14 @@ from ssda.database.services import DatabaseServices
 from ssda.database.ssda import SSDADatabaseService
 
 from ssda.util import types
+from ssda.util.logger_setup import setup_logger
 from ssda.util.parse_date import parse_date
 
 
 logging.root.setLevel(logging.INFO)
+
+info_log = setup_logger('info_logger', 'ssda_sync_info.log', logging.Formatter('%(levelname)s - %(message)s'))
+error_log = setup_logger('error_logger', 'ssda_sync_error.log', logging.Formatter('\n%(message)s\n%(levelname)s'))
 
 
 @click.command()
@@ -86,14 +90,13 @@ def main(start, end) -> int:
                     )
             ssda_database_service.commit_transaction()
 
-            logging.basicConfig(filename='ssda_sync_info_log.log', filemode='a', format='%(levelname)s - %(message)s')
-            logging.info(msg=f"Proposal: {sdb_proposal.proposal_code} was sucessfully updated. Date: {date.today()}")
+            info_log.info(msg=f"Proposal: {sdb_proposal.proposal_code} was sucessfully updated. Date: {date.today()}")
         except AttributeError as e:
             ssda_database_service.rollback_transaction()
 
             capture_exception(e)
-            logging.basicConfig(filename='ssda_sync_error_log.log', filemode='a', format='\n%(message)s\n%(levelname)s')
-            logging.error(
+            logging.basicConfig(filename='ssda_sync_error_log.log', filemode='a', format='%(message)s')
+            error_log.error(
                 """____________________________________________________________________________________________________________
             """, exc_info=True)
     ssda_connection.close()
