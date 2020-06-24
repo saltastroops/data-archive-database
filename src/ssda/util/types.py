@@ -535,6 +535,7 @@ class Filter(Enum):
 
     Cousins_I = "Cousins I"
     Cousins_R = "Cousins R"
+    EMPTY = "Empty"
     FUSED_SILICA_CLEAR = "Fused silica clear"
     FWHM_340_35 = "340nm 35nm FWHM"
     FWHM_380_40 = "380nm 40nm FWHM"
