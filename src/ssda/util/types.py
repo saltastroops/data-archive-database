@@ -1,11 +1,11 @@
 from __future__ import annotations
 import os
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Optional
+from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple
 
 import astropy.units as u
 from astropy.units import def_unit, Quantity
@@ -713,7 +713,7 @@ class Institution(Enum):
     SALT = "Southern African Large Telescope"
 
 
-@dataclass()
+@dataclass(frozen=True)
 class InstitutionMembership:
     """
     Details for the membership in an institution.
@@ -729,6 +729,9 @@ class InstitutionMembership:
 
     membership_end: date
     membership_start: date
+
+    def __lt__(self, other: InstitutionMembership):
+        return (self.membership_start, self.membership_end) < (other.membership_start, other.membership_end)
 
 
 class Instrument(Enum):

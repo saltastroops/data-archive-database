@@ -238,7 +238,7 @@ class SALTObservation:
                 proposal_id=proposal_id,
                 investigator_id=str(investigator),
                 institution=types.Institution.SALT,
-                institution_member=self.database_service.is_salt_partner(
+                institution_memberships=self.database_service.institution_memberships(
                     int(investigator)
                 ),
             )
