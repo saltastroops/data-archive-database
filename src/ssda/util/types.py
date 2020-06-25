@@ -628,7 +628,8 @@ class Filter(Enum):
         replacements = {
             "SBn-S1": "Stroemgren b",
             "SDSSI": "SDSS i'",
-            "SDSSU": "SDSS u'"
+            "SDSSU": "SDSS u'",
+            "EMPTY": "OPEN"
         }
 
         for old_value, new_value in replacements.items():
