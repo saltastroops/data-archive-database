@@ -85,9 +85,6 @@ class RssObservationProperties(ObservationProperties):
 
         filter = types.Filter.for_name(self.header_value("FILTER"))
 
-        if self.header_value("FILTER") == "PC155U5":
-            raise ValueError("No such filter {}".format(self.header_value("FILTER")))
-
         instrument_mode = rss_instrument_mode(
                 self.header_value, self.database_service
         )
