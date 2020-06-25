@@ -226,7 +226,7 @@ class SaltDatabaseService:
         # There might be calibration files not belonging to any proposal which still
         # have a block visit id, although they shouldn't.
         for fd in file_data:
-            if not fd.proposal_code or  not self.is_existing_proposal_code(fd.proposal_code):
+            if not fd.proposal_code or not self.is_existing_proposal_code(fd.proposal_code):
                 fd.block_visit_id = None
 
         return file_data
