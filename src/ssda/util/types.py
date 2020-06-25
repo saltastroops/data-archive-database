@@ -545,7 +545,7 @@ class Filter(Enum):
     JOHNSON_I = "Johnson I"
     JOHNSON_R = "Johnson R"
     JOHNSON_U = "Johnson U"
-    JOHNSON_V = "Johnson V",
+    JOHNSON_V = "Johnson V"
     OPEN = "Open"
     SDSS_G = "SDSS g'"
     SDSS_I = "SDSS i'"
