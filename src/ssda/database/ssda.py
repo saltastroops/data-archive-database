@@ -760,10 +760,10 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
             sql = """
             WITH pp (polarization_mode_id) AS (
                 SELECT polarization_mode_id
-                FROM polarization_mode
+                FROM observations.polarization_mode
                 WHERE polarization_mode.name=%(pattern)s
             )
-            INSERT INTO polarization (plane_id, polarization_mode_id)
+            INSERT INTO observations.polarization (plane_id, polarization_mode_id)
             VALUES (%(plane_id)s, (SELECT polarization_mode_id FROM pp))
             """
 
@@ -797,7 +797,7 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
 
         with self._connection.cursor() as cur:
             sql = """
-            INSERT INTO position (dec, equinox, owner_institution_user_ids, plane_id, ra)
+            INSERT INTO observations.position (dec, equinox, owner_institution_user_ids, plane_id, ra)
             VALUES (%(dec)s, %(equinox)s, %(owner_institution_user_ids)s, %(plane_id)s, %(ra)s)
             RETURNING position_id
             """

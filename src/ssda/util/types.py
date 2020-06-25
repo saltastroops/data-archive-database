@@ -546,6 +546,7 @@ class Filter(Enum):
     JOHNSON_R = "Johnson R"
     JOHNSON_U = "Johnson U"
     JOHNSON_V = "Johnson V"
+    OPEN = "Open"
     SDSS_G = "SDSS g'"
     SDSS_I = "SDSS i'"
     SDSS_R = "SDSS r'"
@@ -627,7 +628,8 @@ class Filter(Enum):
         replacements = {
             "SBn-S1": "Stroemgren b",
             "SDSSI": "SDSS i'",
-            "SDSSU": "SDSS u'"
+            "SDSSU": "SDSS u'",
+            "EMPTY": "OPEN"
         }
 
         for old_value, new_value in replacements.items():
