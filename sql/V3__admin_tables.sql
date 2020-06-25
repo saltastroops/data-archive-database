@@ -274,7 +274,7 @@ COMMENT ON COLUMN institution_user.user_id IS 'Id used by the institution to ide
 DROP TABLE IF EXISTS institution_membership;
 
 CREATE TABLE institution_membership (
-    institution_user_id int REFERENCES institution_user (institution_user_id),
+    institution_user_id int REFERENCES institution_user (institution_user_id) ON DELETE CASCADE,
     membership_end date NOT NULL,
     membership_start date NOT NULL
 );
