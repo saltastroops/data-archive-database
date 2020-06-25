@@ -335,7 +335,7 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
 
         with self._connection.cursor() as cur:
             sql = """
-            INSERT INTO energy (dimension,
+            INSERT INTO observations.energy (dimension,
                                 max_wavelength,
                                 min_wavelength,
                                 plane_id,
@@ -794,7 +794,7 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
 
         with self._connection.cursor() as cur:
             sql = """
-            INSERT INTO position (dec, equinox, owner_institution_user_ids, plane_id, ra)
+            INSERT INTO observations.position (dec, equinox, owner_institution_user_ids, plane_id, ra)
             VALUES (%(dec)s, %(equinox)s, %(owner_institution_user_ids)s, %(plane_id)s, %(ra)s)
             RETURNING position_id
             """
