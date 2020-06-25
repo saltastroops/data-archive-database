@@ -564,6 +564,7 @@ class Filter(Enum):
     PC03400 = "pc03400"
     PC03850 = "pc03850"
     PC04600 = "pc04600"
+    PC155U5 = "pc155u5"
     PI04340 = "pi04340"
     PI04400 = "pi04400"
     PI04465 = "pi04465"
@@ -651,7 +652,7 @@ class Filter(Enum):
             Filter.FUSED_SILICA_CLEAR: ["CLR-S1", "Fused silica clear", "PC00000"],
             Filter.SDSS_U: ["SDSSu-S1", "SDSS u'", "S-SDSS-u"],
             Filter.SDSS_G: ["SDSSg-S1", "SDSS g'", "S-SDSS-g"],
-            Filter.SDSS_R: ["SDSSr-S1", "SDSS r'", "S-SDSS-r"],
+            Filter.SDSS_R: ["SDSSr-S1", "SDSS r'", "S-SDSS-r", "SDSS-r"],
             Filter.SDSS_I: ["SDSSi-S1", "SDSS i'", "S-SDSS-i"],
             Filter.SDSS_z: ["SDSSz-S1", "SDSS z'", "S-SDSS-z"],
             Filter.STROEMGREN_U: ["Su-S1", "Stroemgren u", "Su-S1"],
