@@ -713,6 +713,24 @@ class Institution(Enum):
     SALT = "Southern African Large Telescope"
 
 
+@dataclass()
+class InstitutionMembership:
+    """
+    Details for the membership in an institution.
+
+    Parameters
+    ----------
+    membership_end : date
+        Date when the membership has ended or will end.
+    membership_start : date
+        Date when the membership has started.
+
+    """
+
+    membership_end: date
+    membership_start: date
+
+
 class Instrument(Enum):
     """
     Enumeration of the instruments.
@@ -1476,8 +1494,8 @@ class ProposalInvestigator:
         Database id of the proposal.
     institution : Institution
             Institution to which the proposal was submitted.
-    institution_member: bool
-            Institution member.
+    institution_memberships: List[InstitutionMembership]
+            Institution memberships.
     investigator_id : str
         The unique id of the investigator, as determined by the institution to which the
         proposal was submitted.
@@ -1489,14 +1507,14 @@ class ProposalInvestigator:
         proposal_id: int,
         investigator_id: str,
         institution: Institution,
-        institution_member: bool,
+        institution_memberships: List[InstitutionMembership],
     ):
         if len(investigator_id) > 50:
             raise ValueError("The investigator id must have at most 30 characters.")
 
         self._proposal_id = proposal_id
         self._institution = institution
-        self._institution_member = institution_member
+        self._institution_memberships = institution_memberships
         self._investigator_id = investigator_id
 
     @property
@@ -1508,8 +1526,8 @@ class ProposalInvestigator:
         return self._institution
 
     @property
-    def institution_member(self) -> bool:
-        return self._institution_member
+    def institution_memberships(self) -> List[InstitutionMembership]:
+        return self._institution_memberships
 
     @property
     def investigator_id(self) -> str:
