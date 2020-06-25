@@ -625,6 +625,17 @@ class Filter(Enum):
         if not name:
             return None
 
+        replacements = {
+            "SBn-S1": "Stroemgren b",
+            "SDSSI": "SDSS i'",
+            "SDSSU": "SDSS u'"
+        }
+
+        for old_value, new_value in replacements.items():
+            if name.lower() == old_value.lower():
+                record_warning(Warning(f"Filter name: {name} is assumed to be {new_value}"))
+                name = new_value
+
         for filter in Filter:
             if name.lower() == str(filter.value).lower():
                 return filter
@@ -660,6 +671,8 @@ class Filter(Enum):
         for key in aliases:
             for alias in aliases[key]:
                 if name.lower() == alias.lower():
+                    if name.lower() == "sbn-s1":
+                        record_warning(Warning(f"Filter name: {name} is assumed to be {key.value}"))
                     return key
 
         raise ValueError(f"Unknown filter name: {name}")

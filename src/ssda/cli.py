@@ -1,5 +1,6 @@
 import logging
 import os
+import traceback
 from datetime import date, datetime, timedelta
 from typing import Callable, List, Optional, Set, Tuple
 
@@ -410,7 +411,8 @@ def handle_exception(
         # don't output anything
         pass
     if verbosity_level == 1:
-        msg += error_msg
+        filename, lineno = error_location(e)
+        msg += f"[{filename}, line {lineno}] {error_msg}"
         if data_to_log.is_daytime_observation():
             msg += " [DAYTIME]"
         msg += f" [{path}]"
@@ -461,3 +463,25 @@ Observation time: {data_to_log.observation_time}{" *** DAYTIME ***" if data_to_l
         daytime_errors.append(msg)
     else:
         nighttime_errors.append(msg)
+
+
+def error_location(e: BaseException) -> Tuple[str, int]:
+    """
+    Get the name od the file and the line number where an exception was raised.
+
+    Parameters
+    ----------
+    e : BaseException
+        Exception.
+
+    Returns
+    -------
+    tuple
+        A tuple of the file name and line number.
+
+    """
+
+    stack_frames = traceback.extract_tb(e.__traceback__)
+    filename = os.path.basename(stack_frames[-1].filename)
+    lineno = stack_frames[-1].lineno
+    return filename, lineno
