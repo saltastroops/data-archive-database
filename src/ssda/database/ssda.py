@@ -335,7 +335,7 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
 
         with self._connection.cursor() as cur:
             sql = """
-            INSERT INTO energy (dimension,
+            INSERT INTO observations.energy (dimension,
                                 max_wavelength,
                                 min_wavelength,
                                 plane_id,
