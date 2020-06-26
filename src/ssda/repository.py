@@ -92,6 +92,9 @@ def insert(
                     ssda_database_service.insert_proposal_investigator(
                         proposal_investigator
                     )
+
+                # insert proposal access rule
+                ssda_database_service.insert_proposal_access_rule(proposal_id, observation_properties.access_rule())
         else:
             proposal_id = None
 

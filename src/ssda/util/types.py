@@ -65,6 +65,19 @@ class CalibrationLevelPaths:
     reduced: Optional[Path]
 
 
+class AccessRule(Enum):
+    """
+    Enumeration of the available data access rules.
+
+    The enum values must be the same as the values of the access_rule column in the
+    access_rule table.
+
+    """
+
+    PUBLIC_DATA_OR_INSTITUTION_MEMBER = "Public Data or Institution Member"
+    PUBLIC_DATA_OR_INVESTIGATOR = "Public Data or Investigator"
+
+
 class Artifact:
     """
     An artifact, usually a FITS file.

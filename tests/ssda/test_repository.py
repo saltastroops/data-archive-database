@@ -43,6 +43,9 @@ def assert_equal_properties(a: Any, b: Any):
 
 
 class ObservationPropertiesStub(ObservationProperties):
+    def access_rule(self) -> Optional[types.AccessRule]:
+        return types.AccessRule.PUBLIC_DATA_OR_INVESTIGATOR
+
     def artifact(self, plane_id: int) -> types.Artifact:
         return types.Artifact(
             content_checksum="chu346jh",
