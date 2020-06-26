@@ -1055,20 +1055,48 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
 
         return results.iloc[0]["RssMaskType"] == "MOS"
 
-    def is_salt_partner(self, user_id: int) -> bool:
+    def institution_memberships(self, user_id: int) -> List[types.InstitutionMembership]:
+        # TODO: This should be replaced with an improved version, getting the date
+        # intervals from the SDB
+        partner_membership_intervals = {
+        "AMNH": [(datetime.date(2011, 9, 1), datetime.date(2100, 1, 1))],
+        "CMU": [(datetime.date(2011, 9, 1), datetime.date(2013, 4, 30))],
+        "DC": [(datetime.date(2011, 9, 1), datetime.date(2100, 1, 1))],
+        "DUR": [(datetime.date(2017, 5, 1), datetime.date(2019, 4, 30))],
+        "GU": [(datetime.date(2011, 9, 1), datetime.date(2015, 4, 30)), (datetime.date(2016, 5, 1), datetime.date(2017, 10, 31))],
+        "HET": [(datetime.date(2011, 9, 1), datetime.date(2015, 4, 30))],
+        "IUCAA": [(datetime.date(2011, 9, 1), datetime.date(2100, 1, 1))],
+        "POL": [(datetime.date(2011, 9, 1), datetime.date(2100, 1, 1))],
+        "RSA": [(datetime.date(2011, 9, 1), datetime.date(2100, 1, 1))],
+        "RU": [(datetime.date(2011, 9, 1), datetime.date(2100, 1, 1))],
+        "UC": [(datetime.date(2011, 9, 1), datetime.date(2014, 10, 31)), (datetime.date(2015, 5, 1), datetime.date(2016, 10, 31)), (datetime.date(2017, 5, 1), datetime.date(2019, 4, 30))],
+        "UKSC": [(datetime.date(2011, 9, 1), datetime.date(2100, 1, 1))],
+        "UNC": [(datetime.date(2011, 9, 1), datetime.date(2020, 4, 30))],
+        "UW": [(datetime.date(2011, 9, 1), datetime.date(2100, 1, 1))]
+        }
 
         sql = """
-            SELECT COUNT(Partner_Code) AS Partner_Code_Count
-            FROM PiptUser
-            JOIN Investigator ON PiptUser.PiptUser_Id = Investigator.PiptUser_Id
-            JOIN Institute ON Investigator.Institute_Id = Institute.Institute_Id
-            JOIN Partner ON Institute.Partner_Id = Partner.Partner_Id
-            WHERE PiptUser.PiptUser_Id=%s AND Partner.Partner_Code != "OTH" AND Partner.Virtual = 0
-        """
+                    SELECT Partner_Code
+                    FROM PiptUser
+                    JOIN Investigator ON PiptUser.PiptUser_Id = Investigator.PiptUser_Id
+                    JOIN Institute ON Investigator.Institute_Id = Institute.Institute_Id
+                    JOIN Partner ON Institute.Partner_Id = Partner.Partner_Id
+                    WHERE PiptUser.PiptUser_Id=%s AND Partner.Partner_Code != "OTH" AND Partner.Virtual = 0
+                """
 
-        results = pd.read_sql(sql, self._connection, params=(user_id,))
+        df = pd.read_sql(sql, self._connection, params=(user_id,))
+        membership_intervals: Set[types.InstitutionMembership] = set()
+        for partner_code in df['Partner_Code']:
+            for partner_membership_interval in partner_membership_intervals[partner_code]:
+                institution_membership = types.InstitutionMembership(
+                    membership_end=partner_membership_interval[1],
+                    membership_start=partner_membership_interval[0]
+                )
+                membership_intervals.add(institution_membership)
 
-        return results.iloc[0]["Partner_Code_Count"] > 0
+        sorted_intervals = sorted(list(membership_intervals))
+        return sorted_intervals
+
 
     def find_proposal_type(self, proposal_code: str) -> ProposalType:
         with self._connection.cursor() as cur:
