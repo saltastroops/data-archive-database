@@ -8,9 +8,6 @@ from psycopg2 import extras
 import smtplib
 import datetime
 import dsnparse
-from ssda.util import types
-from ssda.database.ssda import SSDADatabaseService
-from ssda.database.sdb import SaltDatabaseService
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import date
@@ -30,34 +27,138 @@ class PI:
     proposals: List[Proposal]
 
 
+class DatabaseConfiguration:
+    """
+    A database configuration.
+    Parameters
+    ----------
+    host : str
+        Domain of the host server (such as 127.0.0.1 or db.your.host)
+    username : str
+        Username of the database user.
+    password : str
+        Password of the database user.
+    database : str
+        Name of the database.
+    port : int
+        Port number.
+    """
+
+    def __init__(
+            self, host: str, username: str, password: str, database: str, port: int
+    ) -> None:
+        if port <= 0:
+            raise ValueError("The port number must be positive.")
+
+        self._host = host
+        self._username = username
+        self._password = password
+        self._database = database
+        self._port = port
+
+    def host(self) -> str:
+        """
+        The domain of the host server.
+        Returns
+        -------
+        str
+            The host server.
+        """
+
+        return self._host
+
+    def username(self) -> str:
+        """
+        The username of the database user.
+        Returns
+        -------
+        str
+            The database user.
+        """
+
+        return self._username
+
+    def password(self) -> str:
+        """
+        The password of the database user.
+        Returns
+        -------
+        str
+            The password.
+        """
+
+        return self._password
+
+    def database(self) -> str:
+        """
+        The name of the database.
+        Returns
+        -------
+        str
+            The name of the database.
+        """
+
+        return self._database
+
+    def port(self) -> int:
+        """
+        The port number.
+        Returns
+        -------
+        int
+            The port number.
+        """
+
+        return self._port
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, DatabaseConfiguration):
+            return NotImplemented
+        return (
+                self.host() == other.host()
+                and self.username() == other.username()
+                and self.password() == other.password()
+                and self.database() == other.database()
+                and self.port() == other.port()
+        )
+
+
 PIs = []
 
 
 def sdb_database_connection():
     sdb_db_config = dsnparse.parse_environ("SDB_DSN")
-    sdb_db_config = types.DatabaseConfiguration(
+    sdb_db_config = DatabaseConfiguration(
         username=sdb_db_config.user,
         password=sdb_db_config.secret,
         host=sdb_db_config.host,
         port=3306,
         database=sdb_db_config.database,
     )
-    sdb_database_service = SaltDatabaseService(sdb_db_config)
-    sdb_connection = sdb_database_service.connection()
+    sdb_connection = pymysql.connect(
+        database=sdb_db_config.database(),
+        host=sdb_db_config.host(),
+        user=sdb_db_config.username(),
+        passwd=sdb_db_config.password()
+    )
     return sdb_connection
 
 
 def ssda_database_connection():
     ssda_db_config = dsnparse.parse_environ("SSDA_DSN")
-    ssda_db_config = types.DatabaseConfiguration(
+    ssda_db_config = DatabaseConfiguration(
         username=ssda_db_config.user,
         password=ssda_db_config.secret,
         host=ssda_db_config.host,
         port=ssda_db_config.port,
         database=ssda_db_config.database,
     )
-    ssda_database_service = SSDADatabaseService(ssda_db_config)
-    ssda_connection = ssda_database_service.connection()
+    ssda_connection = psycopg2.connect(
+        database=ssda_db_config.database(),
+        host=ssda_db_config.host(),
+        user=ssda_db_config.username(),
+        password=ssda_db_config.password(),
+    )
     return ssda_connection
 
 
@@ -87,7 +188,7 @@ def pi_details(proposal_codes):
     with sdb_database_connection().cursor(
             pymysql.cursors.DictCursor
     ) as database_connection:
-        pi_query = """SELECT Proposal_Code, ins.Email, CONCAT(ins.FirstName," ", ins.Surname) AS FullName
+        pi_query = """SELECT Proposal_Code, ins.Email, CONCAT(ins.FirstName," ", ins.Surname) AS fullname
                       FROM ProposalContact
                       JOIN ProposalCode ON ProposalCode.ProposalCode_Id = ProposalContact.ProposalCode_Id
                       JOIN Investigator ins ON ins.Investigator_Id = ProposalContact.Leader_Id
