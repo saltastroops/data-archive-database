@@ -257,7 +257,6 @@ DROP TABLE IF EXISTS institution_user;
 CREATE TABLE institution_user (
     institution_user_id  serial PRIMARY KEY,
     institution_id       int NOT NULL REFERENCES observations.institution (institution_id),
-    institution_member   boolean NOT NULL,
     ssda_user_id         int REFERENCES ssda_user (ssda_user_id),
     user_id              varchar(50) NOT NULL
 );
@@ -269,6 +268,22 @@ CREATE UNIQUE INDEX institution_user_institution_institution_user ON institution
 
 COMMENT ON TABLE institution_user IS 'Table for linking a data archive user to a user account at an institution such as SALT.';
 COMMENT ON COLUMN institution_user.user_id IS 'Id used by the institution to identify the user.';
+
+-- institution_membership
+
+DROP TABLE IF EXISTS institution_membership;
+
+CREATE TABLE institution_membership (
+    institution_user_id int REFERENCES institution_user (institution_user_id) ON DELETE CASCADE,
+    membership_end date NOT NULL,
+    membership_start date NOT NULL
+);
+
+CREATE INDEX institution_membership_institution_user_idx ON institution_membership (institution_user_id);
+
+COMMENT ON TABLE institution_membership IS 'Membership details for an institution user.';
+COMMENT ON COLUMN institution_membership.membership_end IS 'Date when the membership has ended or will end.';
+COMMENT ON COLUMN institution_membership.membership_start IS 'Date when the membership has started.';
 
 -- proposal_access_rule
 
