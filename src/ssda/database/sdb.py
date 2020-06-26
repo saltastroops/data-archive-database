@@ -1099,6 +1099,33 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
 
 
     def find_proposal_type(self, proposal_code: str) -> ProposalType:
+        db_proposal_type = self.sdb_proposal_type(proposal_code)
+        commissioning_types = ("Commissioning",)
+        engineering_types = ("Engineering",)
+        science_types = (
+            "Director Discretionary Time (DDT)",
+            "Gravitational Wave Event",
+            "Key Science Program",
+            "Large Science Proposal",
+            "Science",
+            "Science - Long Term",
+        )
+        science_verification_types = ("Science Verification",)
+
+        if db_proposal_type in commissioning_types:
+            return ProposalType.COMMISSIONING
+        elif db_proposal_type in engineering_types:
+            return ProposalType.ENGINEERING
+        elif db_proposal_type in science_types:
+            return ProposalType.SCIENCE
+        elif db_proposal_type in science_verification_types:
+            return ProposalType.SCIENCE_VERIFICATION
+        else:
+            raise ValueError(
+                f"The SDB proposal type {db_proposal_type} is not supported."
+            )
+
+    def sdb_proposal_type(self, proposal_code: str) -> str:
         with self._connection.cursor() as cur:
             sql = """
             SELECT ProposalType
@@ -1115,32 +1142,7 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
                 )
 
             results = results.iloc[0]
-            db_proposal_type = str(results["ProposalType"])
-
-            commissioning_types = ("Commissioning",)
-            engineering_types = ("Engineering",)
-            science_types = (
-                "Director Discretionary Time (DDT)",
-                "Gravitational Wave Event",
-                "Key Science Program",
-                "Large Science Proposal",
-                "Science",
-                "Science - Long Term",
-            )
-            science_verification_types = ("Science Verification",)
-
-            if db_proposal_type in commissioning_types:
-                return ProposalType.COMMISSIONING
-            elif db_proposal_type in engineering_types:
-                return ProposalType.ENGINEERING
-            elif db_proposal_type in science_types:
-                return ProposalType.SCIENCE
-            elif db_proposal_type in science_verification_types:
-                return ProposalType.SCIENCE_VERIFICATION
-            else:
-                raise ValueError(
-                    f"The SDB proposal type {db_proposal_type} is not supported."
-                )
+            return str(results["ProposalType"])
 
     def is_block_visit_in_night(
         self, block_visit_id: int, night: date

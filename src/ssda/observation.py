@@ -12,6 +12,9 @@ class ObservationProperties(ABC):
 
     """
 
+    def access_rule(self) -> Optional[types.AccessRule]:
+        raise NotImplementedError
+
     def artifact(self, plane_id: int) -> types.Artifact:
         raise NotImplementedError
 

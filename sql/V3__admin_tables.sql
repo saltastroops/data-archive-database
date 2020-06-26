@@ -12,14 +12,14 @@ DROP TABLE IF EXISTS access_rule;
 
 CREATE TABLE access_rule(
     access_rule_id  serial PRIMARY KEY,
-    access_rule     varchar(32) NOT NULL
+    access_rule     varchar(50) NOT NULL
 );
 
 COMMENT ON TABLE access_rule IS 'Rules for data access.';
 
 INSERT INTO access_rule (access_rule)
-values  ('PUBLIC_OR_INSTITUTION_MEMBER'),
-        ('PUBLIC_OR_OWNER');
+values  ('Public Data or Institution Member'),
+        ('Public Data or Investigator');
 
 -- auth_provider
 

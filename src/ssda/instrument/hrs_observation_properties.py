@@ -18,6 +18,9 @@ class HrsObservationProperties(ObservationProperties):
             fits_file=fits_file, database_service=database_service
         )
 
+    def access_rule(self) -> Optional[types.AccessRule]:
+        return self.salt_observation.access_rule()
+
     def artifact(self, plane_id: int) -> types.Artifact:
         return self.salt_observation.artifact(plane_id)
 

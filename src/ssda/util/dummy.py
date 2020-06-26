@@ -135,6 +135,9 @@ class DummyObservationProperties(ObservationProperties):
             telescope=telescope,
         )
 
+    def access_rule(self) -> Optional[types.AccessRule]:
+        return types.AccessRule.PUBLIC_DATA_OR_INVESTIGATOR
+
     def artifact(self, plane_id: int) -> types.Artifact:
         def product_type() -> types.ProductType:
             product_types = [
