@@ -101,7 +101,7 @@ def filter_wavelength_interval(
 
 
 def fabry_perot_fwhm(
-    rss_fp_mode: types.RSSFabryPerotMode, wavelength: Quantity
+    rss_fp_mode: Optional[types.RSSFabryPerotMode], wavelength: Quantity
 ) -> Optional[Quantity]:
     """
     The wavelength interval for a Fabry-Perot resolution and wavelength.
@@ -120,6 +120,9 @@ def fabry_perot_fwhm(
     Quantity
         The full width half maximum
     """
+
+    if not rss_fp_mode:
+        return None
 
     fwhm = None
     fp_fwhm_intervals = fp_fwhm(rss_fp_mode=rss_fp_mode)
@@ -540,12 +543,15 @@ def hrs_spectral_properties(
     """
 
     interval = hrs_wavelength_interval(arm=arm)
+    resolving_power = hrs_resolving_power(arm=arm, hrs_mode=hrs_mode)
+    if resolving_power is None:
+        return None
     return types.Energy(
         dimension=1,
         max_wavelength=max(interval),
         min_wavelength=min(interval),
         plane_id=plane_id,
-        resolving_power=hrs_resolving_power(arm=arm, hrs_mode=hrs_mode),
+        resolving_power=resolving_power,
         sample_size=interval[1] - interval[0],
     )
 

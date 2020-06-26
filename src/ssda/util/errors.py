@@ -1,17 +1,18 @@
 import os
 from dataclasses import dataclass
+from typing import Optional
 from ssda.util.fits import StandardFitsFile
 
 
 @dataclass
 class LogData:
-    block_visit_id: str
-    object: str
-    observation_mode: str
-    observation_time: str
-    observation_type: str
-    path: str
-    proposal_code: str
+    block_visit_id: Optional[str]
+    object: Optional[str]
+    observation_mode: Optional[str]
+    observation_time: Optional[str]
+    observation_type: Optional[str]
+    path: Optional[str]
+    proposal_code: Optional[str]
 
     def is_daytime_observation(self):
         """

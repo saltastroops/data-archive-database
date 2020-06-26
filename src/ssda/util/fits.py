@@ -50,6 +50,8 @@ def get_night_date(path: str) -> str:
 
     # search for the night date
     date_search = re.search(r"(\d{4})/(\d{2})(\d{2})", path)
+    if not date_search:
+        raise ValueError(f"Invalid date format: {date_search}")
     # format the date as "yyyy-mm-dd"
     night_date = f"{date_search.group(1)}-{date_search.group(2)}-{date_search.group(3)}"
 
@@ -264,9 +266,10 @@ class StandardFitsFile(FitsFile):
         return os.stat(self.path).st_size * types.byte
 
     def instrument(self) -> types.Instrument:
+        header_value = self.header_value("INSTRUME")
         instrument_value = (
-            self.header_value("INSTRUME").upper()
-            if self.header_value("INSTRUME")
+            header_value.upper()
+            if header_value
             else None
         )
         if instrument_value == "RSS":
@@ -327,7 +330,10 @@ class StandardFitsFile(FitsFile):
 
     def header_value(self, keyword: str) -> Optional[str]:
         try:
-            value = str(self.headers[keyword]).strip()
+            header_value = self.headers[keyword]
+            if header_value is None:
+                return None
+            value = str(header_value).strip()
             return None if value.upper() == "NONE" else value
         except KeyError:
             return None
@@ -337,13 +343,22 @@ class DummyFitsFile(FitsFile):
     def __init__(self, path: str) -> None:
         self.path = path
 
-    def size(self) -> Quantity:
-        return random.randint(1000, 100000000) * types.byte
-
     def checksum(self) -> str:
         letters = string.ascii_lowercase
         return "".join(random.choice(letters) for _ in range(50))
 
+    def file_path(self) -> str:
+        return "some/file/path"
+
     def header_value(self, keyword: str) -> str:
         letters = string.ascii_lowercase
         return "".join(random.choice(letters) for _ in range(random.randint(1, 10)))
+
+    def instrument(self) -> types.Instrument:
+        return types.Instrument.RSS
+
+    def size(self) -> Quantity:
+        return random.randint(1000, 100000000) * types.byte
+
+    def telescope(self) -> types.Telescope:
+        return types.Telescope.SALT

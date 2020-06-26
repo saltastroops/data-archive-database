@@ -41,7 +41,7 @@ class SaltImagingCameraObservationProperties(ObservationProperties):
         return []  # TODO Needs to be implemented
 
     def instrument_setup(self, observation_id: int) -> types.InstrumentSetup:
-        queries = []
+        queries: List[types.SQLQuery] = []
 
         detector_mode = types.DetectorMode.for_name(self.header_value("DETMODE"))
 

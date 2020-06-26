@@ -1,6 +1,5 @@
 import logging
 import os
-import traceback
 from datetime import date, datetime, timedelta
 from typing import Callable, List, Optional, Set, Tuple
 
@@ -226,7 +225,7 @@ def main(
 
     # Off we go!
     start_msg = "Inserting data "
-    if start_date:
+    if start_date and end_date:
         start_msg += (
             f"for the nights from {start_date.isoformat()} to {end_date.isoformat()}"
         )
@@ -236,7 +235,8 @@ def main(
         logging.info(start_msg)
 
     # store the base directory
-    set_fits_base_dir(fits_base_dir)
+    if fits_base_dir:
+        set_fits_base_dir(fits_base_dir)
 
     # get the FITS file paths
     if start_date and end_date and fits_base_dir:
@@ -277,9 +277,9 @@ def main(
     )
     ssda_connection = database_services.ssda.connection()
 
-    daytime_errors = list()
-    nighttime_errors = list()
-    warnings = list()
+    daytime_errors: List[str] = list()
+    nighttime_errors: List[str] = list()
+    warnings: List[str] = list()
     night_date = ""
     # execute the requested task
     for path in paths:
@@ -411,8 +411,7 @@ def handle_exception(
         # don't output anything
         pass
     if verbosity_level == 1:
-        filename, lineno = error_location(e)
-        msg += f"[{filename}, line {lineno}] {error_msg}"
+        msg += error_msg
         if data_to_log.is_daytime_observation():
             msg += " [DAYTIME]"
         msg += f" [{path}]"
@@ -463,25 +462,3 @@ Observation time: {data_to_log.observation_time}{" *** DAYTIME ***" if data_to_l
         daytime_errors.append(msg)
     else:
         nighttime_errors.append(msg)
-
-
-def error_location(e: BaseException) -> Tuple[str, int]:
-    """
-    Get the name od the file and the line number where an exception was raised.
-
-    Parameters
-    ----------
-    e : BaseException
-        Exception.
-
-    Returns
-    -------
-    tuple
-        A tuple of the file name and line number.
-
-    """
-
-    stack_frames = traceback.extract_tb(e.__traceback__)
-    filename = os.path.basename(stack_frames[-1].filename)
-    lineno = stack_frames[-1].lineno
-    return filename, lineno

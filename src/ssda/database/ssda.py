@@ -135,22 +135,25 @@ class SSDADatabaseService:
             else:
                 return None
 
-    def find_owner_institution_user_ids(self, proposal_id: int) -> Optional[List[int]]:
+    def find_owner_institution_user_ids(self, proposal_id: Optional[int]) -> Optional[List[int]]:
         """
         Find the database institution user id values of the institution users who own the data related to the position.
-        If the data is public, None is returned.
+        If the data is public (or the proposal id is None), None is returned.
 
         Parameters
         ----------
-        proposal_id: int
+        proposal_id: Optional[int]
             Database proposal id
 
         Returns
         -------
-        Optional[int]
+        Optional[List[int]]
             The database id of institution users who own the data, or None if the data is public.
 
         """
+
+        if proposal_id is None:
+            return None
 
         with self._connection.cursor() as cur:
             sql = """
@@ -835,7 +838,7 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
                 ),
             )
 
-    def insert_position(self, position: types.Position, proposal_id: int) -> int:
+    def insert_position(self, position: types.Position, proposal_id: Optional[int]) -> int:
         """
         Inert a position.
 
@@ -843,7 +846,7 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
         ----------
         position : Position
             Position.
-        proposal_id: int
+        proposal_id: Optional[int]
             Database proposal id
 
         Returns

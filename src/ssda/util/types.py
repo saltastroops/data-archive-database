@@ -62,7 +62,7 @@ class CalibrationLevelPaths:
     """
 
     raw: Path
-    reduced: Path
+    reduced: Optional[Path]
 
 
 class Artifact:
@@ -1064,7 +1064,7 @@ class Observation:
         return self._meta_release
 
     @property
-    def observation_group_id(self) -> int:
+    def observation_group_id(self) -> Optional[int]:
         return self._observation_group_id
 
     @property
