@@ -259,7 +259,10 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
             cur.execute(sql, dict(path=os.path.relpath(path, get_fits_base_dir())))
             return cur.fetchone()[0]
 
-    def insert_proposal_access_rule(self, proposal_id: int, access_rule: types.AccessRule):
+    def insert_proposal_access_rule(self, proposal_id: int, access_rule: Optional[types.AccessRule]):
+        if not access_rule:
+            return
+
         with self._connection.cursor() as cur:
             sql = """
             WITH ar (id) AS (
