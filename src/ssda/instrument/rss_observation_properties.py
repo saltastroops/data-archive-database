@@ -72,10 +72,17 @@ class RssObservationProperties(ObservationProperties):
                 normalized_name = "Open"
             return normalized_name
 
-        grating_value = normalized_grating_name(self.header_value("GRATING"))
-        grating = None if grating_value == "n/a" else grating_value
+        grating_not_homed = self.header_value("GR-STATE") and 'S1 -' not in self.header_value("GR-STATE")
+        camera_angle = float(self.header_value("CAMANG")) if self.header_value("CAMANG") is not None else None
 
-        camera_angle = float(self.header_value("CAMANG"))
+        if grating_not_homed and camera_angle:
+            grating_value = normalized_grating_name(self.header_value("GRATING"))
+            grating = None if grating_value == "n/a" else grating_value
+        else:
+            grating = None
+
+        if fabry_perot_mode and (grating and grating != "Open"):
+            raise ValueError("There is both a Fabry-Perot mode and a grating.")
 
         parameters = dict(
             fabry_perot_mode=fabry_perot_mode.value if fabry_perot_mode else None,

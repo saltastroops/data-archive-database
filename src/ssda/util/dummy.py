@@ -346,7 +346,7 @@ class DummyObservationProperties(ObservationProperties):
             types.ProposalInvestigator(
                 proposal_id=proposal_id,
                 institution=types.Institution.SALT,
-                institution_member=True,
+                institution_memberships=[],
                 investigator_id=str(investigator_id),
             )
             for investigator_id in random.sample(
