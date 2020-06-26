@@ -979,6 +979,9 @@ WHERE Proposal_Code=%s;
             ]
             end_semester = end_semester_results["EndSemester"]
 
+        if proprietary_period is None:
+            raise ValueError(f"The proprietary period is NULL for proposal {proposal_code}.")
+
         # The semester end date in the SDB is the last day of a month.
         # However, it is easier (and more correct) to use the first day of the
         # following month.

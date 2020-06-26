@@ -404,6 +404,7 @@ def handle_exception(
         Path of the FITS File.
 
     """
+
     data_to_log = get_salt_data_to_log(path)
     error_msg = str(e)
     is_warning = isinstance(e, Warning)
