@@ -142,7 +142,7 @@ class SSDADatabaseService:
 
         Parameters
         ----------
-        proposal_id: Optional[int]
+        proposal_id: Optional[List[int]]
             Database proposal id
 
         Returns
