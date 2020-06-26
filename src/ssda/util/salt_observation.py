@@ -71,7 +71,13 @@ class SALTObservation:
         propid = (
             self.header_value("PROPID").upper() if self.header_value("PROPID") else ""
         )
-        if propid and self.database_service.is_existing_proposal_code(propid):
+
+        # Some FITS files have proposal codes which have been renamed in the database.
+        existing = self.database_service.is_existing_proposal_code(propid)
+        if not existing and propid.startswith("20"):
+            raise ValueError("The proposal code {propid} does not exist in the SDB.")
+
+        if propid and existing:
             return propid
         else:
             return ""
