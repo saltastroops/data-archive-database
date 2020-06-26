@@ -214,6 +214,8 @@ def fits_file_paths(
             for path in sorted(
                 Path(fits_file_dir(night, instrument, base_dir)).glob("*.fits")
             ):
+                if 'tmp' in path.name:
+                    continue
                 yield str(path)
         night += timedelta(days=1)
 
