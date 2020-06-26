@@ -1059,20 +1059,20 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
         # TODO: This should be replaced with an improved version, getting the date
         # intervals from the SDB
         partner_membership_intervals = {
-        "AMNH": [(datetime.date(2011, 9, 1), datetime.date(2100, 1, 1))],
-        "CMU": [(datetime.date(2011, 9, 1), datetime.date(2013, 4, 30))],
-        "DC": [(datetime.date(2011, 9, 1), datetime.date(2100, 1, 1))],
-        "DUR": [(datetime.date(2017, 5, 1), datetime.date(2019, 4, 30))],
-        "GU": [(datetime.date(2011, 9, 1), datetime.date(2015, 4, 30)), (datetime.date(2016, 5, 1), datetime.date(2017, 10, 31))],
-        "HET": [(datetime.date(2011, 9, 1), datetime.date(2015, 4, 30))],
-        "IUCAA": [(datetime.date(2011, 9, 1), datetime.date(2100, 1, 1))],
-        "POL": [(datetime.date(2011, 9, 1), datetime.date(2100, 1, 1))],
-        "RSA": [(datetime.date(2011, 9, 1), datetime.date(2100, 1, 1))],
-        "RU": [(datetime.date(2011, 9, 1), datetime.date(2100, 1, 1))],
-        "UC": [(datetime.date(2011, 9, 1), datetime.date(2014, 10, 31)), (datetime.date(2015, 5, 1), datetime.date(2016, 10, 31)), (datetime.date(2017, 5, 1), datetime.date(2019, 4, 30))],
-        "UKSC": [(datetime.date(2011, 9, 1), datetime.date(2100, 1, 1))],
-        "UNC": [(datetime.date(2011, 9, 1), datetime.date(2020, 4, 30))],
-        "UW": [(datetime.date(2011, 9, 1), datetime.date(2100, 1, 1))]
+        "AMNH": [(date(2011, 9, 1), date(2100, 1, 1))],
+        "CMU": [(date(2011, 9, 1), date(2013, 4, 30))],
+        "DC": [(date(2011, 9, 1), date(2100, 1, 1))],
+        "DUR": [(date(2017, 5, 1), date(2019, 4, 30))],
+        "GU": [(date(2011, 9, 1), date(2015, 4, 30)), (date(2016, 5, 1), date(2017, 10, 31))],
+        "HET": [(date(2011, 9, 1), date(2015, 4, 30))],
+        "IUCAA": [(date(2011, 9, 1), date(2100, 1, 1))],
+        "POL": [(date(2011, 9, 1), date(2100, 1, 1))],
+        "RSA": [(date(2011, 9, 1), date(2100, 1, 1))],
+        "RU": [(date(2011, 9, 1), date(2100, 1, 1))],
+        "UC": [(date(2011, 9, 1), date(2014, 10, 31)), (date(2015, 5, 1), date(2016, 10, 31)), (date(2017, 5, 1), date(2019, 4, 30))],
+        "UKSC": [(date(2011, 9, 1), date(2100, 1, 1))],
+        "UNC": [(date(2011, 9, 1), date(2020, 4, 30))],
+        "UW": [(date(2011, 9, 1), date(2100, 1, 1))]
         }
 
         sql = """
