@@ -259,6 +259,19 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
             cur.execute(sql, dict(path=os.path.relpath(path, get_fits_base_dir())))
             return cur.fetchone()[0]
 
+    def insert_proposal_access_rule(self, proposal_id: int, access_rule: types.AccessRule):
+        with self._connection.cursor() as cur:
+            sql = """
+            WITH ar (id) AS (
+                SELECT access_rule_id
+                FROM admin.access_rule
+                WHERE access_rule=%(access_rule)s
+            )
+            INSERT INTO admin.proposal_access_rule (proposal_id, access_rule_id)
+            VALUES (%(proposal_id)s, (SELECT id FROM ar));
+            """
+            cur.execute(sql, dict(proposal_id=proposal_id, access_rule=access_rule.value))
+
     def insert_artifact(self, artifact: types.Artifact) -> int:
         """
         Insert an artifact.

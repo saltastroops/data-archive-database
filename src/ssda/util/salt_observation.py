@@ -33,6 +33,17 @@ class SALTObservation:
         self.file_path = fits_file.file_path
         self.database_service = database_service
 
+    def access_rule(self) -> Optional[types.AccessRule]:
+        proposal_code = self._proposal_code()
+        if not self.database_service.is_existing_proposal_code(proposal_code):
+            return None
+
+        # Gravitational wave event proposals may be accessed by all SALT members
+        if self.database_service.sdb_proposal_type(proposal_code) != "Gravitational Wave Event":
+            return types.AccessRule.PUBLIC_DATA_OR_INVESTIGATOR
+        else:
+            return types.AccessRule.PUBLIC_DATA_OR_INSTITUTION_MEMBER
+
     def artifact(self, plane_id: int) -> types.Artifact:
         # Creates a file path of the reduced calibration level mapping a raw calibration level.
         def create_reduced_path(path: Path) -> Optional[Path]:

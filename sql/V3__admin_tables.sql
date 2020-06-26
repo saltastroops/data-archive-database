@@ -12,7 +12,7 @@ DROP TABLE IF EXISTS access_rule;
 
 CREATE TABLE access_rule(
     access_rule_id  serial PRIMARY KEY,
-    access_rule     varchar(32) NOT NULL
+    access_rule     varchar(50) NOT NULL
 );
 
 COMMENT ON TABLE access_rule IS 'Rules for data access.';
