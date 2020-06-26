@@ -241,8 +241,10 @@ def release_dates_and_proposals(days):
     return PIs
 
 
-def plain_text_email_content(table):
+def plain_text_email_content(table, pi_name):
     message = f"""
+Dear {pi_name},
+
 Please note that the observation data of your following proposals will become public soon.
 
 {table}
@@ -259,7 +261,7 @@ def html_email_content(table):
     message = f"""
 Please note that the observation data of your following proposals will become public soon.<br><br>
 
-{table}<br><br>
+{table}<br>
 
 You may request an extension on the proposal's page in the Web Manager.<br><br>
 
@@ -277,16 +279,13 @@ def sending_email(receiver, pi_name, plain_table, styled_table):
     message["To"] = receiver
 
 # write the plain text part
-    text = f"""
-Dear {pi_name}
-
- {plain_text_email_content(plain_table)} """
+    text = f"""{plain_text_email_content(plain_table, pi_name)} """
 
 # write the html part
     html = f"""
 <html>
   <body>
-   <p> Dear {pi_name}<br><br>
+   <p> Dear {pi_name},<br><br>
       
       {html_email_content(styled_table)}
   
