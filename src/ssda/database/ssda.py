@@ -142,12 +142,12 @@ class SSDADatabaseService:
 
         Parameters
         ----------
-        proposal_id: Optional[List[int]]
+        proposal_id: Optional[int]
             Database proposal id
 
         Returns
         -------
-        Optional[int]
+        Optional[List[int]]
             The database id of institution users who own the data, or None if the data is public.
 
         """
