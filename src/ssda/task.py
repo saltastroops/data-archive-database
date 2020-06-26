@@ -30,14 +30,11 @@ def execute_task(
                 clear_warnings()
                 return
         except Exception as e:
-            header_value = fits_file.header_value("PROPID")
             proposal_id = (
-                header_value.upper()
-                if header_value
-                else header_value
+                fits_file.header_value("PROPID").upper()
+                if fits_file.header_value("PROPID")
+                else ""
             )
-            if not proposal_id:
-                proposal_id = ""
 
             # If the FITS file is Junk, Unknown, ENG or CAL_GAIN, do not store the observation.
             if proposal_id in ("JUNK", "UNKNOWN", "NONE", "ENG", "CAL_GAIN"):
