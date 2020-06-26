@@ -1,11 +1,11 @@
 from __future__ import annotations
 import os
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Optional
+from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple
 
 import astropy.units as u
 from astropy.units import def_unit, Quantity
@@ -711,6 +711,27 @@ class Institution(Enum):
 
     SAAO = "South African Astronomical Observatory"
     SALT = "Southern African Large Telescope"
+
+
+@dataclass(frozen=True)
+class InstitutionMembership:
+    """
+    Details for the membership in an institution.
+
+    Parameters
+    ----------
+    membership_end : date
+        Date when the membership has ended or will end.
+    membership_start : date
+        Date when the membership has started.
+
+    """
+
+    membership_end: date
+    membership_start: date
+
+    def __lt__(self, other: InstitutionMembership):
+        return (self.membership_start, self.membership_end) < (other.membership_start, other.membership_end)
 
 
 class Instrument(Enum):
@@ -1476,8 +1497,8 @@ class ProposalInvestigator:
         Database id of the proposal.
     institution : Institution
             Institution to which the proposal was submitted.
-    institution_member: bool
-            Institution member.
+    institution_memberships: List[InstitutionMembership]
+            Institution memberships.
     investigator_id : str
         The unique id of the investigator, as determined by the institution to which the
         proposal was submitted.
@@ -1489,14 +1510,14 @@ class ProposalInvestigator:
         proposal_id: int,
         investigator_id: str,
         institution: Institution,
-        institution_member: bool,
+        institution_memberships: List[InstitutionMembership],
     ):
         if len(investigator_id) > 50:
             raise ValueError("The investigator id must have at most 30 characters.")
 
         self._proposal_id = proposal_id
         self._institution = institution
-        self._institution_member = institution_member
+        self._institution_memberships = institution_memberships
         self._investigator_id = investigator_id
 
     @property
@@ -1508,8 +1529,8 @@ class ProposalInvestigator:
         return self._institution
 
     @property
-    def institution_member(self) -> bool:
-        return self._institution_member
+    def institution_memberships(self) -> List[InstitutionMembership]:
+        return self._institution_memberships
 
     @property
     def investigator_id(self) -> str:

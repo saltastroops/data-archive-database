@@ -364,8 +364,70 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
 
             return cast(int, cur.fetchone()[0])
 
+    def delete_institution_memberships(self, institution_user_id: int):
+        """
+        Delete the membership details of an institution user.
+
+        Parameters
+        ----------
+        institution_user_id : int
+            Institution user id.
+
+        """
+
+        sql = """
+        DELETE FROM admin.institution_membership
+        WHERE institution_user_id=%(institution_user_id)s
+        """
+
+        with self._connection.cursor() as cur:
+            cur.execute(sql, dict(institution_user_id=institution_user_id))
+
+    def insert_institution_memberships(self, institution_user_id: int, institution_memberships: List[types.InstitutionMembership]):
+        """
+        Insert membership details for an institution user.
+
+        Parameters
+        ----------
+        institution_user_id : int
+            Institution user id.
+        institution_memberships : List[InstitutionMembership]
+            Membership details.
+
+        """
+
+        sql = """
+        INSERT INTO institution_membership (institution_user_id, membership_end, membership_start)
+        VALUES (%(institution_user_id)s, %(membership_end)s, %(membership_start)s)
+        """
+
+        with self._connection.cursor() as cur:
+            for institution_membership in institution_memberships:
+                cur.execute(sql, dict(institution_user_id=institution_user_id,
+                                      membership_end=institution_membership.membership_end,
+                                      membership_start=institution_membership.membership_start))
+
+
+    def update_institution_memberships(self, institution_user_id: int, institution_memberships: List[types.InstitutionMembership]):
+        """
+        Update the membership details of an institution user.
+
+        Existing membershiop details are replaced with the new ones.
+
+        Parameters
+        ----------
+        institution_user_id : int
+            Institution user id.
+        institution_memberships : List[InstitutionMembership]
+            Membership details.
+
+        """
+
+        self.delete_institution_memberships(institution_user_id)
+        self.insert_institution_memberships(institution_user_id, institution_memberships)
+
     def insert_institution_user(
-        self, user_id: str, institution: types.Institution, institution_member: bool
+        self, user_id: str, institution: types.Institution
     ) -> int:
         """
         Insert an institution user in the database if the institution user does not exist
@@ -376,8 +438,6 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
         ----------
         institution: Institution
             Institution to which the user belongs.
-        institution_member: bool
-            Whether the user is a member of the institution.
         user_id : str
             Unique identifier used by the institution for the user.
 
@@ -389,12 +449,16 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
         """
 
         with self._connection.cursor() as cur:
+            # Insert the institution user (if they don't exist yet).
+            # It is safe to assume that ssda_user_id is NULL for a new institution user;
+            # a non-NULL value would mean that the institution user exists already, as
+            # it would have been created during registration.
             sql = """
             WITH inst (institution_id) AS (
                 SELECT institution_id FROM observations.institution WHERE name=%(institution)s
             )
-            INSERT INTO admin.institution_user (institution_id, institution_member, user_id)
-            VALUES ((SELECT institution_id FROM inst), %(institution_member)s, %(user_id)s)
+            INSERT INTO admin.institution_user (institution_id, user_id)
+            VALUES ((SELECT institution_id FROM inst), %(user_id)s)
             ON CONFLICT (user_id, institution_id) 
             DO NOTHING
             RETURNING institution_user_id
@@ -404,7 +468,6 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
                 sql,
                 dict(
                     institution=institution.value,
-                    institution_member=bool(institution_member),
                     user_id=user_id,
                 ),
             )
@@ -873,9 +936,11 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
         # insert institution user if not exist
         institution_user_id = self.insert_institution_user(
             proposal_investigator.investigator_id,
-            proposal_investigator.institution,
-            proposal_investigator.institution_member,
+            proposal_investigator.institution
         )
+
+        # update membership details
+        self.update_institution_memberships(institution_user_id, proposal_investigator.institution_memberships)
 
         with self._connection.cursor() as cur:
             sql = """
