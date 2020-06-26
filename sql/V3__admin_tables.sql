@@ -282,7 +282,7 @@ CREATE TABLE institution_membership (
 CREATE INDEX institution_membership_institution_user_idx ON institution_membership (institution_user_id);
 
 COMMENT ON TABLE institution_membership IS 'Membership details for an institution user.';
-COMMENT ON COLUMN institution_membership.membership_end IS 'Date when the membership has ended or wil end.';
+COMMENT ON COLUMN institution_membership.membership_end IS 'Date when the membership has ended or will end.';
 COMMENT ON COLUMN institution_membership.membership_start IS 'Date when the membership has started.';
 
 -- proposal_access_rule
