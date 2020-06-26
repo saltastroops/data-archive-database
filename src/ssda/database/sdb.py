@@ -7,7 +7,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from enum import Enum
-from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 from dateutil import relativedelta
 import pandas as pd
@@ -620,7 +620,7 @@ class SaltDatabaseService:
             file_data, block_visit_ids, night
         )
 
-        def block_visit_id_for_file(_index: int, forward_search: bool) -> Optional[int]:
+        def block_visit_id_for_file(_index: int, forward_search: bool) -> Optional[Union[str, int]]:
             """
             What is the block visit id of the nearest earlier file which has a block
             visit id and could belong to the same block?
@@ -673,7 +673,7 @@ class SaltDatabaseService:
                 ):
                     # At least one of the two files is a calibration or both files have
                     # the same target. So we've found a block visit id!
-                    return int(block_visit_id)
+                    return block_visit_id
                 if forward_search:
                     i += 1
                 else:
