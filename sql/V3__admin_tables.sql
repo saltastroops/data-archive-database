@@ -18,8 +18,8 @@ CREATE TABLE access_rule(
 COMMENT ON TABLE access_rule IS 'Rules for data access.';
 
 INSERT INTO access_rule (access_rule)
-values  ('PUBLIC_OR_INSTITUTION_MEMBER'),
-        ('PUBLIC_OR_OWNER');
+values  ('Public Data or Institution Member'),
+        ('Public Data or Investigator');
 
 -- auth_provider
 
