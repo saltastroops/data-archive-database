@@ -1,4 +1,3 @@
-import datetime
 import functools
 import hashlib
 import os
@@ -6,6 +5,7 @@ import os
 import pytz
 from collections import defaultdict
 from dataclasses import dataclass
+from datetime import date, datetime, timedelta, timezone
 from enum import Enum
 from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
@@ -39,7 +39,7 @@ class FileDataItem:
 
     """
 
-    ut_start: datetime.datetime
+    ut_start: datetime
     file_name: str
     block_visit_id: Optional[Union[int, str]]
     block_visit_id_status: Optional[BlockVisitIdStatus]
@@ -70,7 +70,7 @@ class SaltDatabaseService:
         self._proposal_codes_existing: Dict[str, bool] = {}
 
     def find_block_visit_ids(
-        self, night: datetime.date, include_fits_headers: bool = True
+        self, night: date, include_fits_headers: bool = True
     ) -> Dict[str, FileDataItem]:
         """
         Find the block visit ids fromm the SDB.
@@ -166,7 +166,7 @@ class SaltDatabaseService:
         return existing
 
     def _find_raw_file_data(
-        self, night: datetime.date, include_fits_headers: bool
+        self, night: date, include_fits_headers: bool
     ) -> List[FileDataItem]:
         """
         Extract file data from the FileData table and, if requested, the FITS headers.
@@ -200,7 +200,7 @@ class SaltDatabaseService:
         file_data = self._merge_file_data(file_data_from_db, file_data_from_fits)
 
         # Correct for multiple target names in the same block visit.
-        if night == datetime.date(2016, 10, 20):
+        if night == date(2016, 10, 20):
             for fd in file_data:
                 if fd.proposal_code == "2016-1-SCI-049" and fd.target_name.startswith(
                     "N132D-pos"
@@ -208,17 +208,17 @@ class SaltDatabaseService:
                     fd.target_name = "N132D-pos1"
 
         # Fix incorrect block visit id.
-        if night == datetime.date(2015, 2, 25):
+        if night == date(2015, 2, 25):
             for fd in file_data:
                 if fd.block_visit_id == 8082:
                     fd.block_visit_id = 8092
 
         # Ignore block visit ids of other dates
-        if night == datetime.date(2016, 2, 22):
+        if night == date(2016, 2, 22):
             for fd in file_data:
                 if fd.block_visit_id == 10906:
                     fd.block_visit_id = None
-        if night == datetime.date(2018, 4, 16):
+        if night == date(2018, 4, 16):
             for fd in file_data:
                 if fd.block_visit_id == 18937:
                     fd.block_visit_id = None
@@ -231,7 +231,7 @@ class SaltDatabaseService:
 
         return file_data
 
-    def _find_file_data_from_database(self, night: datetime.date) -> List[FileDataItem]:
+    def _find_file_data_from_database(self, night: date) -> List[FileDataItem]:
         """
         Collect file data from the database.
 
@@ -247,10 +247,10 @@ class SaltDatabaseService:
 
         """
 
-        start_time = datetime.datetime(
+        start_time = datetime(
             night.year, night.month, night.day, 12, 0, 0, 0, tzinfo=pytz.utc
         )
-        end_time = start_time + datetime.timedelta(hours=24)
+        end_time = start_time + timedelta(hours=24)
         file_data_sql = """
     SELECT FileData.UTStart, FileData.FileName, ProposalCode.Proposal_Code, FileData.Target_Name, FileData.BlockVisit_Id
     FROM FileData
@@ -265,7 +265,7 @@ class SaltDatabaseService:
         return [
             FileDataItem(
                 ut_start=row.UTStart.to_pydatetime().replace(
-                    tzinfo=datetime.timezone.utc
+                    tzinfo=timezone.utc
                 ),
                 file_name=row.FileName,
                 proposal_code=row.Proposal_Code,
@@ -279,7 +279,7 @@ class SaltDatabaseService:
         ]
 
     def _find_file_data_from_fits_headers(
-        self, night: datetime.date
+        self, night: date
     ) -> List[FileDataItem]:
         """
         Collect the file data from the FITS file headers.
@@ -320,7 +320,7 @@ class SaltDatabaseService:
                 proposal_code=proposal_code,
             )
 
-        nights = types.DateRange(start=night, end=night + datetime.timedelta(days=1))
+        nights = types.DateRange(start=night, end=night + timedelta(days=1))
         instruments = types.Instrument.instruments(types.Telescope.SALT)
         base_dir = get_fits_base_dir()
 
@@ -368,14 +368,14 @@ class SaltDatabaseService:
         return sorted(file_data.values(), key=lambda fd: fd.ut_start)
 
     def _find_raw_block_visit_ids(
-        self, night: datetime.date, status_values: List[str]
+        self, night: date, status_values: List[str]
     ) -> Dict[BlockKey, List[int]]:
         """
         Extract block visit ids from database tables other than FileData.
 
         Parameters
         ----------
-        night : datetime.date
+        night : date
 
         Returns
         -------
@@ -383,11 +383,11 @@ class SaltDatabaseService:
         """
 
         # Get the block visit ids independently from the proposal code and target name.
-        night_date = datetime.datetime(night.year, night.month, night.day)
-        start_time = datetime.datetime(
+        night_date = datetime(night.year, night.month, night.day)
+        start_time = datetime(
             night.year, night.month, night.day, 12, 0, 0, 0, tzinfo=pytz.utc
         )
-        end_time = start_time + datetime.timedelta(hours=24)
+        end_time = start_time + timedelta(hours=24)
         block_visits_sql = """
     SELECT DISTINCT ProposalCode.Proposal_Code, Target.Target_Name, BlockVisit.BlockVisit_Id, BlockVisitStatus.BlockVisitStatus
     FROM BlockVisit
@@ -502,7 +502,7 @@ class SaltDatabaseService:
     def create_block_visit_id_provider(
         file_data: List[FileDataItem],
         block_visit_ids: Dict[BlockKey, List[int]],
-        night: datetime.date,
+        night: date,
     ) -> Callable[[BlockKey], Union[int, str]]:
         """
         Create a function for requesting block visit id values.
@@ -523,7 +523,7 @@ class SaltDatabaseService:
             File data.
         block_visit_ids : Dict[BlockKey]
             Block visit ids.
-        night : datetime.date
+        night : date
             Observing night.
 
         Returns
@@ -561,7 +561,7 @@ class SaltDatabaseService:
         self,
         file_data: List[FileDataItem],
         block_visit_ids: Dict[BlockKey, List[int]],
-        night: datetime.date,
+        night: date,
     ):
         """
         Fill in missing block visit ids for files that contain target observations.
@@ -611,7 +611,7 @@ class SaltDatabaseService:
             File data.
         block_visit_ids : dict
             Block visit ids.
-        night : datetime.date
+        night : date
             Observing night.
 
         """
@@ -938,7 +938,7 @@ WHERE bv.Block_Id=(SELECT bv2.Block_Id FROM BlockVisit AS bv2 WHERE bv2.BlockVis
 
     def find_release_date(
         self, proposal_code: str
-    ) -> Tuple[datetime.date, datetime.date]:
+    ) -> Tuple[date, date]:
         sql = """
 SELECT MAX(EndSemester) AS EndSemester, ProposalType, ProprietaryPeriod
 FROM BlockVisit
@@ -959,8 +959,8 @@ WHERE Proposal_Code=%s;
         # accessible by SALT partners). However, their meta data becomes public
         # immediately.
         if proposal_type == "Gravitational Wave Event":
-            release_date = datetime.datetime.strptime("2100-01-01", "%Y-%m-%d").date()
-            meta_release_date = datetime.datetime.today().date()
+            release_date = datetime.strptime("2100-01-01", "%Y-%m-%d").date()
+            meta_release_date = datetime.today().date()
 
             return release_date, meta_release_date
 
@@ -1115,7 +1115,7 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
                 )
 
     def is_block_visit_in_night(
-        self, block_visit_id: int, night: datetime.date
+        self, block_visit_id: int, night: date
     ) -> bool:
         """
         Check whether a block visit was done in a given night.
@@ -1124,7 +1124,7 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
         ----------
         block_visit_id : int
             Block visit id.
-        night : datetime.date
+        night : date
             Observing night.
 
         Returns
