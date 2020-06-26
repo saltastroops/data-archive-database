@@ -484,6 +484,9 @@ def error_location(e: BaseException) -> Tuple[str, int]:
     """
 
     stack_frames = traceback.extract_tb(e.__traceback__)
-    filename = os.path.basename(stack_frames[-1].filename)
-    lineno = stack_frames[-1].lineno
-    return filename, lineno
+    if len(stack_frames) > 0:
+        filename = os.path.basename(stack_frames[-1].filename)
+        lineno = stack_frames[-1].lineno
+        return filename, lineno
+    else:
+        return "?", 0
