@@ -30,9 +30,10 @@ def execute_task(
                 clear_warnings()
                 return
         except Exception as e:
+            propid_header_value = fits_file.header_value("PROPID")
             proposal_id = (
-                fits_file.header_value("PROPID").upper()
-                if fits_file.header_value("PROPID")
+                propid_header_value.upper()
+                if propid_header_value
                 else ""
             )
 
