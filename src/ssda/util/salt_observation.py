@@ -133,9 +133,9 @@ class SALTObservation:
                 int(bvid_from_fits), night
             )
         ):
-            logging.warning(
+            record_warning(Warning(
                 f"The block visit ids from the FITS header ({bvid_from_fits}) and the database ({bvid_from_db}) are different."
-            )
+            ))
 
         # Some block visit ids don't exist in the FITS header but can be inferred
         # from the database. Also, if the two differ, the database inferred one is the
