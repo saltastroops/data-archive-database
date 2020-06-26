@@ -1065,7 +1065,7 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
         "HET": [(datetime.date(2011, 9, 1), datetime.date(2015, 4, 30))],
         "IUCAA": [(datetime.date(2011, 9, 1), datetime.date(2100, 1, 1))],
         "POL": [(datetime.date(2011, 9, 1), datetime.date(2100, 1, 1))],
-        "RSA": [(datetime.date(2021, 9, 1), datetime.date(2030, 1, 1)), (datetime.date(2011, 9, 1), datetime.date(2200, 1, 1)), (datetime.date(2011, 9, 1), datetime.date(2100, 1, 1))],
+        "RSA": [(datetime.date(2011, 9, 1), datetime.date(2100, 1, 1))],
         "RU": [(datetime.date(2011, 9, 1), datetime.date(2100, 1, 1))],
         "UC": [(datetime.date(2011, 9, 1), datetime.date(2014, 10, 31)), (datetime.date(2015, 5, 1), datetime.date(2016, 10, 31)), (datetime.date(2017, 5, 1), datetime.date(2019, 4, 30))],
         "UKSC": [(datetime.date(2011, 9, 1), datetime.date(2100, 1, 1))],
