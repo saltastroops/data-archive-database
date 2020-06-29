@@ -135,7 +135,7 @@ class FitsFile(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def header_value(self, keyword: str) -> str:
+    def header_value(self, keyword: str) -> Optional[str]:
         """
         The FITS header value for a keyword.
 
@@ -352,7 +352,7 @@ class DummyFitsFile(FitsFile):
     def file_path(self) -> str:
         return "some/file/path"
 
-    def header_value(self, keyword: str) -> str:
+    def header_value(self, keyword: str) -> Optional[str]:
         letters = string.ascii_lowercase
         return "".join(random.choice(letters) for _ in range(random.randint(1, 10)))
 

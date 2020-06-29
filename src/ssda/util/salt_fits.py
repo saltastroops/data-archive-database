@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Callable, Optional
 
 from ssda.util import types
 
@@ -41,20 +41,23 @@ def parse_start_datetime(start_date: str, start_time: str):
     return start_time_tz
 
 
-def find_fabry_perot_mode(header_value: Any) -> Optional[types.RSSFabryPerotMode]:
-    etalon_state = header_value("ET-STATE")
-    if etalon_state.lower() == "s1 - etalon open":
+def find_fabry_perot_mode(header_value: Callable[[str], Optional[str]]) -> Optional[types.RSSFabryPerotMode]:
+    et_state_header_value = header_value("ET-STATE")
+    etalon_state = et_state_header_value.lower() if et_state_header_value else ""
+    if etalon_state == "s1 - etalon open":
         return None
 
-    if etalon_state.lower() == "s3 - etalon 2":
+    if etalon_state == "s3 - etalon 2":
+        et2mode_header_value = header_value("ET2MODE")
         fabry_perot_mode = types.RSSFabryPerotMode.parse_fp_mode(
-            header_value("ET2MODE").upper()
+            et2mode_header_value.upper() if et2mode_header_value else ""
         )
     elif (
-            etalon_state.lower() == "s2 - etalon 1"
-            or etalon_state.lower() == "s4 - etalon 1 & 2"
+            etalon_state == "s2 - etalon 1"
+            or etalon_state == "s4 - etalon 1 & 2"
     ):
-        fabry_perot_mode = types.RSSFabryPerotMode.parse_fp_mode(header_value("ET1MODE").upper())
+        et1mode_header_value = header_value("ET1MODE")
+        fabry_perot_mode = types.RSSFabryPerotMode.parse_fp_mode(et1mode_header_value.upper() if et1mode_header_value else "")
     else:
-        raise ValueError("Unknown etalon state")
+        raise ValueError("Unknown etalon state: '{etalon_state}")
     return fabry_perot_mode

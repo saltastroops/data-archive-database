@@ -66,14 +66,18 @@ class RssObservationProperties(ObservationProperties):
 
         fabry_perot_mode = find_fabry_perot_mode(self.header_value)
 
-        def normalized_grating_name(grating_name: str) -> str:
+        def normalized_grating_name(grating_name: Optional[str]) -> str:
+            if not grating_name:
+                return ""
             normalized_name = grating_name.lower()
             if normalized_name == "open":
                 normalized_name = "Open"
             return normalized_name
 
-        grating_not_homed = self.header_value("GR-STATE") and 'S1 -' not in self.header_value("GR-STATE")
-        camera_angle = float(self.header_value("CAMANG")) if self.header_value("CAMANG") is not None else None
+        gr_state_header_value = self.header_value("GR-STATE")
+        grating_not_homed = gr_state_header_value and 'S1 -' not in gr_state_header_value
+        camang_header_value = self.header_value("CAMANG")
+        camera_angle = float(camang_header_value) if camang_header_value is not None else None
 
         if grating_not_homed and camera_angle:
             grating_value = normalized_grating_name(self.header_value("GRATING"))
@@ -91,9 +95,11 @@ class RssObservationProperties(ObservationProperties):
         )
         queries = [types.SQLQuery(sql=sql, parameters=parameters)]
 
-        detector_mode = types.DetectorMode.for_name(self.header_value("DETMODE"))
+        detmode_header_value = self.header_value("DETMODE")
+        detector_mode = types.DetectorMode.for_name(detmode_header_value if detmode_header_value else "")
 
-        filter = types.Filter.for_name(self.header_value("FILTER"))
+        filter_header_value = self.header_value("FILTER")
+        filter = types.Filter.for_name(filter_header_value if filter_header_value else "")
 
         instrument_mode = rss_instrument_mode(
                 self.header_value, self.database_service
@@ -123,8 +129,9 @@ class RssObservationProperties(ObservationProperties):
         return self.salt_observation.observation_time(plane_id)
 
     def plane(self, observation_id: int) -> types.Plane:
+        obsmode_header_value = self.header_value("OBSMODE")
         observation_mode = (
-            self.header_value("OBSMODE").upper() if self.header_value("OBSMODE") else ""
+            obsmode_header_value.upper() if obsmode_header_value else ""
         )
         if observation_mode:
             data_product_type = (
@@ -137,7 +144,8 @@ class RssObservationProperties(ObservationProperties):
         return types.Plane(observation_id, data_product_type=data_product_type)
 
     def polarization(self, plane_id: int) -> Optional[types.Polarization]:
-        polarization_config = self.header_value("POLCONF")
+        polconf_header_value = self.header_value("POLCONF")
+        polarization_config = polconf_header_value if polconf_header_value else ""
         polarization_mode = self.header_value("WPPATERN")
         if not polarization_mode or polarization_config.upper() == "OPEN":
             return None

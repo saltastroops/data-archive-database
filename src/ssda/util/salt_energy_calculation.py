@@ -574,7 +574,9 @@ def salt_imaging_camera_spectral_properties(
     ------
         Spectral properties: Energy
            salt imaging camera spectral properties
+
     """
+
     if filter_name == "OPEN":
         return None
     if filter_name == "CLR-S1":
