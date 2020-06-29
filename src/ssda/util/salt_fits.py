@@ -59,5 +59,5 @@ def find_fabry_perot_mode(header_value: Callable[[str], Optional[str]]) -> Optio
         et1mode_header_value = header_value("ET1MODE")
         fabry_perot_mode = types.RSSFabryPerotMode.parse_fp_mode(et1mode_header_value.upper() if et1mode_header_value else "")
     else:
-        raise ValueError("Unknown etalon state: '{etalon_state}")
+        raise ValueError(f"Unknown etalon state: '{etalon_state}'")
     return fabry_perot_mode
