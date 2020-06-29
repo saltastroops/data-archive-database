@@ -1,5 +1,5 @@
 import click
-from datetime import datetime, date
+from datetime import datetime
 import dsnparse
 import logging
 from sentry_sdk import capture_exception
