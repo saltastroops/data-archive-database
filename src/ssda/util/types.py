@@ -302,7 +302,7 @@ class DataProductType(Enum):
             if name and name.lower() == str(data_product_type.value).lower():
                 return data_product_type
 
-        raise ValueError(f"The data product type {name} could not be determined.")
+        raise ValueError(f"Unknown data product type: '{name}'")
 
 
 class DateRange:
@@ -408,7 +408,7 @@ class DetectorMode(Enum):
             ):
                 return detector_mode
 
-        raise ValueError(f"The detector mode {name} could not be determined.")
+        raise ValueError(f"Unknown detector mode: '{name}'")
 
 
 class Energy:
@@ -908,7 +908,7 @@ class InstrumentMode(Enum):
             if name and name.lower() == str(instrument_mode.value).lower():
                 return instrument_mode
 
-        raise ValueError(f"The instrument mode {name} could not be determined.")
+        raise ValueError(f"Unknown instrument mode: '{name}'")
 
 
 class InstrumentSetup:
@@ -1006,7 +1006,7 @@ class Intent(Enum):
             if name and name.lower() == str(intent.value).lower():
                 return intent
 
-        raise ValueError(f"The intent {name} could not be determined.")
+        raise ValueError(f"Unknown intent: '{name}'")
 
 
 class Observation:
@@ -1387,7 +1387,7 @@ class ProductCategory(Enum):
             if name and name.lower() == str(product_category.value).lower():
                 return product_category
 
-        raise ValueError(f"The product category {name} could not be determined.")
+        raise ValueError(f"Unknown product category: '{name}'")
 
 
 class ProductType(Enum):
@@ -1440,7 +1440,7 @@ class ProductType(Enum):
             if name.lower() == str(product_type.value).lower():
                 return product_type
 
-        raise ValueError(f"The product type {name} could not be determined.")
+        raise ValueError(f"Unknown product type: '{name}'")
 
 
 class Proposal:
