@@ -7,7 +7,7 @@ import string
 from abc import ABC, abstractmethod
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Iterator, Set, Optional
+from typing import Iterator, List, Set, Optional
 from astropy.units import Quantity
 from astropy.io import fits
 from ssda.exceptions import IgnoreObservationError
@@ -210,13 +210,15 @@ def fits_file_paths(
 
     night = nights.start
     while night < nights.end:
+        paths: List[Path] = []
         for instrument in instruments:
-            for path in sorted(
-                Path(fits_file_dir(night, instrument, base_dir)).glob("*.fits")
-            ):
-                if 'tmp' in path.name:
-                    continue
-                yield str(path)
+            paths.extend(Path(fits_file_dir(night, instrument, base_dir)).glob("*.fits"))
+        # Different instruments, such as Salticam and BCAM, may have the same file
+        # paths, hence we use set() to eliminate duplicate values.
+        for path in sorted(set(paths)):
+            if 'tmp' in path.name:
+                continue
+            yield str(path)
         night += timedelta(days=1)
 
 
