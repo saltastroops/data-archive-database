@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta, date
 from typing import cast, Any, Dict, Optional, List
 import os
@@ -7,6 +8,9 @@ from psycopg2 import connect
 
 from ssda.util import types
 from ssda.util.fits import get_fits_base_dir
+from ssda.util.setup_logger import setup_logger
+
+info_log = setup_logger('info_logger', 'ssda_sync_info.log', logging.Formatter('%(asctime)s %(levelname)s - %(message)s'))
 
 
 class SSDADatabaseService:
@@ -1152,6 +1156,7 @@ WHERE observation_group_id=(SELECT observation_group_id FROM obs_id)
                     telescope=telescope.value,
                 ),
             )
+            info_log.info(msg=f"The status of block visit id {group_identifier} has changed to {status.value}")
 
     def update_investigators(
             self,
@@ -1187,10 +1192,15 @@ WHERE proposal_id = (SELECT proposal_id FROM prop_id)
             cur.execute(
                 sql, dict(proposal_code=proposal_code, institution=institution.value)
             )
+            proposal_investigators_str = ""
             for proposal_investigator in proposal_investigators:
                 self.insert_proposal_investigator(
                     proposal_investigator=proposal_investigator
                 )
+                proposal_investigators_str += proposal_investigator.investigator_id + ", "
+
+            info_log.info(msg=f"The investigator ids for a proposal code {proposal_code} have been changed to "
+                              f"{proposal_investigators_str[:-2] + '.'}")
 
     def update_proposal_release_date(self, proposal_id: int, release_dates: types.ReleaseDates) -> None:
         with self._connection.cursor() as cur:
@@ -1242,6 +1252,8 @@ WHERE proposal_id=%(proposal_id)s
                     title=proposal.title,
                 ),
             )
+            info_log.info(msg=f'The PI and the title of {proposal.proposal_code} have been changed to '
+                              f'{proposal.pi} and ({proposal.title})" respectively.')
             proposal_id = self.find_proposal_id(
                 proposal_code=proposal.proposal_code, institution=proposal.institution
             )
@@ -1250,7 +1262,7 @@ WHERE proposal_id=%(proposal_id)s
                 institution=proposal.institution,
                 proposal_investigators=[
                     types.ProposalInvestigator(
-                        proposal_id=proposal_id, investigator_id=investigator
+                        proposal_id=proposal_id, investigator_id=investigator, institution=types.Institution.SALT
                     )
                     for investigator in proposal.investigators
                 ],
@@ -1259,6 +1271,8 @@ WHERE proposal_id=%(proposal_id)s
                 proposal_id=proposal_id,
                 release_dates=types.ReleaseDates(meta_release=proposal.meta_release, data_release=proposal.data_release)
             )
+            info_log.info(msg=f"The meta and data release date of {proposal.proposal_code} have been changed to "
+                              f"{proposal.meta_release} and {proposal.data_release} respectively.")
 
     def rollback_transaction(self) -> None:
         """
