@@ -30,7 +30,8 @@ class SaltImagingCameraObservationProperties(ObservationProperties):
     def energy(self, plane_id: int) -> Optional[types.Energy]:
         if self.salt_observation.is_calibration():
             return None
-        filter_name = self.header_value("FILTER")
+        filter_header_value = self.header_value("FILTER")
+        filter_name = filter_header_value if filter_header_value else ""
         return salt_imaging_camera_spectral_properties(
             plane_id, filter_name, self.instrument
         )
@@ -46,9 +47,11 @@ class SaltImagingCameraObservationProperties(ObservationProperties):
     def instrument_setup(self, observation_id: int) -> types.InstrumentSetup:
         queries: List[types.SQLQuery] = []
 
-        detector_mode = types.DetectorMode.for_name(self.header_value("DETMODE"))
+        detmode_header_value = self.header_value("DETMODE")
+        detector_mode = types.DetectorMode.for_name(detmode_header_value if detmode_header_value else "")
 
-        filter = types.Filter.for_name(self.header_value("FILTER"))
+        filter_header_value = self.header_value("FILTER")
+        filter = types.Filter.for_name(filter_header_value if filter_header_value else "")
 
         return types.InstrumentSetup(
             additional_queries=queries,

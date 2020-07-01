@@ -62,7 +62,8 @@ class HrsObservationProperties(ObservationProperties):
         parameters = dict(hrs_mode=hrs_mode.value)
         queries = [types.SQLQuery(sql=sql, parameters=parameters)]
 
-        detector_mode = types.DetectorMode.for_name(self.header_value("DETMODE"))
+        detmode_header_value = self.header_value("DETMODE")
+        detector_mode = types.DetectorMode.for_name(detmode_header_value if detmode_header_value else "")
 
         return types.InstrumentSetup(
             additional_queries=queries,
@@ -110,7 +111,8 @@ class HrsObservationProperties(ObservationProperties):
         return self.salt_observation.target(observation_id=observation_id)
 
     def _mode(self) -> types.HRSMode:
-        hrs_mode = self.header_value("OBSMODE").upper()
+        obsmode_header_value = self.header_value("OBSMODE")
+        hrs_mode = obsmode_header_value.upper() if obsmode_header_value else ""
         if hrs_mode == "LOW RESOLUTION":
             return types.HRSMode.LOW_RESOLUTION
         if hrs_mode == "MEDIUM RESOLUTION":
