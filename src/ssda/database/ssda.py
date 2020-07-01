@@ -171,10 +171,9 @@ class SSDADatabaseService:
             cur.execute(sql, dict(proposal_id=proposal_id))
             result = cur.fetchone()
 
-            if result:
-                return result[0]
-            else:
-                raise ValueError(f"Unknown proposal id: {proposal_id}")
+            # Proposals without an investigator are deemed public. An example of this
+            # are gravitational wave proposals for SALT.
+            return result[0] if len(result[0]) else None
 
     def _find_data_release_date_for_plane(self, plane_id) -> date:
         """

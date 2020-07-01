@@ -1002,6 +1002,10 @@ WHERE Proposal_Code=%s;
         return release_date, release_date
 
     def find_proposal_investigators(self, proposal_code: str) -> List[str]:
+        # Gravitational wave proposals by definition have no investigator
+        if self.sdb_proposal_type(proposal_code) == "Gravitational Wave Event":
+            return []
+
         sql = """
 SELECT PiptUser.PiptUser_Id
 FROM ProposalInvestigator
