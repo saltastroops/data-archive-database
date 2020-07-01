@@ -1,4 +1,4 @@
-from datetime import timedelta, date
+from datetime import date, datetime, timedelta
 from typing import cast, Any, Dict, Optional, List
 import os
 
@@ -135,13 +135,15 @@ class SSDADatabaseService:
             else:
                 return None
 
-    def find_owner_institution_user_ids(self, proposal_id: Optional[int]) -> Optional[List[int]]:
+    def find_owner_institution_user_ids(self, plane_id: int, proposal_id: Optional[int]) -> Optional[List[int]]:
         """
         Find the database institution user id values of the institution users who own the data related to the position.
         If the data is public (or the proposal id is None), None is returned.
 
         Parameters
         ----------
+        plane_id : int
+            Id of the plane to which the position belongs.
         proposal_id: Optional[int]
             Database proposal id
 
@@ -155,21 +157,49 @@ class SSDADatabaseService:
         if proposal_id is None:
             return None
 
+        # Released data is owned by nobody
+        data_release = self._find_data_release_date_for_plane(plane_id)
+        if data_release <= datetime.now().date():
+            return None
+
         with self._connection.cursor() as cur:
             sql = """
-            SELECT array_agg(institution_user_id)
-            FROM admin.proposal_investigator
-            JOIN observations.observation ON observation.proposal_id=proposal_investigator.proposal_id
-            WHERE proposal_investigator.proposal_id=%(proposal_id)s AND observation.data_release >= now()
-            GROUP BY observation.proposal_id
-            """
+                SELECT array_agg(institution_user_id)
+                FROM proposal_investigator
+                WHERE proposal_id=%(proposal_id)s
+                """
             cur.execute(sql, dict(proposal_id=proposal_id))
             result = cur.fetchone()
 
             if result:
                 return result[0]
             else:
-                return None
+                raise ValueError(f"Unknown proposal id: {proposal_id}")
+
+    def _find_data_release_date_for_plane(self, plane_id) -> date:
+        """
+        Find the release date for the data of a plane.
+
+        Parameters
+        ----------
+        plane_id : int
+            Plane id.
+
+        Returns
+        -------
+        date
+            Release date
+        """
+        with self._connection.cursor() as cur:
+            sql = """
+                SELECT observation.data_release
+                FROM observation
+                JOIN plane ON observation.observation_id = plane.observation_id
+                WHERE plane.plane_id=%(plane_id)s;
+                """
+            cur.execute(sql, dict(plane_id=plane_id))
+            result = cur.fetchone()
+            return cast(date, result[0])
 
     def find_proposal_id(
         self, proposal_code: str, institution: types.Institution
@@ -478,7 +508,7 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
             )
             INSERT INTO admin.institution_user (institution_id, user_id)
             VALUES ((SELECT institution_id FROM inst), %(user_id)s)
-            ON CONFLICT (user_id, institution_id) 
+            ON CONFLICT (user_id, institution_id)
             DO NOTHING
             RETURNING institution_user_id
             """
@@ -499,7 +529,7 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
                 WITH inst (institution_id) AS (
                     SELECT institution_id FROM observations.institution WHERE name=%(institution)s
                 )
-                SELECT institution_user_id FROM admin.institution_user 
+                SELECT institution_user_id FROM admin.institution_user
                 WHERE institution_id=(SELECT institution_id FROM inst) AND user_id=%(user_id)s
                 """
 
@@ -591,7 +621,7 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
                                           filter_id,
                                           instrument_mode_id,
                                           observation_id)
-            VALUES ((SELECT id FROM d), 
+            VALUES ((SELECT id FROM d),
                    (SELECT id FROM f),
                    (SELECT id FROM im),
                    %(observation_id)s)
@@ -763,8 +793,8 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
                     %(night)s,
                     %(plane_id)s,
                     %(resolution)s,
-                    %(start_time)s)    
-            RETURNING observation_time_id                
+                    %(start_time)s)
+            RETURNING observation_time_id
             """
 
             cur.execute(
@@ -872,7 +902,7 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
 
         """
 
-        owner_institution_user_ids = self.find_owner_institution_user_ids(proposal_id)
+        owner_institution_user_ids = self.find_owner_institution_user_ids(position.plane_id, proposal_id)
 
         with self._connection.cursor() as cur:
             sql = """
