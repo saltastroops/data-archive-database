@@ -79,8 +79,9 @@ class SALTObservation:
         )
 
     def _proposal_code(self) -> str:
+        propid_header_value = self.header_value("PROPID")
         propid = (
-            self.header_value("PROPID").upper() if self.header_value("PROPID") else ""
+            propid_header_value.upper() if propid_header_value else ""
         )
 
         # Some FITS files have proposal codes which have been renamed in the database.
@@ -179,7 +180,11 @@ class SALTObservation:
 
     def observation_start_time(self) -> datetime:
         start_date = self.header_value("DATE-OBS")
+        if not start_date:
+            raise ValueError("Missing DATE-OBS header value.")
         start_time = self.header_value("TIME-OBS")
+        if not start_time:
+            raise ValueError("Missing TIME-OBS header value.")
 
         return parse_start_datetime(start_date, start_time)
 
@@ -223,7 +228,8 @@ class SALTObservation:
         dec = Angle("{} degrees".format(dec_header_value)).degree * u.deg
         if ra.value == 0 and dec.value == 0:
             return None
-        equinox = float(self.header_value("EQUINOX"))
+        equinox_header_value = self.header_value("EQUINOX")
+        equinox = float(equinox_header_value if equinox_header_value else "")
         if equinox == 0:  # TODO check if it is cal and use it instead
             return None
         return types.Position(dec=dec, equinox=equinox, plane_id=plane_id, ra=ra)
@@ -366,16 +372,19 @@ class SALTObservation:
         raise ValueError(f"The product category could not be determined. (Observation type: {obs_type}, FITS header values: {header_values})")
 
     def _product_type(self) -> types.ProductType:
+        obsmode_header_value = self.header_value("OBSMODE")
         obs_mode = (
-            self.header_value("OBSMODE").upper() if self.header_value("OBSMODE") else ""
+            obsmode_header_value.upper() if obsmode_header_value else ""
         )
+        instrume_header_value = self.header_value("INSTRUME")
         instrument = (
-            self.header_value("INSTRUME").upper()
-            if self.header_value("INSTRUME")
+            instrume_header_value.upper()
+            if instrume_header_value
             else ""
         )
+        propid_header_value = self.header_value("PROPID")
         proposal_id = (
-            self.header_value("PROPID").upper() if self.header_value("PROPID") else ""
+            propid_header_value.upper() if propid_header_value else ""
         )
         product_category = self._product_category()
 
@@ -436,9 +445,9 @@ class SALTObservation:
             return types.ProductType.SCIENCE
 
         header_values = {
-            "INSTRUME": self.header_value("INSTRUME"),
-            "OBSMODE": self.header_value("OBSMODE"),
-            "PROPID": self.header_value("PROPID")
+            "INSTRUME": instrume_header_value,
+            "OBSMODE": obsmode_header_value,
+            "PROPID": propid_header_value
         }
         raise ValueError(f"The product type could not be determined. (Product Category: {product_category}, observation mode: {obs_mode}, instrument: {instrument}, FITS header values: {header_values})")
 
@@ -469,9 +478,10 @@ class SALTObservation:
         return product_category == types.ProductCategory.STANDARD
 
     def ignore_observation(self) -> bool:
+        propid_header_value = self.fits_file.header_value("PROPID")
         proposal_id = (
-            self.fits_file.header_value("PROPID").upper()
-            if self.fits_file.header_value("PROPID")
+            propid_header_value.upper()
+            if propid_header_value
             else ""
         )
         # If the FITS file is Junk, Unknown, ENG or CAL_GAIN, do not store the observation.
@@ -484,8 +494,9 @@ class SALTObservation:
         ):
             return True
 
+        object_header_value = self.header_value("OBJECT")
         observation_object = (
-            self.header_value("OBJECT").upper() if self.header_value("OBJECT") else ""
+            object_header_value.upper() if object_header_value else ""
         )
         # Do not store commissioning data that pretends to be science.
         if "COM-" in proposal_id or "COM_" in proposal_id:

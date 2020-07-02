@@ -299,16 +299,23 @@ class SaltDatabaseService:
         def _parse_header(fits: FitsFile) -> FileDataItem:
             start_date = fits.header_value("DATE-OBS")
             start_time = fits.header_value("TIME-OBS")
+            if not start_date:
+                raise ValueError("No DATE-OBS header value.")
+            if not start_time:
+                raise ValueError("No TIME-OBS header value.")
             ut_start = parse_start_datetime(start_date, start_time)
             file_name = os.path.basename(fits.file_path())
+            bvisit_id_header_value = fits.header_value("BVISITID")
             block_visit_id = (
-                fits.header_value("BVISITID") if fits.header_value("BVISITID") else None
+                bvisit_id_header_value if bvisit_id_header_value else None
             )
+            object_header_value = fits.header_value("OBJECT")
             target_name = (
-                fits.header_value("OBJECT") if fits.header_value("OBJECT") else ""
+                object_header_value if object_header_value else ""
             )
+            proposal_code_header_value = fits.header_value("PROPID")
             proposal_code = (
-                fits.header_value("PROPID") if fits.header_value("PROPID") else None
+                proposal_code_header_value if proposal_code_header_value else None
             )
 
             return FileDataItem(
