@@ -510,21 +510,22 @@ class SALTObservation:
         if not observation_date or not observation_time:
             return True
 
-        # Ignore observations of unknown category unless they are part of a proposal.
+        # Ignore calibrations unless they are part of a proposal.
         proposal_id = self.header_value("PROPID") or ""
+        is_standard = self.is_standard()
         try:
-            # Trying to get the product category might result in an exception. But in
-            # this case we should not ignore the file.
+            # Checking whether the proposal code exists might result in an exception.
+            # But in this case we should not ignore the file.
             if not self.database_service.is_existing_proposal_code(
                 proposal_id
-            ):
+            ) and not is_standard:
                 return True
         except:
             pass
 
         # Ignore "science" proposals without a proposal code and block visit id
         product_type = self._obs_type()
-        is_science = product_type == "OBJECT" or product_type == "SCIENCE"
+        is_science = (product_type == "OBJECT" or product_type == "SCIENCE") and not is_standard
         if is_science and not self._block_visit_id():
             return True
 
