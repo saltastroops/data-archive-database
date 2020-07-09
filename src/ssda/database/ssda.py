@@ -179,6 +179,7 @@ class SSDADatabaseService:
             # are gravitational wave proposals for SALT.
             return result[0] if len(result[0]) else None
 
+
     def find_proposal_investigator_user_ids(
             self, proposal_code: str, institution: types.Institution
     ) -> List[str]:
@@ -343,32 +344,37 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
             observation_ids = cur.fetchall()
             return [cast(int, obs[0]) for obs in observation_ids]
 
-    def find_salt_observation_group(self) -> Dict[str, types.SALTObservationGroup]:
+    def find_salt_observation_group(self, proposal_code: str) -> Dict[str, types.SALTObservationGroup]:
         """
         Find an observation group.
+
         Parameters
         ----------
+        proposal_code : str
+            Proposal code.
+
         Returns
         -------
-        Optional[types.Observation]
-            A list of observations.
+        Optional[types.SALTObservationGroup]
+            The observation groups for the proposal.
+
         """
 
         with self._connection.cursor() as cur:
             sql = """
 WITH tel(telescope_id) AS(
     SELECT telescope_id FROM telescope WHERE name = %(telescope)s
-    )
+)
 SELECT DISTINCT
     group_identifier, status
 FROM observations.observation
     JOIN observations.proposal ON proposal.proposal_id = observation.proposal_id
     JOIN observations.status ON status.status_id = observation.status_id
     JOIN observations.observation_group ON observation_group.observation_group_id = observation.observation_group_id
-Where telescope_id = (SELECT telescope_id FROM tel)
+WHERE proposal_code=%(proposal_code)s AND telescope_id = (SELECT telescope_id FROM tel)
             """
             cur.execute(
-                sql, dict(telescope=types.Telescope.SALT.value)
+                sql, dict(proposal_code=proposal_code, telescope=types.Telescope.SALT.value)
             )
             results = cur.fetchall()
 
