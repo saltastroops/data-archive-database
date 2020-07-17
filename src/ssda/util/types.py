@@ -1670,6 +1670,28 @@ class Status(Enum):
     IN_QUEUE = "In queue"
     REJECTED = "Rejected"
 
+    @staticmethod
+    def for_value(value: str) -> TaskName:
+        """The status for a case-insensitive status value.
+
+        Parameters
+        ----------
+        value : str
+            Status value.
+
+        Returns
+        -------
+        Status :
+            Status.
+
+        """
+
+        for status in Status:
+            if value.lower() == str(status.value).lower():
+                return status
+
+        raise ValueError(f"Unknown status: {value}")
+
 
 class StokesParameter(Enum):
     """
