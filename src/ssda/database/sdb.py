@@ -1171,12 +1171,23 @@ WHERE Proposal_Code = %s
 
         return ps
 
-    def find_mapped_submitted_proposals(self) -> Dict[str, types.SALTProposalDetails]:
+    def find_phase2_proposals(self, from_date: date) -> Dict[str, types.SALTProposalDetails]:
         """
-        Details of proposals submitted within a date range.
+        Details of all current phase 2 proposals, irrespective of their status,
+        submitted on or after a date.
+
+        Older proposals aren't included as they may give errors.
+
+        Deleted proposals may be included.
+
+        Parameters
+        ----------
+        from_date : date
+            Date from which onward proposals are included.
 
         Returns
         -------
+        dict
             The list of proposal details.
 
         """
@@ -1189,9 +1200,9 @@ FROM Proposal
     JOIN ProposalContact USING(ProposalCode_Id)
     JOIN Investigator ON Leader_Id = Investigator_Id
     JOIN ProposalGeneralInfo USING(ProposalCode_Id)
-WHERE Current = 1 AND SubmissionDate >= "2010-01-01"
+WHERE Current = 1 AND Phase = 2 AND SubmissionDate >= %(from_date)s
             """
-        results = pd.read_sql(sql, self._connection)
+        results = pd.read_sql(sql, self._connection, params=dict(from_date=from_date))
         proposals = dict()
         for _, row in results.iterrows():
             proposal_code = row["Proposal_Code"]
@@ -1211,6 +1222,9 @@ WHERE Current = 1 AND SubmissionDate >= "2010-01-01"
         return proposals
 
     def find_proposal_investigator_user_ids(self, proposal_code: str) -> List[str]:
+        if "GWE" in proposal_code:
+            return []
+
         sql = """
 SELECT PiptUser.PiptUser_Id
 FROM ProposalInvestigator

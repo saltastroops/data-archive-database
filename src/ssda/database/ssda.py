@@ -179,14 +179,14 @@ class SSDADatabaseService:
             # are gravitational wave proposals for SALT.
             return result[0] if len(result[0]) else None
 
-
     def find_proposal_investigator_user_ids(
             self, proposal_code: str, institution: types.Institution
     ) -> List[str]:
         with self._connection.cursor() as cur:
             sql = """
 SELECT user_id
-FROM admin.proposal_investigator 
+FROM admin.institution_user
+    JOIN admin.proposal_investigator ON institution_user.institution_user_id=proposal_investigator.institution_user_id
     JOIN observations.proposal ON proposal_investigator .proposal_id = proposal.proposal_id
     JOIN observations.institution ON proposal.institution_id = institution.institution_id
 WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
@@ -195,7 +195,7 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
                 sql, dict(proposal_code=proposal_code, institution=institution.value)
             )
             results = cur.fetchall()
-            return [str(result[0]) for result in results] if results else None
+            return [str(result[0]) for result in results] if results else []
 
     def find_salt_proposal_details(self) -> Dict[str, types.SALTProposalDetails]:
         """
@@ -1205,7 +1205,7 @@ WHERE proposal_id = (SELECT proposal_id FROM prop_id)
                     proposal_investigator=proposal_investigator
                 )
                 proposal_investigators_str += proposal_investigator.investigator_id + ", "
-            info_log.info(msg=f"The investigator ids for a proposal code {proposal_code} have been changed to "
+            info_log.info(msg=f"The investigator ids for {proposal_code} have been changed to "
                               f"{proposal_investigators_str[:-2] + '.'}")
 
     def update_observation_group_status(
@@ -1290,7 +1290,7 @@ WHERE observation_group_id=(SELECT observation_group_id FROM obs_id)
         with self._connection.cursor() as cur:
             sql = """
                 UPDATE proposal
-                    SET pi=%(title)s
+                    SET title=%(title)s
                 WHERE proposal_id=%(proposal_id)s
             """
             cur.execute(
