@@ -1111,7 +1111,6 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
         sorted_intervals = sorted(list(membership_intervals))
         return sorted_intervals
 
-
     def find_proposal_type(self, proposal_code: str) -> ProposalType:
         db_proposal_type = self.sdb_proposal_type(proposal_code)
         commissioning_types = ("Commissioning",)
@@ -1138,6 +1137,109 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
             raise ValueError(
                 f"The SDB proposal type {db_proposal_type} is not supported."
             )
+
+    def find_proposal_observation_groups(self, proposal_code) -> Dict[str, types.SALTObservationGroup]:
+        """
+        The observation groups (i.e. block visits) taken for a proposal.
+        Parameters
+        ----------
+        proposal_code: str
+            The proposal code.
+        Returns
+        -------
+            The observation group.
+        """
+
+        sql = """
+SELECT BlockVisit_Id, BlockVisitStatus
+FROM BlockVisit
+    JOIN `Block` USING(Block_Id)
+    JOIN BlockVisitStatus USING(BlockVisitStatus_Id)
+    JOIN ProposalCode USING(ProposalCode_Id)
+WHERE Proposal_Code = %s
+        """
+        results = pd.read_sql(sql, self._connection, params=(proposal_code,))
+        ps = dict()
+        if len(results):
+            for index, row in results.iterrows():
+                block_visit_id = str(row["BlockVisit_Id"])
+                if row["BlockVisitStatus"] in ["Accepted", "Rejected"]:
+                    ps[block_visit_id] = types.SALTObservationGroup(
+                        group_identifier=block_visit_id,
+                        status=types.Status.for_value(row["BlockVisitStatus"])
+                    )
+
+        return ps
+
+    def find_phase2_proposals(self, from_date: date) -> Dict[str, types.SALTProposalDetails]:
+        """
+        Details of all current phase 2 proposals, irrespective of their status,
+        submitted on or after a date.
+
+        Older proposals aren't included as they may give errors.
+
+        Deleted proposals may be included.
+
+        Parameters
+        ----------
+        from_date : date
+            Date from which onward proposals are included.
+
+        Returns
+        -------
+        dict
+            The list of proposal details.
+
+        """
+
+        sql = """
+SELECT DISTINCT Proposal_Code, Title, CONCAT(FirstName, " ", Surname) as FullName
+FROM Proposal
+    JOIN ProposalCode USING(ProposalCode_Id)
+    JOIN ProposalText USING(ProposalCode_Id)
+    JOIN ProposalContact USING(ProposalCode_Id)
+    JOIN Investigator ON Leader_Id = Investigator_Id
+    JOIN ProposalGeneralInfo USING(ProposalCode_Id)
+WHERE Current = 1 AND Phase = 2 AND SubmissionDate >= %(from_date)s
+            """
+        results = pd.read_sql(sql, self._connection, params=dict(from_date=from_date))
+        proposals = dict()
+        for _, row in results.iterrows():
+            proposal_code = row["Proposal_Code"]
+            release_date = self.find_release_date(proposal_code=proposal_code)
+            investigators = self.find_proposal_investigator_user_ids(
+                proposal_code=proposal_code
+            )
+            proposals[proposal_code] = types.SALTProposalDetails(
+                pi=row["FullName"],
+                meta_release=release_date[1],
+                data_release=release_date[0],
+                proposal_code=proposal_code,
+                title=row["Title"],
+                institution=types.Institution.SALT,
+                investigators=investigators
+            )
+        return proposals
+
+    def find_proposal_investigator_user_ids(self, proposal_code: str) -> List[str]:
+        if "GWE" in proposal_code:
+            return []
+
+        sql = """
+SELECT PiptUser.PiptUser_Id
+FROM ProposalInvestigator
+    JOIN ProposalCode ON ProposalInvestigator.ProposalCode_Id=ProposalCode.ProposalCode_Id
+    JOIN Investigator ON ProposalInvestigator.Investigator_Id=Investigator.Investigator_Id
+    JOIN PiptUser ON Investigator.PiptUser_Id=PiptUser.PiptUser_Id
+WHERE ProposalCode.Proposal_Code=%s;
+        """
+        results = pd.read_sql(sql, self._connection, params=(proposal_code,))
+        if len(results):
+            ps = []
+            for index, row in results.iterrows():
+                ps.append(str(row["PiptUser_Id"]))
+            return ps
+        raise ValueError("Observation has no Investigators")
 
     def sdb_proposal_type(self, proposal_code: str) -> str:
         with self._connection.cursor() as cur:

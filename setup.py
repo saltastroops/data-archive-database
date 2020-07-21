@@ -20,6 +20,7 @@ setup(
         "console_scripts": [
             "ssda = ssda.cli:main",
             "ssda_delete = ssda.ssda_delete:main",
+            "ssda_sync = ssda.ssda_sync:main",
         ]
     },
     version="0.1.0",
