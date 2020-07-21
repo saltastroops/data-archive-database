@@ -1,9 +1,12 @@
 import click
+import dsnparse
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
 from pathlib import Path
 import shutil
+
+from ssda.util.databases import ssda_configuration
 from ssda.util.email import sendmail
 import subprocess
 import tempfile
@@ -13,8 +16,8 @@ def dump_database(dump_file: Path):
     """
     Dump the ssda database.
 
-    The database must be on localhost, must be named ssda and must be accessible by the
-    user running the script.
+    The data source name (DSN) for the PostgreSQL database must be configured with the
+    SSDA_DSN environment variable.
 
     Parameters
     ----------
@@ -27,8 +30,25 @@ def dump_database(dump_file: Path):
     if dump_file.exists() and not dump_file.is_file():
         raise ValueError(f"{dump_file} is not a file.")
 
+    database_config = ssda_configuration()
+
     with tempfile.TemporaryFile(mode="w+t") as t:
-        subprocess.run(["pg_dump", "ssda"], stdout=t)
+        # Dump the database into a temporary file...
+        command = [
+            "pg_dump",
+            "--host",
+            database_config.host(),
+            "--port",
+            str(database_config.port()),
+            "--dbname",
+            database_config.database(),
+            "--username",
+            database_config.username(),
+            "--password"
+        ]
+        subprocess.run(command, input=database_config.password() + "\n", stdout=t, text=True)
+
+        # ... and copy the temporary file to the database dump file.
         t.seek(0)
         with open(dump_file, 'w') as f:
             for line in t:
