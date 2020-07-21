@@ -5,6 +5,34 @@ import os
 from pathlib import Path
 import shutil
 from ssda.util.email import sendmail
+import subprocess
+import tempfile
+
+
+def dump_database(dump_file: Path):
+    """
+    Dump the ssda database.
+
+    The database must be on localhost, must be named ssda and must be accessible by the
+    user running the script.
+
+    Parameters
+    ----------
+    dump_file
+
+    Returns
+    -------
+
+    """
+    if dump_file.exists() and not dump_file.is_file():
+        raise ValueError(f"{dump_file} is not a file.")
+
+    with tempfile.TemporaryFile(mode="w+t") as t:
+        subprocess.run(["pg_dump", "ssda"], stdout=t)
+        t.seek(0)
+        with open(dump_file, 'w') as f:
+            for line in t:
+                f.write(line)
 
 
 def backup(path: Path, num_backups: int = 10):
@@ -72,4 +100,4 @@ def send_email_notification(subject: str, body: str):
 
 @click.command()
 def main():
-    backup(Path("/Users/christian/IdeaProjects/DataArchiveDatabase/DUMPS/A/dump.sql"))
+    dump_database(Path("/Users/christian/IdeaProjects/DataArchiveDatabase/DUMPS/A/dump.sql"))
