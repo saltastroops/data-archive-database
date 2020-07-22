@@ -20,7 +20,7 @@ setup(
         "console_scripts": [
             "ssda = ssda.cli:main",
             "ssda_delete = ssda.ssda_delete:main",
-            "ssda_sync = ssda.ssda_sync:main",
+            "ssda_sync = ssda.util.ssda_sync:main",
             "ssda_daily_cronjob = ssda.daily_cronjob:main"
         ]
     },
