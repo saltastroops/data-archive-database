@@ -118,6 +118,32 @@ def send_email_notification(subject: str, body: str):
     sendmail(from_addr='no-reply@ssda.saao.c.za', to_addr=os.environ['CRONJOB_TO_ADDRESS'], message=message.as_string())
 
 
+def check_environment_variables():
+    """
+    Check whether all environment variables are defined.
+
+    """
+
+    required_variables = ['CRONJOB_TO_ADDRESS', 'FITS_BASE_DIR', 'MAIL_PORT', 'MAIL_SERVER', 'SDB_DSN', 'SSDA_DSN',]
+    optional_variables = ['MAIL_PASSWORD', 'MAIL_USERNAME']
+    missing_required_variables = []
+    missing_optional_variables = []
+    for variable in required_variables:
+        if variable not in os.environ:
+            missing_required_variables.append(variable)
+    for variable in optional_variables:
+        if variable not in os.environ:
+            missing_optional_variables.append(variable)
+
+    if len(missing_optional_variables):
+        click.echo(click.style(f"You may have to define the following environment "
+                               f"variables: {', '.join(missing_optional_variables)}.",
+                               fg="yellow"))
+    if len(missing_required_variables):
+        raise ValueError(f"The following environment variable(s) need to be defined: "
+                         f"{', '.join(missing_required_variables)}.")
+
+
 @click.command()
 def main():
     dump_database(Path("/Users/christian/IdeaProjects/DataArchiveDatabase/DUMPS/A/dump.sql"))
