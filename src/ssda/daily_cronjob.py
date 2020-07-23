@@ -1,23 +1,63 @@
 import click
-import dsnparse
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import io
 import os
 from pathlib import Path
+import re
 import shutil
-
 from ssda.util.databases import ssda_configuration
 from ssda.util.email import sendmail
 import subprocess
 import tempfile
 
 
+@dataclass(frozen=True)
+class CompletedDump:
+    # There is no stdout property as the database content is output to stdout.
+    return_code: int
+    stderr: str
+
+
+@dataclass
+class CompletedPopulation:
+    daytime_errors: int
+    nighttime_errors: int
+    return_code: int
+    stderr: str
+    stdout: str
+    warnings: int
+
+    def __init__(self, completed_process: subprocess.CompletedProcess):
+        stdout = completed_process.stdout
+        properties = ['daytime errors', 'nighttime errors', 'warnings']
+        metadata = {}
+        for p in properties:
+            m = re.match(r'Total number of ' + p + r':\s*(\d+)', stdout)
+            if not m:
+                raise ValueError(f"The standard output does not include the number of {p}.")
+            metadata[p] = int(m.group(1))
+
+        self.daytime_errors=metadata["daytime errors"]
+        self.nighttime_errors=metadata['nighttime errors']
+        self.return_code=completed_process.returncode
+        self.stderr=completed_process.stderr
+        self.stdout=stdout
+        self.warnings=metadata['warnings']
+
+
+@dataclass(frozen=True)
+class CompletedSynchronisation:
+    return_code: int
+    stderr: str
+    stdout: str
+
+
 def dump_database(dump_file: Path):
     """
     Dump the ssda database.
-
-    The data source name (DSN) for the PostgreSQL database must be configured with the
-    SSDA_DSN environment variable.
 
     Parameters
     ----------
@@ -46,13 +86,21 @@ def dump_database(dump_file: Path):
             database_config.username(),
             "--password"
         ]
-        subprocess.run(command, input=database_config.password() + "\n", stdout=t, text=True)
+        stderr = io.StringIO()
+        completed_process = subprocess.run(command, input=database_config.password() + "\n", stderr=stderr, stdout=t, text=True)
+        completed_dump = CompletedDump(return_code=completed_process.returncode, stderr=completed_process.stderr)
 
-        # ... and copy the temporary file to the database dump file.
+        if completed_process.returncode:
+            # The database could not be dumped, so we better stop.
+            return completed_dump
+
+    # ... and copy the temporary file to the database dump file.
         t.seek(0)
         with open(dump_file, 'w') as f:
             for line in t:
                 f.write(line)
+
+        return completed_dump
 
 
 def backup(path: Path, num_backups: int = 10):
@@ -91,11 +139,44 @@ def backup(path: Path, num_backups: int = 10):
             shutil.copy(str(source), str(target))
 
 
+def populate_database():
+    # TODO: Check whether pipeline has run successfully
+    start_date = datetime.now().date() - timedelta(days=30)
+    end_date = datetime.now().date() - timedelta(days=7)
+
+    command = [
+        'ssda',
+        '--task',
+        'insert',
+        '--mode',
+        'production',
+        '--start',
+        start_date.strftime("%Y-%m-%d"),
+        '--end',
+        end_date.strftime("%Y-%m-%d"),
+        '--fits-base-dir',
+        os.environ['FITS_BASE_DIR'],
+        '--verbosity',
+        '2',
+        '--skip-errors'
+    ]
+    completed_process = subprocess.run(command, capture_output=True, text=True)
+
+    return CompletedPopulation(completed_process)
+
+
+def synchronise_database():
+    command = ['ssda_sync']
+    completed_process = subprocess.run(command, capture_output=True, text=True)
+
+    return CompletedSynchronisation(return_code=completed_process.returncode, stderr=completed_process.stderr, stdout=completed_process.stdout)
+
+
 def send_email_notification(subject: str, body: str):
     """
     Send an email notification.
 
-    The email is sent to the address defined by the CRONJOB_TO_ADDRESS environment
+    The email is sent to the address defined by the MAIL_SUMMARY_ADDRESS environment
     variable.
 
     Parameters
@@ -108,23 +189,23 @@ def send_email_notification(subject: str, body: str):
     """
 
     message = MIMEMultipart()
-    message['From'] = 'SSDA Daily Cronjob <no-reply@ssda.saao.c.za>'
-    message['To'] = f"SSDA Daily Cronjob <{os.environ['CRONJOB_TO_ADDRESS']}>"
+    message['From'] = 'SSDA Daily Maintenance <no-reply@ssda.saao.c.za>'
+    message['To'] = f"SSDA Daily Maintenance <{os.environ['MAIL_SUMMARY_ADDRESS']}>"
     message['Subject'] = subject
 
     part = MIMEText(body, "plain")
     message.attach(part)
 
-    sendmail(from_addr='no-reply@ssda.saao.c.za', to_addr=os.environ['CRONJOB_TO_ADDRESS'], message=message.as_string())
+    sendmail(from_addr='no-reply@ssda.saao.c.za', to_addr=os.environ['MAIL_SUMMARY_ADDRESS'], message=message.as_string())
 
 
 def check_environment_variables():
     """
-    Check whether all environment variables are defined.
+    Check whether all required and optional environment variables are defined.
 
     """
 
-    required_variables = ['CRONJOB_TO_ADDRESS', 'FITS_BASE_DIR', 'MAIL_PORT', 'MAIL_SERVER', 'SDB_DSN', 'SSDA_DSN',]
+    required_variables = ['MAIL_SUMMARY_ADDRESS', 'FITS_BASE_DIR', 'MAIL_PORT', 'MAIL_SERVER', 'SDB_DSN', 'SSDA_DSN',]
     optional_variables = ['MAIL_PASSWORD', 'MAIL_USERNAME']
     missing_required_variables = []
     missing_optional_variables = []
@@ -144,6 +225,107 @@ def check_environment_variables():
                          f"{', '.join(missing_required_variables)}.")
 
 
+def database_dump_message(completed_dump: CompletedDump) -> str:
+    return f"""\
+=============
+Database dump
+=============
+
+Status: {"Success" if not completed_dump.return_code else "FAILURE"}
+
+Output to stderr
+----------------
+{completed_dump.stderr}
+"""
+
+
+def database_population_message(completed_population: CompletedPopulation) -> str:
+    return f"""\
+===================
+Database population
+===================
+
+Status: {"Success" if not completed_population.return_code else "FAILURE"}
+
+Number of nighttime errors: {completed_population.nighttime_errors}
+Number of daytime errors:   {completed_population.daytime_errors}
+Number of warnings:         {completed_population.warnings}
+
+Output to stdout
+----------------
+{completed_population.stdout}
+
+Output to stderr
+----------------
+{completed_population.stderr}
+"""
+
+
+def database_synchronisation_message(completed_synchronisation: CompletedSynchronisation) -> str:
+    return f"""\
+========================
+Database synchronisation
+========================
+
+Status: {"Success" if not completed_synchronisation.return_code else "FAILURE"}
+
+Output to stdout
+----------------
+{completed_synchronisation.stdout}
+
+Output to stderr
+----------------
+{completed_synchronisation.stderr}
+"""
+
+
 @click.command()
 def main():
-    dump_database(Path("/Users/christian/IdeaProjects/DataArchiveDatabase/DUMPS/A/dump.sql"))
+    """
+    Perform daily maintenance work for the SAAO/SALT Data Archive.
+
+    The maintenance includes:
+
+    * Dumping the database. The latest previous dumps are retained.
+    * Populating the database for the last few nights.
+    * Synchronising the database with other databases.
+
+    A summary of the run of the script is sent by email.
+
+    The following environment variables need to be defined for this script.
+
+    * FITS_BASE_DIR: Base directory for the FITS files.
+    * MAIL_PORT: Port of the mail server for sending the summary email.
+    * MAIL_SERVER: Address of the mail server.
+    * MAIL_SUMMARY_ADDRESS: Email address to which the summary email should be sent.
+    * SDB_DSN: Data source name (DSN) for the DSALT Science Database.
+    * SSDA_DSN: Data source name (DSN) for the SAAO/SALT Data Archive database.
+
+    In production you probably have to set the following environment variables as well.
+
+    * MAIL_PASSWORD: Password for accessing the mail server.
+    * MAIL_USERNAME: Username for accessing the mail server,
+
+    """
+
+    message = ""
+    failed = False
+    try:
+        check_environment_variables()
+        database_dump_file = Path(os.environ['DATABASE_DUMP_FILE'])
+        backup(database_dump_file)
+        completed_dump = dump_database(database_dump_file)
+        message += database_dump_message(completed_dump)
+        message += "\n"
+        completed_population = populate_database()
+        message += database_population_message(completed_population)
+        message += "\n"
+        completed_synchronisation = synchronise_database()
+        message += database_synchronisation_message(completed_synchronisation)
+        message = f"The daily SSDA update has completed.\n\n" + message
+    except Exception as e:
+        failed = True
+        message = f"The daily SSDA update failed with an error:\n\n{e}\n\n" + message
+
+    subject = ("FAILED: " if failed else "") + "Daily SSDA maintenance for "
+    send_email_notification(subject, message)
