@@ -242,9 +242,10 @@ Database dump
 
 Status: {"Success" if not completed_dump.return_code else "FAILURE"}
 
-Output to stderr
-----------------
+Output to stderr (*)
+--------------------
 {completed_dump.stderr}
+(*) The output may include a password prompt, which can be ignored.
 """
 
 
@@ -334,7 +335,18 @@ def main():
         message = f"The daily SSDA update has completed.\n\n" + message
     except Exception as e:
         failed = True
-        message = f"The daily SSDA update failed with an error:\n\n{e}\n\n" + message
+        message = f"""\
+==========================================
+The daily SSDA update failed with an error
+==========================================
+
+{e}
+
+============
+Other output
+============
+
+""" + message
 
     subject = ("FAILED: " if failed else "") + "Daily SSDA maintenance for "
     send_email_notification(subject, message)
