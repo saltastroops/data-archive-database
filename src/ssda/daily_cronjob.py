@@ -79,7 +79,7 @@ def dump_database(dump_file: Path):
 
     database_config = ssda_configuration()
 
-    with tempfile.TemporaryFile(mode="w+t") as t:
+    with tempfile.TemporaryFile(mode="w+t") as dump, tempfile.TemporaryFile(mode="w+t") as stderr:
         # Dump the database into a temporary file...
         command = [
             "pg_dump",
@@ -93,18 +93,20 @@ def dump_database(dump_file: Path):
             database_config.username(),
             "--password"
         ]
-        stderr = io.StringIO()
-        completed_process = subprocess.run(command, input=database_config.password() + "\n", stderr=stderr, stdout=t, text=True)
-        completed_dump = CompletedDump(return_code=completed_process.returncode, stderr=completed_process.stderr)
+        completed_process = subprocess.run(command, input=database_config.password() + "\n", stderr=stderr, stdout=dump, text=True)
+
+        stderr.seek(0)
+
+        completed_dump = CompletedDump(return_code=completed_process.returncode, stderr=stderr.read())
 
         if completed_process.returncode:
             # The database could not be dumped, so we better stop.
             return completed_dump
 
     # ... and copy the temporary file to the database dump file.
-        t.seek(0)
+        dump.seek(0)
         with open(dump_file, 'w') as f:
-            for line in t:
+            for line in dump:
                 f.write(line)
 
         return completed_dump
