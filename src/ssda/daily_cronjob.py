@@ -214,7 +214,7 @@ def check_environment_variables():
 
     """
 
-    required_variables = ['MAIL_SUMMARY_ADDRESS', 'FITS_BASE_DIR', 'MAIL_PORT', 'MAIL_SERVER', 'SDB_DSN', 'SSDA_DSN',]
+    required_variables = ['DATABASE_DUMP_FILE', 'FITS_BASE_DIR', 'MAIL_PORT', 'MAIL_SERVER', 'MAIL_SUMMARY_ADDRESS', 'SDB_DSN', 'SSDA_DSN',]
     optional_variables = ['MAIL_PASSWORD', 'MAIL_USERNAME']
     missing_required_variables = []
     missing_optional_variables = []
@@ -227,11 +227,11 @@ def check_environment_variables():
 
     if len(missing_optional_variables):
         click.echo(click.style(f"You may have to define the following environment "
-                               f"variables: {', '.join(missing_optional_variables)}.",
+                               f"variable(s): {', '.join(missing_optional_variables)}.",
                                fg="yellow"))
     if len(missing_required_variables):
-        raise ValueError(f"The following environment variable(s) need to be defined: "
-                         f"{', '.join(missing_required_variables)}.")
+        raise ValueError(f"The following environment variable(s) need(s) to be "
+                         f"defined: {', '.join(missing_required_variables)}.")
 
 
 def database_dump_message(completed_dump: CompletedDump) -> str:
