@@ -31,20 +31,27 @@ class CompletedPopulation:
     warnings: int
 
     def __init__(self, completed_process: subprocess.CompletedProcess):
-        stdout = completed_process.stdout
+        stderr = completed_process.stderr
         properties = ['daytime errors', 'nighttime errors', 'warnings']
         metadata = {}
         for p in properties:
-            m = re.match(r'Total number of ' + p + r':\s*(\d+)', stdout)
-            if not m:
-                raise ValueError(f"The standard output does not include the number of {p}.")
-            metadata[p] = int(m.group(1))
+            m = re.findall(r'Total number of ' + p + r':\s*(\d+)', stderr)
+            if len(m) == 0:
+                message = f"""\
+The error output does not include the number of {p}.
+
+The error output is:
+
+{completed_process.stderr}
+"""
+                raise ValueError(message)
+            metadata[p] = int(m[0])
 
         self.daytime_errors=metadata["daytime errors"]
         self.nighttime_errors=metadata['nighttime errors']
         self.return_code=completed_process.returncode
-        self.stderr=completed_process.stderr
-        self.stdout=stdout
+        self.stderr=stderr
+        self.stdout=completed_process.stdout
         self.warnings=metadata['warnings']
 
 
