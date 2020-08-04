@@ -1,11 +1,13 @@
 import logging
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 import dsnparse
 import click
 
+from ssda.cli import parse_date
 from ssda.database.ssda import SSDADatabaseService
 from ssda.util import types
+from ssda.util.types import DateRange
 
 logging.basicConfig(
     level=logging.INFO, format="%(levelname)s %(asctime)s: %(message)s",
@@ -34,7 +36,7 @@ def validate_options(
     "--file", help="FITS file whose data to remove from the database.",
 )
 @click.option("--start", type=str, help="Start date of the last night to consider.")
-def main(file: Optional[str], start: Optional[date], end: Optional[date]):
+def main(file: Optional[str], start: Optional[str], end: Optional[str]):
     validate_options(filename=file, start=start, end=end)
 
     # database access
@@ -64,8 +66,9 @@ def main(file: Optional[str], start: Optional[date], end: Optional[date]):
                 raise ValueError("The start date is None.")
             if end is None:
                 raise ValueError("The end date is None.")
+            now = datetime.now
             observation_ids = ssda_database_service.find_observation_ids(
-                start_date=start, end_date=end
+                nights=DateRange(parse_date(start, now), parse_date(end, now))
             )
             for obs_id in observation_ids:
                 ssda_database_service.delete_observation(observation_id=obs_id)

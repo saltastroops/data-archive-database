@@ -315,34 +315,39 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
             else:
                 return None
 
-    def find_observation_ids(self, start_date: date, end_date: date) -> List[int]:
+    def find_observation_ids(self, nights: types.DateRange,) -> List[int]:
         """
         The observation ids that are observed in a date range. The start date and the end date are inclusive.
 
         Parameters
         ----------
-        start_date: date
-            Start date.
-        end_date: date
-            End date.
+        nights : DateRange
+        Nights.
 
         Returns
         -------
         The observation ids.
 
         """
-        with self._connection.cursor() as cur:
-            sql = """
+        ids = []
+        night = nights.start
+        while night <= nights.end:
+            str_night = "%" + str(night).replace("-", "") + "%"
+            with self._connection.cursor() as cur:
+                sql = f"""
 SELECT observations.observation.observation_id
 FROM observations.observation
     JOIN observations.plane ON observations.observation.observation_id = observations.plane.observation_id
     JOIN observations.observation_time ON observations.plane.plane_id = observations.observation_time.plane_id
-WHERE night >= %(start_date)s AND night <= %(end_date)s
+    JOIN observations.artifact ON observations.plane.plane_id = observations.artifact.plane_id
+WHERE artifact.name LIKE '{str_night}';
             """
-            cur.execute(sql, dict(start=start_date, end=end_date))
+                cur.execute(sql)
 
-            observation_ids = cur.fetchall()
-            return [cast(int, obs[0]) for obs in observation_ids]
+                observation_ids = cur.fetchall()
+                night += timedelta(days=1)
+                ids += [cast(int, obs[0]) for obs in observation_ids]
+        return ids
 
     def find_salt_observation_group(self, proposal_code: str) -> Dict[str, types.SALTObservationGroup]:
         """
