@@ -106,13 +106,13 @@ class SSDADatabaseService:
             else:
                 return None
 
-    def find_observation_id(self, artifact_name: str) -> Optional[int]:
+    def find_observation_id(self, artifact_path: str) -> Optional[int]:
         """
         Find the database id of an observation.
 
         Parameters
         ----------
-        artifact_name : str
+        artifact_path : str
             Name of an artifact for the observation.
 
         Returns
@@ -129,9 +129,9 @@ class SSDADatabaseService:
             FROM observations.observation
             JOIN observations.plane ON observations.observation.observation_id = observations.plane.observation_id
             JOIN observations.artifact ON observations.plane.plane_id = observations.artifact.plane_id
-            WHERE observations.artifact.name=%(artifact_name)s
+            WHERE (paths).raw=%(artifact_path)s
             """
-            cur.execute(sql, dict(artifact_name=artifact_name))
+            cur.execute(sql, dict(artifact_path=artifact_path))
 
             observation_id = cur.fetchone()
             if observation_id:
@@ -335,7 +335,7 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
             str_night = "%" + str(night).replace("-", "") + "%"
             with self._connection.cursor() as cur:
                 sql = f"""
-SELECT observations.observation.observation_id
+SELECT (paths).raw
 FROM observations.observation
     JOIN observations.plane ON observations.observation.observation_id = observations.plane.observation_id
     JOIN observations.observation_time ON observations.plane.plane_id = observations.observation_time.plane_id
@@ -346,7 +346,7 @@ WHERE artifact.name LIKE '{str_night}';
 
                 observation_ids = cur.fetchall()
                 night += timedelta(days=1)
-                ids += [cast(int, obs[0]) for obs in observation_ids]
+                ids += [cast(str, obs[0]) for obs in observation_ids]
         return ids
 
     def find_salt_observation_group(self, proposal_code: str) -> Dict[str, types.SALTObservationGroup]:
