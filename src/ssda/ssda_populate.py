@@ -144,45 +144,7 @@ def validate_options(
         raise click.UsageError("The start date must be earlier than the end date.")
 
 
-@click.command()
-@click.option("--end", type=str, help="Start date of the last night to consider.")
-@click.option(
-    "--file",
-    type=click.Path(exists=True, file_okay=True, dir_okay=False),
-    help="FITS file to map to the database.",
-)
-@click.option(
-    "--fits-base-dir",
-    type=click.Path(exists=True, file_okay=False, dir_okay=True),
-    help="Base directory containing all the FITS files.",
-)
-@click.option(
-    "--instrument",
-    "instruments",
-    type=click.Choice(["BCAM", "HRS", "RSS", "Salticam"], case_sensitive=False),
-    multiple=True,
-    help="Instrument to consider.",
-)
-@click.option(
-    "--mode",
-    type=click.Choice(["dummy", "production"], case_sensitive=False),
-    required=True,
-    help="Task execution mode.",
-)
-@click.option(
-    "--skip-errors", is_flag=True, help="Do not terminate if there is an error"
-)
-@click.option("--start", type=str, help="Start date of the last night to consider.")
-@click.option(
-    "--task",
-    type=click.Choice(["delete", "insert"]),
-    required=True,
-    help="Task to perform.",
-)
-@click.option(
-    "--verbosity", type=click.Choice(["0", "1", "2", "3"]), help="Log more details."
-)
-def populate(
+def populate_ssda(
     task: str,
     start: Optional[str],
     end: Optional[str],
