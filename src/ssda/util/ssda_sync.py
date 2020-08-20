@@ -24,7 +24,6 @@ error_log = setup_logger(
 )
 
 
-@click.command()
 def sync_ssda() -> int:
     """
     Synchronise the SSDA database with telescope databases such as the SALT Science
