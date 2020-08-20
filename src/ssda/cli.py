@@ -1,16 +1,27 @@
-from typing import Optional,Tuple
+from typing import Optional, Tuple
 import click
-from ssda.ssda_populate import populate
-from ssda.ssda_delete import delete
-from ssda.util.ssda_sync import sync
+from ssda.ssda_populate import populate_ssda
+from datetime import date
+from ssda.ssda_delete import delete_in_ssda
+from ssda.util.ssda_sync import sync_ssda
 
 
-@click.command()
+@click.group()
+def main():
+    pass
+
+
+@main.command()
 @click.option("--end", type=str, help="Start date of the last night to consider.")
 @click.option(
-    "--file",
+    "--fits-base-dir",
     type=click.Path(exists=True, file_okay=False, dir_okay=True),
-    help="FITS file to map to the database."
+    help="Base directory containing all the FITS files.",
+)
+@click.option(
+    "--file",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    help="FITS file to map to the database.",
 )
 @click.option(
     "--instrument",
@@ -35,24 +46,39 @@ from ssda.util.ssda_sync import sync
               help="Task to perform.",
               )
 @click.option(
-    "--verbosity", type=click.Choice(["0", "1", "2", "3"]), help="Log more details."
+    "--verbosity", required=False, type=click.Choice(["0", "1", "2", "3"]), help="Log more details."
 )
-def main(
-        task: str,
-        start: Optional[str],
-        end: Optional[str],
-        instruments: Tuple[str],
-        file: Optional[str],
-        fits_base_dir: Optional[str],
-        mode: str,
-        skip_errors: bool,
-        verbosity: Optional[str],
-):
-    if task == "populate":
-        populate(start, end, instruments, file, fits_base_dir, mode, skip_errors, verbosity)
+def populate(task: str,
+             start: Optional[str],
+             end: Optional[str],
+             instruments: Tuple[str],
+             file: Optional[str],
+             fits_base_dir: Optional[str],
+             mode: str,
+             skip_errors: bool,
+             verbosity: Optional[str]):
+    """Populate the database SSDA"""
+    populate_ssda(task, start, end, instruments, file, fits_base_dir, mode, skip_errors, verbosity)
 
-    if task == "sync":
-        sync(start, end)
 
-    if task == "delete":
-        delete(file, start, end, instruments)
+@main.command()
+def sync():
+    """Sync SSDA and SDB Databases"""
+    sync_ssda()
+
+
+@main.command()
+@click.option("--end", type=str, help="Start date of the last night to consider.")
+@click.option("--start", type=str, help="Start date of the last night to consider.")
+@click.option(
+    "--file",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True),
+    help="FITS file to map to the database."
+)
+def delete(file: Optional[str], start: Optional[date], end: Optional[date]):
+    """Delete file from database"""
+    delete_in_ssda(file, start, end)
+
+
+if __name__ == '__main__':
+    main()
