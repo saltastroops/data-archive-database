@@ -28,12 +28,6 @@ def validate_options(
         )
 
 
-@click.command()
-@click.option("--end", type=str, help="Start date of the last night to consider.")
-@click.option(
-    "--file", help="FITS file whose data to remove from the database.",
-)
-@click.option("--start", type=str, help="Start date of the last night to consider.")
 def delete_in_ssda(file: Optional[str], start: Optional[date], end: Optional[date]):
     validate_options(filename=file, start=start, end=end)
 
