@@ -161,6 +161,7 @@ def populate_database():
 
     command = [
         'ssda',
+        'populate',
         '--task',
         'insert',
         '--mode',
@@ -181,7 +182,7 @@ def populate_database():
 
 
 def synchronise_database():
-    command = ['ssda_sync']
+    command = ['ssda', 'sync']
     completed_process = subprocess.run(command, capture_output=True, text=True)
 
     return CompletedSynchronisation(return_code=completed_process.returncode, stderr=completed_process.stderr, stdout=completed_process.stdout)
