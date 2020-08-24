@@ -15,14 +15,19 @@ logging.basicConfig(
 
 
 def validate_options(
-    file_path: Optional[str] = None,
+    fits: Optional[str] = None,
+    out: Optional[str] = None,
     start: Optional[date] = None,
     end: Optional[date] = None,
 ):
-    if not file_path and not start and not end:
+    if not fits and not start and not end:
         raise ValueError("You must provide either a file path or a date range.")
-    if file_path and (start or end):
+    if fits and (start or end):
         raise ValueError("You cannot provide provide both a file path and a date range.")
+    if out and (start or end):
+        raise ValueError("--out to log affected files needs to be provided for a date range.")
+    if fits and out:
+        raise ValueError("--out will have no affect since you are deleting a single file.")
     if (start and not end) or (not start and end):
         raise ValueError(
             "You cannot provide a start_date without an end_date date, or an end_date date without a "
@@ -33,11 +38,14 @@ def validate_options(
 @click.command()
 @click.option("--end", type=str, help="Start date of the last night to consider.")
 @click.option(
-    "--file_path", help="FITS file whose data to remove from the database.",
+    "--fits", help="FITS file whose data to remove from the database.",
+)
+@click.option(
+    "--out", help="Output file for affected fits file.",
 )
 @click.option("--start", type=str, help="Start date of the last night to consider.")
-def main(file_path: Optional[str], start: Optional[str], end: Optional[str]):
-    validate_options(file_path=file_path, start=start, end=end)
+def main(fits: Optional[str], start: Optional[str], end: Optional[str], out: Optional[str]):
+    validate_options(fits=fits, start=start, end=end, out=out)
 
     # database access
     ssda_db_config = dsnparse.parse_environ("SSDA_DSN")
@@ -53,29 +61,31 @@ def main(file_path: Optional[str], start: Optional[str], end: Optional[str]):
     ssda_database_service.begin_transaction()
 
     try:
-        if file_path:
-            observation_id = ssda_database_service.find_observation_id(artifact_path=file_path)
+        if fits:
+            observation_id = ssda_database_service.find_observation_id(artifact_path=fits)
             if observation_id is None:
-                raise ValueError(f"No observation id found for file path: {file_path}")
+                raise ValueError(f"No observation id found for {fits}")
             ssda_database_service.delete_observation(
                 observation_id=observation_id
             )
             ssda_database_service.commit_transaction()
-            logging.info(msg="\nSuccessfully deleted observation(s)")
+            logging.info(msg="\nSuccessfully deleted observation")
         else:
             if start is None:
                 raise ValueError("The start date is None.")
             if end is None:
                 raise ValueError("The end date is None.")
             now = datetime.now
-            observation_ids = ssda_database_service.find_observation_ids(
+            observation_paths = ssda_database_service.find_affected_file_paths(
                 nights=DateRange(parse_date(start, now), parse_date(end, now))
             )
-            files_affected = open(f"files to delete from {start} to {end}.log", "w")
-            for obs_id in observation_ids:
-                files_affected.writelines(str(obs_id) + "\n")
-            logging.info(msg=f"\nDate range can not be deleted please look at log: "
-                             f"files to delete from {start} to {end}.log for files that can be deleted")
+            files_affected = open(f"{out}", "w")
+            for obs_path in observation_paths:
+                files_affected.writelines("ssda delete -fits " + obs_path + "\n")
+            logging.info(msg=f"The delete command does not support deleting files for a date range, as there might be "
+                             f"cases where this leads to unexpected results.\n\n"
+                             f"Your chosen date range covers the following file paths. Please check the list and call "
+                             f"the delete command with the --fits option for every path you want to delete.")
     except BaseException as e:
         ssda_database_service.rollback_transaction()
         logging.error(msg="Failed to delete data.", exc_info=True)

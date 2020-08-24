@@ -315,9 +315,9 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
             else:
                 return None
 
-    def find_observation_ids(self, nights: types.DateRange,) -> List[int]:
+    def find_affected_file_paths(self, nights: types.DateRange, ) -> List[str]:
         """
-        The observation ids that are observed in a date range. The start date and the end date are inclusive.
+        The observation file paths that are observed in a date range. The start date and the end date are inclusive.
 
         Parameters
         ----------
@@ -326,10 +326,10 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
 
         Returns
         -------
-        The observation ids.
+        The observation file paths.
 
         """
-        ids = []
+        paths = []
         night = nights.start
         while night <= nights.end:
             str_night = "%" + str(night).replace("-", "") + "%"
@@ -344,10 +344,10 @@ WHERE artifact.name LIKE '{str_night}';
             """
                 cur.execute(sql)
 
-                observation_ids = cur.fetchall()
+                observation_paths = cur.fetchall()
                 night += timedelta(days=1)
-                ids += [cast(str, obs[0]) for obs in observation_ids]
-        return ids
+                paths += [cast(str, obs[0]) for obs in observation_paths]
+        return paths
 
     def find_salt_observation_group(self, proposal_code: str) -> Dict[str, types.SALTObservationGroup]:
         """
