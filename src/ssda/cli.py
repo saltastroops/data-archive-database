@@ -1,9 +1,9 @@
 from typing import Optional, Tuple
 import click
-from ssda.ssda_populate import populate_ssda
 from datetime import date
 from ssda.ssda_delete import delete_in_ssda
-from ssda.util.ssda_sync import sync_ssda
+from ssda.ssda_populate import populate_ssda
+from ssda.ssda_sync import sync_ssda
 
 
 @click.group()
