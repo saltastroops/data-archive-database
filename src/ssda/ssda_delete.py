@@ -35,8 +35,9 @@ def validate_options(
         )
 
 
-def delete_in_ssda(file: Optional[str], start: Optional[date], end: Optional[date]):
-    validate_options(filename=file, start=start, end=end)
+def delete_in_ssda(fits: Optional[str], start: Optional[str], end: Optional[str], out: Optional[str]):
+    validate_options(fits=fits, start=start, end=end, out=out)
+
     # database access
     ssda_db_config = dsnparse.parse_environ("SSDA_DSN")
     ssda_db_config = types.DatabaseConfiguration(
@@ -59,23 +60,20 @@ def delete_in_ssda(file: Optional[str], start: Optional[date], end: Optional[dat
                 observation_id=observation_id
             )
             ssda_database_service.commit_transaction()
-            logging.info(msg="\nSuccessfully deleted observation")
+            logging.info(msg=f"\nSuccessfully deleted observation for {fits}")
         else:
             if start is None:
-                raise ValueError("The start date is None.")
+                raise ValueError("The start date must not be None.")
             if end is None:
-                raise ValueError("The end date is None.")
+                raise ValueError("The end date must not be None.")
             now = datetime.now
-            observation_paths = ssda_database_service.find_affected_file_paths(
+            observation_paths = ssda_database_service.find_file_paths(
                 nights=DateRange(parse_date(start, now), parse_date(end, now))
             )
-            files_affected = open(f"{out}", "w")
-            for obs_path in observation_paths:
-                files_affected.writelines("ssda delete -fits " + obs_path + "\n")
-            logging.info(msg=f"The delete command does not support deleting files for a date range, as there might be "
-                             f"cases where this leads to unexpected results.\n\n"
-                             f"Your chosen date range covers the following file paths. Please check the list and call "
-                             f"the delete command with the --fits option for every path you want to delete.")
+            with open(f"{out}", "w") as files_affected:
+                for obs_path in observation_paths:
+                    files_affected.write("ssda delete -fits " + obs_path + "\n")
+            logging.info(msg=f"The affected files can be found on the output file: {out}")
     except BaseException as e:
         ssda_database_service.rollback_transaction()
         logging.error(msg="Failed to delete data.", exc_info=True)

@@ -315,9 +315,9 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
             else:
                 return None
 
-    def find_affected_file_paths(self, nights: types.DateRange, ) -> List[str]:
+    def find_file_paths(self, nights: types.DateRange, ) -> List[str]:
         """
-        The observation file paths that are observed in a date range. The start date and the end date are inclusive.
+        The observation file paths that have been observed in a date range. The start date and the end date are inclusive.
 
         Parameters
         ----------

@@ -71,13 +71,14 @@ def sync():
 @click.option("--end", type=str, help="Start date of the last night to consider.")
 @click.option("--start", type=str, help="Start date of the last night to consider.")
 @click.option(
-    "--file",
-    type=click.Path(exists=True, file_okay=False, dir_okay=True),
-    help="FITS file to map to the database."
+    "--fits", help="FITS file whose data to remove from the database.",
 )
-def delete(file: Optional[str], start: Optional[date], end: Optional[date]):
+@click.option(
+    "--out", help="Output file for affected fits file.",
+)
+def delete(fits: Optional[str], start: Optional[str], end: Optional[str], out: Optional[str]):
     """Delete file from database"""
-    delete_in_ssda(file, start, end)
+    delete_in_ssda(fits=fits, start=start, end=end, out=out)
 
 
 if __name__ == '__main__':
