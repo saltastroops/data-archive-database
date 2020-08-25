@@ -35,18 +35,8 @@ def validate_options(
         )
 
 
-@click.command()
-@click.option("--end", type=str, help="Start date of the last night to consider.")
-@click.option(
-    "--fits", help="FITS file whose data to remove from the database.",
-)
-@click.option(
-    "--out", help="Output file for affected fits file.",
-)
-@click.option("--start", type=str, help="Start date of the last night to consider.")
-def main(fits: Optional[str], start: Optional[str], end: Optional[str], out: Optional[str]):
-    validate_options(fits=fits, start=start, end=end, out=out)
-
+def delete_in_ssda(file: Optional[str], start: Optional[date], end: Optional[date]):
+    validate_options(filename=file, start=start, end=end)
     # database access
     ssda_db_config = dsnparse.parse_environ("SSDA_DSN")
     ssda_db_config = types.DatabaseConfiguration(

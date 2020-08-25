@@ -5,10 +5,10 @@ from typing import NamedTuple, Optional, Set
 import pytest
 import glob
 
-import ssda.cli
+import ssda.ssda_populate
 import ssda.task
 import ssda.util.fits
-from ssda.cli import parse_date, validate_options, main
+from ssda.ssda_populate import parse_date, validate_options, populate_ssda
 from ssda.util.dummy import DummyObservationProperties
 from ssda.util.types import Instrument, DateRange
 
@@ -72,7 +72,7 @@ def test_parse_date_rejects_invalid_dates(invalid_date: str):
 def test_a_start_date_requires_an_end_date():
     runner = CliRunner()
     result = runner.invoke(
-        main,
+        populate_ssda,
         [
             "--start",
             "2019-04-09",
@@ -93,7 +93,7 @@ def test_a_start_date_requires_an_end_date():
 def test_an_end_date_requires_a_start_date():
     runner = CliRunner()
     result = runner.invoke(
-        main,
+        populate_ssda,
         [
             "--end",
             "2019-04-09",
@@ -115,7 +115,7 @@ def test_file_is_not_allowed_with_dates():
         with open("whatever.fits", "w") as f:
             f.write("Dummy FITS file")
         result = runner.invoke(
-            main,
+            populate_ssda,
             [
                 "--start",
                 "2019-04-08",
@@ -143,7 +143,7 @@ def test_file_is_not_allowed_with_an_instrument():
         with open("whatever.fits", "w") as f:
             f.write("Dummy FITS file")
         result = runner.invoke(
-            main,
+            populate_ssda,
             [
                 "--instrument",
                 "RSS",
@@ -162,7 +162,7 @@ def test_file_is_not_allowed_with_an_instrument():
 def test_a_base_directory_is_required_with_dates():
     runner = CliRunner()
     result = runner.invoke(
-        main,
+        populate_ssda,
         [
             "--start",
             "2019-04-08",
@@ -186,7 +186,7 @@ def test_a_base_directory_is_not_allowed_with_a_file():
         with open("whatever.fits", "w") as f:
             f.write("Dummy FITS file")
         result = runner.invoke(
-            main,
+            populate_ssda,
             [
                 "--file",
                 "whatever.fits",
@@ -205,7 +205,7 @@ def test_a_base_directory_is_not_allowed_with_a_file():
 def test_the_start_date_must_be_earlier_than_the_end_date():
     runner = CliRunner()
     result = runner.invoke(
-        main,
+        populate_ssda,
         [
             "--start",
             "2019-04-09",
@@ -225,7 +225,7 @@ def test_the_start_date_must_be_earlier_than_the_end_date():
     assert "start" in str(result.output) and "end" in str(result.output)
 
     result = runner.invoke(
-        main,
+        populate_ssda,
         [
             "--start",
             "2019-04-10",
