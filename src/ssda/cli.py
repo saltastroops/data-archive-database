@@ -1,6 +1,7 @@
 from typing import Optional, Tuple
 import click
 from datetime import date
+from ssda.ssda_daily_update import daily_update
 from ssda.ssda_delete import delete_in_ssda
 from ssda.ssda_populate import populate_ssda
 from ssda.ssda_sync import sync_ssda
@@ -78,6 +79,20 @@ def sync():
 def delete(file: Optional[str], start: Optional[date], end: Optional[date]):
     """Delete file from database"""
     delete_in_ssda(file, start, end)
+
+
+@main.command()
+def daily():
+    """
+    Perform the daily database update.
+
+    This includes dumping the current database content, populating the database with
+    data (from 7 days ago, plus a few days before) and synchronising the database with
+    the SDB.
+
+    """
+
+    daily_update()
 
 
 if __name__ == '__main__':

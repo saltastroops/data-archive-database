@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import io
 import os
 from pathlib import Path
 import re
@@ -296,8 +295,7 @@ Output to stderr
 """
 
 
-@click.command()
-def main():
+def daily_update():
     """
     Perform daily maintenance work for the SAAO/SALT Data Archive.
 
