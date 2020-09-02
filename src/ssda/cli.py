@@ -80,5 +80,19 @@ def delete(file: Optional[str], start: Optional[date], end: Optional[date]):
     delete_in_ssda(file, start, end)
 
 
-if __name__ == '__main__':
+@main.command()
+def daily():
+    """
+    Perform the daily database update.
+
+    This includes dumping the current database content, populating the database with
+    data (from 7 days ago, plus a few days before) and synchronising the database with
+    the SDB.
+
+    """
+
+    daily_update()
+
+
+if __name__ == "__main__":
     main()
