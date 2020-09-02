@@ -48,10 +48,14 @@ class SaltImagingCameraObservationProperties(ObservationProperties):
         queries: List[types.SQLQuery] = []
 
         detmode_header_value = self.header_value("DETMODE")
-        detector_mode = types.DetectorMode.for_name(detmode_header_value if detmode_header_value else "")
+        detector_mode = types.DetectorMode.for_name(
+            detmode_header_value if detmode_header_value else ""
+        )
 
         filter_header_value = self.header_value("FILTER")
-        filter = types.Filter.for_name(filter_header_value if filter_header_value else "")
+        filter = types.Filter.for_name(
+            filter_header_value if filter_header_value else ""
+        )
 
         return types.InstrumentSetup(
             additional_queries=queries,

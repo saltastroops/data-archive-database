@@ -226,7 +226,9 @@ class SaltDatabaseService:
         # There might be calibration files not belonging to any proposal which still
         # have a block visit id, although they shouldn't.
         for fd in file_data:
-            if not fd.proposal_code or not self.is_existing_proposal_code(fd.proposal_code):
+            if not fd.proposal_code or not self.is_existing_proposal_code(
+                fd.proposal_code
+            ):
                 fd.block_visit_id = None
 
         return file_data
@@ -264,9 +266,7 @@ class SaltDatabaseService:
 
         return [
             FileDataItem(
-                ut_start=row.UTStart.to_pydatetime().replace(
-                    tzinfo=timezone.utc
-                ),
+                ut_start=row.UTStart.to_pydatetime().replace(tzinfo=timezone.utc),
                 file_name=row.FileName,
                 proposal_code=row.Proposal_Code,
                 target_name=row.Target_Name.strip(),
@@ -278,9 +278,7 @@ class SaltDatabaseService:
             for row in file_data_results.itertuples()
         ]
 
-    def _find_file_data_from_fits_headers(
-        self, night: date
-    ) -> List[FileDataItem]:
+    def _find_file_data_from_fits_headers(self, night: date) -> List[FileDataItem]:
         """
         Collect the file data from the FITS file headers.
 
@@ -306,13 +304,9 @@ class SaltDatabaseService:
             ut_start = parse_start_datetime(start_date, start_time)
             file_name = os.path.basename(fits.file_path())
             bvisit_id_header_value = fits.header_value("BVISITID")
-            block_visit_id = (
-                bvisit_id_header_value if bvisit_id_header_value else None
-            )
+            block_visit_id = bvisit_id_header_value if bvisit_id_header_value else None
             object_header_value = fits.header_value("OBJECT")
-            target_name = (
-                object_header_value if object_header_value else ""
-            )
+            target_name = object_header_value if object_header_value else ""
             proposal_code_header_value = fits.header_value("PROPID")
             proposal_code = (
                 proposal_code_header_value if proposal_code_header_value else None
@@ -627,7 +621,9 @@ class SaltDatabaseService:
             file_data, block_visit_ids, night
         )
 
-        def block_visit_id_for_file(_index: int, forward_search: bool) -> Optional[Union[str, int]]:
+        def block_visit_id_for_file(
+            _index: int, forward_search: bool
+        ) -> Optional[Union[str, int]]:
             """
             What is the block visit id of the nearest earlier file which has a block
             visit id and could belong to the same block?
@@ -809,11 +805,13 @@ class SaltDatabaseService:
                     and status_values[fd.block_visit_id] != fd.block_visit_id_status
                 ):
                     if status_values[fd.block_visit_id] == BlockVisitIdStatus.CONFIRMED:
-                        record_warning(Warning(
-                            f"The block visit id {fd.block_visit_id} has been "
-                            f"marked both as {status_values[fd.block_visit_id]} "
-                            f"and {fd.block_visit_id_status}."
-                        ))
+                        record_warning(
+                            Warning(
+                                f"The block visit id {fd.block_visit_id} has been "
+                                f"marked both as {status_values[fd.block_visit_id]} "
+                                f"and {fd.block_visit_id_status}."
+                            )
+                        )
                         fd.block_visit_id_status = BlockVisitIdStatus.CONFIRMED
                     else:
                         raise Exception(
@@ -940,12 +938,14 @@ WHERE bv.Block_Id=(SELECT bv2.Block_Id FROM BlockVisit AS bv2 WHERE bv2.BlockVis
 
         # Despite best effort no block visit status could be determined. Let's play it
         # safe and declare the visit rejected.
-        record_warning(Warning(f"The block visit status could not be determined for the block visit id {block_visit_id}. It is therefore marked as rejected."))
+        record_warning(
+            Warning(
+                f"The block visit status could not be determined for the block visit id {block_visit_id}. It is therefore marked as rejected."
+            )
+        )
         return types.Status.REJECTED
 
-    def find_release_date(
-        self, proposal_code: str
-    ) -> Tuple[date, date]:
+    def find_release_date(self, proposal_code: str) -> Tuple[date, date]:
         sql = """
 SELECT MAX(EndSemester) AS EndSemester, ProposalType, ProprietaryPeriod
 FROM BlockVisit
@@ -987,7 +987,9 @@ WHERE Proposal_Code=%s;
             end_semester = end_semester_results["EndSemester"]
 
         if proprietary_period is None:
-            raise ValueError(f"The proprietary period is NULL for proposal {proposal_code}.")
+            raise ValueError(
+                f"The proprietary period is NULL for proposal {proposal_code}."
+            )
 
         # The semester end date in the SDB is the last day of a month.
         # However, it is easier (and more correct) to use the first day of the
@@ -1069,24 +1071,33 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
 
         return results.iloc[0]["RssMaskType"] == "MOS"
 
-    def institution_memberships(self, user_id: int) -> List[types.InstitutionMembership]:
+    def institution_memberships(
+        self, user_id: int
+    ) -> List[types.InstitutionMembership]:
         # TODO: This should be replaced with an improved version, getting the date
         # intervals from the SDB
         partner_membership_intervals = {
-        "AMNH": [(date(2011, 9, 1), date(2100, 1, 1))],
-        "CMU": [(date(2011, 9, 1), date(2013, 4, 30))],
-        "DC": [(date(2011, 9, 1), date(2100, 1, 1))],
-        "DUR": [(date(2017, 5, 1), date(2019, 4, 30))],
-        "GU": [(date(2011, 9, 1), date(2015, 4, 30)), (date(2016, 5, 1), date(2017, 10, 31))],
-        "HET": [(date(2011, 9, 1), date(2015, 4, 30))],
-        "IUCAA": [(date(2011, 9, 1), date(2100, 1, 1))],
-        "POL": [(date(2011, 9, 1), date(2100, 1, 1))],
-        "RSA": [(date(2011, 9, 1), date(2100, 1, 1))],
-        "RU": [(date(2011, 9, 1), date(2100, 1, 1))],
-        "UC": [(date(2011, 9, 1), date(2014, 10, 31)), (date(2015, 5, 1), date(2016, 10, 31)), (date(2017, 5, 1), date(2019, 4, 30))],
-        "UKSC": [(date(2011, 9, 1), date(2100, 1, 1))],
-        "UNC": [(date(2011, 9, 1), date(2020, 4, 30))],
-        "UW": [(date(2011, 9, 1), date(2100, 1, 1))]
+            "AMNH": [(date(2011, 9, 1), date(2100, 1, 1))],
+            "CMU": [(date(2011, 9, 1), date(2013, 4, 30))],
+            "DC": [(date(2011, 9, 1), date(2100, 1, 1))],
+            "DUR": [(date(2017, 5, 1), date(2019, 4, 30))],
+            "GU": [
+                (date(2011, 9, 1), date(2015, 4, 30)),
+                (date(2016, 5, 1), date(2017, 10, 31)),
+            ],
+            "HET": [(date(2011, 9, 1), date(2015, 4, 30))],
+            "IUCAA": [(date(2011, 9, 1), date(2100, 1, 1))],
+            "POL": [(date(2011, 9, 1), date(2100, 1, 1))],
+            "RSA": [(date(2011, 9, 1), date(2100, 1, 1))],
+            "RU": [(date(2011, 9, 1), date(2100, 1, 1))],
+            "UC": [
+                (date(2011, 9, 1), date(2014, 10, 31)),
+                (date(2015, 5, 1), date(2016, 10, 31)),
+                (date(2017, 5, 1), date(2019, 4, 30)),
+            ],
+            "UKSC": [(date(2011, 9, 1), date(2100, 1, 1))],
+            "UNC": [(date(2011, 9, 1), date(2020, 4, 30))],
+            "UW": [(date(2011, 9, 1), date(2100, 1, 1))],
         }
 
         sql = """
@@ -1100,11 +1111,13 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
 
         df = pd.read_sql(sql, self._connection, params=(user_id,))
         membership_intervals: Set[types.InstitutionMembership] = set()
-        for partner_code in df['Partner_Code']:
-            for partner_membership_interval in partner_membership_intervals[partner_code]:
+        for partner_code in df["Partner_Code"]:
+            for partner_membership_interval in partner_membership_intervals[
+                partner_code
+            ]:
                 institution_membership = types.InstitutionMembership(
                     membership_end=partner_membership_interval[1],
-                    membership_start=partner_membership_interval[0]
+                    membership_start=partner_membership_interval[0],
                 )
                 membership_intervals.add(institution_membership)
 
@@ -1138,7 +1151,9 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
                 f"The SDB proposal type {db_proposal_type} is not supported."
             )
 
-    def find_proposal_observation_groups(self, proposal_code) -> Dict[str, types.SALTObservationGroup]:
+    def find_proposal_observation_groups(
+        self, proposal_code
+    ) -> Dict[str, types.SALTObservationGroup]:
         """
         The observation groups (i.e. block visits) taken for a proposal.
         Parameters
@@ -1166,12 +1181,14 @@ WHERE Proposal_Code = %s
                 if row["BlockVisitStatus"] in ["Accepted", "Rejected"]:
                     ps[block_visit_id] = types.SALTObservationGroup(
                         group_identifier=block_visit_id,
-                        status=types.Status.for_value(row["BlockVisitStatus"])
+                        status=types.Status.for_value(row["BlockVisitStatus"]),
                     )
 
         return ps
 
-    def find_phase2_proposals(self, from_date: date) -> Dict[str, types.SALTProposalDetails]:
+    def find_phase2_proposals(
+        self, from_date: date
+    ) -> Dict[str, types.SALTProposalDetails]:
         """
         Details of all current phase 2 proposals, irrespective of their status,
         submitted on or after a date.
@@ -1217,7 +1234,7 @@ WHERE Current = 1 AND Phase = 2 AND SubmissionDate >= %(from_date)s
                 proposal_code=proposal_code,
                 title=row["Title"],
                 institution=types.Institution.SALT,
-                investigators=investigators
+                investigators=investigators,
             )
         return proposals
 
@@ -1260,9 +1277,7 @@ WHERE ProposalCode.Proposal_Code=%s;
             results = results.iloc[0]
             return str(results["ProposalType"])
 
-    def is_block_visit_in_night(
-        self, block_visit_id: int, night: date
-    ) -> bool:
+    def is_block_visit_in_night(self, block_visit_id: int, night: date) -> bool:
         """
         Check whether a block visit was done in a given night.
 

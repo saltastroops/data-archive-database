@@ -53,9 +53,4 @@ def sendmail(from_addr: str, to_addr: str, message: Union[str, bytes], **kwargs)
     with smtplib.SMTP(server, port) as server:
         if username:
             server.login(username, password)
-        server.sendmail(
-            from_addr,
-            to_addr,
-            message,
-            **kwargs
-        )
+        server.sendmail(from_addr, to_addr, message, **kwargs)

@@ -1,6 +1,7 @@
 from typing import Optional, Tuple
 import click
 from datetime import date
+from ssda.ssda_daily_update import daily_update
 from ssda.ssda_delete import delete_in_ssda
 from ssda.ssda_populate import populate_ssda
 from ssda.ssda_sync import sync_ssda
@@ -40,25 +41,33 @@ def main():
     "--skip-errors", is_flag=True, help="Do not terminate if there is an error"
 )
 @click.option("--start", type=str, help="Start date of the last night to consider.")
-@click.option("--task",
-              type=click.Choice(["delete", "insert"]),
-              required=True,
-              help="Task to perform.",
-              )
 @click.option(
-    "--verbosity", required=False, type=click.Choice(["0", "1", "2", "3"]), help="Log more details."
+    "--task",
+    type=click.Choice(["delete", "insert"]),
+    required=True,
+    help="Task to perform.",
 )
-def populate(task: str,
-             start: Optional[str],
-             end: Optional[str],
-             instruments: Tuple[str],
-             file: Optional[str],
-             fits_base_dir: Optional[str],
-             mode: str,
-             skip_errors: bool,
-             verbosity: Optional[str]):
+@click.option(
+    "--verbosity",
+    required=False,
+    type=click.Choice(["0", "1", "2", "3"]),
+    help="Log more details.",
+)
+def populate(
+    task: str,
+    start: Optional[str],
+    end: Optional[str],
+    instruments: Tuple[str],
+    file: Optional[str],
+    fits_base_dir: Optional[str],
+    mode: str,
+    skip_errors: bool,
+    verbosity: Optional[str],
+):
     """Populate the database SSDA"""
-    populate_ssda(task, start, end, instruments, file, fits_base_dir, mode, skip_errors, verbosity)
+    populate_ssda(
+        task, start, end, instruments, file, fits_base_dir, mode, skip_errors, verbosity
+    )
 
 
 @main.command()
@@ -73,7 +82,7 @@ def sync():
 @click.option(
     "--file",
     type=click.Path(exists=True, file_okay=False, dir_okay=True),
-    help="FITS file to map to the database."
+    help="FITS file to map to the database.",
 )
 def delete(file: Optional[str], start: Optional[date], end: Optional[date]):
     """Delete file from database"""

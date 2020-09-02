@@ -153,7 +153,9 @@ class DummyObservationProperties(ObservationProperties):
             content_length=self._fits_file.size(),
             identifier=uuid.uuid4(),
             name=os.path.basename(self._fits_file.file_path()),
-            paths=types.CalibrationLevelPaths(pathlib.Path("raw_path"), pathlib.Path("reduced_path")),
+            paths=types.CalibrationLevelPaths(
+                pathlib.Path("raw_path"), pathlib.Path("reduced_path")
+            ),
             plane_id=plane_id,
             product_type=product_type(),
         )

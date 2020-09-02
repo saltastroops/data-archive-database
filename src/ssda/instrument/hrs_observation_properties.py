@@ -63,7 +63,9 @@ class HrsObservationProperties(ObservationProperties):
         queries = [types.SQLQuery(sql=sql, parameters=parameters)]
 
         detmode_header_value = self.header_value("DETMODE")
-        detector_mode = types.DetectorMode.for_name(detmode_header_value if detmode_header_value else "")
+        detector_mode = types.DetectorMode.for_name(
+            detmode_header_value if detmode_header_value else ""
+        )
 
         return types.InstrumentSetup(
             additional_queries=queries,

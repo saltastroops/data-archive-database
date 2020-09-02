@@ -41,7 +41,9 @@ def parse_start_datetime(start_date: str, start_time: str):
     return start_time_tz
 
 
-def find_fabry_perot_mode(header_value: Callable[[str], Optional[str]]) -> Optional[types.RSSFabryPerotMode]:
+def find_fabry_perot_mode(
+    header_value: Callable[[str], Optional[str]]
+) -> Optional[types.RSSFabryPerotMode]:
     et_state_header_value = header_value("ET-STATE")
     etalon_state = et_state_header_value.lower() if et_state_header_value else ""
     if etalon_state == "s1 - etalon open":
@@ -52,12 +54,11 @@ def find_fabry_perot_mode(header_value: Callable[[str], Optional[str]]) -> Optio
         fabry_perot_mode = types.RSSFabryPerotMode.parse_fp_mode(
             et2mode_header_value.upper() if et2mode_header_value else ""
         )
-    elif (
-            etalon_state == "s2 - etalon 1"
-            or etalon_state == "s4 - etalon 1 & 2"
-    ):
+    elif etalon_state == "s2 - etalon 1" or etalon_state == "s4 - etalon 1 & 2":
         et1mode_header_value = header_value("ET1MODE")
-        fabry_perot_mode = types.RSSFabryPerotMode.parse_fp_mode(et1mode_header_value.upper() if et1mode_header_value else "")
+        fabry_perot_mode = types.RSSFabryPerotMode.parse_fp_mode(
+            et1mode_header_value.upper() if et1mode_header_value else ""
+        )
     else:
         raise ValueError(f"Unknown etalon state: '{etalon_state}'")
     return fabry_perot_mode

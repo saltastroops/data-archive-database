@@ -1,7 +1,12 @@
 import logging
 
 
-def setup_logger(name: str, log_file: str, formatter: logging.Formatter, level: logging = logging.INFO):
+def setup_logger(
+    name: str,
+    log_file: str,
+    formatter: logging.Formatter,
+    level: logging = logging.INFO,
+):
     """
     Logger setup.
     Parameter

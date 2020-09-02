@@ -10,7 +10,11 @@ from ssda.util import types
 from ssda.util.fits import get_fits_base_dir
 from ssda.util.setup_logger import setup_logger
 
-info_log = setup_logger('info_logger', 'ssda_sync_info.log', logging.Formatter('%(asctime)s %(levelname)s - %(message)s'))
+info_log = setup_logger(
+    "info_logger",
+    "ssda_sync_info.log",
+    logging.Formatter("%(asctime)s %(levelname)s - %(message)s"),
+)
 
 
 class SSDADatabaseService:
@@ -139,7 +143,9 @@ class SSDADatabaseService:
             else:
                 return None
 
-    def find_owner_institution_user_ids(self, plane_id: int, proposal_id: Optional[int]) -> Optional[List[int]]:
+    def find_owner_institution_user_ids(
+        self, plane_id: int, proposal_id: Optional[int]
+    ) -> Optional[List[int]]:
         """
         Find the database institution user id values of the institution users who own the data related to the position.
         If the data is public (or the proposal id is None), None is returned.
@@ -180,7 +186,7 @@ class SSDADatabaseService:
             return result[0] if len(result[0]) else None
 
     def find_proposal_investigator_user_ids(
-            self, proposal_code: str, institution: types.Institution
+        self, proposal_code: str, institution: types.Institution
     ) -> List[str]:
         with self._connection.cursor() as cur:
             sql = """
@@ -249,7 +255,11 @@ FROM observation
 WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
             """
             cur.execute(
-                sql, dict(proposal_code=proposal_code, institution=types.Institution.SALT.value)
+                sql,
+                dict(
+                    proposal_code=proposal_code,
+                    institution=types.Institution.SALT.value,
+                ),
             )
             return cur.fetchone()
 
@@ -344,7 +354,9 @@ WHERE night >= %(start_date)s AND night <= %(end_date)s
             observation_ids = cur.fetchall()
             return [cast(int, obs[0]) for obs in observation_ids]
 
-    def find_salt_observation_group(self, proposal_code: str) -> Dict[str, types.SALTObservationGroup]:
+    def find_salt_observation_group(
+        self, proposal_code: str
+    ) -> Dict[str, types.SALTObservationGroup]:
         """
         Find an observation group.
 
@@ -374,7 +386,8 @@ FROM observations.observation
 WHERE proposal_code=%(proposal_code)s AND telescope_id = (SELECT telescope_id FROM tel)
             """
             cur.execute(
-                sql, dict(proposal_code=proposal_code, telescope=types.Telescope.SALT.value)
+                sql,
+                dict(proposal_code=proposal_code, telescope=types.Telescope.SALT.value),
             )
             results = cur.fetchall()
 
@@ -383,7 +396,7 @@ WHERE proposal_code=%(proposal_code)s AND telescope_id = (SELECT telescope_id FR
                 group_identifier = result[0]
                 og[group_identifier] = types.SALTObservationGroup(
                     status=types.Status.for_value(result[1]),
-                    group_identifier=group_identifier
+                    group_identifier=group_identifier,
                 )
 
             return og
@@ -410,7 +423,9 @@ WHERE proposal_code=%(proposal_code)s AND telescope_id = (SELECT telescope_id FR
             cur.execute(sql, dict(path=os.path.relpath(path, get_fits_base_dir())))
             return cur.fetchone()[0]
 
-    def insert_proposal_access_rule(self, proposal_id: int, access_rule: Optional[types.AccessRule]):
+    def insert_proposal_access_rule(
+        self, proposal_id: int, access_rule: Optional[types.AccessRule]
+    ):
         if not access_rule:
             return
 
@@ -424,7 +439,9 @@ WHERE proposal_code=%(proposal_code)s AND telescope_id = (SELECT telescope_id FR
             INSERT INTO admin.proposal_access_rule (proposal_id, access_rule_id)
             VALUES (%(proposal_id)s, (SELECT id FROM ar));
             """
-            cur.execute(sql, dict(proposal_id=proposal_id, access_rule=access_rule.value))
+            cur.execute(
+                sql, dict(proposal_id=proposal_id, access_rule=access_rule.value)
+            )
 
     def insert_artifact(self, artifact: types.Artifact) -> int:
         """
@@ -553,7 +570,11 @@ WHERE proposal_code=%(proposal_code)s AND telescope_id = (SELECT telescope_id FR
         with self._connection.cursor() as cur:
             cur.execute(sql, dict(institution_user_id=institution_user_id))
 
-    def insert_institution_memberships(self, institution_user_id: int, institution_memberships: List[types.InstitutionMembership]):
+    def insert_institution_memberships(
+        self,
+        institution_user_id: int,
+        institution_memberships: List[types.InstitutionMembership],
+    ):
         """
         Insert membership details for an institution user.
 
@@ -573,12 +594,20 @@ WHERE proposal_code=%(proposal_code)s AND telescope_id = (SELECT telescope_id FR
 
         with self._connection.cursor() as cur:
             for institution_membership in institution_memberships:
-                cur.execute(sql, dict(institution_user_id=institution_user_id,
-                                      membership_end=institution_membership.membership_end,
-                                      membership_start=institution_membership.membership_start))
+                cur.execute(
+                    sql,
+                    dict(
+                        institution_user_id=institution_user_id,
+                        membership_end=institution_membership.membership_end,
+                        membership_start=institution_membership.membership_start,
+                    ),
+                )
 
-
-    def update_institution_memberships(self, institution_user_id: int, institution_memberships: List[types.InstitutionMembership]):
+    def update_institution_memberships(
+        self,
+        institution_user_id: int,
+        institution_memberships: List[types.InstitutionMembership],
+    ):
         """
         Update the membership details of an institution user.
 
@@ -594,7 +623,9 @@ WHERE proposal_code=%(proposal_code)s AND telescope_id = (SELECT telescope_id FR
         """
 
         self.delete_institution_memberships(institution_user_id)
-        self.insert_institution_memberships(institution_user_id, institution_memberships)
+        self.insert_institution_memberships(
+            institution_user_id, institution_memberships
+        )
 
     def insert_institution_user(
         self, user_id: str, institution: types.Institution
@@ -634,13 +665,7 @@ WHERE proposal_code=%(proposal_code)s AND telescope_id = (SELECT telescope_id FR
             RETURNING institution_user_id
             """
 
-            cur.execute(
-                sql,
-                dict(
-                    institution=institution.value,
-                    user_id=user_id,
-                ),
-            )
+            cur.execute(sql, dict(institution=institution.value, user_id=user_id))
 
             result = cur.fetchone()
             if result:
@@ -654,9 +679,7 @@ WHERE proposal_code=%(proposal_code)s AND telescope_id = (SELECT telescope_id FR
                 WHERE institution_id=(SELECT institution_id FROM inst) AND user_id=%(user_id)s
                 """
 
-                cur.execute(
-                    sql, dict(institution=institution.value, user_id=user_id,),
-                )
+                cur.execute(sql, dict(institution=institution.value, user_id=user_id))
 
                 result = cur.fetchone()
 
@@ -1005,7 +1028,9 @@ WHERE proposal_code=%(proposal_code)s AND telescope_id = (SELECT telescope_id FR
                 ),
             )
 
-    def insert_position(self, position: types.Position, proposal_id: Optional[int]) -> int:
+    def insert_position(
+        self, position: types.Position, proposal_id: Optional[int]
+    ) -> int:
         """
         Inert a position.
 
@@ -1023,7 +1048,9 @@ WHERE proposal_code=%(proposal_code)s AND telescope_id = (SELECT telescope_id FR
 
         """
 
-        owner_institution_user_ids = self.find_owner_institution_user_ids(position.plane_id, proposal_id)
+        owner_institution_user_ids = self.find_owner_institution_user_ids(
+            position.plane_id, proposal_id
+        )
 
         with self._connection.cursor() as cur:
             sql = """
@@ -1105,12 +1132,13 @@ WHERE proposal_code=%(proposal_code)s AND telescope_id = (SELECT telescope_id FR
 
         # insert institution user if not exist
         institution_user_id = self.insert_institution_user(
-            proposal_investigator.investigator_id,
-            proposal_investigator.institution
+            proposal_investigator.investigator_id, proposal_investigator.institution
         )
 
         # update membership details
-        self.update_institution_memberships(institution_user_id, proposal_investigator.institution_memberships)
+        self.update_institution_memberships(
+            institution_user_id, proposal_investigator.institution_memberships
+        )
 
         with self._connection.cursor() as cur:
             sql = """
@@ -1168,10 +1196,10 @@ WHERE proposal_code=%(proposal_code)s AND telescope_id = (SELECT telescope_id FR
             return cast(int, cur.fetchone()[0])
 
     def update_investigators(
-            self,
-            proposal_code: str,
-            institution: types.Institution,
-            proposal_investigators: List[types.ProposalInvestigator],
+        self,
+        proposal_code: str,
+        institution: types.Institution,
+        proposal_investigators: List[types.ProposalInvestigator],
     ):
         """
         Update the investigators for a proposal. Existing investigators are deleted.
@@ -1204,12 +1232,16 @@ WHERE proposal_id = (SELECT proposal_id FROM prop_id)
                 self.insert_proposal_investigator(
                     proposal_investigator=proposal_investigator
                 )
-                proposal_investigators_str += proposal_investigator.investigator_id + ", "
-            info_log.info(msg=f"The investigator ids for {proposal_code} have been changed to "
-                              f"{proposal_investigators_str[:-2] + '.'}")
+                proposal_investigators_str += (
+                    proposal_investigator.investigator_id + ", "
+                )
+            info_log.info(
+                msg=f"The investigator ids for {proposal_code} have been changed to "
+                f"{proposal_investigators_str[:-2] + '.'}"
+            )
 
     def update_observation_group_status(
-            self, group_identifier: str, status: types.Status, telescope: types.Telescope
+        self, group_identifier: str, status: types.Status, telescope: types.Telescope
     ) -> None:
         """
         Update the status of all observations in an observation group.
@@ -1249,7 +1281,9 @@ WHERE observation_group_id=(SELECT observation_group_id FROM obs_id)
                     telescope=telescope.value,
                 ),
             )
-            info_log.info(msg=f"The status of block visit id {group_identifier} has changed to {status.value}")
+            info_log.info(
+                msg=f"The status of block visit id {group_identifier} has changed to {status.value}"
+            )
 
     def update_pi(self, proposal_id: int, pi: str) -> None:
         """
@@ -1268,13 +1302,7 @@ WHERE observation_group_id=(SELECT observation_group_id FROM obs_id)
                     SET pi=%(pi)s
                 WHERE proposal_id=%(proposal_id)s
             """
-            cur.execute(
-                sql,
-                dict(
-                    proposal_id=proposal_id,
-                    pi=pi
-                ),
-            )
+            cur.execute(sql, dict(proposal_id=proposal_id, pi=pi))
 
     def update_proposal_title(self, proposal_id: int, title: str) -> None:
         """
@@ -1293,15 +1321,11 @@ WHERE observation_group_id=(SELECT observation_group_id FROM obs_id)
                     SET title=%(title)s
                 WHERE proposal_id=%(proposal_id)s
             """
-            cur.execute(
-                sql,
-                dict(
-                    proposal_id=proposal_id,
-                    title=title
-                ),
-            )
+            cur.execute(sql, dict(proposal_id=proposal_id, title=title))
 
-    def update_proposal_release_date(self, proposal_id: int, release_dates: types.ReleaseDates) -> None:
+    def update_proposal_release_date(
+        self, proposal_id: int, release_dates: types.ReleaseDates
+    ) -> None:
         with self._connection.cursor() as cur:
             sql = """
 UPDATE observation

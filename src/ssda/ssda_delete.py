@@ -7,9 +7,7 @@ import click
 from ssda.database.ssda import SSDADatabaseService
 from ssda.util import types
 
-logging.basicConfig(
-    level=logging.INFO, format="%(levelname)s %(asctime)s: %(message)s",
-)
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(asctime)s: %(message)s")
 
 
 def validate_options(
@@ -47,12 +45,11 @@ def delete_in_ssda(file: Optional[str], start: Optional[date], end: Optional[dat
     try:
         if file:
             observation_id = ssda_database_service.find_observation_id(
-                artifact_name=file)
+                artifact_name=file
+            )
             if observation_id is None:
                 raise ValueError(f"No observation id found for file: {file}")
-            ssda_database_service.delete_observation(
-                observation_id=observation_id
-            )
+            ssda_database_service.delete_observation(observation_id=observation_id)
         else:
             if start is None:
                 raise ValueError("The start date is None.")
