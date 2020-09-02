@@ -1,9 +1,8 @@
-import logging
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Optional, List, cast
-from datetime import timedelta, date, datetime, timezone
+from typing import Dict, Optional, List
+from datetime import timedelta, date, datetime
 from astropy.coordinates import Angle
 
 import astropy.units as u

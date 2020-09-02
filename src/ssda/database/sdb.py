@@ -853,7 +853,7 @@ WHERE ProposalCode.Proposal_Code=%s;
 SELECT Title
 FROM ProposalText
         JOIN ProposalCode ON ProposalText.ProposalCode_Id=ProposalCode.ProposalCode_Id
-        JOIN Semester ON ProposalText.Semester_Id=Semester.Semester_Id     
+        JOIN Semester ON ProposalText.Semester_Id=Semester.Semester_Id
 WHERE ProposalCode.Proposal_Code=%s
 ORDER BY Semester.Year DESC, Semester.Semester DESC
 LIMIT 1
@@ -1259,7 +1259,7 @@ WHERE ProposalCode.Proposal_Code=%s;
         raise ValueError("Observation has no Investigators")
 
     def sdb_proposal_type(self, proposal_code: str) -> str:
-        with self._connection.cursor() as cur:
+        with self._connection.cursor():
             sql = """
             SELECT ProposalType
             FROM ProposalType

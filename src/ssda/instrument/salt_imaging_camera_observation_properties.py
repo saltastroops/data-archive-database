@@ -1,5 +1,3 @@
-from abc import ABC
-
 from ssda.database.sdb import SaltDatabaseService
 from ssda.observation import ObservationProperties
 from ssda.util import types
@@ -7,8 +5,6 @@ from ssda.util.salt_energy_calculation import salt_imaging_camera_spectral_prope
 from ssda.util.salt_observation import SALTObservation
 from ssda.util.fits import FitsFile
 from typing import Optional, List
-
-from ssda.util.warnings import record_warning
 
 
 class SaltImagingCameraObservationProperties(ObservationProperties):

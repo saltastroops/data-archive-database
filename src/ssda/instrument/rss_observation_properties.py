@@ -7,8 +7,6 @@ from ssda.util.salt_observation import SALTObservation
 from ssda.util.fits import FitsFile
 from typing import Optional, List
 
-from ssda.util.warnings import record_warning
-
 
 class RssObservationProperties(ObservationProperties):
     def __init__(self, fits_file: FitsFile, salt_database_service: SaltDatabaseService):
@@ -54,7 +52,7 @@ class RssObservationProperties(ObservationProperties):
     def instrument_setup(self, observation_id: int) -> types.InstrumentSetup:
         sql = """
         WITH fpm (id) AS (
-            SELECT rss_fabry_perot_mode_id FROM observations.rss_fabry_perot_mode 
+            SELECT rss_fabry_perot_mode_id FROM observations.rss_fabry_perot_mode
             WHERE fabry_perot_mode=%(fabry_perot_mode)s
         ),
              rg (id) AS (

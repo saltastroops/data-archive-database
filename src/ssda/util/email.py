@@ -1,4 +1,3 @@
-from email.mime.text import MIMEText
 import os
 import smtplib
 from typing import Union

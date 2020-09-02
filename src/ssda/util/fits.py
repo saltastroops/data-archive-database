@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Iterator, List, Set, Optional
 from astropy.units import Quantity
 from astropy.io import fits
-from ssda.exceptions import IgnoreObservationError
 from ssda.util import types
 
 
@@ -319,9 +318,6 @@ class StandardFitsFile(FitsFile):
         return self.path
 
     def checksum(self) -> str:
-        letters = string.ascii_lowercase
-        result = "".join(random.choice(letters) for _ in range(20))
-
         # Open,close, read file and calculate MD5 on its contents
         with open(self.file_path(), "rb") as f:
             # read contents of the file

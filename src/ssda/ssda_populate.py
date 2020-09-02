@@ -397,7 +397,7 @@ def handle_exception(
 -------------
 """
         msg += f"""{error_msg}
-    
+
 FITS file details
 ------------------
 File path: {data_to_log.path}

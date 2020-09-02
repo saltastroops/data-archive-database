@@ -54,7 +54,8 @@ class HrsObservationProperties(ObservationProperties):
 
         sql = """
         WITH hm (id) AS (
-            SELECT hrs_mode_id FROM observations.hrs_mode WHERE hrs_mode.hrs_mode=%(hrs_mode)s
+            SELECT hrs_mode_id FROM observations.hrs_mode
+                   WHERE hrs_mode.hrs_mode=%(hrs_mode)s
         )
         INSERT INTO observations.hrs_setup (instrument_setup_id, hrs_mode_id)
         VALUES (%(instrument_setup_id)s, (SELECT id FROM hm))

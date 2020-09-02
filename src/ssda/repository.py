@@ -163,7 +163,7 @@ def insert(
         # insert energy
         try:
             energy = observation_properties.energy(plane_id)
-        except BaseException as e:
+        except BaseException:
             record_warning(Warning("The energy could not be calculated."))
             energy = None
         if energy:

@@ -1,4 +1,3 @@
-import click
 from datetime import date, datetime
 import logging
 from sentry_sdk import capture_exception
@@ -323,7 +322,6 @@ class SaltProposalSynchronisation:
         """
 
         self.check_proposal_code_consistency(old_proposal, new_proposal)
-        proposal_code = old_proposal.proposal_code
 
         if old_proposal.data_release != new_proposal.data_release or set(
             old_proposal.investigators
