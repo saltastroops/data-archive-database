@@ -107,7 +107,6 @@ def parse_date(value: str, now: Callable[[], datetime]) -> date:
 def validate_options(
         start: Optional[date],
         end: Optional[date],
-        file: Optional[str],
         instruments: Set[Instrument],
         fits_base_dir: Optional[str],
 ) -> None:
@@ -126,8 +125,6 @@ def validate_options(
         Start date.
     end : datetime
         End date.
-    file : str
-        FITS file (path).
     instruments : set of Instrument
         Set of instruments.
     fits_base_dir: str
@@ -157,16 +154,16 @@ def validate_options(
         )
 
     # Either a date range or a FITS file must be specified
-    if not (start and end) and not file:
+    if not (start and end):
         raise click.UsageError(
             "You must either specify a date range (with the --start/--end options) or "
-            "a FITS file (with the --file option)."
+            "a FITS file."
         )
 
-    # Date ranges and the --file option are mutually exclusive
-    if (start or end) and file:
+    # Date ranges are mutually exclusive
+    if start or end:
         raise click.UsageError(
-            "The --start/--end and --file options are mutually exclusive."
+            "The --start/--end  options are mutually exclusive."
         )
     # A date range requires a base directory
     if start and not fits_base_dir:
@@ -211,7 +208,6 @@ def populate_ssda(start: Optional[str],
     validate_options(
         start=start_date,
         end=end_date,
-        file=file,
         instruments=instruments_set,
         fits_base_dir=fits_base_dir
     )
