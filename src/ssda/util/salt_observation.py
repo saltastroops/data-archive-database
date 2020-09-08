@@ -55,7 +55,10 @@ class SALTObservation:
 
             for _path in reduced_paths:
                 if _path.name.endswith(path.name):
-                    _reduced_path = _path
+                    if not _reduced_path:
+                        _reduced_path = _path
+                    if len(_path.name) > len(_reduced_path.name):
+                        _reduced_path = _path
             return _reduced_path
 
         raw_path = self.fits_file.file_path()
