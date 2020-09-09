@@ -69,6 +69,9 @@ class SaltDatabaseService:
         self._cursor = self._connection.cursor()
         self._proposal_codes_existing: Dict[str, bool] = {}
 
+    def connection(self) -> connect:
+        return self._connection
+
     def find_block_visit_ids(
         self, night: date, include_fits_headers: bool = True
     ) -> Dict[str, FileDataItem]:
