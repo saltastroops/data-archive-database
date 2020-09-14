@@ -317,7 +317,7 @@ WHERE proposal_code=%(proposal_code)s AND name=%(institution)s
 
     def find_file_paths(self, nights: types.DateRange, ) -> List[str]:
         """
-        The observation file paths that have been observed in a date range. The start date and the end date are inclusive.
+        The file paths for the observations made in a date range. The start date and the end date are inclusive.
 
         Parameters
         ----------

@@ -74,7 +74,7 @@ def sync():
     "--fits", help="FITS file whose data to remove from the database.",
 )
 @click.option(
-    "--out", help="Output file for affected fits file.",
+    "--out", help="Output file for the list of commands to execute for removing all observations in a date range.",
 )
 def delete(fits: Optional[str], start: Optional[str], end: Optional[str], out: Optional[str]):
     """Delete file from database"""

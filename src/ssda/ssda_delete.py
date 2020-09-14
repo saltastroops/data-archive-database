@@ -2,10 +2,9 @@ import logging
 from datetime import date, datetime
 from typing import Optional
 import dsnparse
-import click
 
-from ssda.cli import parse_date
 from ssda.database.ssda import SSDADatabaseService
+from ssda.ssda_populate import parse_date
 from ssda.util import types
 from ssda.util.types import DateRange
 
@@ -21,13 +20,13 @@ def validate_options(
     end: Optional[date] = None,
 ):
     if not fits and not start and not end:
-        raise ValueError("You must provide either a file path or a date range.")
+        raise ValueError("You must provide either the FITS file path or a date range.")
     if fits and (start or end):
-        raise ValueError("You cannot provide provide both a file path and a date range.")
-    if out and (start or end):
-        raise ValueError("--out to log affected files needs to be provided for a date range.")
+        raise ValueError("You cannot provide provide both the FITS file path and a date range.")
+    if not out and (start or end):
+        raise ValueError("The --out option must be used with the --start and --end option.")
     if fits and out:
-        raise ValueError("--out will have no affect since you are deleting a single file.")
+        raise ValueError("The --fits and --out options cannot be used together.")
     if (start and not end) or (not start and end):
         raise ValueError(
             "You cannot provide a start_date without an end_date date, or an end_date date without a "
@@ -70,10 +69,14 @@ def delete_in_ssda(fits: Optional[str], start: Optional[str], end: Optional[str]
             observation_paths = ssda_database_service.find_file_paths(
                 nights=DateRange(parse_date(start, now), parse_date(end, now))
             )
-            with open(f"{out}", "w") as files_affected:
+            with open(f"{out}", "w") as f:
                 for obs_path in observation_paths:
-                    files_affected.write("ssda delete -fits " + obs_path + "\n")
-            logging.info(msg=f"The affected files can be found on the output file: {out}")
+                    f.write("ssda delete -fits " + obs_path + "\n")
+            logging.info(msg=f""
+                             f"The delete command does not support deleting files for a date range, as there might be "
+                             f"cases where this leads to unexpected results.Your chosen date range covers the following "
+                             f"file paths. Please check the list and call the delete command with the --file-path option"
+                             f" for every path you want to delete.")
     except BaseException as e:
         ssda_database_service.rollback_transaction()
         logging.error(msg="Failed to delete data.", exc_info=True)
