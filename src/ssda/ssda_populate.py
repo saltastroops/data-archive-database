@@ -156,15 +156,9 @@ def validate_options(
     # Either a date range or a FITS file must be specified
     if not (start and end):
         raise click.UsageError(
-            "You must either specify a date range (with the --start/--end options) or "
-            "a FITS file."
+            "You must specify a start and end date (with the --start/--end options)."
         )
 
-    # Date ranges are mutually exclusive
-    if start or end:
-        raise click.UsageError(
-            "The --start/--end  options are mutually exclusive."
-        )
     # A date range requires a base directory
     if start and not fits_base_dir:
         raise click.UsageError(
