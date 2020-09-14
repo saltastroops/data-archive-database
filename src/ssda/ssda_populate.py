@@ -143,27 +143,10 @@ def validate_options(
             "variable FITS_BASE_DIR)."
         )
 
-    # A start date requires an end date, and vice versa
-    if start and not end:
-        raise click.UsageError(
-            "You must also use the --end option if you use the --start option."
-        )
-    if end and not start:
-        raise click.UsageError(
-            "You must also use the --start option if you use the --end option."
-        )
-
     # Either a date range or a FITS file must be specified
     if not (start and end):
         raise click.UsageError(
-            "You must specify a start and end date (with the --start/--end options)."
-        )
-
-    # A date range requires a base directory
-    if start and not fits_base_dir:
-        raise click.UsageError(
-            "You must specify the base directory for the FITS files (with the"
-            "--fits-base-dir option) if you are using a date range."
+            "You must specify a date range (with the --start/--end options)."
         )
 
     # The start date must be earlier than the end date
