@@ -27,13 +27,13 @@ def create_reduced_path(raw_path: Path) -> Optional[Path]:
 
     reduced_paths = reduced_dir.glob("*.fits")
 
-    _reduced_path: Optional[Path] = None
+    reduced_path: Optional[Path] = None
 
     for _path in reduced_paths:
         if _path.name.endswith(raw_path.name):
-            if raw_path.name is None or len(_path.name) > len(_reduced_path.name):
-                _reduced_path = _path
-    return _reduced_path
+            if raw_path.name is None or len(_path.name) > len(reduced_path.name):
+                reduced_path = _path
+    return reduced_path
 
 
 class SALTObservation:
