@@ -2,8 +2,6 @@ import logging
 from datetime import date
 from typing import Optional
 import dsnparse
-import click
-
 from ssda.database.ssda import SSDADatabaseService
 from ssda.util import types
 
