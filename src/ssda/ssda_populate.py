@@ -107,7 +107,6 @@ def parse_date(value: str, now: Callable[[], datetime]) -> date:
 def validate_options(
         start: Optional[date],
         end: Optional[date],
-        instruments: Set[Instrument],
         fits_base_dir: Optional[str],
 ) -> None:
     """
@@ -125,8 +124,6 @@ def validate_options(
         Start date.
     end : datetime
         End date.
-    instruments : set of Instrument
-        Set of instruments.
     fits_base_dir: str
         The base directory to data files
     """
@@ -185,7 +182,6 @@ def populate_ssda(start: Optional[str],
     validate_options(
         start=start_date,
         end=end_date,
-        instruments=instruments_set,
         fits_base_dir=fits_base_dir
     )
 
