@@ -83,17 +83,23 @@ def dump_database(dump_file: Path):
         # Dump the database into a temporary file...
         command = [
             "pg_dump",
-            "--host",
-            database_config.host(),
             "--port",
             str(database_config.port()),
             "--dbname",
             database_config.database(),
-            "--username",
-            database_config.username(),
-            "--password"
         ]
-        completed_process = subprocess.run(command, input=database_config.password() + "\n", stderr=stderr, stdout=dump, text=True)
+        kwargs = dict(stderr=stderr, stdout=dump, text=True)
+        # Authentication is only required if connecting to a host other than localhost
+        if database_config.host() not in ['localhost', '127.0.0.1']:
+            command.extend([
+                "--host",
+                database_config.host(),
+                "--username",
+                database_config.username(),
+                "--password"
+            ])
+            kwargs['input'] = database_config.password() + "\n"
+        completed_process = subprocess.run(command, **kwargs)
 
         stderr.seek(0)
 
@@ -155,6 +161,7 @@ def populate_database():
 
     command = [
         'ssda',
+        'populate',
         '--task',
         'insert',
         '--mode',
@@ -175,7 +182,7 @@ def populate_database():
 
 
 def synchronise_database():
-    command = ['ssda_sync']
+    command = ['ssda', 'sync']
     completed_process = subprocess.run(command, capture_output=True, text=True)
 
     return CompletedSynchronisation(return_code=completed_process.returncode, stderr=completed_process.stderr, stdout=completed_process.stdout)
@@ -327,12 +334,20 @@ def main():
         completed_dump = dump_database(database_dump_file)
         message += database_dump_message(completed_dump)
         message += "\n"
-        completed_population = populate_database()
-        message += database_population_message(completed_population)
-        message += "\n"
-        completed_synchronisation = synchronise_database()
-        message += database_synchronisation_message(completed_synchronisation)
-        message = f"The daily SSDA update has completed.\n\n" + message
+        if not completed_dump.return_code:
+            completed_population = populate_database()
+            message += database_population_message(completed_population)
+            message += "\n"
+            completed_synchronisation = synchronise_database()
+            message += database_synchronisation_message(completed_synchronisation)
+            message += f"The daily SSDA update has completed.\n\n" + message
+        else:
+            message += f"""\
+======================================
+The daily SSDA update has been aborted
+as the database could not be dumped.
+======================================
+"""
     except Exception as e:
         failed = True
         message = f"""\
@@ -348,5 +363,6 @@ Other output
 
 """ + message
 
-    subject = ("FAILED: " if failed else "") + "Daily SSDA maintenance for "
+    today = datetime.now().strftime("%Y-%m-%d")
+    subject = ("FAILED: " if failed else "") + f"Daily SSDA maintenance for {today}"
     send_email_notification(subject, message)

@@ -1,4 +1,3 @@
-import click
 from datetime import date, datetime
 import logging
 from sentry_sdk import capture_exception
@@ -88,7 +87,8 @@ def update_salt_proposals(ssda_database_service: SSDADatabaseService, sdb_databa
             )
 
 
-def sanitize_gwe_proposal_release_dates(old_proposals: Dict[str, types.SALTProposalDetails], new_proposals: Dict[str, types.SALTProposalDetails]):
+def sanitize_gwe_proposal_release_dates(old_proposals: Dict[str, types.SALTProposalDetails],
+                                        new_proposals: Dict[str, types.SALTProposalDetails]):
     """
     Sanitize the metadata release dates of gravitational wave proposals.
 
@@ -99,7 +99,7 @@ def sanitize_gwe_proposal_release_dates(old_proposals: Dict[str, types.SALTPropo
     ----------
     old_proposals : Dict[str, types.SALTProposalDetails]
         Old proposal details.
-    new_proposals L Dict[str, types.SALTProposalDetails]
+    new_proposals : Dict[str, types.SALTProposalDetails]
         New proposal details.
 
     """
@@ -321,11 +321,11 @@ class SaltProposalSynchronisation:
             sql = """
             WITH plane_ids (id) AS (
                  SELECT pln.plane_id
-                 FROM plane pln
-                 JOIN observation obs ON pln.observation_id = obs.observation_id
+                 FROM observations.plane pln
+                 JOIN observations.observation obs ON pln.observation_id = obs.observation_id
                  WHERE obs.proposal_id='%(proposal_id)s'
             )
-            UPDATE position SET owner_institution_user_ids=%(owner_ids)s
+            UPDATE observations.position SET owner_institution_user_ids=%(owner_ids)s
             WHERE plane_id IN (SELECT * FROM plane_ids)
             """
 
@@ -420,7 +420,7 @@ class SaltProposalSynchronisation:
 
         sql = """
         SELECT array_agg(pi.institution_user_id)
-        FROM proposal_investigator pi
+        FROM admin.proposal_investigator pi
         WHERE proposal_id=%(proposal_id)s
         """
         with self.ssda_database_service.connection().cursor() as cur:
