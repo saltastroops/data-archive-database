@@ -68,14 +68,15 @@ def delete_in_ssda(fits: Optional[str], start: Optional[str], end: Optional[str]
             observation_paths = ssda_database_service.find_file_paths(
                 nights=DateRange(parse_date(start, now), parse_date(end, now))
             )
-            with open(f"{out}", "w") as f:
+            with open(out, "w") as f:
                 for obs_path in observation_paths:
                     f.write("ssda delete -fits " + obs_path + "\n")
             logging.info(msg=f""
-                             f"The delete command does not support deleting files for a date range, as there might be "
-                             f"cases where this leads to unexpected results.Your chosen date range covers the following "
-                             f"file paths. Please check the list and call the delete command with the --file-path option"
-                             f" for every path you want to delete.")
+                             f"The delete command does not support deleting files for "
+                             f"a date range, as there might be cases where this leads "
+                             f"to unexpected results. Please see the file {out} for "
+                             f"the list of commands to execute for removing all "
+                             f"observations in the date range.")
     except BaseException as e:
         ssda_database_service.rollback_transaction()
         logging.error(msg="Failed to delete data.", exc_info=True)
