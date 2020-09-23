@@ -1681,7 +1681,7 @@ class Status(Enum):
     REJECTED = "Rejected"
 
     @staticmethod
-    def for_value(value: str) -> TaskName:
+    def for_value(value: str) -> Status:
         """The status for a case-insensitive status value.
 
         Parameters
@@ -1761,70 +1761,6 @@ class Target:
     @property
     def target_type(self) -> str:
         return self._target_type
-
-
-class TaskName(Enum):
-    """
-    Enumeration of the task names.
-
-    """
-
-    DELETE = "delete"
-    INSERT = "insert"
-
-    @staticmethod
-    def for_name(name: str) -> TaskName:
-        """The task name for a case-insensitive name.
-
-        Parameters
-        ----------
-        name : str
-            Task name.
-
-        Returns
-        -------
-        TaskName :
-            Task name.
-
-        """
-
-        for task_name in TaskName:
-            if name.lower() == str(task_name.value).lower():
-                return task_name
-
-        raise ValueError(f"Unknown task name: {name}")
-
-
-class TaskExecutionMode(Enum):
-    """
-    Enumeration of the task execution modes.
-
-    """
-
-    DUMMY = "dummy"
-    PRODUCTION = "production"
-
-    @staticmethod
-    def for_mode(mode: str) -> TaskExecutionMode:
-        """The task execution mode for a case-insensitive mode.
-
-        Parameters
-        ----------
-        mode : str
-            Task execution mode.
-
-        Returns
-        -------
-        TaskExecutionMode
-            Task execution mode.
-
-        """
-
-        for task_mode in TaskExecutionMode:
-            if mode.lower() == str(task_mode.value).lower():
-                return task_mode
-
-        raise ValueError(f"Unknown task execution mode: {mode}")
 
 
 class Telescope(Enum):

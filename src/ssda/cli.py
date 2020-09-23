@@ -32,12 +32,6 @@ def main():
     help="Instrument to consider.",
 )
 @click.option(
-    "--mode",
-    type=click.Choice(["dummy", "production"], case_sensitive=False),
-    required=True,
-    help="Task execution mode.",
-)
-@click.option(
     "--skip-errors", is_flag=True, help="Do not terminate if there is an error"
 )
 @click.option("--start", type=str, help="Start date of the last night to consider.")
@@ -53,21 +47,15 @@ def main():
     type=click.Choice(["0", "1", "2", "3"]),
     help="Log more details.",
 )
-def populate(
-    task: str,
-    start: Optional[str],
-    end: Optional[str],
-    instruments: Tuple[str],
-    file: Optional[str],
-    fits_base_dir: Optional[str],
-    mode: str,
-    skip_errors: bool,
-    verbosity: Optional[str],
-):
+def populate(start: Optional[str],
+             end: Optional[str],
+             instruments: Tuple[str],
+             file: Optional[str],
+             fits_base_dir: Optional[str],
+             skip_errors: bool,
+             verbosity: Optional[str]):
     """Populate the database SSDA"""
-    populate_ssda(
-        task, start, end, instruments, file, fits_base_dir, mode, skip_errors, verbosity
-    )
+    populate_ssda(start, end, instruments, file, fits_base_dir, skip_errors, verbosity)
 
 
 @main.command()
