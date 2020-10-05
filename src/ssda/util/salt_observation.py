@@ -31,7 +31,7 @@ def create_reduced_path(raw_path: Path) -> Optional[Path]:
 
     for _path in reduced_paths:
         if _path.name.endswith(raw_path.name):
-            if raw_path.name is None or len(_path.name) > len(reduced_path.name):
+            if reduced_path is None or len(_path.name) > len(reduced_path.name):
                 reduced_path = _path
     return reduced_path
 
