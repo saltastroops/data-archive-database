@@ -4,6 +4,7 @@ from datetime import date
 from ssda.ssda_delete import delete_in_ssda
 from ssda.ssda_populate import populate_ssda
 from ssda.ssda_sync import sync_ssda
+from ssda.ssda_daily_update import daily_update
 
 
 @click.group()
@@ -67,6 +68,10 @@ def delete(fits: Optional[str], start: Optional[str], end: Optional[str], out: O
     """Delete file from database"""
     delete_in_ssda(fits=fits, start=start, end=end, out=out)
 
+
+@main.command()
+def daily():
+    daily_update()
 
 if __name__ == '__main__':
     main()
