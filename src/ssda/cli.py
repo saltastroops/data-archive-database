@@ -1,7 +1,6 @@
 from typing import Optional, Tuple
 import click
 from datetime import date
-from ssda.ssda_daily_update import daily_update
 from ssda.ssda_delete import delete_in_ssda
 from ssda.ssda_populate import populate_ssda
 from ssda.ssda_sync import sync_ssda
@@ -36,16 +35,7 @@ def main():
 )
 @click.option("--start", type=str, help="Start date of the last night to consider.")
 @click.option(
-    "--task",
-    type=click.Choice(["delete", "insert"]),
-    required=True,
-    help="Task to perform.",
-)
-@click.option(
-    "--verbosity",
-    required=False,
-    type=click.Choice(["0", "1", "2", "3"]),
-    help="Log more details.",
+    "--verbosity", required=False, type=click.Choice(["0", "1", "2", "3"]), help="Log more details."
 )
 def populate(start: Optional[str],
              end: Optional[str],
@@ -68,28 +58,15 @@ def sync():
 @click.option("--end", type=str, help="Start date of the last night to consider.")
 @click.option("--start", type=str, help="Start date of the last night to consider.")
 @click.option(
-    "--file",
-    type=click.Path(exists=True, file_okay=False, dir_okay=True),
-    help="FITS file to map to the database.",
+    "--fits", help="FITS file whose data to remove from the database.",
 )
-def delete(file: Optional[str], start: Optional[date], end: Optional[date]):
+@click.option(
+    "--out", help="Output file for the list of commands to execute for removing all observations in a date range.",
+)
+def delete(fits: Optional[str], start: Optional[str], end: Optional[str], out: Optional[str]):
     """Delete file from database"""
-    delete_in_ssda(file, start, end)
+    delete_in_ssda(fits=fits, start=start, end=end, out=out)
 
 
-@main.command()
-def daily():
-    """
-    Perform the daily database update.
-
-    This includes dumping the current database content, populating the database with
-    data (from 7 days ago, plus a few days before) and synchronising the database with
-    the SDB.
-
-    """
-
-    daily_update()
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

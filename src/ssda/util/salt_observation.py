@@ -20,6 +20,20 @@ class FileData:
     data: Dict[str, FileDataItem]
     night: Optional[date]
 
+# Creates a file path of the reduced calibration level mapping a raw calibration level.
+def create_reduced_path(raw_path: Path) -> Optional[Path]:
+    reduced_dir = Path.joinpath(raw_path.parent.parent, "product")
+
+    reduced_paths = reduced_dir.glob("*.fits")
+
+    reduced_path: Optional[Path] = None
+
+    for _path in reduced_paths:
+        if _path.name.endswith(raw_path.name):
+            if reduced_path is None or len(_path.name) > len(reduced_path.name):
+                reduced_path = _path
+    return reduced_path
+
 
 class SALTObservation:
     file_data = FileData({}, None)
@@ -47,19 +61,6 @@ class SALTObservation:
             return types.AccessRule.PUBLIC_DATA_OR_INSTITUTION_MEMBER
 
     def artifact(self, plane_id: int) -> types.Artifact:
-        # Creates a file path of the reduced calibration level mapping a raw calibration level.
-        def create_reduced_path(path: Path) -> Optional[Path]:
-            reduced_dir = Path.joinpath(path.parent.parent, "product")
-
-            reduced_paths = reduced_dir.glob("*.fits")
-
-            _reduced_path: Optional[Path] = None
-
-            for _path in reduced_paths:
-                if _path.name.endswith(path.name):
-                    _reduced_path = _path
-            return _reduced_path
-
         raw_path = self.fits_file.file_path()
         reduced_path = create_reduced_path(Path(raw_path))
 
