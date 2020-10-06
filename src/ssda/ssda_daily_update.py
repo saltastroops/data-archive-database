@@ -169,10 +169,6 @@ def populate_database():
     command = [
         "ssda",
         "populate",
-        "--task",
-        "insert",
-        "--mode",
-        "production",
         "--start",
         start_date.strftime("%Y-%m-%d"),
         "--end",
@@ -345,7 +341,7 @@ def daily_update():
     * MAIL_PORT: Port of the mail server for sending the summary email.
     * MAIL_SERVER: Address of the mail server.
     * MAIL_SUMMARY_ADDRESS: Email address to which the summary email should be sent.
-    * SDB_DSN: Data source name (DSN) for the DSALT Science Database.
+    * SDB_DSN: Data source name (DSN) for the SALT Science Database.
     * SSDA_DSN: Data source name (DSN) for the SAAO/SALT Data Archive database.
 
     In production you probably have to set the following environment variables as well.
