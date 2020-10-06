@@ -94,7 +94,9 @@ def insert(
                     )
 
                 # insert proposal access rule
-                ssda_database_service.insert_proposal_access_rule(proposal_id, observation_properties.access_rule())
+                ssda_database_service.insert_proposal_access_rule(
+                    proposal_id, observation_properties.access_rule()
+                )
         else:
             proposal_id = None
 
@@ -161,7 +163,7 @@ def insert(
         # insert energy
         try:
             energy = observation_properties.energy(plane_id)
-        except BaseException as e:
+        except BaseException:
             record_warning(Warning("The energy could not be calculated."))
             energy = None
         if energy:

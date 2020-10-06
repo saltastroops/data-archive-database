@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Iterator, List, Set, Optional
 from astropy.units import Quantity
 from astropy.io import fits
-from ssda.exceptions import IgnoreObservationError
 from ssda.util import types
 
 
@@ -212,11 +211,13 @@ def fits_file_paths(
     while night < nights.end:
         paths: List[Path] = []
         for instrument in instruments:
-            paths.extend(Path(fits_file_dir(night, instrument, base_dir)).glob("*.fits"))
+            paths.extend(
+                Path(fits_file_dir(night, instrument, base_dir)).glob("*.fits")
+            )
         # Different instruments, such as Salticam and BCAM, may have the same file
         # paths, hence we use set() to eliminate duplicate values.
         for path in sorted(set(paths)):
-            if 'tmp' in path.name:
+            if "tmp" in path.name:
                 continue
             yield str(path)
         night += timedelta(days=1)
@@ -271,11 +272,7 @@ class StandardFitsFile(FitsFile):
 
     def instrument(self) -> types.Instrument:
         header_value = self.header_value("INSTRUME")
-        instrument_value = (
-            header_value.upper()
-            if header_value
-            else None
-        )
+        instrument_value = header_value.upper() if header_value else None
         if instrument_value == "RSS":
             return types.Instrument.RSS
         elif instrument_value == "HRS":
@@ -321,9 +318,6 @@ class StandardFitsFile(FitsFile):
         return self.path
 
     def checksum(self) -> str:
-        letters = string.ascii_lowercase
-        result = "".join(random.choice(letters) for _ in range(20))
-
         # Open,close, read file and calculate MD5 on its contents
         with open(self.file_path(), "rb") as f:
             # read contents of the file

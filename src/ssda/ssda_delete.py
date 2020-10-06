@@ -8,7 +8,7 @@ from ssda.util import types
 from ssda.util.types import DateRange
 
 logging.basicConfig(
-    level=logging.INFO, format="%(levelname)s %(asctime)s: %(message)s",
+    level=logging.INFO, format="%(levelname)s %(asctime)s: %(message)s"
 )
 
 
@@ -59,6 +59,7 @@ def delete_in_ssda(fits: Optional[str], start: Optional[str], end: Optional[str]
             )
             ssda_database_service.commit_transaction()
             logging.info(msg=f"\nSuccessfully deleted observation for {fits}")
+            ssda_database_service.delete_observation(observation_id=observation_id)
         else:
             if start is None:
                 raise ValueError("The start date must not be None.")

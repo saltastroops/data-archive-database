@@ -1,5 +1,3 @@
-from abc import ABC
-
 from ssda.database.sdb import SaltDatabaseService
 from ssda.observation import ObservationProperties
 from ssda.util import types
@@ -7,8 +5,6 @@ from ssda.util.salt_energy_calculation import salt_imaging_camera_spectral_prope
 from ssda.util.salt_observation import SALTObservation
 from ssda.util.fits import FitsFile
 from typing import Optional, List
-
-from ssda.util.warnings import record_warning
 
 
 class SaltImagingCameraObservationProperties(ObservationProperties):
@@ -48,10 +44,14 @@ class SaltImagingCameraObservationProperties(ObservationProperties):
         queries: List[types.SQLQuery] = []
 
         detmode_header_value = self.header_value("DETMODE")
-        detector_mode = types.DetectorMode.for_name(detmode_header_value if detmode_header_value else "")
+        detector_mode = types.DetectorMode.for_name(
+            detmode_header_value if detmode_header_value else ""
+        )
 
         filter_header_value = self.header_value("FILTER")
-        filter = types.Filter.for_name(filter_header_value if filter_header_value else "")
+        filter = types.Filter.for_name(
+            filter_header_value if filter_header_value else ""
+        )
 
         return types.InstrumentSetup(
             additional_queries=queries,

@@ -13,7 +13,7 @@ def ssda_configuration() -> DatabaseConfiguration:
         host=ssda_db_config.host,
         port=ssda_db_config.port,
         database=ssda_db_config.database,
-)
+    )
 
 
 def sdb_configuration() -> DatabaseConfiguration:
@@ -33,6 +33,4 @@ def database_services() -> DatabaseServices:
     ssda_database_service = SSDADatabaseService(ssda_db_config)
     sdb_database_service = SaltDatabaseService(sdb_db_config)
 
-    return DatabaseServices(
-        ssda=ssda_database_service, sdb=sdb_database_service
-    )
+    return DatabaseServices(ssda=ssda_database_service, sdb=sdb_database_service)

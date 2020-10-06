@@ -1,9 +1,8 @@
-import logging
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Optional, List, cast
-from datetime import timedelta, date, datetime, timezone
+from typing import Dict, Optional, List
+from datetime import timedelta, date, datetime
 from astropy.coordinates import Angle
 
 import astropy.units as u
@@ -53,7 +52,10 @@ class SALTObservation:
             return None
 
         # Gravitational wave event proposals may be accessed by all SALT members
-        if self.database_service.sdb_proposal_type(proposal_code) != "Gravitational Wave Event":
+        if (
+            self.database_service.sdb_proposal_type(proposal_code)
+            != "Gravitational Wave Event"
+        ):
             return types.AccessRule.PUBLIC_DATA_OR_INVESTIGATOR
         else:
             return types.AccessRule.PUBLIC_DATA_OR_INSTITUTION_MEMBER
@@ -81,9 +83,7 @@ class SALTObservation:
 
     def _proposal_code(self) -> str:
         propid_header_value = self.header_value("PROPID")
-        propid = (
-            propid_header_value.upper() if propid_header_value else ""
-        )
+        propid = propid_header_value.upper() if propid_header_value else ""
 
         # Some FITS files have proposal codes which have been renamed in the database.
         existing = self.database_service.is_existing_proposal_code(propid)
@@ -135,9 +135,11 @@ class SALTObservation:
                 int(bvid_from_fits), night
             )
         ):
-            record_warning(Warning(
-                f"The block visit ids from the FITS header ({bvid_from_fits}) and the database ({bvid_from_db}) are different."
-            ))
+            record_warning(
+                Warning(
+                    f"The block visit ids from the FITS header ({bvid_from_fits}) and the database ({bvid_from_db}) are different."
+                )
+            )
 
         # Some block visit ids don't exist in the FITS header but can be inferred
         # from the database. Also, if the two differ, the database inferred one is the
@@ -366,27 +368,21 @@ class SALTObservation:
 
         header_values = {
             "CCDTYPE": self.header_value("CCDTYPE"),
-            'OBJECT': self.header_value("OBJECT"),
-            'OBSTYPE': self.header_value("OBSTYPE"),
-            'PROPID': self.header_value("PROPID")
+            "OBJECT": self.header_value("OBJECT"),
+            "OBSTYPE": self.header_value("OBSTYPE"),
+            "PROPID": self.header_value("PROPID"),
         }
-        raise ValueError(f"The product category could not be determined. (Observation type: {obs_type}, FITS header values: {header_values})")
+        raise ValueError(
+            f"The product category could not be determined. (Observation type: {obs_type}, FITS header values: {header_values})"
+        )
 
     def _product_type(self) -> types.ProductType:
         obsmode_header_value = self.header_value("OBSMODE")
-        obs_mode = (
-            obsmode_header_value.upper() if obsmode_header_value else ""
-        )
+        obs_mode = obsmode_header_value.upper() if obsmode_header_value else ""
         instrume_header_value = self.header_value("INSTRUME")
-        instrument = (
-            instrume_header_value.upper()
-            if instrume_header_value
-            else ""
-        )
+        instrument = instrume_header_value.upper() if instrume_header_value else ""
         propid_header_value = self.header_value("PROPID")
-        proposal_id = (
-            propid_header_value.upper() if propid_header_value else ""
-        )
+        proposal_id = propid_header_value.upper() if propid_header_value else ""
         product_category = self._product_category()
 
         if product_category == types.ProductCategory.ARC:
@@ -448,9 +444,11 @@ class SALTObservation:
         header_values = {
             "INSTRUME": instrume_header_value,
             "OBSMODE": obsmode_header_value,
-            "PROPID": propid_header_value
+            "PROPID": propid_header_value,
         }
-        raise ValueError(f"The product type could not be determined. (Product Category: {product_category}, observation mode: {obs_mode}, instrument: {instrument}, FITS header values: {header_values})")
+        raise ValueError(
+            f"The product type could not be determined. (Product Category: {product_category}, observation mode: {obs_mode}, instrument: {instrument}, FITS header values: {header_values})"
+        )
 
     def _intent(self) -> types.Intent:
         product_category = self._product_category()
@@ -460,7 +458,9 @@ class SALTObservation:
         elif product_category == types.ProductCategory.SCIENCE:
             return types.Intent.SCIENCE
 
-        raise ValueError(f"The intent could not be determined. (Product category: {product_category})")
+        raise ValueError(
+            f"The intent could not be determined. (Product category: {product_category})"
+        )
 
     def is_calibration(self):
         product_category = self._product_category()
@@ -480,11 +480,7 @@ class SALTObservation:
 
     def ignore_observation(self) -> bool:
         propid_header_value = self.fits_file.header_value("PROPID")
-        proposal_id = (
-            propid_header_value.upper()
-            if propid_header_value
-            else ""
-        )
+        proposal_id = propid_header_value.upper() if propid_header_value else ""
         # If the FITS file is Junk, Unknown, ENG or CAL_GAIN, do not store the observation.
         if proposal_id in ("JUNK", "UNKNOWN", "NONE", "ENG", "CAL_GAIN", "TEST"):
             return True
@@ -496,9 +492,7 @@ class SALTObservation:
             return True
 
         object_header_value = self.header_value("OBJECT")
-        observation_object = (
-            object_header_value.upper() if object_header_value else ""
-        )
+        observation_object = object_header_value.upper() if object_header_value else ""
         # Do not store commissioning data that pretends to be science.
         if "COM-" in proposal_id or "COM_" in proposal_id:
             if observation_object == "DUMMY":
@@ -517,16 +511,19 @@ class SALTObservation:
         try:
             # Checking whether the proposal code exists might result in an exception.
             # But in this case we should not ignore the file.
-            if not self.database_service.is_existing_proposal_code(
-                proposal_id
-            ) and not is_standard:
+            if (
+                not self.database_service.is_existing_proposal_code(proposal_id)
+                and not is_standard
+            ):
                 return True
         except:
             pass
 
         # Ignore "science" proposals without a proposal code and block visit id
         product_type = self._obs_type()
-        is_science = (product_type == "OBJECT" or product_type == "SCIENCE") and not is_standard
+        is_science = (
+            product_type == "OBJECT" or product_type == "SCIENCE"
+        ) and not is_standard
         if is_science and not self._block_visit_id():
             return True
 

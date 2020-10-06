@@ -31,13 +31,10 @@ def execute_task(
                 return
         except Exception as e:
             propid_header_value = fits_file.header_value("PROPID")
-            proposal_id = (
-                propid_header_value.upper()
-                if propid_header_value
-                else ""
-            )
+            proposal_id = propid_header_value.upper() if propid_header_value else ""
 
-            # If the FITS file is Junk, Unknown, ENG or CAL_GAIN, do not store the observation.
+            # If the FITS file is Junk, Unknown, ENG or CAL_GAIN, do not store the
+            # observation.
             if proposal_id in ("JUNK", "UNKNOWN", "NONE", "ENG", "CAL_GAIN"):
                 return
             # Do not store engineering data.

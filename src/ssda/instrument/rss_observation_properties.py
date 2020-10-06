@@ -7,8 +7,6 @@ from ssda.util.salt_observation import SALTObservation
 from ssda.util.fits import FitsFile
 from typing import Optional, List
 
-from ssda.util.warnings import record_warning
-
 
 class RssObservationProperties(ObservationProperties):
     def __init__(self, fits_file: FitsFile, salt_database_service: SaltDatabaseService):
@@ -54,7 +52,7 @@ class RssObservationProperties(ObservationProperties):
     def instrument_setup(self, observation_id: int) -> types.InstrumentSetup:
         sql = """
         WITH fpm (id) AS (
-            SELECT rss_fabry_perot_mode_id FROM observations.rss_fabry_perot_mode 
+            SELECT rss_fabry_perot_mode_id FROM observations.rss_fabry_perot_mode
             WHERE fabry_perot_mode=%(fabry_perot_mode)s
         ),
              rg (id) AS (
@@ -75,9 +73,13 @@ class RssObservationProperties(ObservationProperties):
             return normalized_name
 
         gr_state_header_value = self.header_value("GR-STATE")
-        grating_not_homed = gr_state_header_value and 'S1 -' not in gr_state_header_value
+        grating_not_homed = (
+            gr_state_header_value and "S1 -" not in gr_state_header_value
+        )
         camang_header_value = self.header_value("CAMANG")
-        camera_angle = float(camang_header_value) if camang_header_value is not None else None
+        camera_angle = (
+            float(camang_header_value) if camang_header_value is not None else None
+        )
 
         if grating_not_homed and camera_angle:
             grating_value = normalized_grating_name(self.header_value("GRATING"))
@@ -96,14 +98,16 @@ class RssObservationProperties(ObservationProperties):
         queries = [types.SQLQuery(sql=sql, parameters=parameters)]
 
         detmode_header_value = self.header_value("DETMODE")
-        detector_mode = types.DetectorMode.for_name(detmode_header_value if detmode_header_value else "")
+        detector_mode = types.DetectorMode.for_name(
+            detmode_header_value if detmode_header_value else ""
+        )
 
         filter_header_value = self.header_value("FILTER")
-        filter = types.Filter.for_name(filter_header_value if filter_header_value else "")
-
-        instrument_mode = rss_instrument_mode(
-                self.header_value, self.database_service
+        filter = types.Filter.for_name(
+            filter_header_value if filter_header_value else ""
         )
+
+        instrument_mode = rss_instrument_mode(self.header_value, self.database_service)
 
         return types.InstrumentSetup(
             additional_queries=queries,
@@ -130,9 +134,7 @@ class RssObservationProperties(ObservationProperties):
 
     def plane(self, observation_id: int) -> types.Plane:
         obsmode_header_value = self.header_value("OBSMODE")
-        observation_mode = (
-            obsmode_header_value.upper() if obsmode_header_value else ""
-        )
+        observation_mode = obsmode_header_value.upper() if obsmode_header_value else ""
         if observation_mode:
             data_product_type = (
                 types.DataProductType.IMAGE

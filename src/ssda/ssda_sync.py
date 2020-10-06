@@ -45,7 +45,10 @@ def sync_ssda() -> int:
     return 0
 
 
-def update_salt_proposals(ssda_database_service: SSDADatabaseService, sdb_database_service: SaltDatabaseService):
+def update_salt_proposals(
+    ssda_database_service: SSDADatabaseService,
+    sdb_database_service: SaltDatabaseService,
+):
     """
     Update the SALT proposals in the Data Archive.
 
@@ -67,14 +70,15 @@ def update_salt_proposals(ssda_database_service: SSDADatabaseService, sdb_databa
 
     sanitize_gwe_proposal_release_dates(ssda_proposals, sdb_proposals)
 
-    proposal_synchronisation = SaltProposalSynchronisation(ssda_database_service, sdb_database_service)
+    proposal_synchronisation = SaltProposalSynchronisation(
+        ssda_database_service, sdb_database_service
+    )
     for proposal_code, ssda_proposal in ssda_proposals.items():
         ssda_database_service.begin_transaction()
         try:
             sdb_proposal = sdb_proposals[proposal_code]
             proposal_synchronisation.update_proposal(
-                old_proposal=ssda_proposal,
-                new_proposal=sdb_proposal
+                old_proposal=ssda_proposal, new_proposal=sdb_proposal
             )
             ssda_database_service.commit_transaction()
         except BaseException as e:
@@ -106,8 +110,10 @@ def sanitize_gwe_proposal_release_dates(old_proposals: Dict[str, types.SALTPropo
 
     for proposal_code in new_proposals:
         if proposal_code in old_proposals:
-            if 'GWE' in proposal_code:
-                new_proposals[proposal_code].meta_release = old_proposals[proposal_code].meta_release
+            if "GWE" in proposal_code:
+                new_proposals[proposal_code].meta_release = old_proposals[
+                    proposal_code
+                ].meta_release
 
 
 class SaltProposalSynchronisation:
@@ -124,14 +130,18 @@ class SaltProposalSynchronisation:
 
     """
 
-    def __init__(self, ssda_database_service: SSDADatabaseService, sdb_database_service: SaltDatabaseService):
+    def __init__(
+        self,
+        ssda_database_service: SSDADatabaseService,
+        sdb_database_service: SaltDatabaseService,
+    ):
         self.ssda_database_service = ssda_database_service
         self.sdb_database_service = sdb_database_service
 
     def update_proposal(
         self,
         old_proposal: types.SALTProposalDetails,
-        new_proposal: types.SALTProposalDetails
+        new_proposal: types.SALTProposalDetails,
     ):
         """
         Update the details for a proposal.
@@ -153,7 +163,7 @@ class SaltProposalSynchronisation:
         self._update_observation_groups(old_proposal, new_proposal)
 
     def _update_proposal_pi(
-            self,
+        self,
         old_proposal: types.SALTProposalDetails,
         new_proposal: types.SALTProposalDetails,
     ) -> None:
@@ -175,13 +185,15 @@ class SaltProposalSynchronisation:
             proposal_id = self.ssda_database_service.find_proposal_id(
                 proposal_code=proposal_code, institution=types.Institution.SALT
             )
-            self.ssda_database_service.update_pi(proposal_id=proposal_id, pi=new_proposal.pi)
+            self.ssda_database_service.update_pi(
+                proposal_id=proposal_id, pi=new_proposal.pi
+            )
             info_log.info(
                 msg=f'The PI of {proposal_code} has been changed from "{old_proposal.pi}" to "{new_proposal.pi}".'
             )
 
     def _update_proposal_title(
-            self,
+        self,
         old_proposal: types.SALTProposalDetails,
         new_proposal: types.SALTProposalDetails,
     ):
@@ -211,7 +223,7 @@ class SaltProposalSynchronisation:
             )
 
     def _update_release_dates(
-            self,
+        self,
         old_proposal: types.SALTProposalDetails,
         new_proposal: types.SALTProposalDetails,
     ) -> None:
@@ -251,7 +263,7 @@ class SaltProposalSynchronisation:
             )
 
     def _update_proposal_investigators(
-            self,
+        self,
         old_proposal: types.SALTProposalDetails,
         new_proposal: types.SALTProposalDetails,
     ) -> None:
@@ -293,9 +305,9 @@ class SaltProposalSynchronisation:
             )
 
     def _update_position_owner_ids(
-            self,
-            old_proposal: types.SALTProposalDetails,
-            new_proposal: types.SALTProposalDetails
+        self,
+        old_proposal: types.SALTProposalDetails,
+        new_proposal: types.SALTProposalDetails,
     ) -> None:
         """
         Update the position owner ids.
@@ -308,11 +320,13 @@ class SaltProposalSynchronisation:
         """
 
         self.check_proposal_code_consistency(old_proposal, new_proposal)
-        proposal_code = old_proposal.proposal_code
 
-        if old_proposal.data_release != new_proposal.data_release or set(old_proposal.investigators) != set(new_proposal.investigators):
+        if old_proposal.data_release != new_proposal.data_release or set(
+            old_proposal.investigators
+        ) != set(new_proposal.investigators):
             proposal_id = self.ssda_database_service.find_proposal_id(
-                proposal_code=new_proposal.proposal_code, institution=types.Institution.SALT
+                proposal_code=new_proposal.proposal_code,
+                institution=types.Institution.SALT,
             )
             owner_ids = self.find_position_owner_ids(
                 proposal_id, new_proposal.data_release
@@ -336,7 +350,7 @@ class SaltProposalSynchronisation:
                 )
 
     def _update_observation_groups(
-            self,
+        self,
         old_proposal: types.SALTProposalDetails,
         new_proposal: types.SALTProposalDetails,
     ) -> None:
@@ -366,10 +380,13 @@ class SaltProposalSynchronisation:
             if group_identifier not in new_observation_groups:
                 continue
             new_observation_group = new_observation_groups[group_identifier]
-            self.update_observation_group(old_observation_group,
-                                          new_observation_group)
+            self.update_observation_group(old_observation_group, new_observation_group)
 
-    def update_observation_group(self, old_observation_group: types.SALTObservationGroup, new_observation_group: types.SALTObservationGroup):
+    def update_observation_group(
+        self,
+        old_observation_group: types.SALTObservationGroup,
+        new_observation_group: types.SALTObservationGroup,
+    ):
         """
         Update the details of an observation group.
 
@@ -382,9 +399,15 @@ class SaltProposalSynchronisation:
 
         """
 
-        if old_observation_group.group_identifier is None or old_observation_group.group_identifier != new_observation_group.group_identifier:
-            raise ValueError("The old and new observation group must have the same "
-                             "group identifier, which must not be None.")
+        if (
+            old_observation_group.group_identifier is None
+            or old_observation_group.group_identifier
+            != new_observation_group.group_identifier
+        ):
+            raise ValueError(
+                "The old and new observation group must have the same "
+                "group identifier, which must not be None."
+            )
         group_identifier = old_observation_group.group_identifier
 
         if new_observation_group != old_observation_group:
@@ -395,12 +418,11 @@ class SaltProposalSynchronisation:
             )
             info_log.info(
                 msg=f"The status of the observation group with group identifier {group_identifier} has been updated from "
-                    f"{old_observation_group.status.value} to {new_observation_group.status.value}."
+                f"{old_observation_group.status.value} to {new_observation_group.status.value}."
             )
 
     def find_position_owner_ids(
-            self,
-        proposal_id: int, data_release: date
+        self, proposal_id: int, data_release: date
     ) -> Optional[List[int]]:
         """
         Find the position owner ids.
@@ -429,7 +451,7 @@ class SaltProposalSynchronisation:
 
     @staticmethod
     def check_proposal_code_consistency(
-            proposal1: types.SALTProposalDetails, proposal2: types.SALTProposalDetails
+        proposal1: types.SALTProposalDetails, proposal2: types.SALTProposalDetails
     ):
         """
         Check whether two proposals have the same non-null proposal code, and raise an
