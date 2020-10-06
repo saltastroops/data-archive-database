@@ -15,7 +15,7 @@ from faker import Faker
 
 from ssda.observation import ObservationProperties
 from ssda.util import types
-from ssda.util.fits import FitsFile, get_fits_base_dir
+from ssda.util.fits import FitsFile
 from ssda.util.types import ProposalType
 
 
@@ -90,7 +90,7 @@ class DummyObservationProperties(ObservationProperties):
         night = running_number[:8]
         try:
             file_in_night = int(running_number[8:])
-        except BaseException as e:
+        except BaseException:
             # some files don't follow the usual naming convention
             file_in_night = 1000  # arbitrary value
 
@@ -153,7 +153,9 @@ class DummyObservationProperties(ObservationProperties):
             content_length=self._fits_file.size(),
             identifier=uuid.uuid4(),
             name=os.path.basename(self._fits_file.file_path()),
-            paths=types.CalibrationLevelPaths(pathlib.Path("raw_path"), pathlib.Path("reduced_path")),
+            paths=types.CalibrationLevelPaths(
+                pathlib.Path("raw_path"), pathlib.Path("reduced_path")
+            ),
             plane_id=plane_id,
             product_type=product_type(),
         )

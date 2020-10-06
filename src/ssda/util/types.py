@@ -1,11 +1,11 @@
 from __future__ import annotations
 import os
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple
+from typing import Any, Dict, List, NamedTuple, Optional, Set
 
 import astropy.units as u
 from astropy.units import def_unit, Quantity
@@ -403,7 +403,8 @@ class DetectorMode(Enum):
 
         for detector_mode in DetectorMode:
             if (
-                name and name.replace(" ", "").lower()
+                name
+                and name.replace(" ", "").lower()
                 == str(detector_mode.value).replace(" ", "").lower()
             ):
                 return detector_mode
@@ -642,12 +643,14 @@ class Filter(Enum):
             "SBn-S1": "Stroemgren b",
             "SDSSI": "SDSS i'",
             "SDSSU": "SDSS u'",
-            "EMPTY": "OPEN"
+            "EMPTY": "OPEN",
         }
 
         for old_value, new_value in replacements.items():
             if name.lower() == old_value.lower():
-                record_warning(Warning(f"Filter name: {name} is assumed to be {new_value}"))
+                record_warning(
+                    Warning(f"Filter name: {name} is assumed to be {new_value}")
+                )
                 name = new_value
 
         for filter in Filter:
@@ -679,14 +682,16 @@ class Filter(Enum):
             Filter.SRE_1: ["SR613-21", "SRE 1", "SR613-21"],
             Filter.SRE_2: ["SR708-25", "SRE 2", "SR708-25"],
             Filter.SRE_3: ["SR815-29", "SRE 3", "SR815-29"],
-            Filter.SRE_4: ["SR862-32", "SRE 4", "SR862-32"]
+            Filter.SRE_4: ["SR862-32", "SRE 4", "SR862-32"],
         }
 
         for key in aliases:
             for alias in aliases[key]:
                 if name.lower() == alias.lower():
                     if name.lower() == "sbn-s1":
-                        record_warning(Warning(f"Filter name: {name} is assumed to be {key.value}"))
+                        record_warning(
+                            Warning(f"Filter name: {name} is assumed to be {key.value}")
+                        )
                     return key
 
         raise ValueError(f"Unknown filter name: {name}")
@@ -744,7 +749,10 @@ class InstitutionMembership:
     membership_start: date
 
     def __lt__(self, other: InstitutionMembership):
-        return (self.membership_start, self.membership_end) < (other.membership_start, other.membership_end)
+        return (self.membership_start, self.membership_end) < (
+            other.membership_start,
+            other.membership_end,
+        )
 
 
 class Instrument(Enum):
@@ -1305,9 +1313,7 @@ class Position:
 
     """
 
-    def __init__(
-        self, dec: Quantity, equinox: float, plane_id: int, ra: Quantity,
-    ):
+    def __init__(self, dec: Quantity, equinox: float, plane_id: int, ra: Quantity):
         try:
             dec.to(u.degree)
         except u.UnitConversionError:
@@ -1622,21 +1628,23 @@ class SALTObservationGroup:
         self.group_identifier = group_identifier
 
     def __eq__(self, other):
-        return self.__class__ == other.__class__ and \
-               self.status.value == other.status.value and \
-               self.group_identifier == other.group_identifier
+        return (
+            self.__class__ == other.__class__
+            and self.status.value == other.status.value
+            and self.group_identifier == other.group_identifier
+        )
 
 
 class SALTProposalDetails:
     def __init__(
-            self,
-            proposal_code: str,
-            institution: Institution,
-            meta_release: date,
-            data_release: date,
-            pi: str,
-            title: str,
-            investigators: List[str]
+        self,
+        proposal_code: str,
+        institution: Institution,
+        meta_release: date,
+        data_release: date,
+        pi: str,
+        title: str,
+        investigators: List[str],
     ):
         self.proposal_code = proposal_code
         self.institution = institution
@@ -1647,13 +1655,15 @@ class SALTProposalDetails:
         self.investigators = investigators
 
     def __eq__(self, other):
-        return self.__class__ == other.__class__ and \
-               self.proposal_code == other.proposal_code and \
-               self.institution == other.institution and \
-               self.meta_release == other.meta_release and \
-               self.data_release == other.data_release and \
-               self.pi == other.pi and \
-               self.investigators.sort() == other.investigators.sort()
+        return (
+            self.__class__ == other.__class__
+            and self.proposal_code == other.proposal_code
+            and self.institution == other.institution
+            and self.meta_release == other.meta_release
+            and self.data_release == other.data_release
+            and self.pi == other.pi
+            and self.investigators.sort() == other.investigators.sort()
+        )
 
 
 class Status(Enum):
@@ -1671,7 +1681,7 @@ class Status(Enum):
     REJECTED = "Rejected"
 
     @staticmethod
-    def for_value(value: str) -> TaskName:
+    def for_value(value: str) -> Status:
         """The status for a case-insensitive status value.
 
         Parameters
@@ -1751,70 +1761,6 @@ class Target:
     @property
     def target_type(self) -> str:
         return self._target_type
-
-
-class TaskName(Enum):
-    """
-    Enumeration of the task names.
-
-    """
-
-    DELETE = "delete"
-    INSERT = "insert"
-
-    @staticmethod
-    def for_name(name: str) -> TaskName:
-        """The task name for a case-insensitive name.
-
-        Parameters
-        ----------
-        name : str
-            Task name.
-
-        Returns
-        -------
-        TaskName :
-            Task name.
-
-        """
-
-        for task_name in TaskName:
-            if name.lower() == str(task_name.value).lower():
-                return task_name
-
-        raise ValueError(f"Unknown task name: {name}")
-
-
-class TaskExecutionMode(Enum):
-    """
-    Enumeration of the task execution modes.
-
-    """
-
-    DUMMY = "dummy"
-    PRODUCTION = "production"
-
-    @staticmethod
-    def for_mode(mode: str) -> TaskExecutionMode:
-        """The task execution mode for a case-insensitive mode.
-
-        Parameters
-        ----------
-        mode : str
-            Task execution mode.
-
-        Returns
-        -------
-        TaskExecutionMode
-            Task execution mode.
-
-        """
-
-        for task_mode in TaskExecutionMode:
-            if mode.lower() == str(task_mode.value).lower():
-                return task_mode
-
-        raise ValueError(f"Unknown task execution mode: {mode}")
 
 
 class Telescope(Enum):

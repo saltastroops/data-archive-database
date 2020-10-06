@@ -26,7 +26,7 @@ def delete(
     # find the observation
     # -1 is passed as plane id to the artifact method as the id is irrelevant
     observation_id = database_service.find_observation_id(
-        observation_properties.artifact(-1).name
+        str(observation_properties.artifact(-1).paths.raw)
     )
 
     # only delete the observation if there actually is one
@@ -94,7 +94,9 @@ def insert(
                     )
 
                 # insert proposal access rule
-                ssda_database_service.insert_proposal_access_rule(proposal_id, observation_properties.access_rule())
+                ssda_database_service.insert_proposal_access_rule(
+                    proposal_id, observation_properties.access_rule()
+                )
         else:
             proposal_id = None
 
@@ -115,7 +117,7 @@ def insert(
 
         # insert observation (if need be)
         # -1 is passed as plane id to the artifact method as the id is irrelevant
-        artifact_name = observation_properties.artifact(-1).name
+        artifact_name = str(observation_properties.artifact(-1).paths.raw)
         observation_id = ssda_database_service.find_observation_id(artifact_name)
         if observation_id is None:
             observation = observation_properties.observation(
@@ -161,7 +163,7 @@ def insert(
         # insert energy
         try:
             energy = observation_properties.energy(plane_id)
-        except BaseException as e:
+        except BaseException:
             record_warning(Warning("The energy could not be calculated."))
             energy = None
         if energy:

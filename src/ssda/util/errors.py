@@ -1,4 +1,3 @@
-import os
 from dataclasses import dataclass
 from typing import Optional
 from ssda.util.fits import StandardFitsFile

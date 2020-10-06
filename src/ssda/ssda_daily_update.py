@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import io
 import os
 from pathlib import Path
 import re
@@ -32,10 +31,10 @@ class CompletedPopulation:
 
     def __init__(self, completed_process: subprocess.CompletedProcess):
         stderr = completed_process.stderr
-        properties = ['daytime errors', 'nighttime errors', 'warnings']
+        properties = ["daytime errors", "nighttime errors", "warnings"]
         metadata = {}
         for p in properties:
-            m = re.findall(r'Total number of ' + p + r':\s*(\d+)', stderr)
+            m = re.findall(r"Total number of " + p + r":\s*(\d+)", stderr)
             if len(m) == 0:
                 message = f"""\
 The error output does not include the number of {p}.
@@ -47,12 +46,12 @@ The error output is:
                 raise ValueError(message)
             metadata[p] = int(m[0])
 
-        self.daytime_errors=metadata["daytime errors"]
-        self.nighttime_errors=metadata['nighttime errors']
-        self.return_code=completed_process.returncode
-        self.stderr=stderr
-        self.stdout=completed_process.stdout
-        self.warnings=metadata['warnings']
+        self.daytime_errors = metadata["daytime errors"]
+        self.nighttime_errors = metadata["nighttime errors"]
+        self.return_code = completed_process.returncode
+        self.stderr = stderr
+        self.stdout = completed_process.stdout
+        self.warnings = metadata["warnings"]
 
 
 @dataclass(frozen=True)
@@ -79,7 +78,9 @@ def dump_database(dump_file: Path):
 
     database_config = ssda_configuration()
 
-    with tempfile.TemporaryFile(mode="w+t") as dump, tempfile.TemporaryFile(mode="w+t") as stderr:
+    with tempfile.TemporaryFile(mode="w+t") as dump, tempfile.TemporaryFile(
+        mode="w+t"
+    ) as stderr:
         # Dump the database into a temporary file...
         command = [
             "pg_dump",
@@ -90,28 +91,32 @@ def dump_database(dump_file: Path):
         ]
         kwargs = dict(stderr=stderr, stdout=dump, text=True)
         # Authentication is only required if connecting to a host other than localhost
-        if database_config.host() not in ['localhost', '127.0.0.1']:
-            command.extend([
-                "--host",
-                database_config.host(),
-                "--username",
-                database_config.username(),
-                "--password"
-            ])
-            kwargs['input'] = database_config.password() + "\n"
+        if database_config.host() not in ["localhost", "127.0.0.1"]:
+            command.extend(
+                [
+                    "--host",
+                    database_config.host(),
+                    "--username",
+                    database_config.username(),
+                    "--password",
+                ]
+            )
+            kwargs["input"] = database_config.password() + "\n"
         completed_process = subprocess.run(command, **kwargs)
 
         stderr.seek(0)
 
-        completed_dump = CompletedDump(return_code=completed_process.returncode, stderr=stderr.read())
+        completed_dump = CompletedDump(
+            return_code=completed_process.returncode, stderr=stderr.read()
+        )
 
         if completed_process.returncode:
             # The database could not be dumped, so we better stop.
             return completed_dump
 
-    # ... and copy the temporary file to the database dump file.
+        # ... and copy the temporary file to the database dump file.
         dump.seek(0)
-        with open(dump_file, 'w') as f:
+        with open(dump_file, "w") as f:
             for line in dump:
                 f.write(line)
 
@@ -148,7 +153,9 @@ def backup(path: Path, num_backups: int = 10):
         return
 
     for i in range(num_backups - 1, -1, -1):
-        source = (path.parent / path.name).with_suffix(path.suffix + (f".{i}" if i != 0 else ""))
+        source = (path.parent / path.name).with_suffix(
+            path.suffix + (f".{i}" if i != 0 else "")
+        )
         target = (path.parent / path.name).with_suffix(path.suffix + f".{i + 1}")
         if source.exists():
             shutil.copy(str(source), str(target))
@@ -160,21 +167,21 @@ def populate_database():
     end_date = datetime.now().date() - timedelta(days=7)
 
     command = [
-        'ssda',
-        'populate',
-        '--task',
-        'insert',
-        '--mode',
-        'production',
-        '--start',
+        "ssda",
+        "populate",
+        "--task",
+        "insert",
+        "--mode",
+        "production",
+        "--start",
         start_date.strftime("%Y-%m-%d"),
-        '--end',
+        "--end",
         end_date.strftime("%Y-%m-%d"),
-        '--fits-base-dir',
-        os.environ['FITS_BASE_DIR'],
-        '--verbosity',
-        '2',
-        '--skip-errors'
+        "--fits-base-dir",
+        os.environ["FITS_BASE_DIR"],
+        "--verbosity",
+        "2",
+        "--skip-errors",
     ]
     completed_process = subprocess.run(command, capture_output=True, text=True)
 
@@ -182,10 +189,14 @@ def populate_database():
 
 
 def synchronise_database():
-    command = ['ssda', 'sync']
+    command = ["ssda", "sync"]
     completed_process = subprocess.run(command, capture_output=True, text=True)
 
-    return CompletedSynchronisation(return_code=completed_process.returncode, stderr=completed_process.stderr, stdout=completed_process.stdout)
+    return CompletedSynchronisation(
+        return_code=completed_process.returncode,
+        stderr=completed_process.stderr,
+        stdout=completed_process.stdout,
+    )
 
 
 def send_email_notification(subject: str, body: str):
@@ -205,14 +216,18 @@ def send_email_notification(subject: str, body: str):
     """
 
     message = MIMEMultipart()
-    message['From'] = 'SSDA Daily Maintenance <no-reply@ssda.saao.c.za>'
-    message['To'] = f"SSDA Daily Maintenance <{os.environ['MAIL_SUMMARY_ADDRESS']}>"
-    message['Subject'] = subject
+    message["From"] = "SSDA Daily Maintenance <no-reply@ssda.saao.c.za>"
+    message["To"] = f"SSDA Daily Maintenance <{os.environ['MAIL_SUMMARY_ADDRESS']}>"
+    message["Subject"] = subject
 
     part = MIMEText(body, "plain")
     message.attach(part)
 
-    sendmail(from_addr='no-reply@ssda.saao.c.za', to_addr=os.environ['MAIL_SUMMARY_ADDRESS'], message=message.as_string())
+    sendmail(
+        from_addr="no-reply@ssda.saao.c.za",
+        to_addr=os.environ["MAIL_SUMMARY_ADDRESS"],
+        message=message.as_string(),
+    )
 
 
 def check_environment_variables():
@@ -221,8 +236,16 @@ def check_environment_variables():
 
     """
 
-    required_variables = ['DATABASE_DUMP_FILE', 'FITS_BASE_DIR', 'MAIL_PORT', 'MAIL_SERVER', 'MAIL_SUMMARY_ADDRESS', 'SDB_DSN', 'SSDA_DSN',]
-    optional_variables = ['MAIL_PASSWORD', 'MAIL_USERNAME']
+    required_variables = [
+        "DATABASE_DUMP_FILE",
+        "FITS_BASE_DIR",
+        "MAIL_PORT",
+        "MAIL_SERVER",
+        "MAIL_SUMMARY_ADDRESS",
+        "SDB_DSN",
+        "SSDA_DSN",
+    ]
+    optional_variables = ["MAIL_PASSWORD", "MAIL_USERNAME"]
     missing_required_variables = []
     missing_optional_variables = []
     for variable in required_variables:
@@ -233,12 +256,18 @@ def check_environment_variables():
             missing_optional_variables.append(variable)
 
     if len(missing_optional_variables):
-        click.echo(click.style(f"You may have to define the following environment "
-                               f"variable(s): {', '.join(missing_optional_variables)}.",
-                               fg="yellow"))
+        click.echo(
+            click.style(
+                f"You may have to define the following environment "
+                f"variable(s): {', '.join(missing_optional_variables)}.",
+                fg="yellow",
+            )
+        )
     if len(missing_required_variables):
-        raise ValueError(f"The following environment variable(s) need(s) to be "
-                         f"defined: {', '.join(missing_required_variables)}.")
+        raise ValueError(
+            f"The following environment variable(s) need(s) to be "
+            f"defined: {', '.join(missing_required_variables)}."
+        )
 
 
 def database_dump_message(completed_dump: CompletedDump) -> str:
@@ -278,7 +307,9 @@ Output to stderr
 """
 
 
-def database_synchronisation_message(completed_synchronisation: CompletedSynchronisation) -> str:
+def database_synchronisation_message(
+    completed_synchronisation: CompletedSynchronisation
+) -> str:
     return f"""\
 ========================
 Database synchronisation
@@ -296,8 +327,7 @@ Output to stderr
 """
 
 
-@click.command()
-def main():
+def daily_update():
     """
     Perform daily maintenance work for the SAAO/SALT Data Archive.
 
@@ -329,7 +359,7 @@ def main():
     failed = False
     try:
         check_environment_variables()
-        database_dump_file = Path(os.environ['DATABASE_DUMP_FILE'])
+        database_dump_file = Path(os.environ["DATABASE_DUMP_FILE"])
         backup(database_dump_file)
         completed_dump = dump_database(database_dump_file)
         message += database_dump_message(completed_dump)
@@ -350,7 +380,8 @@ as the database could not be dumped.
 """
     except Exception as e:
         failed = True
-        message = f"""\
+        message = (
+            f"""\
 ==========================================
 The daily SSDA update failed with an error
 ==========================================
@@ -361,7 +392,9 @@ The daily SSDA update failed with an error
 Other output
 ============
 
-""" + message
+"""
+            + message
+        )
 
     today = datetime.now().strftime("%Y-%m-%d")
     subject = ("FAILED: " if failed else "") + f"Daily SSDA maintenance for {today}"

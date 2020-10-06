@@ -10,12 +10,14 @@ import sentry_sdk
 
 from ssda.database.sdb import SaltDatabaseService
 from ssda.database.ssda import SSDADatabaseService
-from ssda.database.services import DatabaseServices
-from ssda.task import execute_task
 from ssda.util import types
 from ssda.util.errors import get_salt_data_to_log
 from ssda.util.fits import fits_file_paths, set_fits_base_dir, get_night_date
-from ssda.util.types import Instrument, DateRange, TaskName, TaskExecutionMode
+from ssda.util.types import Instrument, DateRange
+from ssda.database.services import DatabaseServices
+from ssda.repository import insert
+from ssda.observation_properties import observation_properties
+from ssda.util.fits import StandardFitsFile
 
 # Log with Sentry
 from ssda.util.warnings import clear_warnings, get_warnings
@@ -29,6 +31,48 @@ logging.basicConfig(
 
 if os.environ.get("SENTRY_DSN"):
     sentry_sdk.init(os.environ.get("SENTRY_DSN"))  # type: ignore
+
+
+def execute_database_insert(
+        fits_path: str,
+        database_services: DatabaseServices,
+) -> None:
+    # If the FITS file already exists in the database, do nothing.
+    if database_services.ssda.file_exists(fits_path):
+        return
+
+    # Get the observation properties.
+    fits_file = StandardFitsFile(fits_path)
+    try:
+        _observation_properties = observation_properties(
+            fits_file, database_services
+        )
+
+        # Check if the FITS file is to be ignored
+        if _observation_properties.ignore_observation():
+            clear_warnings()
+            return
+    except Exception as e:
+        propid_header_value = fits_file.header_value("PROPID")
+        proposal_id = (
+            propid_header_value.upper()
+            if propid_header_value
+            else ""
+        )
+
+        # If the FITS file is Junk, Unknown, ENG or CAL_GAIN, do not store the observation.
+        if proposal_id in ("JUNK", "UNKNOWN", "NONE", "ENG", "CAL_GAIN"):
+            return
+        # Do not store engineering data.
+        if "ENG_" in proposal_id or "ENG-" in proposal_id:
+            return
+        raise e
+
+    # Execute the database insert
+    insert(
+        observation_properties=_observation_properties,
+        ssda_database_service=database_services.ssda,
+    )
 
 
 def parse_date(value: str, now: Callable[[], datetime]) -> date:
@@ -61,12 +105,9 @@ def parse_date(value: str, now: Callable[[], datetime]) -> date:
 
 
 def validate_options(
-    start: Optional[date],
-    end: Optional[date],
-    file: Optional[str],
-    instruments: Set[Instrument],
-    fits_base_dir: Optional[str],
-    task_name: Optional[TaskName],
+        start: Optional[date],
+        end: Optional[date],
+        fits_base_dir: Optional[str],
 ) -> None:
     """
     Validate the command line options.
@@ -83,15 +124,8 @@ def validate_options(
         Start date.
     end : datetime
         End date.
-    file : str
-        FITS file (path).
-    instruments : set of Instrument
-        Set of instruments.
     fits_base_dir: str
         The base directory to data files
-    task_name: TaskName
-        The task to be run
-
     """
 
     if start and start < date(2011, 9, 1):
@@ -106,37 +140,10 @@ def validate_options(
             "variable FITS_BASE_DIR)."
         )
 
-    # Can not run insert for a single file
-    if task_name == TaskName.INSERT and file:
-        raise click.UsageError("You cannot use the --file option with the insert task.")
-
-    # A start date requires an end date, and vice versa
-    if start and not end:
-        raise click.UsageError(
-            "You must also use the --end option if you use the --start option."
-        )
-    if end and not start:
-        raise click.UsageError(
-            "You must also use the --start option if you use the --end option."
-        )
-
     # Either a date range or a FITS file must be specified
-    if not (start and end) and not file:
+    if not (start and end):
         raise click.UsageError(
-            "You must either specify a date range (with the --start/--end options) or "
-            "a FITS file (with the --file option)."
-        )
-
-    # Date ranges and the --file option are mutually exclusive
-    if (start or end) and file:
-        raise click.UsageError(
-            "The --start/--end and --file options are mutually exclusive."
-        )
-    # A date range requires a base directory
-    if start and not fits_base_dir:
-        raise click.UsageError(
-            "You must specify the base directory for the FITS files (with the"
-            "--fits-base-dir option) if you are using a date range."
+            "You must specify a date range (with the --start/--end options)."
         )
 
     # The start date must be earlier than the end date
@@ -144,17 +151,14 @@ def validate_options(
         raise click.UsageError("The start date must be earlier than the end date.")
 
 
-def populate_ssda(
-    task: str,
-    start: Optional[str],
-    end: Optional[str],
-    instruments: Tuple[str],
-    file: Optional[str],
-    fits_base_dir: Optional[str],
-    mode: str,
-    skip_errors: bool,
-    verbosity: Optional[str],
-) -> int:
+def populate_ssda(start: Optional[str],
+                  end: Optional[str],
+                  instruments: Tuple[str],
+                  file: Optional[str],
+                  fits_base_dir: Optional[str],
+                  skip_errors: bool,
+                  verbosity: Optional[str],
+                  ) -> int:
     logging.basicConfig(level=logging.INFO)
     logging.error("SALT is always assumed to be the telescope.")
 
@@ -175,15 +179,10 @@ def populate_ssda(
         )
     else:
         instruments_set = set(instrument for instrument in Instrument)
-    task_name = TaskName.for_name(task)
-    task_mode = TaskExecutionMode.for_mode(mode)
     validate_options(
         start=start_date,
         end=end_date,
-        file=file,
-        instruments=instruments_set,
-        fits_base_dir=fits_base_dir,
-        task_name=task_name,
+        fits_base_dir=fits_base_dir
     )
 
     # Off we go!
@@ -251,10 +250,8 @@ def populate_ssda(
                 night_date = get_night_date(path)
                 click.echo(f"Mapping files for {get_night_date(path)}")
             clear_warnings()
-            execute_task(
-                task_name=task_name,
+            execute_database_insert(
                 fits_path=path,
-                task_mode=task_mode,
                 database_services=database_services,
             )
             if get_warnings():
@@ -397,7 +394,7 @@ def handle_exception(
 -------------
 """
         msg += f"""{error_msg}
-    
+
 FITS file details
 ------------------
 File path: {data_to_log.path}

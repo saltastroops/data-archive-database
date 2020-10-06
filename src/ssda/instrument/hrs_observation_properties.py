@@ -54,7 +54,8 @@ class HrsObservationProperties(ObservationProperties):
 
         sql = """
         WITH hm (id) AS (
-            SELECT hrs_mode_id FROM observations.hrs_mode WHERE hrs_mode.hrs_mode=%(hrs_mode)s
+            SELECT hrs_mode_id FROM observations.hrs_mode
+                   WHERE hrs_mode.hrs_mode=%(hrs_mode)s
         )
         INSERT INTO observations.hrs_setup (instrument_setup_id, hrs_mode_id)
         VALUES (%(instrument_setup_id)s, (SELECT id FROM hm))
@@ -63,7 +64,9 @@ class HrsObservationProperties(ObservationProperties):
         queries = [types.SQLQuery(sql=sql, parameters=parameters)]
 
         detmode_header_value = self.header_value("DETMODE")
-        detector_mode = types.DetectorMode.for_name(detmode_header_value if detmode_header_value else "")
+        detector_mode = types.DetectorMode.for_name(
+            detmode_header_value if detmode_header_value else ""
+        )
 
         return types.InstrumentSetup(
             additional_queries=queries,
