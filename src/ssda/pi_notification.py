@@ -12,6 +12,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import date
 import click
+from emailedbefore import SentEmails
 
 
 @dataclass
@@ -315,16 +316,14 @@ def sending_email(receiver, pi_name, plain_table, styled_table):
         return "Email has been sent"
 
 
-def log_to_file(email_receiver, pi_proposal, release_date):
-    with open("logging.txt", 'a') as log_file:
-        file_information = email_receiver + " " + pi_proposal + " " + release_date
-        log_file.write("%s\n" % file_information)
+def log_to_database(email_receiver, pi_proposal):
+    date_today = datetime.datetime.now()
+    sent_emails = SentEmails("db.sqlite3")
+    sent_emails.register(email_receiver, pi_proposal, date_today)
 
 
-def read_log_file():
-    with open("logging.txt", "r") as file_content:
-        file_data = [data.strip("\n") for data in file_content.readlines()]
-        return file_data
+def proposals_in_database(email_receiver, pi_proposal):
+    return SentEmails.sent_at(SentEmails("db.sqlite3"), email_receiver, pi_proposal)
 
 
 def plain_text_table(proposals):
@@ -374,15 +373,14 @@ def html_table(proposals):
 def proposals_to_send(pi_proposals, email):
     info = []
     for proposal in pi_proposals:
-        file_content = email + " " + proposal.code + " " + datetime.datetime.strftime(proposal.release_date, "%d %b %Y")
-        if file_content not in read_log_file():
+        if len(proposals_in_database(email, proposal.code)) == 0:
             info.append(proposal)
     return info
 
 
-def log_proposal_information(pi_proposals, email):
+def adding_each_proposal_to_db(pi_proposals, email):
     for proposal in pi_proposals:
-        log_to_file(email, proposal.code, datetime.datetime.strftime(proposal.release_date, "%d %b %Y"))
+        log_to_database(email, proposal.code)
     return None
 
 
@@ -390,7 +388,7 @@ def handle_pi(pi_information):
     proposals = proposals_to_send(pi_information.proposals, pi_information.email)
     if len(proposals) > 0:
         sending_email(pi_information.email, pi_information.fullname, plain_text_table(proposals), html_table(proposals))
-        log_proposal_information(pi_information.proposals, pi_information.email)
+        adding_each_proposal_to_db(pi_information.proposals, pi_information.email)
     return None
 
 
