@@ -7,10 +7,9 @@ import string
 from abc import ABC, abstractmethod
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Iterator, Set, Optional
+from typing import Iterator, List, Set, Optional
 from astropy.units import Quantity
 from astropy.io import fits
-from ssda.exceptions import IgnoreObservationError
 from ssda.util import types
 
 
@@ -50,6 +49,8 @@ def get_night_date(path: str) -> str:
 
     # search for the night date
     date_search = re.search(r"(\d{4})/(\d{2})(\d{2})", path)
+    if not date_search:
+        raise ValueError(f"Invalid date format: {date_search}")
     # format the date as "yyyy-mm-dd"
     night_date = f"{date_search.group(1)}-{date_search.group(2)}-{date_search.group(3)}"
 
@@ -133,7 +134,7 @@ class FitsFile(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def header_value(self, keyword: str) -> str:
+    def header_value(self, keyword: str) -> Optional[str]:
         """
         The FITS header value for a keyword.
 
@@ -208,11 +209,17 @@ def fits_file_paths(
 
     night = nights.start
     while night < nights.end:
+        paths: List[Path] = []
         for instrument in instruments:
-            for path in sorted(
+            paths.extend(
                 Path(fits_file_dir(night, instrument, base_dir)).glob("*.fits")
-            ):
-                yield str(path)
+            )
+        # Different instruments, such as Salticam and BCAM, may have the same file
+        # paths, hence we use set() to eliminate duplicate values.
+        for path in sorted(set(paths)):
+            if "tmp" in path.name:
+                continue
+            yield str(path)
         night += timedelta(days=1)
 
 
@@ -264,22 +271,29 @@ class StandardFitsFile(FitsFile):
         return os.stat(self.path).st_size * types.byte
 
     def instrument(self) -> types.Instrument:
-        instrument_value = self.header_value("INSTRUME").upper()
+        header_value = self.header_value("INSTRUME")
+        instrument_value = header_value.upper() if header_value else None
         if instrument_value == "RSS":
             return types.Instrument.RSS
-        elif instrument_value.upper() == "HRS":
+        elif instrument_value == "HRS":
             return types.Instrument.HRS
-        elif instrument_value.upper() == "SALTICAM":
+        elif instrument_value == "SALTICAM":
             return types.Instrument.SALTICAM
-        elif instrument_value.upper() == "BCAM":
+        elif instrument_value == "BCAM":
             return types.Instrument.BCAM
         else:
             # There are some HRS files missing the INSTRUME keyword. We rely on the
             # filename together with an HRS-specific header keyword instead. (As that
             # keyword is for a temperature it should never be 0.)
             filename = os.path.basename(self.file_path())
-            if filename.startswith('H2') and self.header_value('TEM-RMIR'):
+            if (
+                filename.startswith("H2") or filename.startswith("R2")
+            ) and self.header_value("TEM-RMIR"):
                 return types.Instrument.HRS
+            # There are some BCAM files missing the INSTRUME keyword.
+            # For these files we rely on the file name to contain the word "bcam".
+            if "bcam" in filename.lower():
+                return types.Instrument.BCAM
             raise ValueError(
                 f"Unknown instrument in file {self.path}: {instrument_value}"
             )
@@ -304,9 +318,6 @@ class StandardFitsFile(FitsFile):
         return self.path
 
     def checksum(self) -> str:
-        letters = string.ascii_lowercase
-        result = "".join(random.choice(letters) for _ in range(20))
-
         # Open,close, read file and calculate MD5 on its contents
         with open(self.file_path(), "rb") as f:
             # read contents of the file
@@ -317,7 +328,10 @@ class StandardFitsFile(FitsFile):
 
     def header_value(self, keyword: str) -> Optional[str]:
         try:
-            value = str(self.headers[keyword]).strip()
+            header_value = self.headers[keyword]
+            if header_value is None:
+                return None
+            value = str(header_value).strip()
             return None if value.upper() == "NONE" else value
         except KeyError:
             return None
@@ -327,13 +341,22 @@ class DummyFitsFile(FitsFile):
     def __init__(self, path: str) -> None:
         self.path = path
 
-    def size(self) -> Quantity:
-        return random.randint(1000, 100000000) * types.byte
-
     def checksum(self) -> str:
         letters = string.ascii_lowercase
         return "".join(random.choice(letters) for _ in range(50))
 
-    def header_value(self, keyword: str) -> str:
+    def file_path(self) -> str:
+        return "some/file/path"
+
+    def header_value(self, keyword: str) -> Optional[str]:
         letters = string.ascii_lowercase
         return "".join(random.choice(letters) for _ in range(random.randint(1, 10)))
+
+    def instrument(self) -> types.Instrument:
+        return types.Instrument.RSS
+
+    def size(self) -> Quantity:
+        return random.randint(1000, 100000000) * types.byte
+
+    def telescope(self) -> types.Telescope:
+        return types.Telescope.SALT

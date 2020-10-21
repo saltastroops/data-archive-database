@@ -61,13 +61,13 @@ def wavelengths_and_transmissions(
     if instrument_path_name == "bcam":
         instrument_path_name = "salticam"  # No filters for bcam it uses salticam'
     if instrument_path_name == "rss":
-        file = Path(f"{dirname}/{instrument_path_name}/{filt_name}.txt")
+        filepath = Path(f"{dirname}/{instrument_path_name}/{filt_name}.txt")
         # Rss may use a Salticam filter.
         # If a Salticam filter is used, read the filter from the Salticam filters.
-        if not file.exists():
+        if not filepath.exists():
             instrument_path_name = "salticam"
 
-    filename = Path(f"{dirname}/{instrument_path_name}/{filt_name}.txt")
+    filename = f"{dirname}/{instrument_path_name}/{filt_name}.txt"
     with open(filename, "r") as file:
         for line in file.readlines():
 

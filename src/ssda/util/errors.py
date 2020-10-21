@@ -1,17 +1,38 @@
-import os
 from dataclasses import dataclass
+from typing import Optional
 from ssda.util.fits import StandardFitsFile
 
 
 @dataclass
 class LogData:
-    block_visit_id: str
-    object: str
-    observation_mode: str
-    observation_time: str
-    observation_type: str
-    path: str
-    proposal_code: str
+    block_visit_id: Optional[str]
+    object: Optional[str]
+    observation_mode: Optional[str]
+    observation_time: Optional[str]
+    observation_type: Optional[str]
+    path: Optional[str]
+    proposal_code: Optional[str]
+
+    def is_daytime_observation(self):
+        """
+        Is this an observation taken between 6:00 and 15:00 UTC?
+
+        If the observation time cannot be found, it is assumed that the observation is
+        not a daytime one.
+
+        Returns
+        -------
+        bool
+            Whether this is a daytime observation.
+
+        """
+
+        try:
+            parts = self.observation_time.strip().split(":")
+            if len(parts) > 1:
+                return 6 <= int(parts[0]) < 15
+        except:
+            return False
 
 
 def get_salt_data_to_log(path: str) -> LogData:

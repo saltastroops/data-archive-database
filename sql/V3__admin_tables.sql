@@ -12,14 +12,14 @@ DROP TABLE IF EXISTS access_rule;
 
 CREATE TABLE access_rule(
     access_rule_id  serial PRIMARY KEY,
-    access_rule     varchar(32) NOT NULL
+    access_rule     varchar(50) NOT NULL
 );
 
 COMMENT ON TABLE access_rule IS 'Rules for data access.';
 
 INSERT INTO access_rule (access_rule)
-values  ('PUBLIC_OR_INSTITUTION_MEMBER'),
-        ('PUBLIC_OR_OWNER');
+values  ('Public Data or Institution Member'),
+        ('Public Data or Investigator');
 
 -- auth_provider
 
@@ -255,18 +255,35 @@ COMMENT ON TABLE data_request_calibration_type IS 'Join table between data reque
 DROP TABLE IF EXISTS institution_user;
 
 CREATE TABLE institution_user (
-    institution_id      int NOT NULL REFERENCES observations.institution (institution_id),
-    institution_member  boolean NOT NULL,
-    institution_user_id varchar(50) NOT NULL,
-    ssda_user_id        int NOT NULL REFERENCES ssda_user (ssda_user_id)
+    institution_user_id  serial PRIMARY KEY,
+    institution_id       int NOT NULL REFERENCES observations.institution (institution_id),
+    ssda_user_id         int REFERENCES ssda_user (ssda_user_id),
+    user_id              varchar(50) NOT NULL
 );
 
 CREATE INDEX institution_user_institution_idx ON institution_user (institution_id);
 CREATE INDEX institution_user_institution_user_idx ON institution_user (institution_user_id);
 CREATE INDEX institution_user_ssda_user ON institution_user (ssda_user_id);
+CREATE UNIQUE INDEX institution_user_institution_institution_user ON institution_user (institution_id, user_id);
 
 COMMENT ON TABLE institution_user IS 'Table for linking a data archive user to a user account at an institution such as SALT.';
-COMMENT ON COLUMN institution_user.institution_user_id IS 'Id used by the institution to identify the user. This must be consistent with the id used in the proposal_investigator table.';
+COMMENT ON COLUMN institution_user.user_id IS 'Id used by the institution to identify the user.';
+
+-- institution_membership
+
+DROP TABLE IF EXISTS institution_membership;
+
+CREATE TABLE institution_membership (
+    institution_user_id int REFERENCES institution_user (institution_user_id) ON DELETE CASCADE,
+    membership_end date NOT NULL,
+    membership_start date NOT NULL
+);
+
+CREATE INDEX institution_membership_institution_user_idx ON institution_membership (institution_user_id);
+
+COMMENT ON TABLE institution_membership IS 'Membership details for an institution user.';
+COMMENT ON COLUMN institution_membership.membership_end IS 'Date when the membership has ended or will end.';
+COMMENT ON COLUMN institution_membership.membership_start IS 'Date when the membership has started.';
 
 -- proposal_access_rule
 
@@ -287,7 +304,7 @@ COMMENT ON TABLE proposal_access_rule IS 'Join table between proposals and acces
 DROP TABLE IF EXISTS proposal_investigator;
 
 CREATE TABLE proposal_investigator (
-    institution_user_id varchar(50) NOT NULL,
+    institution_user_id int NOT NULL REFERENCES institution_user (institution_user_id),
     proposal_id int NOT NULL REFERENCES observations.proposal (proposal_id) ON DELETE CASCADE
 );
 
@@ -296,5 +313,3 @@ CREATE INDEX proposal_investigator_proposal_idx ON proposal_investigator (propos
 
 COMMENT ON TABLE proposal_investigator IS 'Investigator on a proposal.';
 COMMENT ON COLUMN proposal_investigator.institution_user_id IS 'Id used to identify the investigator by the institution to which the proposal was submitted.';
-
-

@@ -2,6 +2,7 @@ from typing import cast
 
 from ssda.database.ssda import SSDADatabaseService
 from ssda.observation import ObservationProperties
+from ssda.util.warnings import record_warning
 
 
 def delete(
@@ -25,7 +26,7 @@ def delete(
     # find the observation
     # -1 is passed as plane id to the artifact method as the id is irrelevant
     observation_id = database_service.find_observation_id(
-        observation_properties.artifact(-1).name
+        str(observation_properties.artifact(-1).paths.raw)
     )
 
     # only delete the observation if there actually is one
@@ -82,14 +83,20 @@ def insert(
                 # insert proposal
                 proposal_id = ssda_database_service.insert_proposal(proposal)
 
-                # insert proposal investigators
                 proposal_investigators = observation_properties.proposal_investigators(
                     proposal_id
                 )
+
                 for proposal_investigator in proposal_investigators:
+                    # insert proposal investigators
                     ssda_database_service.insert_proposal_investigator(
                         proposal_investigator
                     )
+
+                # insert proposal access rule
+                ssda_database_service.insert_proposal_access_rule(
+                    proposal_id, observation_properties.access_rule()
+                )
         else:
             proposal_id = None
 
@@ -110,7 +117,7 @@ def insert(
 
         # insert observation (if need be)
         # -1 is passed as plane id to the artifact method as the id is irrelevant
-        artifact_name = observation_properties.artifact(-1).name
+        artifact_name = str(observation_properties.artifact(-1).paths.raw)
         observation_id = ssda_database_service.find_observation_id(artifact_name)
         if observation_id is None:
             observation = observation_properties.observation(
@@ -154,7 +161,11 @@ def insert(
         plane_id = ssda_database_service.insert_plane(plane)
 
         # insert energy
-        energy = observation_properties.energy(plane_id)
+        try:
+            energy = observation_properties.energy(plane_id)
+        except BaseException:
+            record_warning(Warning("The energy could not be calculated."))
+            energy = None
         if energy:
             ssda_database_service.insert_energy(energy)
 
@@ -170,7 +181,7 @@ def insert(
         # insert position
         position = observation_properties.position(plane_id)
         if position:
-            ssda_database_service.insert_position(position)
+            ssda_database_service.insert_position(position, proposal_id)
 
         # insert artifact
         artifact = observation_properties.artifact(plane_id)

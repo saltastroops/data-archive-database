@@ -18,6 +18,9 @@ class HrsObservationProperties(ObservationProperties):
             fits_file=fits_file, database_service=database_service
         )
 
+    def access_rule(self) -> Optional[types.AccessRule]:
+        return self.salt_observation.access_rule()
+
     def artifact(self, plane_id: int) -> types.Artifact:
         return self.salt_observation.artifact(plane_id)
 
@@ -51,22 +54,19 @@ class HrsObservationProperties(ObservationProperties):
 
         sql = """
         WITH hm (id) AS (
-            SELECT hrs_mode_id FROM hrs_mode WHERE hrs_mode.hrs_mode=%(hrs_mode)s
+            SELECT hrs_mode_id FROM observations.hrs_mode
+                   WHERE hrs_mode.hrs_mode=%(hrs_mode)s
         )
-        INSERT INTO hrs_setup (instrument_setup_id, hrs_mode_id)
+        INSERT INTO observations.hrs_setup (instrument_setup_id, hrs_mode_id)
         VALUES (%(instrument_setup_id)s, (SELECT id FROM hm))
         """
         parameters = dict(hrs_mode=hrs_mode.value)
         queries = [types.SQLQuery(sql=sql, parameters=parameters)]
 
-        detector_mode = None
-        for dm in types.DetectorMode:
-            if self.header_value("DETMODE") == dm.value:
-                detector_mode = dm
-        if not detector_mode:
-            raise ValueError(
-                f"Detector mode of file {self.file_path} is not recognised"
-            )
+        detmode_header_value = self.header_value("DETMODE")
+        detector_mode = types.DetectorMode.for_name(
+            detmode_header_value if detmode_header_value else ""
+        )
 
         return types.InstrumentSetup(
             additional_queries=queries,
@@ -114,7 +114,8 @@ class HrsObservationProperties(ObservationProperties):
         return self.salt_observation.target(observation_id=observation_id)
 
     def _mode(self) -> types.HRSMode:
-        hrs_mode = self.header_value("OBSMODE").upper()
+        obsmode_header_value = self.header_value("OBSMODE")
+        hrs_mode = obsmode_header_value.upper() if obsmode_header_value else ""
         if hrs_mode == "LOW RESOLUTION":
             return types.HRSMode.LOW_RESOLUTION
         if hrs_mode == "MEDIUM RESOLUTION":

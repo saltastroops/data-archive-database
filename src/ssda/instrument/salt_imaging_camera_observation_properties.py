@@ -1,5 +1,3 @@
-from abc import ABC
-
 from ssda.database.sdb import SaltDatabaseService
 from ssda.observation import ObservationProperties
 from ssda.util import types
@@ -19,13 +17,17 @@ class SaltImagingCameraObservationProperties(ObservationProperties):
             fits_file=fits_file, database_service=database_service
         )
 
+    def access_rule(self) -> Optional[types.AccessRule]:
+        return self.salt_observation.access_rule()
+
     def artifact(self, plane_id: int) -> types.Artifact:
         return self.salt_observation.artifact(plane_id)
 
     def energy(self, plane_id: int) -> Optional[types.Energy]:
         if self.salt_observation.is_calibration():
             return None
-        filter_name = self.header_value("FILTER")
+        filter_header_value = self.header_value("FILTER")
+        filter_name = filter_header_value if filter_header_value else ""
         return salt_imaging_camera_spectral_properties(
             plane_id, filter_name, self.instrument
         )
@@ -39,20 +41,17 @@ class SaltImagingCameraObservationProperties(ObservationProperties):
         return []  # TODO Needs to be implemented
 
     def instrument_setup(self, observation_id: int) -> types.InstrumentSetup:
-        queries = []
+        queries: List[types.SQLQuery] = []
 
-        detector_mode = None
-        for dm in types.DetectorMode:
-            if self.header_value("DETMODE").upper() == dm.value.upper():
-                detector_mode = dm
-        if self.header_value("DETMODE").upper() == "SLOT":
-            detector_mode = types.DetectorMode.SLOT_MODE
-        if self.header_value("DETMODE").upper() == "FT":
-            detector_mode = types.DetectorMode.FRAME_TRANSFER
-        filter = None
-        for fi in types.Filter:
-            if self.header_value("FILTER") == fi.value:
-                filter = fi
+        detmode_header_value = self.header_value("DETMODE")
+        detector_mode = types.DetectorMode.for_name(
+            detmode_header_value if detmode_header_value else ""
+        )
+
+        filter_header_value = self.header_value("FILTER")
+        filter = types.Filter.for_name(
+            filter_header_value if filter_header_value else ""
+        )
 
         return types.InstrumentSetup(
             additional_queries=queries,

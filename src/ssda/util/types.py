@@ -5,10 +5,12 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Optional
+from typing import Any, Dict, List, NamedTuple, Optional, Set
 
 import astropy.units as u
 from astropy.units import def_unit, Quantity
+
+from ssda.util.warnings import record_warning
 
 byte = def_unit("byte")
 
@@ -60,7 +62,20 @@ class CalibrationLevelPaths:
     """
 
     raw: Path
-    reduced: Path
+    reduced: Optional[Path]
+
+
+class AccessRule(Enum):
+    """
+    Enumeration of the available data access rules.
+
+    The enum values must be the same as the values of the access_rule column in the
+    access_rule table.
+
+    """
+
+    PUBLIC_DATA_OR_INSTITUTION_MEMBER = "Public Data or Institution Member"
+    PUBLIC_DATA_OR_INVESTIGATOR = "Public Data or Investigator"
 
 
 class Artifact:
@@ -266,6 +281,29 @@ class DataProductType(Enum):
     IMAGE = "Image"
     SPECTRUM = "Spectrum"
 
+    @staticmethod
+    def for_name(name: str) -> DataProductType:
+        """
+        The data product type for a case-insensitive name.
+
+        Parameters
+        ----------
+        name : str
+            Data product type name.
+
+        Returns
+        -------
+        DataProductType :
+            DataProductType.
+
+        """
+
+        for data_product_type in DataProductType:
+            if name and name.lower() == str(data_product_type.value).lower():
+                return data_product_type
+
+        raise ValueError(f"Unknown data product type: '{name}'")
+
 
 class DateRange:
     """
@@ -341,6 +379,37 @@ class DetectorMode(Enum):
     NORMAL = "Normal"
     SHUFFLE = "Shuffle"
     SLOT_MODE = "Slot Mode"
+
+    @staticmethod
+    def for_name(name: str) -> DetectorMode:
+        """The detector mode for a case-insensitive name.
+
+        Parameters
+        ----------
+        name : str
+            Detector mode name.
+
+        Returns
+        -------
+        DetectorMode :
+            DetectorMode.
+
+        """
+
+        if name and name.lower() == "slot":
+            name = "Slot Mode"
+        if name and name.lower() == "ft":
+            name = "Frame Transfer"
+
+        for detector_mode in DetectorMode:
+            if (
+                name
+                and name.replace(" ", "").lower()
+                == str(detector_mode.value).replace(" ", "").lower()
+            ):
+                return detector_mode
+
+        raise ValueError(f"Unknown detector mode: '{name}'")
 
 
 class Energy:
@@ -478,11 +547,154 @@ class Filter(Enum):
 
     """
 
+    Cousins_I = "Cousins I"
+    Cousins_R = "Cousins R"
+    FUSED_SILICA_CLEAR = "Fused silica clear"
+    FWHM_340_35 = "340nm 35nm FWHM"
+    FWHM_380_40 = "380nm 40nm FWHM"
+    H_ALPHA = "H-alpha"
+    H_BETA_NARROW = "H-beta narrow"
+    H_BETA_WIDE = "H-beta wide"
+    JOHNSON_B = "Johnson B"
+    JOHNSON_I = "Johnson I"
+    JOHNSON_R = "Johnson R"
     JOHNSON_U = "Johnson U"
     JOHNSON_V = "Johnson V"
-    JOHNSON_B = "Johnson B"
-    JOHNSON_R = "Johnson R"
-    JOHNSON_I = "Johnson I"
+    OPEN = "Open"
+    SDSS_G = "SDSS g'"
+    SDSS_I = "SDSS i'"
+    SDSS_R = "SDSS r'"
+    SDSS_U = "SDSS u'"
+    SDSS_z = "SDSS z'"
+    SRE_1 = "SRE 1"
+    SRE_2 = "SRE 2"
+    SRE_3 = "SRE 3"
+    SRE_4 = "SRE 4"
+    STROEMGREN_B = "Stroemgren b"
+    STROEMGREN_U = "Stroemgren u"
+    STROEMGREN_V = "Stroemgren v"
+    STROEMGREN_Y = "Stroemgren y"
+    PC00000 = "pc00000"
+    PC03200 = "pc03200"
+    PC03400 = "pc03400"
+    PC03850 = "pc03850"
+    PC04600 = "pc04600"
+    PI04340 = "pi04340"
+    PI04400 = "pi04400"
+    PI04465 = "pi04465"
+    PI04530 = "pi04530"
+    PI04600 = "pi04600"
+    PI04670 = "pi04670"
+    PI04740 = "pi04740"
+    PI04820 = "pi04820"
+    PI04895 = "pi04895"
+    PI04975 = "pi04975"
+    PI05060 = "pi05060"
+    PI05145 = "pi05145"
+    PI05235 = "pi05235"
+    PI05325 = "pi05325"
+    PI05420 = "pi05420"
+    PI05520 = "pi05520"
+    PI05620 = "pi05620"
+    PI05725 = "pi05725"
+    PI05830 = "pi05830"
+    PI05945 = "pi05945"
+    PI06055 = "pi06055"
+    PI06170 = "pi06170"
+    PI06290 = "pi06290"
+    PI06410 = "pi06410"
+    PI06530 = "pi06530"
+    PI06645 = "pi06645"
+    PI06765 = "pi06765"
+    PI06885 = "pi06885"
+    PI07005 = "pi07005"
+    PI07130 = "pi07130"
+    PI07260 = "pi07260"
+    PI07390 = "pi07390"
+    PI07535 = "pi07535"
+    PI07685 = "pi07685"
+    PI07840 = "pi07840"
+    PI08005 = "pi08005"
+    PI08175 = "pi08175"
+    PI08350 = "pi08350"
+    PI08535 = "pi08535"
+    PI08730 = "pi08730"
+
+    @staticmethod
+    def for_name(name: str) -> Optional[Filter]:
+        """The filter for a case-insensitive name.
+
+        Parameters
+        ----------
+        name : str
+            Filter name.
+
+        Returns
+        -------
+        Filter :
+            Filter.
+
+        """
+
+        if not name:
+            return None
+
+        replacements = {
+            "SBn-S1": "Stroemgren b",
+            "SDSSI": "SDSS i'",
+            "SDSSU": "SDSS u'",
+            "EMPTY": "OPEN",
+        }
+
+        for old_value, new_value in replacements.items():
+            if name.lower() == old_value.lower():
+                record_warning(
+                    Warning(f"Filter name: {name} is assumed to be {new_value}")
+                )
+                name = new_value
+
+        for filter in Filter:
+            if name.lower() == str(filter.value).lower():
+                return filter
+
+        # Maybe the name is one of the filter name aliases?
+        aliases: Dict[Filter, List[str]] = {
+            Filter.JOHNSON_U: ["U-S1", "Johnson U", "SCAM-U"],
+            Filter.JOHNSON_B: ["B-S1", "Johnson B", "SCAM-B"],
+            Filter.JOHNSON_V: ["V-S1", "Johnson V", "SCAM-V"],
+            Filter.Cousins_R: ["R-S1", "Cousins R", "SCAM-R"],
+            Filter.Cousins_I: ["I-S1", "Cousins I", "SCAM-I"],
+            Filter.FWHM_380_40: ["380-40", "380nm 40nm FWHM", "SCAM380-40"],
+            Filter.FWHM_340_35: ["340-35", "340nm 35nm FWHM", "SCAM340-35"],
+            Filter.FUSED_SILICA_CLEAR: ["CLR-S1", "Fused silica clear", "PC00000"],
+            Filter.SDSS_U: ["SDSSu-S1", "SDSS u'", "S-SDSS-u"],
+            Filter.SDSS_G: ["SDSSg-S1", "SDSS g'", "S-SDSS-g"],
+            Filter.SDSS_R: ["SDSSr-S1", "SDSS r'", "S-SDSS-r", "SDSS-r'"],
+            Filter.SDSS_I: ["SDSSi-S1", "SDSS i'", "S-SDSS-i"],
+            Filter.SDSS_z: ["SDSSz-S1", "SDSS z'", "S-SDSS-z"],
+            Filter.STROEMGREN_U: ["Su-S1", "Stroemgren u", "Su-S1"],
+            Filter.STROEMGREN_B: ["Sb-S1", "Stroemgren b", "Sb-S1"],
+            Filter.STROEMGREN_V: ["Sv-S1", "Stroemgren v", "Sv-S1"],
+            Filter.STROEMGREN_Y: ["Sy-S1", "Stroemgren y", "Sy-S1"],
+            Filter.H_ALPHA: ["Halpha-S1", "H-alpha", "Halpha-S1"],
+            Filter.H_BETA_WIDE: ["Hbw-S1", "H-beta wide", "Hbw-S1"],
+            Filter.H_BETA_NARROW: ["Hbn-S1", "H-beta narrow", "Hbn-S1"],
+            Filter.SRE_1: ["SR613-21", "SRE 1", "SR613-21"],
+            Filter.SRE_2: ["SR708-25", "SRE 2", "SR708-25"],
+            Filter.SRE_3: ["SR815-29", "SRE 3", "SR815-29"],
+            Filter.SRE_4: ["SR862-32", "SRE 4", "SR862-32"],
+        }
+
+        for key in aliases:
+            for alias in aliases[key]:
+                if name.lower() == alias.lower():
+                    if name.lower() == "sbn-s1":
+                        record_warning(
+                            Warning(f"Filter name: {name} is assumed to be {key.value}")
+                        )
+                    return key
+
+        raise ValueError(f"Unknown filter name: {name}")
 
 
 class HRSArm(Enum):
@@ -517,6 +729,30 @@ class Institution(Enum):
 
     SAAO = "South African Astronomical Observatory"
     SALT = "Southern African Large Telescope"
+
+
+@dataclass(frozen=True)
+class InstitutionMembership:
+    """
+    Details for the membership in an institution.
+
+    Parameters
+    ----------
+    membership_end : date
+        Date when the membership has ended or will end.
+    membership_start : date
+        Date when the membership has started.
+
+    """
+
+    membership_end: date
+    membership_start: date
+
+    def __lt__(self, other: InstitutionMembership):
+        return (self.membership_start, self.membership_end) < (
+            other.membership_start,
+            other.membership_end,
+        )
 
 
 class Instrument(Enum):
@@ -554,6 +790,32 @@ class Instrument(Enum):
                 return instrument
 
         raise ValueError(f"Unknown instrument name: {name}")
+
+    @staticmethod
+    def instruments(telescope: Telescope):
+        """
+        Return the instruments used by a telescope.
+
+        Parameters
+        ----------
+        telescope : Telescope
+            Telescope.
+
+        Returns
+        -------
+        Set[Instrument]
+            The instruments used by the telescope.
+
+        """
+
+        if telescope == Telescope.SALT:
+            return {
+                Instrument.BCAM,
+                Instrument.HRS,
+                Instrument.RSS,
+                Instrument.SALTICAM,
+            }
+        raise ValueError(f"Unknown telescope {telescope}")
 
 
 class InstrumentKeyword(Enum):
@@ -633,6 +895,29 @@ class InstrumentMode(Enum):
     SPECTROSCOPY = "Spectroscopy"
     STREAMING = "Streaming"
 
+    @staticmethod
+    def for_name(name: str) -> InstrumentMode:
+        """
+        The instrument mode for a case-insensitive name.
+
+        Parameters
+        ----------
+        name : str
+            Instrument mode name.
+
+        Returns
+        -------
+        InstrumentMode :
+            InstrumentMode.
+
+        """
+
+        for instrument_mode in InstrumentMode:
+            if name and name.lower() == str(instrument_mode.value).lower():
+                return instrument_mode
+
+        raise ValueError(f"Unknown instrument mode: '{name}'")
+
 
 class InstrumentSetup:
     """
@@ -708,6 +993,29 @@ class Intent(Enum):
     CALIBRATION = "Calibration"
     SCIENCE = "Science"
 
+    @staticmethod
+    def for_name(name: str) -> Intent:
+        """
+        The intent for a case-insensitive name.
+
+        Parameters
+        ----------
+        name : str
+            Intent name.
+
+        Returns
+        -------
+        Intent :
+            Intent.
+
+        """
+
+        for intent in Intent:
+            if name and name.lower() == str(intent.value).lower():
+                return intent
+
+        raise ValueError(f"Unknown intent: '{name}'")
+
 
 class Observation:
     """
@@ -777,7 +1085,7 @@ class Observation:
         return self._meta_release
 
     @property
-    def observation_group_id(self) -> int:
+    def observation_group_id(self) -> Optional[int]:
         return self._observation_group_id
 
     @property
@@ -1012,6 +1320,8 @@ class Position:
             raise ValueError("The declination must have an angular unit.")
         if dec.to_value(u.degree) < -90 or dec.to_value(u.degree) > 90:
             raise ValueError("The declination must be between -90 and 90 degrees.")
+        if 199.9 < equinox < 200.1:
+            equinox = 2000
         if equinox < 1900:
             raise ValueError("The equinox must be 1900 or later.")
         try:
@@ -1062,6 +1372,29 @@ class ProductCategory(Enum):
     SCIENCE = "Science"
     STANDARD = "Standard"
 
+    @staticmethod
+    def for_name(name: str) -> ProductCategory:
+        """
+        The product category for a case-insensitive name.
+
+        Parameters
+        ----------
+        name : str
+            Product category name.
+
+        Returns
+        -------
+        ProductCategory :
+            ProductCategory.
+
+        """
+
+        for product_category in ProductCategory:
+            if name and name.lower() == str(product_category.value).lower():
+                return product_category
+
+        raise ValueError(f"Unknown product category: '{name}'")
+
 
 class ProductType(Enum):
     """
@@ -1091,6 +1424,29 @@ class ProductType(Enum):
     STANDARD_SPECTROSCOPIC = "Standard - Spectroscopic"
     STANDARD_TELLURIC = "Standard - Telluric"
     STANDARD_UNPOLARISED = "Standard - Unpolarised"
+
+    @staticmethod
+    def for_name(name: str) -> ProductType:
+        """
+        The product type for a case-insensitive name.
+
+        Parameters
+        ----------
+        name : str
+            Product type name.
+
+        Returns
+        -------
+        ProductType :
+            ProductType.
+
+        """
+
+        for product_type in ProductType:
+            if name.lower() == str(product_type.value).lower():
+                return product_type
+
+        raise ValueError(f"Unknown product type: '{name}'")
 
 
 class Proposal:
@@ -1158,22 +1514,42 @@ class ProposalInvestigator:
     ----------
     proposal_id : int
         Database id of the proposal.
+    institution : Institution
+            Institution to which the proposal was submitted.
+    institution_memberships: List[InstitutionMembership]
+            Institution memberships.
     investigator_id : str
         The unique id of the investigator, as determined by the institution to which the
         proposal was submitted.
 
     """
 
-    def __init__(self, proposal_id: int, investigator_id: str):
+    def __init__(
+        self,
+        proposal_id: int,
+        investigator_id: str,
+        institution: Institution,
+        institution_memberships: List[InstitutionMembership],
+    ):
         if len(investigator_id) > 50:
             raise ValueError("The investigator id must have at most 30 characters.")
 
         self._proposal_id = proposal_id
+        self._institution = institution
+        self._institution_memberships = institution_memberships
         self._investigator_id = investigator_id
 
     @property
     def proposal_id(self) -> int:
         return self._proposal_id
+
+    @property
+    def institution(self) -> Institution:
+        return self._institution
+
+    @property
+    def institution_memberships(self) -> List[InstitutionMembership]:
+        return self._institution_memberships
 
     @property
     def investigator_id(self) -> str:
@@ -1193,6 +1569,12 @@ class ProposalType(Enum):
     ENGINEERING = "Engineering"
     SCIENCE = "Science"
     SCIENCE_VERIFICATION = "Science Verification"
+
+
+@dataclass
+class ReleaseDates:
+    meta_release: date
+    data_release: date
 
 
 class RSSFabryPerotMode(Enum):
@@ -1240,6 +1622,50 @@ class RSSGrating(Enum):
     PG3000 = "PG3000"
 
 
+class SALTObservationGroup:
+    def __init__(self, status: Status, group_identifier: str):
+        self.status = status
+        self.group_identifier = group_identifier
+
+    def __eq__(self, other):
+        return (
+            self.__class__ == other.__class__
+            and self.status.value == other.status.value
+            and self.group_identifier == other.group_identifier
+        )
+
+
+class SALTProposalDetails:
+    def __init__(
+        self,
+        proposal_code: str,
+        institution: Institution,
+        meta_release: date,
+        data_release: date,
+        pi: str,
+        title: str,
+        investigators: List[str],
+    ):
+        self.proposal_code = proposal_code
+        self.institution = institution
+        self.meta_release = meta_release
+        self.data_release = data_release
+        self.pi = pi
+        self.title = title
+        self.investigators = investigators
+
+    def __eq__(self, other):
+        return (
+            self.__class__ == other.__class__
+            and self.proposal_code == other.proposal_code
+            and self.institution == other.institution
+            and self.meta_release == other.meta_release
+            and self.data_release == other.data_release
+            and self.pi == other.pi
+            and self.investigators.sort() == other.investigators.sort()
+        )
+
+
 class Status(Enum):
     """
     Enumeration of the available status values.
@@ -1251,6 +1677,30 @@ class Status(Enum):
 
     ACCEPTED = "Accepted"
     DELETED = "Deleted"
+    IN_QUEUE = "In queue"
+    REJECTED = "Rejected"
+
+    @staticmethod
+    def for_value(value: str) -> Status:
+        """The status for a case-insensitive status value.
+
+        Parameters
+        ----------
+        value : str
+            Status value.
+
+        Returns
+        -------
+        Status :
+            Status.
+
+        """
+
+        for status in Status:
+            if value.lower() == str(status.value).lower():
+                return status
+
+        raise ValueError(f"Unknown status: {value}")
 
 
 class StokesParameter(Enum):
@@ -1288,7 +1738,7 @@ class Target:
     def __init__(
         self, name: str, observation_id: int, standard: bool, target_type: str
     ):
-        if len(name) > 50:
+        if name and len(name) > 50:
             raise ValueError("The target name must have at most 50 characters.")
 
         self._name = name
@@ -1311,70 +1761,6 @@ class Target:
     @property
     def target_type(self) -> str:
         return self._target_type
-
-
-class TaskName(Enum):
-    """
-    Enumeration of the task names.
-
-    """
-
-    DELETE = "delete"
-    INSERT = "insert"
-
-    @staticmethod
-    def for_name(name: str) -> TaskName:
-        """The task name for a case-insensitive name.
-
-        Parameters
-        ----------
-        name : str
-            Task name.
-
-        Returns
-        -------
-        TaskName :
-            Task name.
-
-        """
-
-        for task_name in TaskName:
-            if name.lower() == str(task_name.value).lower():
-                return task_name
-
-        raise ValueError(f"Unknown task name: {name}")
-
-
-class TaskExecutionMode(Enum):
-    """
-    Enumeration of the task execution modes.
-
-    """
-
-    DUMMY = "dummy"
-    PRODUCTION = "production"
-
-    @staticmethod
-    def for_mode(mode: str) -> TaskExecutionMode:
-        """The task execution mode for a case-insensitive mode.
-
-        Parameters
-        ----------
-        mode : str
-            Task execution mode.
-
-        Returns
-        -------
-        TaskExecutionMode
-            Task execution mode.
-
-        """
-
-        for task_mode in TaskExecutionMode:
-            if mode.lower() == str(task_mode.value).lower():
-                return task_mode
-
-        raise ValueError(f"Unknown task execution mode: {mode}")
 
 
 class Telescope(Enum):

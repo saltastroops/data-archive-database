@@ -8,6 +8,8 @@ from ssda.util import types
 
 
 # the focal length of the RSS imaging lens
+from ssda.util.salt_fits import find_fabry_perot_mode
+
 FOCAL_LENGTH_RSS_IMAGING_LENS = 328 * u.mm
 
 # The location (in x direction) of the intersection between the center CCD and the optical axis
@@ -99,7 +101,7 @@ def filter_wavelength_interval(
 
 
 def fabry_perot_fwhm(
-    rss_fp_mode: types.RSSFabryPerotMode, wavelength: Quantity
+    rss_fp_mode: Optional[types.RSSFabryPerotMode], wavelength: Quantity
 ) -> Optional[Quantity]:
     """
     The wavelength interval for a Fabry-Perot resolution and wavelength.
@@ -118,6 +120,9 @@ def fabry_perot_fwhm(
     Quantity
         The full width half maximum
     """
+
+    if not rss_fp_mode:
+        return None
 
     fwhm = None
     fp_fwhm_intervals = fp_fwhm(rss_fp_mode=rss_fp_mode)
@@ -481,17 +486,11 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
             return None
 
         if etalon_state.lower() == "s3 - etalon 2":
-            resolution = types.RSSFabryPerotMode.parse_fp_mode(
-                header_value("ET2MODE").upper()
-            )  # TODO CHECK with encarni which one use ET2/1
             _lambda = float(header_value("ET2WAVE0")) * u.angstrom
         elif (
             etalon_state.lower() == "s2 - etalon 1"
             or etalon_state.lower() == "s4 - etalon 1 & 2"
         ):
-            resolution = types.RSSFabryPerotMode.parse_fp_mode(
-                header_value("ET1MODE").upper()
-            )  # TODO CHECK with encarni which one use ET2/1
             _lambda = (
                 float(header_value("ET1WAVE0")) * u.angstrom
             )  # Todo what are this units?
@@ -499,7 +498,7 @@ def rss_spectral_properties(header_value: Any, plane_id: int) -> Optional[types.
             raise ValueError("Unknown etalon state")
 
         wavelength_interval_length = fabry_perot_fwhm(
-            rss_fp_mode=resolution, wavelength=_lambda
+            rss_fp_mode=find_fabry_perot_mode(header_value), wavelength=_lambda
         )
         if wavelength_interval_length is None:
             return None
@@ -544,12 +543,15 @@ def hrs_spectral_properties(
     """
 
     interval = hrs_wavelength_interval(arm=arm)
+    resolving_power = hrs_resolving_power(arm=arm, hrs_mode=hrs_mode)
+    if resolving_power is None:
+        return None
     return types.Energy(
         dimension=1,
         max_wavelength=max(interval),
         min_wavelength=min(interval),
         plane_id=plane_id,
-        resolving_power=hrs_resolving_power(arm=arm, hrs_mode=hrs_mode),
+        resolving_power=resolving_power,
         sample_size=interval[1] - interval[0],
     )
 
@@ -572,7 +574,9 @@ def salt_imaging_camera_spectral_properties(
     ------
         Spectral properties: Energy
            salt imaging camera spectral properties
+
     """
+
     if filter_name == "OPEN":
         return None
     if filter_name == "CLR-S1":

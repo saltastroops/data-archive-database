@@ -4,6 +4,7 @@ from ssda.observation_properties import observation_properties
 from ssda.util.dummy import DummyObservationProperties
 from ssda.util.fits import StandardFitsFile, DummyFitsFile
 from ssda.util.types import TaskName, TaskExecutionMode
+from ssda.util.warnings import clear_warnings
 
 
 def execute_task(
@@ -26,14 +27,14 @@ def execute_task(
 
             # Check if the FITS file is to be ignored
             if _observation_properties.ignore_observation():
+                clear_warnings()
                 return
         except Exception as e:
-            proposal_id = (
-                fits_file.header_value("PROPID").upper()
-                if fits_file.header_value("PROPID")
-                else fits_file.header_value("PROPID")
-            )
-            # If the FITS file is Junk, Unknown, ENG or CAL_GAIN, do not store the observation.
+            propid_header_value = fits_file.header_value("PROPID")
+            proposal_id = propid_header_value.upper() if propid_header_value else ""
+
+            # If the FITS file is Junk, Unknown, ENG or CAL_GAIN, do not store the
+            # observation.
             if proposal_id in ("JUNK", "UNKNOWN", "NONE", "ENG", "CAL_GAIN"):
                 return
             # Do not store engineering data.

@@ -1,19 +1,28 @@
-import datetime
 import functools
 import hashlib
+import os
 
 import pytz
 from collections import defaultdict
 from dataclasses import dataclass
+from datetime import date, datetime, timedelta, timezone
 from enum import Enum
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 from dateutil import relativedelta
 import pandas as pd
 from pymysql import connect
 
 from ssda.util import types
+from ssda.util.fits import (
+    FitsFile,
+    fits_file_paths,
+    StandardFitsFile,
+    get_fits_base_dir,
+)
+from ssda.util.salt_fits import parse_start_datetime
 from ssda.util.types import ProposalType
+from ssda.util.warnings import record_warning
 
 
 class BlockVisitIdStatus(Enum):
@@ -35,7 +44,7 @@ class FileDataItem:
     block_visit_id: Optional[Union[int, str]]
     block_visit_id_status: Optional[BlockVisitIdStatus]
     target_name: str
-    proposal_code: str
+    proposal_code: Optional[str]
 
 
 @dataclass(frozen=True)
@@ -60,7 +69,9 @@ class SaltDatabaseService:
         self._cursor = self._connection.cursor()
         self._proposal_codes_existing: Dict[str, bool] = {}
 
-    def find_block_visit_ids(self, night: datetime.date) -> Dict[str, FileDataItem]:
+    def find_block_visit_ids(
+        self, night: date, include_fits_headers: bool = True
+    ) -> Dict[str, FileDataItem]:
         """
         Find the block visit ids fromm the SDB.
 
@@ -92,7 +103,7 @@ class SaltDatabaseService:
 
         """
 
-        file_data = self._find_raw_file_data(night)
+        file_data = self._find_raw_file_data(night, include_fits_headers)
 
         # Find the (accepted and rejected) block visit ids as well as the ignored
         # deleted or queued) block visit ids.
@@ -154,12 +165,77 @@ class SaltDatabaseService:
 
         return existing
 
-    def _find_raw_file_data(self, night: datetime.date) -> List[FileDataItem]:
+    def _find_raw_file_data(
+        self, night: date, include_fits_headers: bool
+    ) -> List[FileDataItem]:
         """
-        Extract file data from the FileData.
+        Extract file data from the FileData table and, if requested, the FITS headers.
 
         Some database inconsistencies are corrected, but missing block visit ids are
         not addressed.
+
+        Parameters
+        ----------
+        night : date
+            Observing night.
+        include_fits_headers : bool
+            Whether to include data from FITS headers.
+
+        Returns
+        -------
+        List[FileDataItem]
+            Raw file data.
+
+        """
+
+        # Extract data from the FileData table and - if requested - the FITS headers.
+        file_data_from_db = self._find_file_data_from_database(night)
+        file_data_from_fits = (
+            self._find_file_data_from_fits_headers(night)
+            if include_fits_headers
+            else []
+        )
+
+        # Merge data from database and FITS headers.
+        file_data = self._merge_file_data(file_data_from_db, file_data_from_fits)
+
+        # Correct for multiple target names in the same block visit.
+        if night == date(2016, 10, 20):
+            for fd in file_data:
+                if fd.proposal_code == "2016-1-SCI-049" and fd.target_name.startswith(
+                    "N132D-pos"
+                ):
+                    fd.target_name = "N132D-pos1"
+
+        # Fix incorrect block visit id.
+        if night == date(2015, 2, 25):
+            for fd in file_data:
+                if fd.block_visit_id == 8082:
+                    fd.block_visit_id = 8092
+
+        # Ignore block visit ids of other dates
+        if night == date(2016, 2, 22):
+            for fd in file_data:
+                if fd.block_visit_id == 10906:
+                    fd.block_visit_id = None
+        if night == date(2018, 4, 16):
+            for fd in file_data:
+                if fd.block_visit_id == 18937:
+                    fd.block_visit_id = None
+
+        # There might be calibration files not belonging to any proposal which still
+        # have a block visit id, although they shouldn't.
+        for fd in file_data:
+            if not fd.proposal_code or not self.is_existing_proposal_code(
+                fd.proposal_code
+            ):
+                fd.block_visit_id = None
+
+        return file_data
+
+    def _find_file_data_from_database(self, night: date) -> List[FileDataItem]:
+        """
+        Collect file data from the database.
 
         Parameters
         ----------
@@ -169,15 +245,14 @@ class SaltDatabaseService:
         Returns
         -------
         List[FileDataItem]
-            Raw file data.
+            The file data.
 
         """
 
-        # Extract data from the FileData table.
-        start_time = datetime.datetime(
+        start_time = datetime(
             night.year, night.month, night.day, 12, 0, 0, 0, tzinfo=pytz.utc
         )
-        end_time = start_time + datetime.timedelta(hours=24)
+        end_time = start_time + timedelta(hours=24)
         file_data_sql = """
     SELECT FileData.UTStart, FileData.FileName, ProposalCode.Proposal_Code, FileData.Target_Name, FileData.BlockVisit_Id
     FROM FileData
@@ -188,9 +263,10 @@ class SaltDatabaseService:
         file_data_results = pd.read_sql(
             file_data_sql, self._connection, params=(start_time, end_time)
         )
-        file_data = [
+
+        return [
             FileDataItem(
-                ut_start=row.UTStart.to_pydatetime(),
+                ut_start=row.UTStart.to_pydatetime().replace(tzinfo=timezone.utc),
                 file_name=row.FileName,
                 proposal_code=row.Proposal_Code,
                 target_name=row.Target_Name.strip(),
@@ -202,47 +278,105 @@ class SaltDatabaseService:
             for row in file_data_results.itertuples()
         ]
 
-        # Correct for multiple target names in the same block visit.
-        if night == datetime.date(2016, 10, 20):
-            for fd in file_data:
-                if fd.proposal_code == "2016-1-SCI-049" and fd.target_name.startswith(
-                    "N132D-pos"
-                ):
-                    fd.target_name = "N132D-pos1"
+    def _find_file_data_from_fits_headers(self, night: date) -> List[FileDataItem]:
+        """
+        Collect the file data from the FITS file headers.
 
-        # Fix incorrect block visit id.
-        if night == datetime.date(2015, 2, 25):
-            for fd in file_data:
-                if fd.block_visit_id == 8082:
-                    fd.block_visit_id = 8092
+        Parameters
+        ----------
+        night : date
+            Observing night.
 
-        # Ignore block visit ids of other dates
-        if night == datetime.date(2016, 2, 22):
-            for fd in file_data:
-                if fd.block_visit_id == 10906:
-                    fd.block_visit_id = None
-        if night == datetime.date(2018, 4, 16):
-            for fd in file_data:
-                if fd.block_visit_id == 18937:
-                    fd.block_visit_id = None
+        Returns
+        -------
+        List[FileDataItem]
+            The file data.
 
-        # There might be calibration files not belonging to any proposal which still
-        # have a block visit id, although they shouldn't.
-        for fd in file_data:
-            if not self.is_existing_proposal_code(fd.proposal_code):
-                fd.block_visit_id = None
+        """
 
-        return file_data
+        def _parse_header(fits: FitsFile) -> FileDataItem:
+            start_date = fits.header_value("DATE-OBS")
+            start_time = fits.header_value("TIME-OBS")
+            if not start_date:
+                raise ValueError("No DATE-OBS header value.")
+            if not start_time:
+                raise ValueError("No TIME-OBS header value.")
+            ut_start = parse_start_datetime(start_date, start_time)
+            file_name = os.path.basename(fits.file_path())
+            bvisit_id_header_value = fits.header_value("BVISITID")
+            block_visit_id = bvisit_id_header_value if bvisit_id_header_value else None
+            object_header_value = fits.header_value("OBJECT")
+            target_name = object_header_value if object_header_value else ""
+            proposal_code_header_value = fits.header_value("PROPID")
+            proposal_code = (
+                proposal_code_header_value if proposal_code_header_value else None
+            )
+
+            return FileDataItem(
+                ut_start=ut_start,
+                file_name=file_name,
+                block_visit_id=block_visit_id,
+                block_visit_id_status=None,
+                target_name=target_name,
+                proposal_code=proposal_code,
+            )
+
+        nights = types.DateRange(start=night, end=night + timedelta(days=1))
+        instruments = types.Instrument.instruments(types.Telescope.SALT)
+        base_dir = get_fits_base_dir()
+
+        return [
+            _parse_header(StandardFitsFile(f))
+            for f in fits_file_paths(nights, instruments, base_dir)
+        ]
+
+    def _merge_file_data(
+        self,
+        file_data_from_db: Iterable[FileDataItem],
+        file_data_from_fits: Iterable[FileDataItem],
+    ) -> List[FileDataItem]:
+        """
+        Merge the file data from the database and FITS file headers.
+
+        If file data is recorded in both the database and the FITS file headers, the
+        database version is used.
+
+        Parameters
+        ----------
+        file_data_from_db : Iterable[FileDataItem]
+            File data from the database.
+        file_data_from_fits : Iterable[FileDataItem]
+            File data from the FITS file headers.
+
+        Returns
+        -------
+        List[FileDataItem]
+            Merged file data.
+
+        """
+
+        # Create dictionaries with the filename as key...
+        db_data_dict = {fd.file_name: fd for fd in file_data_from_db}
+        fits_data_dict = {fd.file_name: fd for fd in file_data_from_fits}
+
+        # ... merge them (using the database data if there are duplicates)...
+        file_data = db_data_dict.copy()
+        for file_name, fd in fits_data_dict.items():
+            if file_name not in file_data:
+                file_data[file_name] = fd
+
+        # ... and turn the result into a list sorted by start time.
+        return sorted(file_data.values(), key=lambda fd: fd.ut_start)
 
     def _find_raw_block_visit_ids(
-        self, night: datetime.date, status_values: List[str]
-    ) -> Dict[BlockKey, List[id]]:
+        self, night: date, status_values: List[str]
+    ) -> Dict[BlockKey, List[int]]:
         """
         Extract block visit ids from database tables other than FileData.
 
         Parameters
         ----------
-        night : datetime.date
+        night : date
 
         Returns
         -------
@@ -250,11 +384,11 @@ class SaltDatabaseService:
         """
 
         # Get the block visit ids independently from the proposal code and target name.
-        night_date = datetime.datetime(night.year, night.month, night.day)
-        start_time = datetime.datetime(
+        night_date = datetime(night.year, night.month, night.day)
+        start_time = datetime(
             night.year, night.month, night.day, 12, 0, 0, 0, tzinfo=pytz.utc
         )
-        end_time = start_time + datetime.timedelta(hours=24)
+        end_time = start_time + timedelta(hours=24)
         block_visits_sql = """
     SELECT DISTINCT ProposalCode.Proposal_Code, Target.Target_Name, BlockVisit.BlockVisit_Id, BlockVisitStatus.BlockVisitStatus
     FROM BlockVisit
@@ -301,7 +435,7 @@ class SaltDatabaseService:
                 key = BlockKey(
                     proposal_code=row.Proposal_Code, target_name=row.Target_Name.strip()
                 )
-                block_visit_ids[key].append(row.BlockVisit_Id)
+                block_visit_ids[key].append(int(row.BlockVisit_Id))
 
         return block_visit_ids
 
@@ -334,7 +468,7 @@ class SaltDatabaseService:
 
         # Extract all id values from the block visit id and ignored block visit id
         # dictionaries.
-        id_values = sorted(
+        id_values: List[int] = sorted(
             functools.reduce(
                 lambda x, y: [*x, *y],
                 [*block_visit_ids.values(), *ignored_block_visit_ids.values()],
@@ -367,7 +501,9 @@ class SaltDatabaseService:
 
     @staticmethod
     def create_block_visit_id_provider(
-        file_data: List[FileDataItem], block_visit_ids: Dict[BlockKey, List[int]], night: datetime.date
+        file_data: List[FileDataItem],
+        block_visit_ids: Dict[BlockKey, List[int]],
+        night: date,
     ) -> Callable[[BlockKey], Union[int, str]]:
         """
         Create a function for requesting block visit id values.
@@ -388,7 +524,7 @@ class SaltDatabaseService:
             File data.
         block_visit_ids : Dict[BlockKey]
             Block visit ids.
-        night : datetime.date
+        night : date
             Observing night.
 
         Returns
@@ -409,7 +545,7 @@ class SaltDatabaseService:
             if fd.block_visit_id:
                 for key in available_ids:
                     if fd.block_visit_id in available_ids[key]:
-                        available_ids[key].remove(fd.block_visit_id)
+                        available_ids[key].remove(int(fd.block_visit_id))
 
         # Define the function for requesting block visit id values.
         def request_block_visit_id(_key: BlockKey):
@@ -423,7 +559,10 @@ class SaltDatabaseService:
         return request_block_visit_id
 
     def _fill_block_visit_id_gaps(
-        self, file_data: List[FileDataItem], block_visit_ids: Dict[BlockKey, List[int]], night: datetime.date
+        self,
+        file_data: List[FileDataItem],
+        block_visit_ids: Dict[BlockKey, List[int]],
+        night: date,
     ):
         """
         Fill in missing block visit ids for files that contain target observations.
@@ -473,7 +612,7 @@ class SaltDatabaseService:
             File data.
         block_visit_ids : dict
             Block visit ids.
-        night : datetime.date
+        night : date
             Observing night.
 
         """
@@ -482,7 +621,9 @@ class SaltDatabaseService:
             file_data, block_visit_ids, night
         )
 
-        def block_visit_id_for_file(_index: int, forward_search: bool) -> Optional[int]:
+        def block_visit_id_for_file(
+            _index: int, forward_search: bool
+        ) -> Optional[Union[str, int]]:
             """
             What is the block visit id of the nearest earlier file which has a block
             visit id and could belong to the same block?
@@ -502,11 +643,11 @@ class SaltDatabaseService:
                 """
 
                 return (
-                    target == "ARC"
-                    or target == "BIAS"
-                    or target == "FLAT"
-                    or target.startswith("FLAT ")
-                    or target.startswith("FLAT-")
+                    target.upper() == "ARC"
+                    or target.upper() == "BIAS"
+                    or target.upper() == "FLAT"
+                    or target.upper().startswith("FLAT ")
+                    or target.upper().startswith("FLAT-")
                 )
 
             file_is_calibration = is_calibration(target_name)
@@ -550,6 +691,8 @@ class SaltDatabaseService:
                 continue
 
             # Files which don't belong to a proposal have no block visit id.
+            if not fd.proposal_code:
+                continue
             if not self.is_existing_proposal_code(fd.proposal_code):
                 continue
 
@@ -585,9 +728,10 @@ class SaltDatabaseService:
                 fd.block_visit_id_status = BlockVisitIdStatus.INFERRED
                 continue
             else:
-                # The file could belong to two block visits. So if it's a Salticam file,
-                # we group with the later file, otherwise we use a new block visit id.
-                if fd.file_name.startswith("S2"):
+                # The file could belong to two block visits. So if it's a Salticam/BCAM
+                # file, we group with the later file, otherwise we use a new block visit
+                # id.
+                if fd.file_name.startswith("S2") or fd.file_name.startswith("B2"):
                     fd.block_visit_id = next_id
                     fd.block_visit_id_status = BlockVisitIdStatus.INFERRED
                     continue
@@ -660,11 +804,21 @@ class SaltDatabaseService:
                     fd.block_visit_id in status_values
                     and status_values[fd.block_visit_id] != fd.block_visit_id_status
                 ):
-                    raise Exception(
-                        f"The block visit id {fd.block_visit_id} has been "
-                        f"marked both as {status_values[fd.block_visit_id]} "
-                        f"and {fd.block_visit_id_status}."
-                    )
+                    if status_values[fd.block_visit_id] == BlockVisitIdStatus.CONFIRMED:
+                        record_warning(
+                            Warning(
+                                f"The block visit id {fd.block_visit_id} has been "
+                                f"marked both as {status_values[fd.block_visit_id]} "
+                                f"and {fd.block_visit_id_status}."
+                            )
+                        )
+                        fd.block_visit_id_status = BlockVisitIdStatus.CONFIRMED
+                    else:
+                        raise Exception(
+                            f"The block visit id {fd.block_visit_id} has been "
+                            f"marked both as {status_values[fd.block_visit_id]} "
+                            f"and {fd.block_visit_id_status}."
+                        )
                 status_values[fd.block_visit_id] = fd.block_visit_id_status
 
         # ... and update the inferred and guessed status values accordingly.
@@ -684,7 +838,12 @@ FROM ProposalCode
     JOIN Investigator ON ProposalContact.Leader_Id=Investigator.Investigator_Id
 WHERE ProposalCode.Proposal_Code=%s;
         """
-        results = pd.read_sql(sql, self._connection, params=(proposal_code,)).iloc[0]
+        results = pd.read_sql(sql, self._connection, params=(proposal_code,))
+        if not len(results):
+            raise ValueError(
+                f'No Principal Investigator found for proposal code "{proposal_code}". Does the proposal code exist?'
+            )
+        results = results.iloc[0]
         if results["FullName"]:
             return results["FullName"]
         raise ValueError("Observation have no Principal Investigator")
@@ -694,7 +853,7 @@ WHERE ProposalCode.Proposal_Code=%s;
 SELECT Title
 FROM ProposalText
         JOIN ProposalCode ON ProposalText.ProposalCode_Id=ProposalCode.ProposalCode_Id
-        JOIN Semester ON ProposalText.Semester_Id=Semester.Semester_Id     
+        JOIN Semester ON ProposalText.Semester_Id=Semester.Semester_Id
 WHERE ProposalCode.Proposal_Code=%s
 ORDER BY Semester.Year DESC, Semester.Semester DESC
 LIMIT 1
@@ -723,11 +882,14 @@ FROM BlockVisit
      JOIN BlockVisitStatus USING(BlockVisitStatus_Id)
 WHERE BlockVisit_Id=%s
         """
-        status_results = pd.read_sql(status_sql, self._connection, params=(block_visit_id,))
+        status_results = pd.read_sql(
+            status_sql, self._connection, params=(block_visit_id,)
+        )
 
         if not len(status_results):
-            raise Exception(f'No block visit status found for block visit id '
-                            f'{block_visit_id}.')
+            raise Exception(
+                f"No block visit status found for block visit id " f"{block_visit_id}."
+            )
 
         status_results = status_results.iloc[0]
 
@@ -744,10 +906,16 @@ JOIN BlockVisitStatus AS bvs ON bv.BlockVisitStatus_Id = bvs.BlockVisitStatus_Id
 WHERE bv.Block_Id=(SELECT bv2.Block_Id FROM BlockVisit AS bv2 WHERE bv2.BlockVisit_Id=%(id)s)
       AND bv.NightInfo_Id=(SELECT bv3.NightInfo_Id FROM BlockVisit AS bv3 WHERE bv3.BlockVisit_Id=%(id)s);
         """
-        visits_results = pd.read_sql(visits_sql, self._connection, params={'id': block_visit_id})
+        visits_results = pd.read_sql(
+            visits_sql, self._connection, params={"id": block_visit_id}
+        )
         all_visits = len(visits_results)
-        accepted_visits = len(visits_results[visits_results['BlockVisitStatus'] == 'Accepted'])
-        rejected_visits = len(visits_results[visits_results['BlockVisitStatus'] == 'Rejected'])
+        accepted_visits = len(
+            visits_results[visits_results["BlockVisitStatus"] == "Accepted"]
+        )
+        rejected_visits = len(
+            visits_results[visits_results["BlockVisitStatus"] == "Rejected"]
+        )
         other_visits = all_visits - accepted_visits - rejected_visits
 
         # We don't know which visit corresponds to a deleted/queued visit, However, this
@@ -760,13 +928,24 @@ WHERE bv.Block_Id=(SELECT bv2.Block_Id FROM BlockVisit AS bv2 WHERE bv2.BlockVis
         if accepted_visits == 0 and rejected_visits >= other_visits:
             return types.Status.REJECTED
 
-        # Despite best effort no block visit status could be determined.
-        raise Exception('The block visit status could not be determined for the block '
-                        'visit id {id}.')
+        # If there are neither accepted nor rejected block visits, the block visit
+        # status should be correct.
+        if accepted_visits == 0 and rejected_visits == 0:
+            if status_results["BlockVisitStatus"].lower() == "deleted":
+                return types.Status.DELETED
+            if status_results["BlockVisitStatus"].lower() == "in queue":
+                return types.Status.IN_QUEUE
 
-    def find_release_date(
-        self, proposal_code: str
-    ) -> Tuple[datetime.date, datetime.date]:
+        # Despite best effort no block visit status could be determined. Let's play it
+        # safe and declare the visit rejected.
+        record_warning(
+            Warning(
+                f"The block visit status could not be determined for the block visit id {block_visit_id}. It is therefore marked as rejected."
+            )
+        )
+        return types.Status.REJECTED
+
+    def find_release_date(self, proposal_code: str) -> Tuple[date, date]:
         sql = """
 SELECT MAX(EndSemester) AS EndSemester, ProposalType, ProprietaryPeriod
 FROM BlockVisit
@@ -787,8 +966,8 @@ WHERE Proposal_Code=%s;
         # accessible by SALT partners). However, their meta data becomes public
         # immediately.
         if proposal_type == "Gravitational Wave Event":
-            release_date = datetime.datetime.strptime("2100-01-01", "%Y-%m-%d")
-            meta_release_date = datetime.datetime.today().date()
+            release_date = datetime.strptime("2100-01-01", "%Y-%m-%d").date()
+            meta_release_date = datetime.today().date()
 
             return release_date, meta_release_date
 
@@ -807,6 +986,11 @@ WHERE Proposal_Code=%s;
             ]
             end_semester = end_semester_results["EndSemester"]
 
+        if proprietary_period is None:
+            raise ValueError(
+                f"The proprietary period is NULL for proposal {proposal_code}."
+            )
+
         # The semester end date in the SDB is the last day of a month.
         # However, it is easier (and more correct) to use the first day of the
         # following month.
@@ -820,6 +1004,10 @@ WHERE Proposal_Code=%s;
         return release_date, release_date
 
     def find_proposal_investigators(self, proposal_code: str) -> List[str]:
+        # Gravitational wave proposals by definition have no investigator
+        if self.sdb_proposal_type(proposal_code) == "Gravitational Wave Event":
+            return []
+
         sql = """
 SELECT PiptUser.PiptUser_Id
 FROM ProposalInvestigator
@@ -836,7 +1024,7 @@ WHERE ProposalCode.Proposal_Code=%s;
             return ps
         raise ValueError("Observation has no Investigators")
 
-    def find_target_type(self, block_visit_id: Union[int, str]) -> str:
+    def find_target_type(self, block_visit_id: Optional[Union[int, str]]) -> str:
         # If there is no block visit, return the Unknown target type
         if block_visit_id is None:
             return "00.00.00.00"
@@ -883,8 +1071,195 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
 
         return results.iloc[0]["RssMaskType"] == "MOS"
 
+    def institution_memberships(
+        self, user_id: int
+    ) -> List[types.InstitutionMembership]:
+        # TODO: This should be replaced with an improved version, getting the date
+        # intervals from the SDB
+        partner_membership_intervals = {
+            "AMNH": [(date(2011, 9, 1), date(2100, 1, 1))],
+            "CMU": [(date(2011, 9, 1), date(2013, 4, 30))],
+            "DC": [(date(2011, 9, 1), date(2100, 1, 1))],
+            "DUR": [(date(2017, 5, 1), date(2019, 4, 30))],
+            "GU": [
+                (date(2011, 9, 1), date(2015, 4, 30)),
+                (date(2016, 5, 1), date(2017, 10, 31)),
+            ],
+            "HET": [(date(2011, 9, 1), date(2015, 4, 30))],
+            "IUCAA": [(date(2011, 9, 1), date(2100, 1, 1))],
+            "POL": [(date(2011, 9, 1), date(2100, 1, 1))],
+            "RSA": [(date(2011, 9, 1), date(2100, 1, 1))],
+            "RU": [(date(2011, 9, 1), date(2100, 1, 1))],
+            "UC": [
+                (date(2011, 9, 1), date(2014, 10, 31)),
+                (date(2015, 5, 1), date(2016, 10, 31)),
+                (date(2017, 5, 1), date(2019, 4, 30)),
+            ],
+            "UKSC": [(date(2011, 9, 1), date(2100, 1, 1))],
+            "UNC": [(date(2011, 9, 1), date(2020, 4, 30))],
+            "UW": [(date(2011, 9, 1), date(2100, 1, 1))],
+        }
+
+        sql = """
+                    SELECT Partner_Code
+                    FROM PiptUser
+                    JOIN Investigator ON PiptUser.PiptUser_Id = Investigator.PiptUser_Id
+                    JOIN Institute ON Investigator.Institute_Id = Institute.Institute_Id
+                    JOIN Partner ON Institute.Partner_Id = Partner.Partner_Id
+                    WHERE PiptUser.PiptUser_Id=%s AND Partner.Partner_Code != "OTH" AND Partner.Virtual = 0
+                """
+
+        df = pd.read_sql(sql, self._connection, params=(user_id,))
+        membership_intervals: Set[types.InstitutionMembership] = set()
+        for partner_code in df["Partner_Code"]:
+            for partner_membership_interval in partner_membership_intervals[
+                partner_code
+            ]:
+                institution_membership = types.InstitutionMembership(
+                    membership_end=partner_membership_interval[1],
+                    membership_start=partner_membership_interval[0],
+                )
+                membership_intervals.add(institution_membership)
+
+        sorted_intervals = sorted(list(membership_intervals))
+        return sorted_intervals
+
     def find_proposal_type(self, proposal_code: str) -> ProposalType:
-        with self._connection.cursor() as cur:
+        db_proposal_type = self.sdb_proposal_type(proposal_code)
+        commissioning_types = ("Commissioning",)
+        engineering_types = ("Engineering",)
+        science_types = (
+            "Director Discretionary Time (DDT)",
+            "Gravitational Wave Event",
+            "Key Science Program",
+            "Large Science Proposal",
+            "Science",
+            "Science - Long Term",
+        )
+        science_verification_types = ("Science Verification",)
+
+        if db_proposal_type in commissioning_types:
+            return ProposalType.COMMISSIONING
+        elif db_proposal_type in engineering_types:
+            return ProposalType.ENGINEERING
+        elif db_proposal_type in science_types:
+            return ProposalType.SCIENCE
+        elif db_proposal_type in science_verification_types:
+            return ProposalType.SCIENCE_VERIFICATION
+        else:
+            raise ValueError(
+                f"The SDB proposal type {db_proposal_type} is not supported."
+            )
+
+    def find_proposal_observation_groups(
+        self, proposal_code
+    ) -> Dict[str, types.SALTObservationGroup]:
+        """
+        The observation groups (i.e. block visits) taken for a proposal.
+        Parameters
+        ----------
+        proposal_code: str
+            The proposal code.
+        Returns
+        -------
+            The observation group.
+        """
+
+        sql = """
+SELECT BlockVisit_Id, BlockVisitStatus
+FROM BlockVisit
+    JOIN `Block` USING(Block_Id)
+    JOIN BlockVisitStatus USING(BlockVisitStatus_Id)
+    JOIN ProposalCode USING(ProposalCode_Id)
+WHERE Proposal_Code = %s
+        """
+        results = pd.read_sql(sql, self._connection, params=(proposal_code,))
+        ps = dict()
+        if len(results):
+            for index, row in results.iterrows():
+                block_visit_id = str(row["BlockVisit_Id"])
+                if row["BlockVisitStatus"] in ["Accepted", "Rejected"]:
+                    ps[block_visit_id] = types.SALTObservationGroup(
+                        group_identifier=block_visit_id,
+                        status=types.Status.for_value(row["BlockVisitStatus"]),
+                    )
+
+        return ps
+
+    def find_phase2_proposals(
+        self, from_date: date
+    ) -> Dict[str, types.SALTProposalDetails]:
+        """
+        Details of all current phase 2 proposals, irrespective of their status,
+        submitted on or after a date.
+
+        Older proposals aren't included as they may give errors.
+
+        Deleted proposals may be included.
+
+        Parameters
+        ----------
+        from_date : date
+            Date from which onward proposals are included.
+
+        Returns
+        -------
+        dict
+            The list of proposal details.
+
+        """
+
+        sql = """
+SELECT DISTINCT Proposal_Code, Title, CONCAT(FirstName, " ", Surname) as FullName
+FROM Proposal
+    JOIN ProposalCode USING(ProposalCode_Id)
+    JOIN ProposalText USING(ProposalCode_Id)
+    JOIN ProposalContact USING(ProposalCode_Id)
+    JOIN Investigator ON Leader_Id = Investigator_Id
+    JOIN ProposalGeneralInfo USING(ProposalCode_Id)
+WHERE Current = 1 AND Phase = 2 AND SubmissionDate >= %(from_date)s
+            """
+        results = pd.read_sql(sql, self._connection, params=dict(from_date=from_date))
+        proposals = dict()
+        for _, row in results.iterrows():
+            proposal_code = row["Proposal_Code"]
+            release_date = self.find_release_date(proposal_code=proposal_code)
+            investigators = self.find_proposal_investigator_user_ids(
+                proposal_code=proposal_code
+            )
+            proposals[proposal_code] = types.SALTProposalDetails(
+                pi=row["FullName"],
+                meta_release=release_date[1],
+                data_release=release_date[0],
+                proposal_code=proposal_code,
+                title=row["Title"],
+                institution=types.Institution.SALT,
+                investigators=investigators,
+            )
+        return proposals
+
+    def find_proposal_investigator_user_ids(self, proposal_code: str) -> List[str]:
+        if "GWE" in proposal_code:
+            return []
+
+        sql = """
+SELECT PiptUser.PiptUser_Id
+FROM ProposalInvestigator
+    JOIN ProposalCode ON ProposalInvestigator.ProposalCode_Id=ProposalCode.ProposalCode_Id
+    JOIN Investigator ON ProposalInvestigator.Investigator_Id=Investigator.Investigator_Id
+    JOIN PiptUser ON Investigator.PiptUser_Id=PiptUser.PiptUser_Id
+WHERE ProposalCode.Proposal_Code=%s;
+        """
+        results = pd.read_sql(sql, self._connection, params=(proposal_code,))
+        if len(results):
+            ps = []
+            for index, row in results.iterrows():
+                ps.append(str(row["PiptUser_Id"]))
+            return ps
+        raise ValueError("Observation has no Investigators")
+
+    def sdb_proposal_type(self, proposal_code: str) -> str:
+        with self._connection.cursor():
             sql = """
             SELECT ProposalType
             FROM ProposalType
@@ -900,36 +1275,9 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
                 )
 
             results = results.iloc[0]
-            db_proposal_type = str(results["ProposalType"])
+            return str(results["ProposalType"])
 
-            commissioning_types = ("Commissioning",)
-            engineering_types = ("Engineering",)
-            science_types = (
-                "Director Discretionary Time (DDT)",
-                "Gravitational Wave Event",
-                "Key Science Program",
-                "Large Science Proposal",
-                "Science",
-                "Science - Long Term",
-            )
-            science_verification_types = ("Science Verification",)
-
-            if db_proposal_type in commissioning_types:
-                return ProposalType.COMMISSIONING
-            elif db_proposal_type in engineering_types:
-                return ProposalType.ENGINEERING
-            elif db_proposal_type in science_types:
-                return ProposalType.SCIENCE
-            elif db_proposal_type in science_verification_types:
-                return ProposalType.SCIENCE_VERIFICATION
-            else:
-                raise ValueError(
-                    f"The SDB proposal type {db_proposal_type} is not supported."
-                )
-
-    def is_block_visit_in_night(
-        self, block_visit_id: int, night: datetime.date
-    ) -> bool:
+    def is_block_visit_in_night(self, block_visit_id: int, night: date) -> bool:
         """
         Check whether a block visit was done in a given night.
 
@@ -937,7 +1285,7 @@ SELECT RssMaskType FROM RssMask JOIN RssMaskType USING(RssMaskType_Id)  WHERE Ba
         ----------
         block_visit_id : int
             Block visit id.
-        night : datetime.date
+        night : date
             Observing night.
 
         Returns

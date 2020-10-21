@@ -1,5 +1,6 @@
 import hashlib
 import os
+import pathlib
 import random
 import re
 import string
@@ -14,7 +15,7 @@ from faker import Faker
 
 from ssda.observation import ObservationProperties
 from ssda.util import types
-from ssda.util.fits import FitsFile, get_fits_base_dir
+from ssda.util.fits import FitsFile
 from ssda.util.types import ProposalType
 
 
@@ -46,7 +47,7 @@ class DummyObservationProperties(ObservationProperties):
         # means that for a given file the proposal code and institution must always be
         # the same. The same is true for observation groups, so that group identifiers
         # and the telescope must always be the same as well.
-        filename = os.path.basename(fits_file.path())
+        filename = os.path.basename(fits_file.file_path())
         filename_determined_properties = DummyObservationProperties.filename_determined_properties(
             filename
         )
@@ -89,7 +90,7 @@ class DummyObservationProperties(ObservationProperties):
         night = running_number[:8]
         try:
             file_in_night = int(running_number[8:])
-        except BaseException as e:
+        except BaseException:
             # some files don't follow the usual naming convention
             file_in_night = 1000  # arbitrary value
 
@@ -134,12 +135,15 @@ class DummyObservationProperties(ObservationProperties):
             telescope=telescope,
         )
 
+    def access_rule(self) -> Optional[types.AccessRule]:
+        return types.AccessRule.PUBLIC_DATA_OR_INVESTIGATOR
+
     def artifact(self, plane_id: int) -> types.Artifact:
         def product_type() -> types.ProductType:
             product_types = [
-                types.ProductType.ARC,
+                types.ProductType.ARC_INTERNAL,
                 types.ProductType.BIAS,
-                types.ProductType.FLAT,
+                types.ProductType.IMAGING_FLAT_LAMP,
                 types.ProductType.SCIENCE,
             ]
             return random.choice(product_types)
@@ -147,10 +151,12 @@ class DummyObservationProperties(ObservationProperties):
         return types.Artifact(
             content_checksum=self._fits_file.checksum(),
             content_length=self._fits_file.size(),
-            identifier=str(uuid.uuid4()),
-            name=os.path.basename(self._fits_file.path()),
+            identifier=uuid.uuid4(),
+            name=os.path.basename(self._fits_file.file_path()),
+            paths=types.CalibrationLevelPaths(
+                pathlib.Path("raw_path"), pathlib.Path("reduced_path")
+            ),
             plane_id=plane_id,
-            path=os.path.relpath(self._fits_file.path(), get_fits_base_dir()),
             product_type=product_type(),
         )
 
@@ -244,9 +250,6 @@ class DummyObservationProperties(ObservationProperties):
         if meta_release > data_release:
             meta_release = data_release
         intent = random.choice([intent for intent in types.Intent])
-        observation_type = random.choice(
-            [observation_type for observation_type in types.ObservationType]
-        )
         status = random.choice([status for status in types.Status])
         if self._instrument in (
             types.Instrument.HRS,
@@ -265,7 +268,6 @@ class DummyObservationProperties(ObservationProperties):
             intent=intent,
             meta_release=meta_release,
             observation_group_id=observation_group_id,
-            observation_type=observation_type,
             proposal_id=proposal_id,
             status=status,
             telescope=telescope,
@@ -344,7 +346,10 @@ class DummyObservationProperties(ObservationProperties):
 
         return [
             types.ProposalInvestigator(
-                proposal_id=proposal_id, investigator_id=str(investigator_id)
+                proposal_id=proposal_id,
+                institution=types.Institution.SALT,
+                institution_memberships=[],
+                investigator_id=str(investigator_id),
             )
             for investigator_id in random.sample(
                 investigator_ids, k=random.randint(0, 10)
