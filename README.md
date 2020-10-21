@@ -47,8 +47,13 @@ Before using the package you need to define the following environment variables.
 
 Variable name | Explanation | Example
 --- | --- | ---
+MAIL_PASSWORD | Password for logging in to the mail server | secret
+MAIL_PORT | Port on which the mail server is listening | 25
+MAIL_SERVER | Address of the mail server | smtp.example.com
+MAIL_USER | Username for logging in to the mail server | someone
 SSDA_DSN | Data source name of the data archive database | postgresql://ssda:secret@example.host.za:port/ssda
 SDB_DSN | Data source name of the SALT science database | mysql://salt:secret@example.host.za:port/sdb
+SENT_EMAILS_DB | File for the SQLite database recording sent emails | sent_emails.db 
 
 See below for instructions on how to run the script as a cron job.
 

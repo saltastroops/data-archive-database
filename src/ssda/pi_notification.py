@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List, Optional
 from dataclasses import dataclass
 import os
 import pymysql
@@ -6,7 +6,7 @@ import psycopg2
 from prettytable import PrettyTable
 from psycopg2 import extras
 import smtplib
-import datetime
+from datetime import datetime, timedelta
 import dsnparse
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -19,6 +19,7 @@ from emailedbefore import SentEmails
 class Proposal:
     code: str
     release_date: date
+    title: Optional[str]
 
 
 @dataclass
@@ -31,6 +32,7 @@ class PI:
 class DatabaseConfiguration:
     """
     A database configuration.
+
     Parameters
     ----------
     host : str
@@ -184,7 +186,10 @@ def proposal_release_dates(days):
 
 # We get the PI full names, proposals and email addresses for a list proposal codes, we then return
 # a nested dictionary of the pi email and full name
-def pi_details(proposal_codes):
+def _pi_details(proposal_codes):
+    if not len(proposal_codes):
+        return {}
+
     sdb_query_results = {}
     with sdb_database_connection().cursor(
             pymysql.cursors.DictCursor
@@ -195,8 +200,8 @@ def pi_details(proposal_codes):
                       JOIN Investigator ins ON ins.Investigator_Id = ProposalContact.Leader_Id
                       JOIN PiptUser ON ins.PiptUser_Id=PiptUser.PiptUser_Id
                       JOIN Investigator ON PiptUser.Investigator_Id = Investigator.Investigator_Id                     
-                      WHERE Proposal_Code IN %(proposals)s"""
-        database_connection.execute(pi_query, dict(proposals=proposal_codes))
+                      WHERE Proposal_Code IN %(proposal_codes)s"""
+        database_connection.execute(pi_query, dict(proposal_codes=proposal_codes))
         results = database_connection.fetchall()
         for result in results:
             sdb_query_results[result["Proposal_Code"]] = {
@@ -206,9 +211,32 @@ def pi_details(proposal_codes):
         return sdb_query_results
 
 
-def release_dates_and_proposals(days):
+def _proposal_titles(proposal_codes: List[str]) -> Dict[str, str]:
+    if not len(proposal_codes):
+        return {}
+
+    sdb_query_results: Dict[str, str] = {}
+    with sdb_database_connection().cursor(
+            pymysql.cursors.DictCursor
+    ) as database_connection:
+        title_query = """SELECT Proposal_Code, Title
+                     FROM ProposalText
+                     JOIN ProposalCode ON ProposalText.ProposalCode_Id=ProposalCode.ProposalCode_Id
+                     WHERE Proposal_Code IN %(proposal_codes)s"""
+        try:
+            database_connection.execute(title_query, dict(proposal_codes=proposal_codes))
+        except:
+            print(database_connection._last_executed)
+        results = database_connection.fetchall()
+        for result in results:
+            sdb_query_results[result["Proposal_Code"]] = str(result["Title"])
+        return sdb_query_results
+
+
+def pi_details(days):
     proposals_and_release_dates = proposal_release_dates(days)
-    proposal_and_pi_information = pi_details(list(proposals_and_release_dates.keys()))
+    proposal_titles = _proposal_titles(list(proposals_and_release_dates.keys()))
+    proposal_and_pi_information = _pi_details(list(proposals_and_release_dates.keys()))
 
     all_data = {}
     for proposal_code in proposals_and_release_dates:
@@ -231,7 +259,8 @@ def release_dates_and_proposals(days):
             proposals.append(
                 Proposal(
                     code=proposal["proposal_code"],
-                    release_date=proposal["release_date"]
+                    release_date=proposal["release_date"],
+                    title=proposal_titles[proposal["proposal_code"]]
                 )
             )
         PIs.append(PI(
@@ -279,10 +308,10 @@ def sending_email(receiver, pi_name, plain_table, styled_table):
     message["From"] = sender
     message["To"] = receiver
 
-# write the plain text part
+    # write the plain text part
     text = f"""{plain_text_email_content(plain_table, pi_name)} """
 
-# write the html part
+    # write the html part
     html = f"""
 <html>
   <body>
@@ -307,7 +336,8 @@ def sending_email(receiver, pi_name, plain_table, styled_table):
     mail_password = os.environ.get("MAIL_PASSWORD")
 
     with smtplib.SMTP(mail_server, mail_port) as server:
-        server.login(mail_username, mail_password)
+        if mail_username:
+            server.login(mail_username, mail_password)
         server.sendmail(
             sender,
             receiver,
@@ -316,23 +346,28 @@ def sending_email(receiver, pi_name, plain_table, styled_table):
         return "Email has been sent"
 
 
-def log_to_database(email_receiver, pi_proposal):
-    date_today = datetime.datetime.now()
-    sent_emails = SentEmails("db.sqlite3")
-    sent_emails.register(email_receiver, pi_proposal, date_today)
+def log_to_database(email_receiver, proposal_code):
+    now = datetime.now()
+    sent_emails = SentEmails(os.environ["SENT_EMAILS_DB"])
+    sent_emails.register(email_receiver, _email_topic(proposal_code), now)
 
 
-def proposals_in_database(email_receiver, pi_proposal):
-    return SentEmails.sent_at(SentEmails("db.sqlite3"), email_receiver, pi_proposal)
+def email_sent_at(email_receiver: str, proposal_code: str) -> datetime:
+    return SentEmails.last_sent_at(SentEmails(os.environ["SENT_EMAILS_DB"]), email_receiver, _email_topic(proposal_code))
+
+
+def _email_topic(proposal_code: str) -> str:
+    return f'Release date for {proposal_code}'
 
 
 def plain_text_table(proposals):
     table = PrettyTable()
-    table.field_names = ["Proposals", "Release Date"]
-    table.align["Proposals"] = "l"
+    table.field_names = ["Proposal", "Title", "Release Date"]
+    table.align["Proposal"] = "l"
+    table.align["Title"] = "l"
     table.align["Release Date"] = "l"
     for proposal in proposals:
-        table.add_row([proposal.code, proposal.release_date])
+        table.add_row([proposal.code, proposal.title, proposal.release_date])
     return table
 
 
@@ -356,6 +391,7 @@ def html_table(proposals):
      <table>
        <tr>
          <th>Proposal</th>
+         <th>Title</th>
          <th>Release Date</th>
        </tr>
        """
@@ -364,6 +400,7 @@ def html_table(proposals):
         table += f"""
                   <tr>
                     <td><a href="https://www.salt.ac.za/wm/proposal/{pi_proposal.code}">{pi_proposal.code}</a></td>
+                    <td>{pi_proposal.title}</td>
                     <td>{pi_proposal.release_date}</td>
                    </tr>"""
     table += '</table>'
@@ -373,7 +410,8 @@ def html_table(proposals):
 def proposals_to_send(pi_proposals, email):
     info = []
     for proposal in pi_proposals:
-        if len(proposals_in_database(email, proposal.code)) == 0:
+        sent_at = email_sent_at(email, proposal.code)
+        if not sent_at or datetime.now() - sent_at > timedelta(days=14):
             info.append(proposal)
     return info
 
@@ -392,16 +430,8 @@ def handle_pi(pi_information):
     return None
 
 
-def run_code(days):
-    for pi_information in release_dates_and_proposals(days):
+def notify(days):
+    p = pi_details(days)
+    for pi_information in p:
         handle_pi(pi_information)
     return None
-
-
-@click.command()
-@click.argument("days", nargs=1, type=int)
-def main(days):
-    run_code(days)
-
-
-main()
