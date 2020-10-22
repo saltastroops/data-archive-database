@@ -23,7 +23,7 @@ class Proposal:
 
 
 @dataclass
-class PI:
+class Astronomer:
     fullname: str
     email: str
     proposals: List[Proposal]
@@ -126,9 +126,6 @@ class DatabaseConfiguration:
         )
 
 
-PIs = []
-
-
 def sdb_database_connection():
     sdb_db_config = dsnparse.parse_environ("SDB_DSN")
     sdb_db_config = DatabaseConfiguration(
@@ -184,9 +181,9 @@ def proposal_release_dates(days):
         return ssda_query_results
 
 
-# We get the PI full names, proposals and email addresses for a list proposal codes, we then return
-# a nested dictionary of the pi email and full name
-def _pi_details(proposal_codes):
+# Return a nested dictionary of the PI and PC email and full name for a list of proposal
+# codes.
+def _astronomers_details(proposal_codes):
     if not len(proposal_codes):
         return {}
 
@@ -194,20 +191,26 @@ def _pi_details(proposal_codes):
     with sdb_database_connection().cursor(
             pymysql.cursors.DictCursor
     ) as database_connection:
-        pi_query = """SELECT Proposal_Code, ins.Email, CONCAT(ins.FirstName," ", ins.Surname) AS fullname
-                      FROM ProposalContact
-                      JOIN ProposalCode ON ProposalCode.ProposalCode_Id = ProposalContact.ProposalCode_Id
-                      JOIN Investigator ins ON ins.Investigator_Id = ProposalContact.Leader_Id
-                      JOIN PiptUser ON ins.PiptUser_Id=PiptUser.PiptUser_Id
-                      JOIN Investigator ON PiptUser.Investigator_Id = Investigator.Investigator_Id                     
-                      WHERE Proposal_Code IN %(proposal_codes)s"""
+        pi_query = """
+SELECT Proposal_Code,
+       pi.Email AS pi_email,
+       CONCAT(pi.FirstName, ' ', pi.Surname) AS pi_fullname,
+       pc.Email AS pc_email,
+       CONCAT(pc.FirstName, ' ', pc.Surname) AS pc_fullname
+FROM ProposalContact
+JOIN ProposalCode ON ProposalCode.ProposalCode_Id = ProposalContact.ProposalCode_Id
+JOIN Investigator pi ON pi.Investigator_Id = ProposalContact.Leader_Id
+JOIN Investigator pc ON pc.Investigator_Id = ProposalContact.Contact_Id
+WHERE Proposal_Code IN %(proposal_codes)s
+        """
         database_connection.execute(pi_query, dict(proposal_codes=proposal_codes))
         results = database_connection.fetchall()
         for result in results:
-            sdb_query_results[result["Proposal_Code"]] = {
-                "email": result["Email"],
-                "fullname": result["fullname"],
-            }
+            astronomers = []
+            astronomers.append({"email": result["pi_email"], "fullname": result["pi_fullname"]})
+            if result["pc_fullname"] != result["pi_fullname"]:
+                astronomers.append({"email": result["pc_email"], "fullname": result["pc_fullname"]})
+            sdb_query_results[result["Proposal_Code"]] = astronomers
         return sdb_query_results
 
 
@@ -233,29 +236,31 @@ def _proposal_titles(proposal_codes: List[str]) -> Dict[str, str]:
         return sdb_query_results
 
 
-def pi_details(days):
+def astronomers_details(days):
     proposals_and_release_dates = proposal_release_dates(days)
     proposal_titles = _proposal_titles(list(proposals_and_release_dates.keys()))
-    proposal_and_pi_information = _pi_details(list(proposals_and_release_dates.keys()))
+    proposal_and_pi_information = _astronomers_details(list(proposals_and_release_dates.keys()))
 
     all_data = {}
     for proposal_code in proposals_and_release_dates:
         if proposal_code not in proposal_and_pi_information:
             raise ValueError("invalid proposal code.")
-        pi_email = proposal_and_pi_information[proposal_code]['email']
-        fullname = proposal_and_pi_information[proposal_code]['fullname']
-        proposal_release_date = proposals_and_release_dates[proposal_code]
+        for astronomer in proposal_and_pi_information[proposal_code]:
+            email = astronomer['email']
+            fullname = astronomer['fullname']
+            proposal_release_date = proposals_and_release_dates[proposal_code]
 
-        if pi_email not in all_data:
-            all_data[pi_email] = {
-                "proposals": [],
-                "fullname": fullname,
-            }
-        all_data[pi_email]["proposals"].append({"proposal_code": proposal_code, "release_date": proposal_release_date})
+            if email not in all_data:
+                all_data[email] = {
+                    "proposals": [],
+                    "fullname": fullname,
+                }
+            all_data[email]["proposals"].append({"proposal_code": proposal_code, "release_date": proposal_release_date})
 
-    for key, pi in all_data.items():
+    astronomers = []
+    for key, astronomer in all_data.items():
         proposals = []
-        for proposal in sorted(pi["proposals"], key=lambda i: i["proposal_code"]):
+        for proposal in sorted(astronomer["proposals"], key=lambda i: i["proposal_code"]):
             proposals.append(
                 Proposal(
                     code=proposal["proposal_code"],
@@ -263,12 +268,12 @@ def pi_details(days):
                     title=proposal_titles[proposal["proposal_code"]]
                 )
             )
-        PIs.append(PI(
-            fullname=pi["fullname"],
+        astronomers.append(Astronomer(
+            fullname=astronomer["fullname"],
             email=key,
             proposals=proposals
         ))
-    return PIs
+    return astronomers
 
 
 def plain_text_email_content(table, pi_name):
@@ -337,6 +342,7 @@ def sending_email(receiver, pi_name, plain_table, styled_table):
 
     with smtplib.SMTP(mail_server, mail_port) as server:
         if mail_username:
+            server.starttls()
             server.login(mail_username, mail_password)
         server.sendmail(
             sender,
@@ -431,7 +437,7 @@ def handle_pi(pi_information):
 
 
 def notify(days):
-    p = pi_details(days)
+    p = astronomers_details(days)
     for pi_information in p:
         handle_pi(pi_information)
     return None
