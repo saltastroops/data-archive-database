@@ -1,6 +1,6 @@
 from typing import Optional, Tuple
 import click
-from datetime import date
+import ssda.pi_notification
 from ssda.ssda_delete import delete_in_ssda
 from ssda.ssda_populate import populate_ssda
 from ssda.ssda_sync import sync_ssda
@@ -67,6 +67,12 @@ def sync():
 def delete(fits: Optional[str], start: Optional[str], end: Optional[str], out: Optional[str]):
     """Delete file from database"""
     delete_in_ssda(fits=fits, start=start, end=end, out=out)
+
+
+@main.command()
+@click.option("--days", type=int, default=28, help="Days before the end of the proprietary period from when to notify Principal Investigators")
+def notify(days):
+    ssda.pi_notification.notify(days)
 
 
 @main.command()
