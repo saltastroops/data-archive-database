@@ -226,10 +226,7 @@ def _proposal_titles(proposal_codes: List[str]) -> Dict[str, str]:
                      FROM ProposalText
                      JOIN ProposalCode ON ProposalText.ProposalCode_Id=ProposalCode.ProposalCode_Id
                      WHERE Proposal_Code IN %(proposal_codes)s"""
-        try:
-            database_connection.execute(title_query, dict(proposal_codes=proposal_codes))
-        except:
-            print(database_connection._last_executed)
+        database_connection.execute(title_query, dict(proposal_codes=proposal_codes))
         results = database_connection.fetchall()
         for result in results:
             sdb_query_results[result["Proposal_Code"]] = str(result["Title"])
