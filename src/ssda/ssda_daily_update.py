@@ -212,7 +212,7 @@ def send_email_notification(subject: str, body: str):
     """
 
     message = MIMEMultipart()
-    message["From"] = "SSDA Daily Maintenance <no-reply@ssda.saao.c.za>"
+    message["From"] = "SSDA Daily Maintenance <no-reply@ssda.saao.ac.za>"
     message["To"] = f"SSDA Daily Maintenance <{os.environ['MAIL_SUMMARY_ADDRESS']}>"
     message["Subject"] = subject
 
