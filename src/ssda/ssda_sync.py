@@ -91,8 +91,10 @@ def update_salt_proposals(
             )
 
 
-def sanitize_gwe_proposal_release_dates(old_proposals: Dict[str, types.SALTProposalDetails],
-                                        new_proposals: Dict[str, types.SALTProposalDetails]):
+def sanitize_gwe_proposal_release_dates(
+    old_proposals: Dict[str, types.SALTProposalDetails],
+    new_proposals: Dict[str, types.SALTProposalDetails],
+):
     """
     Sanitize the metadata release dates of gravitational wave proposals.
 
@@ -321,13 +323,23 @@ class SaltProposalSynchronisation:
 
         self.check_proposal_code_consistency(old_proposal, new_proposal)
 
-        if old_proposal.data_release != new_proposal.data_release or set(
-            old_proposal.investigators
-        ) != set(new_proposal.investigators):
-            proposal_id = self.ssda_database_service.find_proposal_id(
-                proposal_code=new_proposal.proposal_code,
-                institution=types.Institution.SALT,
+        proposal_id = self.ssda_database_service.find_proposal_id(
+            proposal_code=new_proposal.proposal_code,
+            institution=types.Institution.SALT,
+        )
+
+        # Update the position owner ids if
+        # 1. the release date has changed or
+        # 2. the investigators have changed or
+        # 3. the release date is in the past but there are still position owner ids
+        if (
+            old_proposal.data_release != new_proposal.data_release
+            or set(old_proposal.investigators) != set(new_proposal.investigators)
+            or (
+                new_proposal.data_release < datetime.now().date()
+                and self._has_existing_position_owner_ids(proposal_id) > 0
             )
+        ):
             owner_ids = self.find_position_owner_ids(
                 proposal_id, new_proposal.data_release
             )
@@ -349,6 +361,31 @@ class SaltProposalSynchronisation:
                     msg=f"{cur.rowcount} positions of {new_proposal.proposal_code} have been updated to have {len(owner_ids) if owner_ids else 'no'} owner ids."
                 )
 
+    def _has_existing_position_owner_ids(self, proposal_id: int) -> bool:
+        """
+        Check whether there are position owner ids for a proposal.
+
+        Parameters
+        ----------
+        proposal_id : int
+
+        Returns
+        -------
+        bool
+            Whether there are position owner ids for the proposal.
+
+        """
+        sql = """
+        SELECT COUNT(owner_institution_user_ids)
+        FROM observations.position pos
+        JOIN observations.plane pln ON pos.plane_id = pln.plane_id
+        JOIN observations.observation obs ON pln.observation_id = obs.observation_id
+        WHERE obs.proposal_id=%(proposal_id)s AND pos.owner_institution_user_ids IS NOT NULL
+        """
+        with self.ssda_database_service.connection().cursor() as cur:
+            cur.execute(sql, dict(proposal_id=proposal_id))
+            return int(cur.fetchone()[0]) > 0
+
     def _update_observation_groups(
         self,
         old_proposal: types.SALTProposalDetails,
@@ -368,10 +405,13 @@ class SaltProposalSynchronisation:
         -------
 
         """
+
         self.check_proposal_code_consistency(old_proposal, new_proposal)
         proposal_code = old_proposal.proposal_code
-        new_observation_groups = self.sdb_database_service.find_proposal_observation_groups(
-            proposal_code=proposal_code
+        new_observation_groups = (
+            self.sdb_database_service.find_proposal_observation_groups(
+                proposal_code=proposal_code
+            )
         )
         old_observation_groups = self.ssda_database_service.find_salt_observation_group(
             proposal_code
